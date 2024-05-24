@@ -48,5 +48,6 @@ pwndbg> x/20gx 0x1397000493f5-1
 0x139700049474:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
 
 ```
-### Study
+### Studying
 - V8 virtual memory cage
+- 
