@@ -247,7 +247,9 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
   void SynchronizedLoad() const;
   bool InReadOnlySpace() const;
 #else
-  V8_INLINE bool InReadOnlySpace() const { return IsFlagSet(READ_ONLY_HEAP); }
+  V8_INLINE bool InReadOnlySpace() const { 
+    
+    return IsFlagSet(READ_ONLY_HEAP); }
 #endif
 
   V8_INLINE bool InCodeSpace() const { return IsFlagSet(IS_EXECUTABLE); }

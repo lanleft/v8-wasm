@@ -4,3 +4,4 @@ v8/third_party
 v8/build
 v8/test
 v8/buildtools
+.cache/
