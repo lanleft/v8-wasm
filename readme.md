@@ -55,6 +55,12 @@ pwndbg> x/20gx 0x1397000493f5-1
 
 ```
 ### Studying Previous Sandbox Escape Techniques
+- Blogs:
+    1. https://ju256.de/posts/kitctfctf22-date/
+    2. https://jhalon.github.io/chrome-browser-exploitation-1/
+    3. https://blog.kylebot.net/2022/02/06/DiceCTF-2022-memory-hole/
+    4. https://saelo.github.io/presentations/offensivecon_24_the_v8_heap_sandbox.pdf
+
 - V8 virtual memory cage
 
 **Idea 1: Corrupting a Function object to redirect code execution to an arbitrary location**
