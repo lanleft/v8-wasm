@@ -3,8 +3,14 @@
 ## V8 Sandbox
 
 - Setup 
-```
-r --allow-natives-syntax --sandbox-testing ./test.js
+```cpp
+r --allow-natives-syntax --sandbox-testing ../test.js
+
+// printing process infomation: pid, cmdline, cwd, exe,...
+info proc
+
+// process mapping 
+info proc map 
 ```
 
 - Challenge:
@@ -48,6 +54,27 @@ pwndbg> x/20gx 0x1397000493f5-1
 0x139700049474:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
 
 ```
-### Studying
+### Studying Previous Sandbox Escape Techniques
 - V8 virtual memory cage
-- 
+
+*Idea 1*: Corrupting a Function object to redirect code execution to an arbitrary location
+Example:
+```js
+const foo = () => {
+  return;
+}
+%DebugPrint(foo);
+%SystemBreak();
+
+```
+The author manipulates the `code_entry_point` of a function that it's possible to redirect execution to a controlled address. In the newest version, they didn't store `code_entry_point` raw pointer in the v8 memory.  
+
+### Object's layer
+- heap_base
+```js
+// heap_base
+let ofs1 = 0x48;
+let leak_addr = v8_read64(ofs1);
+console.log("addr[", ofs1.toString(16), "] = ", leak_addr.toString(16));
+// addr[ 48 ] =  236500040000
+```
