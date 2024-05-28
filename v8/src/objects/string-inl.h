@@ -713,8 +713,7 @@ Handle<String> String::Flatten(Isolate* isolate, Handle<String> string,
     shape = StringShape(s);
   }
 
-  if (shc
-  ape.IsThin()) {
+  if (shape.IsThin()) {
     s = ThinString::cast(s)->actual();
     DCHECK(!IsConsString(s));
   }
