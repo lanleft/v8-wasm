@@ -248,6 +248,9 @@ $10 = {
 
 **When using gc()**
 
+- semispace...
+
+
 Stacktrace:
 ```cpp
 #0  0x00007fffeda6f189 in v8::base::OS::Abort()::$_0::operator()() const (this=0x7fffffffd1af) at ../../src/base/platform/platform-posix.cc:699
@@ -315,6 +318,10 @@ seacloud at ~/Desktop/v8/v8 ❯ cat /proc/3901929/maps | head -n 50
 3b3700040000-3b3700080000 rw-p 00000000 00:00 0 
 3b3700080000-3b3740000000 ---p 00000000 00:00 0 
 555555554000-555555638000 r--p 00000000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
+555555638000-5555556e7000 r-xp 000e3000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
+5555556e7000-5555556e9000 r--p 00191000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
+5555556e9000-5555556eb000 rw-p 00192000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
+5555556eb000-5555557e7000 rw-p 00000000 00:00 0  
 
 // ../../src/heap/memory-allocator.cc:380
 pwndbg> p *(v8::internal::MutablePageMetadata *) 0x5555557670f0 // out of sandbox
@@ -559,7 +566,7 @@ pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
 
 ## Conclusion 
 
-Heap Meta Data, pointer,...?
+Corrupting a MemoryChunk (metadata_index_, flags, etc.) does not result in escaping the v8 sandbox. 
 
 ![V8 MutablePageMetadata](v8_sandbox.drawio.png)
 
