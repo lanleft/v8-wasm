@@ -11,6 +11,8 @@ Print a v8 JavaScript object
 Usage: job tagged_ptr
 end
 
+set output-radix 16
+
 # Print content of V8 handles.
 python
 import gdb

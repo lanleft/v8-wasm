@@ -1,6 +1,10 @@
 
+## Table of Contents
+- [V8 Sandbox](#V8-Sandbox)
+  - [Studying Previous Sandbox Escape Techniques](#Studying-Previous-Sandbox-Escape-Techniques)
 
-## V8 Sandbox
+
+## V8 (heap) Sandbox
 
 - Setting up commands
 ```cpp
@@ -86,6 +90,104 @@ const foo = () => {
 ```
 The author manipulates the `code_entry_point` of a function that it's possible to redirect execution to a controlled address. In the newest version, they didn't store `code_entry_point` raw pointer in the v8 memory.  
 
+**Idea 2: WebAssembly**
+
+  - https://issues.chromium.org/issues/40068627
+  - https://issues.chromium.org/issues/41482162
+this idea demonstrates how to gain relative out-of-bound (OOB) read/write access by manipulating the length of an Array object. The solution involved manipulating WebAssembly's use of global variables to achieve arbitrary write access outside of the cage. 
+
+```js
+var wasm_code2 = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+var wasm_mod2 = new WebAssembly.Module(wasm_code2);
+var wasm_instance2 = new WebAssembly.Instance(wasm_mod2);
+var f = wasm_instance2.exports.main;
+```
+
+DebugPrint log:
+```cpp
+addr[0x170f00000048] = 0x170f00040000
+low_ofs_started_page = 40000
+[low_ofs_started_page]: = 12
+before writing to addr: 0x170f00040000;
+//================================================
+DebugPrint: 0x170f0029a781: [Function] in OldSpace
+ - map: 0x170f002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x170f00281dc9 <JSFunction (sfi = 0x170f001474d1)>
+ - elements: 0x170f00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x170f0029a751 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x170f000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x170f00281729 <NativeContext[295]>
+ - code: 0x170f00265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x1ba1000404c9 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x170f00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x170f00000d99: [String] in ReadOnlySpace: #length: 0x170f00271bbd <AccessorInfo name= 0x170f00000d99 <String[6]: #length>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x170f00000dc5: [String] in ReadOnlySpace: #name: 0x170f00271ba5 <AccessorInfo name= 0x170f00000dc5 <String[4]: #name>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x170f00004215: [String] in ReadOnlySpace: #arguments: 0x170f00271b75 <AccessorInfo name= 0x170f00004215 <String[9]: #arguments>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x170f000044a9: [String] in ReadOnlySpace: #caller: 0x170f00271b8d <AccessorInfo name= 0x170f000044a9 <String[6]: #caller>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x170f002926fd: [Map] in OldSpace
+ - map: 0x170f002816d9 <MetaMap (0x170f00281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x170f00000069 <undefined>
+ - prototype_validity cell: 0x170f00000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x170f00292725 <DescriptorArray[4]>
+ - prototype: 0x170f00281dc9 <JSFunction (sfi = 0x170f001474d1)>
+ - constructor: 0x170f00281e6d <JSFunction Function (sfi = 0x170f00276e5d)>
+ - dependent code: 0x170f00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+DebugPrint: 0x170f0029a651: [WasmInstanceObject] in OldSpace
+ - map: 0x170f0028f4d5 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x170f0028f581 <Object map = 0x170f0029a601>
+ - elements: 0x170f00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - trusted_data: 0x1ba1000404c9 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - module_object: 0x170f0029c265 <Module map = 0x170f0028f3ad>
+ - shared_part: 0x170f0029a651 <Instance map = 0x170f0028f4d5>
+ - exports_object: 0x170f0029c325 <Object map = 0x170f0029a7c5>
+ - properties: 0x170f00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+
+0x170f0028f4d5: [Map] in OldSpace
+ - map: 0x170f002816d9 <MetaMap (0x170f00281729 <NativeContext[295]>)>
+ - type: WASM_INSTANCE_OBJECT_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x170f00000069 <undefined>
+ - prototype_validity cell: 0x170f00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x170f00000759 <DescriptorArray[0]>
+ - prototype: 0x170f0028f581 <Object map = 0x170f0029a601>
+ - constructor: 0x170f0028f4b5 <JSFunction Instance (sfi = 0x170f00147a41)>
+ - dependent code: 0x170f00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+```
+
+**Idea 3: Strin's length**
+
+  - https://chromium-review.googlesource.com/c/v8/v8/+/5335156
+
+**Idea 4: Builtin id**
+  - https://chromium-review.googlesource.com/c/v8/v8/+/5332218
+
 ### Debugging V8 
 ...
 
@@ -149,6 +251,7 @@ $10 = {
 ```
 
 **When using gc()**
+
 Stacktrace:
 ```cpp
 #0  0x00007fffeda6f189 in v8::base::OS::Abort()::$_0::operator()() const (this=0x7fffffffd1af) at ../../src/base/platform/platform-posix.cc:699
@@ -405,7 +508,7 @@ $65 = {
   main_thread_flags_ = {
     mask_ = 0x4141414142068000
   },
-  metadata_index_ = 0x1,
+  metadata_index_ = 0x1,    // 
   static kAlignment = 0x40000,
   static kAlignmentMask = 0x3ffff,
   static kPagesInMainCage = 0x4000,
@@ -446,3 +549,25 @@ Another stacktrace:
 #20 0x00007fffed1eb083 in __libc_start_main (main=0x55555568cd30 <main(int, char**)>, argc=0x5, argv=0x7fffffffe2e8, init=<optimized out>, fini=<optimized out>, rtld_fini=<optimized out>, stack_end=0x7fffffffe2d8) at ../csu/libc-start.c:308
 #21 0x00005555556388da in _start ()
 ```
+
+### Rechecking 
+
+```cpp
+pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
+0x1e70000004b
+0x1e70000005b
+0x1e70018004b
+0x1e70018005b
+0x1e7001c004b
+0x1e7001c005b
+0x1e70020004b
+0x1e70020005b
+0x1e70024004b
+0x1e70024005b
+
+// all of pointers are in readonly region 
+```
+
+## Conclusion 
+
+Heap Meta Data, pointer,...?
