@@ -1,26 +1,31 @@
-### Turbofan reducer
+# Turbofan on V8 
 
-### Blogs:
+introduction ...
 
-    - https://www.youtube.com/watch?v=Ihc9WbtruE8&list=PLceyrQSWkM_cRCohq7hH8CJoYi95FTk9P&index=19
+### Table of Content
 
-### More interesting challenges
+- [What is JIT?](#What-is-JIT?)
+- [CTF challenges](#CTF-challenges)
 
-    - [Mojo](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-mojo)
-    - [Scudo](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-scudo)
-    - https://mem2019.github.io/jekyll/update/2022/07/03/Google-CTF.html
-
-# JIT - Turbofan reduction
+## What is JIT?
 
 ### Blogs
 
-    - [Turbofan - optiomizer vulnerability](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-just-in-time)
-    - [Introducing to Turbofan](https://doar-e.github.io/blog/2019/01/28/introduction-to-turbofan/)
-    - [Modern attacks on the chrome browser optimizations and deoptimizations](https://doar-e.github.io/blog/2020/11/17/modern-attacks-on-the-chrome-browser-optimizations-and-deoptimizations/)
-    - https://www.anquanke.com/post/id/227493
-    - https://www.anquanke.com/post/id/229554
+- [Turbofan - optiomizer vulnerability](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-just-in-time)
+- [Introducing to Turbofan](https://doar-e.github.io/blog/2019/01/28/introduction-to-turbofan/)
+- [Modern attacks on the chrome browser optimizations and deoptimizations](https://doar-e.github.io/blog/2020/11/17/modern-attacks-on-the-chrome-browser-optimizations-and-deoptimizations/)
+- https://www.anquanke.com/post/id/227493
+- https://www.anquanke.com/post/id/229554
+- https://www.youtube.com/watch?v=Ihc9WbtruE8&list=PLceyrQSWkM_cRCohq7hH8CJoYi95FTk9P&index=19
 
-## Reproducing
+- [Mojo](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-mojo)
+- [Scudo](https://github.com/google/google-ctf/tree/master/2018/finals/pwn-scudo)
+- https://mem2019.github.io/jekyll/update/2022/07/03/Google-CTF.html
+- https://mrale.ph/blog/2015/01/11/whats-up-with-monomorphism.html
+
+
+
+## CTF challenges
 
 ### Build
 
@@ -45,12 +50,17 @@ ninja -C ./out.gn/x64.release # Release version
 
 ### Speculative Optimization
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dfe06417-985b-4580-9364-ab8308f7a52c/Untitled.png)
+![optimization-graph](image.png)
 
-    - [CheckBound Elimination](https://docs.google.com/document/d/1R7-BIUnIKFzqki0jR4SfEZb3XmLafa04DLDrqhxgZ9U/edit#)
 
-### Mitigation
+- [CheckBound Elimination](https://docs.google.com/document/d/1R7-BIUnIKFzqki0jR4SfEZb3XmLafa04DLDrqhxgZ9U/edit#)
+
+
+**Mitigation**
 
 - No pointer compression
 
-### Exploitation
+### Playing with JIT 
+
+**NumberAdd**
+
