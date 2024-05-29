@@ -669,6 +669,8 @@ class ArrayBufferViewAccessBuilder {
           AccessBuilder::ForJSArrayBufferViewByteOffset(), view,
           UseInfo::Word());
 
+      printf("=========================== GSAB =================================\n");
+
       return a
           .MachineSelectIf<UintPtrT>(
               a.UintPtrLessThanOrEqual(byte_offset, byte_length))

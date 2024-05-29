@@ -55,7 +55,7 @@ void MutablePageMetadata::MoveExternalBackingStoreBytes(
 
 AllocationSpace MutablePageMetadata::owner_identity() const {
   // print ChunkAddress
-  printf("ChunkAddress: %p\n", (void *)ChunkAddress());
+  // printf("ChunkAddress: %p\n", (void *)ChunkAddress());
   DCHECK_EQ(owner() == nullptr, Chunk()->InReadOnlySpace());
   if (!owner()) return RO_SPACE;
   return owner()->identity();

