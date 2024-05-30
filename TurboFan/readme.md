@@ -15,7 +15,7 @@ TurboFan works on a program representation called `sea of nodes`. There are 3 ty
 - Effect edges: 
 
 
-**NumberAdd**
+### NumberAdd
 
 ```js
 // d8 --trace-turbo --allow-natives-syntax number_add.js
@@ -35,47 +35,54 @@ Graph comes through `OptimizeGraph`
 
 ```cpp
 
-bool PipelineImpl::OptimizeGraph(Linkage* linkage) {
-  PipelineData* data = this->data_;
+
+bool PipelineImpl::OptimizeTurbofanGraph(Linkage* linkage) {
+  DCHECK(!v8_flags.turboshaft_from_maglev);
+  TFPipelineData* data = this->data_;
 
   data->BeginPhaseKind("V8.TFLowering");
+  // Trim the graph before typing to ensure all nodes are typed.
+  Run<EarlyGraphTrimmingPhase>();
+  RunPrintAndVerify(EarlyGraphTrimmingPhase::phase_name(), true);
 
-  if (V8_LIKELY(!v8_flags.turboshaft_from_maglev)) {
-    // Trim the graph before typing to ensure all nodes are typed.
-    Run<EarlyGraphTrimmingPhase>();
-    RunPrintAndVerify(EarlyGraphTrimmingPhase::phase_name(), true); //<================== Graph builder phase
+  // Type the graph and keep the Typer running such that new nodes get
+  // automatically typed when they are created.
+  Run<TyperPhase>(data->CreateTyper());
+  RunPrintAndVerify(TyperPhase::phase_name());
 
-    // Type the graph and keep the Typer running such that new nodes get
-    // automatically typed when they are created. 
-    Run<TyperPhase>(data->CreateTyper());               // <=========================== Typer Phase
-    RunPrintAndVerify(TyperPhase::phase_name());
+  Run<TypedLoweringPhase>();
+  RunPrintAndVerify(TypedLoweringPhase::phase_name());
 
-    Run<TypedLoweringPhase>();                          // <========================= Typed Lowering Phase
-    RunPrintAndVerify(TypedLoweringPhase::phase_name());
+  if (data->info()->loop_peeling()) {
+    Run<LoopPeelingPhase>();
+    RunPrintAndVerify(LoopPeelingPhase::phase_name(), true);
+  } else {
+    Run<LoopExitEliminationPhase>();
+    RunPrintAndVerify(LoopExitEliminationPhase::phase_name(), true);
+  }
 
-    if (data->info()->loop_peeling()) {
-      Run<LoopPeelingPhase>();
-      RunPrintAndVerify(LoopPeelingPhase::phase_name(), true);
-    } else {
-      Run<LoopExitEliminationPhase>();
-      RunPrintAndVerify(LoopExitEliminationPhase::phase_name(), true);
-    }
+  if (v8_flags.turbo_load_elimination) {
+    Run<LoadEliminationPhase>();
+    RunPrintAndVerify(LoadEliminationPhase::phase_name());
+  }
+  data->DeleteTyper();
 
-    if (v8_flags.turbo_load_elimination) {
-      Run<LoadEliminationPhase>();                      // <========================== Load Elimination Phase
-      RunPrintAndVerify(LoadEliminationPhase::phase_name());
-    }
-    data->DeleteTyper();
+  if (v8_flags.turbo_escape) {
+    Run<EscapeAnalysisPhase>();
+    RunPrintAndVerify(EscapeAnalysisPhase::phase_name());
+  }
 
-    if (v8_flags.turbo_escape) {
-      Run<EscapeAnalysisPhase>();
-      RunPrintAndVerify(EscapeAnalysisPhase::phase_name());
-    }
+  if (v8_flags.assert_types) {
+    Run<TypeAssertionsPhase>();
+    RunPrintAndVerify(TypeAssertionsPhase::phase_name());
+  }
 
-    if (v8_flags.assert_types) {
-      Run<TypeAssertionsPhase>();
-      RunPrintAndVerify(TypeAssertionsPhase::phase_name());
-    }
+  if (!v8_flags.turboshaft_frontend) {
+    // Perform x. This has to run w/o the Typer decorator,
+    // because we cannot compute meaningful types anyways, and the computed
+    // types might even conflict with the representation/truncation logic.
+    Run<SimplifiedLoweringPhase>(linkage);
+    RunPrintAndVerify(SimplifiedLoweringPhase::phase_name(), true);
 
 //... And many optimizing steps above 
 
@@ -139,3 +146,8 @@ struct TypedLoweringPhase {
 ```
 
 ![TypedLowering](TypedLowering.png)
+
+### CheckBound
+
+
+![checkbound](checkbound.png)
