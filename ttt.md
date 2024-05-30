@@ -165,7 +165,7 @@ address = 0x240000040dd5
    14e  REX.W cmpq r9,r8
    151  ja 0x774ae0000ade  B17 <+0x4de>
 B18:
-   157  REX.W subq r8,r9 ~~~~~~~ WROND!!! we controlled both r8 and r9 and this will be underflow  -> r8 very large
+   157  REX.W subq r8,r9 
    15a  REX.W shrq r8, 1
 B19,20:
    0x7fff6000075d 15d  movl r9,0x1
