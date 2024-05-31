@@ -173,14 +173,15 @@ for (let i = 0; i < 0x10000; i++)
 
 ```
 
-Escape Analysis
+ --> V8. TFEscapeAnalysis
 
 ![checkbound](checkbound.png)
 
 ### ArrayBuffer
 
 ```js
-// Flags: --allow-natives-syntax
+// Flags: --allow-natives-syntax --print-code
+// 
 
 const gsab = new SharedArrayBuffer(4,{"maxByteLength":8});
 const u16arr = new Uint16Array(gsab);
@@ -205,4 +206,24 @@ test();
 %OptimizeFunctionOnNextCall(test);
 test();
 
+```
+
+Bytecode of `test` optimized function
+```h
+0x7fff600012b8   338  4d8b481f             REX.W movq r9,[r8+0x1f]
+0x7fff600012bc   33c  49c1e91d             REX.W shrq r9, 29
+0x7fff600012c0   340  4d8b5b13             REX.W movq r11,[r11+0x13]
+0x7fff600012c4   344  49c1eb1d             REX.W shrq r11, 29
+0x7fff600012c8   348  4d8b6017             REX.W movq r12,[r8+0x17]
+0x7fff600012cc   34c  49c1ec1d             REX.W shrq r12, 29
+0x7fff600012d0   350  4d03e1               REX.W addq r12,r9
+0x7fff600012d3   353  4d3be3               REX.W cmpq r12,r11
+0x7fff600012d6   356  0f8603000000         jna 0x7fff600012df  <+0x35f>
+0x7fff600012dc   35c  4533c9               xorl r9,r9
+0x7fff600012df   35f  49d1e9               REX.W shrq r9, 1
+0x7fff600012e2   362  e987000000           jmp 0x7fff6000136e  <+0x3ee>
+0x7fff600012e7   367  41f6c102             testb r9,0x2
+0x7fff600012eb   36b  0f855e000000         jnz 0x7fff6000134f  <+0x3cf>
+0x7fff600012f1   371  4153                 push r11
+0x7fff600012f3   373  488b1d19feffff       REX.W movq rbx,[rip+0xfffffe19]
 ```

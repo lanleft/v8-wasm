@@ -579,7 +579,7 @@ Integer Underflow Leading to V8 Sandbox Escape:
 **Set up**
 
 ```js
-// r --allow-natives-syntax ../../../tests/test3.js
+// r --allow-natives-syntax --print-code ../../../tests/test3.js
 // Flags: --allow-natives-syntax
 
 const gsab = new SharedArrayBuffer(4,{"maxByteLength":8});

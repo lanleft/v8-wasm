@@ -671,17 +671,19 @@ class ArrayBufferViewAccessBuilder {
 
       printf("=========================== GSAB =================================\n");
 
-      return a
-          .MachineSelectIf<UintPtrT>(
-              a.UintPtrLessThanOrEqual(byte_offset, byte_length))
-          .Then([&]() {
-            // length = floor((byte_length - byte_offset) / element_size)
-            return a.UintPtrDiv(a.UintPtrSub(byte_length, byte_offset),
-                                a.ChangeUint32ToUintPtr(element_size));
-          })
-          .Else([&]() { return a.UintPtrConstant(0); })
-          .ExpectTrue()
-          .Value();
+      // return a
+      //     .MachineSelectIf<UintPtrT>(
+      //         a.UintPtrLessThanOrEqual(byte_offset, byte_length))
+      //     .Then([&]() {
+      //       // length = floor((byte_length - byte_offset) / element_size)
+      //       return a.UintPtrDiv(a.UintPtrSub(byte_length, byte_offset),
+      //                           a.ChangeUint32ToUintPtr(element_size));
+      //     })
+      //     .Else([&]() { return a.UintPtrConstant(0); })
+      //     .ExpectTrue()
+      //     .Value();
+      return a.UintPtrDiv(a.UintPtrSub(byte_length, byte_offset), 
+                    a.ChangeUint32ToUintPtr(element_size));  
     };
 
     return a.MachineSelectIf<UintPtrT>(length_tracking_bit)
