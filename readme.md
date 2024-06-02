@@ -607,3 +607,83 @@ test();
 
 ```
 
+## Studying v8 sandbox table mamping 
+
+
+```
+===========================
+heap_addr: 0x35de00040000
+started_array: 0x35e100000000
+==================================================================
+wasm_instance: 0x29ae88
+DebugPrint: 0x35de0029afb9: [Function] in OldSpace
+ - map: 0x35de002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x35de00281dc9 <JSFunction (sfi = 0x35de001474d1)>
+ - elements: 0x35de00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x35de0029af89 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x35de000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x35de00281729 <NativeContext[295]>
+ - code: 0x35de00265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x7fff00040cc5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x35de00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x35de00000d99: [String] in ReadOnlySpace: #length: 0x35de00271bbd <AccessorInfo name= 0x35de00000d99 <String[6]: #length>, data= 0x35de00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x35de00000dc5: [String] in ReadOnlySpace: #name: 0x35de00271ba5 <AccessorInfo name= 0x35de00000dc5 <String[4]: #name>, data= 0x35de00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x35de00004215: [String] in ReadOnlySpace: #arguments: 0x35de00271b75 <AccessorInfo name= 0x35de00004215 <String[9]: #arguments>, data= 0x35de00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x35de000044a9: [String] in ReadOnlySpace: #caller: 0x35de00271b8d <AccessorInfo name= 0x35de000044a9 <String[6]: #caller>, data= 0x35de00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x35de002926fd: [Map] in OldSpace
+ - map: 0x35de002816d9 <MetaMap (0x35de00281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x35de00000069 <undefined>
+ - prototype_validity cell: 0x35de00000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x35de00292725 <DescriptorArray[4]>
+ - prototype: 0x35de00281dc9 <JSFunction (sfi = 0x35de001474d1)>
+ - constructor: 0x35de00281e6d <JSFunction Function (sfi = 0x35de00276e5d)>
+ - dependent code: 0x35de00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+==================================================================
+DebugPrint: 0x35de0029ae89: [WasmInstanceObject] in OldSpace
+ - map: 0x35de0028f4d5 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x35de0028f581 <Object map = 0x35de0029b025>
+ - elements: 0x35de00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - trusted_data: 0x7fff00040cc5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - module_object: 0x35de0004a625 <Module map = 0x35de0028f3ad>
+ - shared_part: 0x35de0029ae89 <Instance map = 0x35de0028f4d5>
+ - exports_object: 0x35de0004a701 <Object map = 0x35de0029affd>
+ - properties: 0x35de00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+
+0x35de0028f4d5: [Map] in OldSpace
+ - map: 0x35de002816d9 <MetaMap (0x35de00281729 <NativeContext[295]>)>
+ - type: WASM_INSTANCE_OBJECT_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x35de00000069 <undefined>
+ - prototype_validity cell: 0x35de00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x35de00000759 <DescriptorArray[0]>
+ - prototype: 0x35de0028f581 <Object map = 0x35de0029b025>
+ - constructor: 0x35de0028f4b5 <JSFunction Instance (sfi = 0x35de00147a41)>
+ - dependent code: 0x35de00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+```

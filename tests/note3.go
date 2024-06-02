@@ -94,7 +94,7 @@ Instructions (size = 1396)
 // 0x7fff60000772   172  ba02000000           movl rdx,0x2
 // 0x7fff60000777   177  41ff95a0540000       call [r13+0x54a0]
 // 0x7fff6000077e   17e  cc                   int3l
-0x7fff6000077f   17f  4c8b622f             REX.W movq r12,[rdx+0x2f]
+0x7fff6000077f   17f  4c8b622f             REX.W movq r12,[rdx+0x2f] // rdx is Uint16Array object
 0x7fff60000783   183  49c1ec18             REX.W shrq r12, 24
 0x7fff60000787   187  4d03e6               REX.W addq r12,r14
 0x7fff6000078a   18a  4c895dd0             REX.W movq [rbp-0x30],r11
@@ -116,8 +116,9 @@ Instructions (size = 1396)
 0x7fff600007bf   1bf  ba02000000           movl rdx,0x2
 0x7fff600007c4   1c4  41ff95a0540000       call [r13+0x54a0]
 0x7fff600007cb   1cb  cc                   int3l
-0x7fff600007cc   1cc  4d01e0               REX.W addq r8,r12
-0x7fff600007cf   1cf  450fb70440           movzxwl r8,[r8+rax*2]
+0x7fff600007cc   1cc  4d01e0               REX.W addq r8,r12 // r12 is started address array
+0x7fff600007cf   1cf  450fb70440           movzxwl r8,[r8+rax*2] // get element r8 is base array
+/// ================================================================
 0x7fff600007d4   1d4  41baffffffff         movl r10,0xffffffff
 0x7fff600007da   1da  4d3bc2               REX.W cmpq r8,r10
 0x7fff600007dd   1dd  760d                 jna 0x7fff600007ec  <+0x1ec>

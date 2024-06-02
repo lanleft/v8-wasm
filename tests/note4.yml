@@ -107,3 +107,755 @@ DebugPrint: 0x10bb0029aa65: [Function] in OldSpace
  - dependent code: 0x10bb00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
  - construction counter: 0
 
+/// ============================================================================================================
+heap_addr: 0xbef00040000
+DebugPrint: 0xbef00049b85: [JSTypedArray]
+ - map: 0x0bef0028d28d <Map[76](RAB_GSAB_UINT16ELEMENTS)> [FastProperties]
+ - prototype: 0x0bef00288ebd <Object map = 0xbef00288e51>
+ - elements: 0x0bef00000ec1 <ByteArray[0]> [RAB_GSAB_UINT16ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x0bef00049b41 <SharedArrayBuffer map = 0xbef00291375>
+ - byte_offset: 34212362
+ - byte_length: 0
+ - length: 0
+ - data_ptr: 0xbf200000000
+   - base_pointer: (nil)
+   - external_pointer: 0xbf200000000
+ - length-tracking
+ - properties: 0x0bef00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+0xbef0028d28d: [Map] in OldSpace
+ - map: 0x0bef002816d9 <MetaMap (0x0bef00281729 <NativeContext[295]>)>
+ - type: JS_TYPED_ARRAY_TYPE
+ - instance size: 76
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: RAB_GSAB_UINT16ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x0bef00000069 <undefined>
+ - prototype_validity cell: 0x0bef00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x0bef00000759 <DescriptorArray[0]>
+ - prototype: 0x0bef00288ebd <Object map = 0xbef00288e51>
+ - constructor: 0x0bef00288df5 <JSFunction Uint16Array (sfi = 0xbef0027c25d)>
+ - dependent code: 0x0bef00049bed <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+/// ============================================================================================================
+
+DebugPrint: 0xdf40029ae61: [Function] in OldSpace
+ - map: 0x0df4002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0df400281dc9 <JSFunction (sfi = 0xdf4001474d1)>
+ - elements: 0x0df400000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x0df40029ae31 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x0df4000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x0df400281729 <NativeContext[295]>
+ - code: 0x0df400265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x049800040fa1 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x0df400000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xdf400000d99: [String] in ReadOnlySpace: #length: 0x0df400271bbd <AccessorInfo name= 0x0df400000d99 <String[6]: #length>, data= 0x0df400000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xdf400000dc5: [String] in ReadOnlySpace: #name: 0x0df400271ba5 <AccessorInfo name= 0x0df400000dc5 <String[4]: #name>, data= 0x0df400000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xdf400004215: [String] in ReadOnlySpace: #arguments: 0x0df400271b75 <AccessorInfo name= 0x0df400004215 <String[9]: #arguments>, data= 0x0df400000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xdf4000044a9: [String] in ReadOnlySpace: #caller: 0x0df400271b8d <AccessorInfo name= 0x0df4000044a9 <String[6]: #caller>, data= 0x0df400000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0xdf4002926fd: [Map] in OldSpace
+ - map: 0x0df4002816d9 <MetaMap (0x0df400281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x0df400000069 <undefined>
+ - prototype_validity cell: 0x0df400000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x0df400292725 <DescriptorArray[4]>
+ - prototype: 0x0df400281dc9 <JSFunction (sfi = 0xdf4001474d1)>
+ - constructor: 0x0df400281e6d <JSFunction Function (sfi = 0xdf400276e5d)>
+ - dependent code: 0x0df400000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+/// ============================================================================================================
+
+DebugPrint: 0x1da50029a679: [Function] in OldSpace
+ - map: 0x1da500281ea1 <Map[32](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x1da500281dc9 <JSFunction (sfi = 0x1da5001474d1)>
+ - elements: 0x1da500000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: 
+ - initial_map: 
+ - shared_info: 0x1da50029a151 <SharedFunctionInfo overwrite_test>
+ - name: 0x1da500299e29 <String[14]: #overwrite_test>
+ - builtin: CompileLazy
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x1da50029a485 <ScriptContext[12]>
+ - code: 0x1da500250b5d <Code BUILTIN CompileLazy>
+ - source code: (){
+    let a = [1, 2];
+    return a[0];
+}
+ - properties: 0x1da500000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x1da500000d99: [String] in ReadOnlySpace: #length: 0x1da500271bbd <AccessorInfo name= 0x1da500000d99 <String[6]: #length>, data= 0x1da500000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x1da500000dc5: [String] in ReadOnlySpace: #name: 0x1da500271ba5 <AccessorInfo name= 0x1da500000dc5 <String[4]: #name>, data= 0x1da500000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x1da500004215: [String] in ReadOnlySpace: #arguments: 0x1da500271b75 <AccessorInfo name= 0x1da500004215 <String[9]: #arguments>, data= 0x1da500000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x1da5000044a9: [String] in ReadOnlySpace: #caller: 0x1da500271b8d <AccessorInfo name= 0x1da5000044a9 <String[6]: #caller>, data= 0x1da500000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x1da500000dad: [String] in ReadOnlySpace: #prototype: 0x1da500271bd5 <AccessorInfo name= 0x1da500000dad <String[9]: #prototype>, data= 0x1da500000069 <undefined>> (const accessor descriptor, attrs: [W__]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x1da500281ea1: [Map] in OldSpace
+ - map: 0x1da5002816d9 <MetaMap (0x1da500281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 32
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - constructor
+ - has_prototype_slot
+ - back pointer: 0x1da500000069 <undefined>
+ - prototype_validity cell: 0x1da500000a89 <Cell value= 1>
+ - instance descriptors (own) #5: 0x1da500281ec9 <DescriptorArray[5]>
+ - prototype: 0x1da500281dc9 <JSFunction (sfi = 0x1da5001474d1)>
+ - constructor: 0x1da500281e6d <JSFunction Function (sfi = 0x1da500276e5d)>
+ - dependent code: 0x1da500000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+/// ============================================================================================================
+
+DebugPrint: 0xe660029a505: [Function] in OldSpace
+ - map: 0x0e6600281ea1 <Map[32](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0e6600281dc9 <JSFunction (sfi = 0xe66001474d1)>
+ - elements: 0x0e6600000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: 
+ - initial_map: 
+ - shared_info: 0x0e660029a059 <SharedFunctionInfo test>
+ - name: 0x0e660024da09 <String[4]: #test>
+ - formal_parameter_count: 2
+ - kind: NormalFunction
+ - context: 0x0e660029a3fd <ScriptContext[12]>
+ - code: 0x134c0004098d <Code TURBOFAN>
+ - source code: (iii, val){
+    return foo(u16arr, iii, val);
+}
+ - properties: 0x0e6600000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xe6600000d99: [String] in ReadOnlySpace: #length: 0x0e6600271bbd <AccessorInfo name= 0x0e6600000d99 <String[6]: #length>, data= 0x0e6600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xe6600000dc5: [String] in ReadOnlySpace: #name: 0x0e6600271ba5 <AccessorInfo name= 0x0e6600000dc5 <String[4]: #name>, data= 0x0e6600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xe6600004215: [String] in ReadOnlySpace: #arguments: 0x0e6600271b75 <AccessorInfo name= 0x0e6600004215 <String[9]: #arguments>, data= 0x0e6600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xe66000044a9: [String] in ReadOnlySpace: #caller: 0x0e6600271b8d <AccessorInfo name= 0x0e66000044a9 <String[6]: #caller>, data= 0x0e6600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xe6600000dad: [String] in ReadOnlySpace: #prototype: 0x0e6600271bd5 <AccessorInfo name= 0x0e6600000dad <String[9]: #prototype>, data= 0x0e6600000069 <undefined>> (const accessor descriptor, attrs: [W__]), location: descriptor
+ }
+ - feedback vector: 0xe660029a7f9: [FeedbackVector] in OldSpace
+ - map: 0x0e66000007e1 <Map(FEEDBACK_VECTOR_TYPE)>
+ - length: 4
+ - shared function info: 0x0e660029a059 <SharedFunctionInfo test>
+ - no optimized code
+ - tiering state: TieringState::kNone
+ - maybe has maglev code: 0
+ - maybe has turbofan code: 0
+ - invocation count: 402
+ - closure feedback cell array: 0xe66000020a5: [ClosureFeedbackCellArray] in ReadOnlySpace
+ - map: 0x0e66000007b9 <Map(CLOSURE_FEEDBACK_CELL_ARRAY_TYPE)>
+ - length: 0
+ - elements:
+
+ - slot #0 LoadGlobalNotInsideTypeof MONOMORPHIC
+   [weak] 0x0e660029a4f1 <PropertyCell name=0x0e6600299c35 <String[3]: #foo> value=0x0e660029a4d1 <JSFunction foo (sfi = 0xe660029a019)>> {
+     [0]: [weak] 0x0e660029a4f1 <PropertyCell name=0x0e6600299c35 <String[3]: #foo> value=0x0e660029a4d1 <JSFunction foo (sfi = 0xe660029a019)>>
+     [1]: 0x0e6600000e3d <Symbol: (uninitialized_symbol)>
+  }
+ - slot #2 Call MONOMORPHIC {
+     [2]: [weak] 0x0e660029a4d1 <JSFunction foo (sfi = 0xe660029a019)>
+     [3]: 1604
+  }
+0xe6600281ea1: [Map] in OldSpace
+ - map: 0x0e66002816d9 <MetaMap (0x0e6600281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 32
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - constructor
+ - has_prototype_slot
+ - back pointer: 0x0e6600000069 <undefined>
+ - prototype_validity cell: 0x0e6600000a89 <Cell value= 1>
+ - instance descriptors (own) #5: 0x0e6600281ec9 <DescriptorArray[5]>
+ - prototype: 0x0e6600281dc9 <JSFunction (sfi = 0xe66001474d1)>
+ - constructor: 0x0e6600281e6d <JSFunction Function (sfi = 0xe6600276e5d)>
+ - dependent code: 0x0e6600000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+/// ============================================================================================================
+wasm  
+code: 0x3c8e00265afd
+
+pwndbg> job 0x3c8e00265afd
+0x3c8e00265afd: [Code] in ReadOnlySpace
+ - map: 0x3c8e00000d61 <Map[60](CODE_TYPE)>
+ - kind: BUILTIN
+ - builtin_id: JSToWasmWrapper
+ - deoptimization_data_or_interpreter_data: 0
+ - position_table: 0
+ - instruction_stream: 0
+ - instruction_start: 0x7fff7fda38c0
+ - is_turbofanned: 1
+ - stack_slots: 59
+ - marked_for_deoptimization: 0
+ - embedded_objects_cleared: 0
+ - can_have_weak_objects: 0
+ - instruction_size: 9104
+ - metadata_size: 244
+ - inlined_bytecode_size: 0
+ - osr_offset: -1
+ - handler_table_offset: 244
+ - unwinding_info_offset: 244
+ - code_comments_offset: 244
+
+--- Disassembly: ---
+kind = BUILTIN
+name = JSToWasmWrapper
+compiler = turbofan
+address = 0x3c8e00265afd
+
+/// ============================================================================================================
+wasm instance
+
+DebugPrint: 0xbdb0029b095: [WasmInstanceObject] in OldSpace
+ - map: 0x0bdb0028f4d5 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0bdb0028f581 <Object map = 0xbdb0029b231>
+ - elements: 0x0bdb00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - trusted_data: 0x216c00041351 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - module_object: 0x0bdb0004a545 <Module map = 0xbdb0028f3ad>
+ - shared_part: 0x0bdb0029b095 <Instance map = 0xbdb0028f4d5>
+ - exports_object: 0x0bdb0004a621 <Object map = 0xbdb0029b209>
+ - properties: 0x0bdb00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+
+0xbdb0028f4d5: [Map] in OldSpace
+ - map: 0x0bdb002816d9 <MetaMap (0x0bdb00281729 <NativeContext[295]>)>
+ - type: WASM_INSTANCE_OBJECT_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x0bdb00000069 <undefined>
+ - prototype_validity cell: 0x0bdb00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x0bdb00000759 <DescriptorArray[0]>
+ - prototype: 0x0bdb0028f581 <Object map = 0xbdb0029b231>
+ - constructor: 0x0bdb0028f4b5 <JSFunction Instance (sfi = 0xbdb00147a41)>
+ - dependent code: 0x0bdb00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+
+/// ============================================================================================================
+Function wasm
+
+
+DebugPrint: 0xa7e0029b1b1: [Function] in OldSpace
+ - map: 0x0a7e002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0a7e00281dc9 <JSFunction (sfi = 0xa7e001474d1)>
+ - elements: 0x0a7e00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x0a7e0029b181 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x0a7e000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x0a7e00281729 <NativeContext[295]>
+ - code: 0x0a7e00265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x320900041331 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x0a7e00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xa7e00000d99: [String] in ReadOnlySpace: #length: 0x0a7e00271bbd <AccessorInfo name= 0x0a7e00000d99 <String[6]: #length>, data= 0x0a7e00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xa7e00000dc5: [String] in ReadOnlySpace: #name: 0x0a7e00271ba5 <AccessorInfo name= 0x0a7e00000dc5 <String[4]: #name>, data= 0x0a7e00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xa7e00004215: [String] in ReadOnlySpace: #arguments: 0x0a7e00271b75 <AccessorInfo name= 0x0a7e00004215 <String[9]: #arguments>, data= 0x0a7e00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xa7e000044a9: [String] in ReadOnlySpace: #caller: 0x0a7e00271b8d <AccessorInfo name= 0x0a7e000044a9 <String[6]: #caller>, data= 0x0a7e00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0xa7e002926fd: [Map] in OldSpace
+ - map: 0x0a7e002816d9 <MetaMap (0x0a7e00281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x0a7e00000069 <undefined>
+ - prototype_validity cell: 0x0a7e00000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x0a7e00292725 <DescriptorArray[4]>
+ - prototype: 0x0a7e00281dc9 <JSFunction (sfi = 0xa7e001474d1)>
+ - constructor: 0x0a7e00281e6d <JSFunction Function (sfi = 0xa7e00276e5d)>
+ - dependent code: 0x0a7e00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+/// ============================================================================================================
+stance: 0x29b0d0
+DebugPrint: 0x213e0029b201: [Function] in OldSpace
+ - map: 0x213e002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x213e00281dc9 <JSFunction (sfi = 0x213e001474d1)>
+ - elements: 0x213e00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x213e0029b1d1 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x213e000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x213e00281729 <NativeContext[295]>
+ - code: 0x213e00265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x10ac0004138d <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x213e00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x213e00000d99: [String] in ReadOnlySpace: #length: 0x213e00271bbd <AccessorInfo name= 0x213e00000d99 <String[6]: #length>, data= 0x213e00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x213e00000dc5: [String] in ReadOnlySpace: #name: 0x213e00271ba5 <AccessorInfo name= 0x213e00000dc5 <String[4]: #name>, data= 0x213e00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x213e00004215: [String] in ReadOnlySpace: #arguments: 0x213e00271b75 <AccessorInfo name= 0x213e00004215 <String[9]: #arguments>, data= 0x213e00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x213e000044a9: [String] in ReadOnlySpace: #caller: 0x213e00271b8d <AccessorInfo name= 0x213e000044a9 <String[6]: #caller>, data= 0x213e00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x213e002926fd: [Map] in OldSpace
+ - map: 0x213e002816d9 <MetaMap (0x213e00281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x213e00000069 <undefined>
+ - prototype_validity cell: 0x213e00000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x213e00292725 <DescriptorArray[4]>
+ - prototype: 0x213e00281dc9 <JSFunction (sfi = 0x213e001474d1)>
+ - constructor: 0x213e00281e6d <JSFunction Function (sfi = 0x213e00276e5d)>
+ - dependent code: 0x213e00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+/// ============================================================================================================
+
+ - context: 0x213e00281729 <NativeContext[295]>
+
+pwndbg> job 0x213e00281729
+0x213e00281729: [NativeContext] in OldSpace
+ - map: 0x213e00281701 <Map(NATIVE_CONTEXT_TYPE)>
+ - type: NATIVE_CONTEXT_TYPE
+ - scope_info: 0x213e00006241 <ScopeInfo SCRIPT_SCOPE>
+ - previous: 0
+ - native_context: 0x213e00281729 <NativeContext[295]>
+ - extension: 0x213e00293311 <JSGlobalObject>
+ - length: 295
+ - elements:
+           0: 0x213e00006241 <ScopeInfo SCRIPT_SCOPE>
+           1: 0
+           2: 0x213e00293311 <JSGlobalObject>
+           3: 0x213e002816c9 <JSGlobalProxy>
+           4: 0x213e00048089 <Other heap object (EMBEDDER_DATA_ARRAY_TYPE)>
+           5: 0x213e00000069 <undefined>
+           6: 0x213e0028d205 <JSFunction next (sfi = 0x213e0027661d)>
+           7: 0x213e0028d221 <JSFunction next (sfi = 0x213e0027664d)>
+           8: 0x213e0028a8dd <JSFunction apply (sfi = 0x213e0027d06d)>
+           9: 0x213e0028a78d <JSFunction construct (sfi = 0x213e0027d09d)>
+          10: 0x213e002896e9 <JSFunction then (sfi = 0x213e0027910d)>
+          11: 0x213e00281f65 <JSFunction apply (sfi = 0x213e00276e8d)>
+          12: 0x213e002837d9 <JSFunction Uint8Array (sfi = 0x213e0027c1fd)>
+          13: 0x213e00283945 <JSFunction Int8Array (sfi = 0x213e0027c22d)>
+          14: 0x213e00288df5 <JSFunction Uint16Array (sfi = 0x213e0027c25d)>
+          15: 0x213e0028a561 <JSFunction Int16Array (sfi = 0x213e0027c28d)>
+          16: 0x213e002899f5 <JSFunction Uint32Array (sfi = 0x213e0027c2bd)>
+          17: 0x213e0028452d <JSFunction Int32Array (sfi = 0x213e0027c2ed)>
+          18: 0x213e00288f61 <JSFunction Float32Array (sfi = 0x213e0027c31d)>
+          19: 0x213e0028a3f5 <JSFunction Float64Array (sfi = 0x213e0027c34d)>
+          20: 0x213e0028366d <JSFunction Uint8ClampedArray (sfi = 0x213e0027c37d)>
+          21: 0x213e00283dc5 <JSFunction BigUint64Array (sfi = 0x213e0027c3ad)>
+          22: 0x213e0028a289 <JSFunction BigInt64Array (sfi = 0x213e0027c3dd)>
+          23: 0x213e00000069 <undefined>
+          24: 0x213e0028d23d <Map[76](RAB_GSAB_UINT8ELEMENTS)>
+          25: 0x213e0028d265 <Map[76](RAB_GSAB_INT8ELEMENTS)>
+          26: 0x213e0028d28d <Map[76](RAB_GSAB_UINT16ELEMENTS)>
+          27: 0x213e0028d2b5 <Map[76](RAB_GSAB_INT16ELEMENTS)>
+          28: 0x213e0028d2dd <Map[76](RAB_GSAB_UINT32ELEMENTS)>
+          29: 0x213e0028d305 <Map[76](RAB_GSAB_INT32ELEMENTS)>
+          30: 0x213e0028d32d <Map[76](RAB_GSAB_FLOAT32ELEMENTS)>
+          31: 0x213e0028d355 <Map[76](RAB_GSAB_FLOAT64ELEMENTS)>
+          32: 0x213e0028d37d <Map[76](RAB_GSAB_UINT8_CLAMPEDELEMENTS)>
+          33: 0x213e0028d3a5 <Map[76](RAB_GSAB_BIGUINT64ELEMENTS)>
+          34: 0x213e0028d3cd <Map[76](RAB_GSAB_BIGINT64ELEMENTS)>
+          35: 0x213e00000069 <undefined>
+          36: 0x213e0028d3f5 <Map[28](HOLEY_ELEMENTS)>
+          37: 0x213e00000069 <undefined>
+          38: 0x213e00289f7d <JSFunction ArrayBuffer (sfi = 0x213e0027b4ad)>
+          39: 0x213e00289fcd <Map[68](HOLEY_ELEMENTS)>
+          40: 0x213e0028d45d <JSFunction arrayBufferConstructor_DoNotInitialize (sfi = 0x213e0027b59d)>
+          41: 0x213e0028c751 <JSFunction Array (sfi = 0x213e00276f7d)>
+       42-43: 0x213e00000069 <undefined>
+          44: 0x213e0028d479 <Map[20](HOLEY_ELEMENTS)>
+          45: 0x213e0028d65d <JSFunction AsyncFunction (sfi = 0x213e0027d4bd)>
+          46: 0x213e0028d769 <Map[44](HOLEY_ELEMENTS)>
+          47: 0x213e0028d7f9 <JSFunction AsyncGeneratorFunction (sfi = 0x213e0027d42d)>
+          48: 0x213e00283f3d <JSFunction BigInt (sfi = 0x213e0027cafd)>
+          49: 0x213e00287e19 <JSFunction Boolean (sfi = 0x213e00277a2d)>
+          50: 0x213e0028da15 <Map[24](HOLEY_ELEMENTS)>
+          51: 0x213e0028da65 <Map[24](HOLEY_ELEMENTS)>
+          52: 0x213e0028dab5 <JSFunction (sfi = 0x213e0027d3cd)>
+          53: 0x213e0028dad1 <JSFunction (sfi = 0x213e0027d39d)>
+          54: 0x213e0028daed <JSFunction CallSite (sfi = 0x213e0027d4ed)>
+          55: 0x213e0028df7d <JSFunction (sfi = 0x213e001476a5)>
+          56: 0x213e0028e041 <Map[28](HOLEY_ELEMENTS)>
+          57: 0x213e002876c5 <JSFunction DataView (sfi = 0x213e0027c40d)>
+          58: 0x213e0028843d <JSFunction Date (sfi = 0x213e0027862d)>
+          59: 0x213e00000069 <undefined>
+          60: 0x213e00281dc9 <JSFunction (sfi = 0x213e001474d1)>
+       61-62: 0x213e00000069 <undefined>
+          63: 0
+          64: 0x213e0028e105 <Object map = 0x213e0028e0a9>
+          65: 0x213e0028e159 <Map[20](FAST_SLOPPY_ARGUMENTS_ELEMENTS)>
+          66: 0x213e0028e231 <FixedArray[1024]>
+          67: 0x213e00281e6d <JSFunction Function (sfi = 0x213e00276e5d)>
+          68: 0x213e00281dc9 <JSFunction (sfi = 0x213e001474d1)>
+          69: 0x213e0028fb95 <JSFunction GeneratorFunction (sfi = 0x213e0027d3fd)>
+          70: 0x213e0028fe49 <Map[12](HOLEY_ELEMENTS)>
+          71: 0x213e0028fe71 <Map[12](HOLEY_ELEMENTS)>
+          72: 0x213e0028fe99 <Map[24](HOLEY_ELEMENTS)>
+          73: 0x213e0028ff2d <Object map = 0x213e0028fec1>
+          74: 0x213e0028ca59 <JSArray[0]>
+          75: 0x213e002847bd <Object map = 0x213e00284739>
+          76: 0x213e0028fd91 <Object map = 0x213e0028fc85>
+          77: 0x213e0028d50d <Object map = 0x213e0028d4c9>
+          78: 0x213e0028d95d <Object map = 0x213e0028d8e9>
+          79: 0x213e0028fd0d <Object map = 0x213e002983d5>
+          80: 0x213e00000069 <undefined>
+          81: 0x213e0028fff1 <Object map = 0x213e0028ff85>
+          82: 0x213e00284219 <Map[28](HOLEY_ELEMENTS)>
+          83: 0x213e00282611 <Object map = 0x213e00281c25>
+          84: 0x213e00290095 <Object map = 0x213e00290029>
+          85: 0x213e0028753d <Object map = 0x213e002987b1>
+          86: 0x213e002987b1 <Map[28](HOLEY_ELEMENTS)>
+          87: 0x213e002900cd <Map[20](HOLEY_ELEMENTS)>
+          88: 0x213e00290161 <Object map = 0x213e002900f5>
+          89: 0x213e00286ca9 <Object map = 0x213e002869f5 value = 0x213e000000a1 <String[0]: #>>
+          90: 0x213e0028675d <Map[28](HOLEY_ELEMENTS)>
+          91: 0x213e00283c29 <Map[28](HOLEY_ELEMENTS)>
+          92: 0x213e0028acf9 <JSFunction Collator (sfi = 0x213e0027a99d)>
+          93: 0x213e0028c069 <JSFunction DateTimeFormat (sfi = 0x213e0027a6fd)>
+          94: 0x213e0028bca9 <JSFunction DisplayNames (sfi = 0x213e0027b29d)>
+          95: 0x213e00000069 <undefined>
+          96: 0x213e0028aa9d <JSFunction NumberFormat (sfi = 0x213e0027a84d)>
+          97: 0x213e0028b751 <JSFunction Locale (sfi = 0x213e0027aead)>
+          98: 0x213e0028b55d <JSFunction ListFormat (sfi = 0x213e0027adbd)>
+          99: 0x213e0028b15d <JSFunction PluralRules (sfi = 0x213e0027abdd)>
+         100: 0x213e0028b35d <JSFunction RelativeTimeFormat (sfi = 0x213e0027accd)>
+         101: 0x213e0028be6d <JSFunction Segmenter (sfi = 0x213e0027b35d)>
+         102: 0x213e002901b9 <Map[28](HOLEY_ELEMENTS)>
+         103: 0x213e002902c1 <Map[24](HOLEY_ELEMENTS)>
+         104: 0x213e0029031d <Map[28](HOLEY_ELEMENTS)>
+         105: 0x213e00290385 <Map[28](HOLEY_ELEMENTS)>
+         106: 0x213e0029816d <Map[28](HOLEY_ELEMENTS)>
+         107: 0x213e002980a9 <Map[28](HOLEY_ELEMENTS)>
+         108: 0x213e00298209 <Map[24](HOLEY_ELEMENTS)>
+         109: 0x213e002982b5 <Map[24](HOLEY_ELEMENTS)>
+         110: 0x213e00298361 <Map[40](HOLEY_ELEMENTS)>
+         111: 0x213e00297811 <JSFunction Iterator (sfi = 0x213e002977e1)>
+         112: 0x213e00297a5d <Map[20](HOLEY_ELEMENTS)>
+         113: 0x213e00290471 <Map[20](HOLEY_ELEMENTS)>
+         114: 0x213e0028c7e5 <Map[16](PACKED_SMI_ELEMENTS)>
+         115: 0x213e0028d0a5 <Map[16](HOLEY_SMI_ELEMENTS)>
+         116: 0x213e0028d165 <Map[16](PACKED_ELEMENTS)>
+         117: 0x213e0028d1a5 <Map[16](HOLEY_ELEMENTS)>
+         118: 0x213e0028d0e5 <Map[16](PACKED_DOUBLE_ELEMENTS)>
+         119: 0x213e0028d125 <Map[16](HOLEY_DOUBLE_ELEMENTS)>
+         120: 0x213e00290511 <Map[28](PACKED_FROZEN_ELEMENTS)>
+         121: 0x213e00000069 <undefined>
+         122: 0x213e002841a1 <JSFunction Map (sfi = 0x213e0027c88d)>
+         123: 0x213e002841f1 <Map[16](HOLEY_ELEMENTS)>
+         124: 0x213e00290579 <Map[24](HOLEY_ELEMENTS)>
+         125: 0x213e002905bd <Map[16](HOLEY_ELEMENTS)>
+         126: 0x213e002873d5 <JSFunction Set (sfi = 0x213e0027cc1d)>
+         127: 0x213e00287409 <Map[16](HOLEY_ELEMENTS)>
+         128: 0x213e00286701 <JSFunction WeakMap (sfi = 0x213e0027cdfd)>
+         129: 0x213e00283bcd <JSFunction WeakSet (sfi = 0x213e0027ceed)>
+         130: 0x213e00287c61 <JSFunction WeakRef (sfi = 0x213e0027d33d)>
+         131: 0x213e0028c2fd <JSFunction FinalizationRegistry (sfi = 0x213e0027d27d)>
+     132-141: 0x213e00000069 <undefined>
+         142: 0x213e00283ab1 <Object map = 0x213e00283a3d>
+         143: 0x213e00298851 <Map[24](HOLEY_ELEMENTS)>
+     144-146: 0x213e00000069 <undefined>
+         147: 0x213e002816d9 <MetaMap (0x213e00281729 <NativeContext[295]>)>
+         148: 0x213e00290601 <Map(FUNCTION_CONTEXT_TYPE)>
+         149: 0x213e00290629 <Map(MODULE_CONTEXT_TYPE)>
+         150: 0x213e00290651 <Map(EVAL_CONTEXT_TYPE)>
+         151: 0x213e00290679 <Map(SCRIPT_CONTEXT_TYPE)>
+         152: 0x213e002906a1 <Map(AWAIT_CONTEXT_TYPE)>
+         153: 0x213e002906c9 <Map(BLOCK_CONTEXT_TYPE)>
+         154: 0x213e002906f1 <Map(CATCH_CONTEXT_TYPE)>
+         155: 0x213e00290719 <Map(WITH_CONTEXT_TYPE)>
+         156: 0x213e00290741 <Map(DEBUG_EVALUATE_CONTEXT_TYPE)>
+         157: 0x213e00290769 <Map[64](HOLEY_ELEMENTS)>
+         158: 0x213e00290791 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+         159: 0x213e00290999 <Map[20](HOLEY_ELEMENTS)>
+         160: 0x213e002909e1 <Map[20](HOLEY_ELEMENTS)>
+         161: 0x213e00290a09 <Map[20](HOLEY_ELEMENTS)>
+         162: 0
+         163: 0x213e00290a31 <ByteArray[16]>
+         164: 0x213e00290a49 <FixedDoubleArray[64]>
+         165: 0x213e00290c51 <Other heap object (WEAK_FIXED_ARRAY_TYPE)>
+         166: 0x213e00289c2d <JSFunction Number (sfi = 0x213e002777bd)>
+         167: 0x213e00282139 <JSFunction Object (sfi = 0x213e0027652d)>
+         168: 0x213e00282611 <Object map = 0x213e00281c25>
+         169: 0x213e00281c25 <Map[28](HOLEY_ELEMENTS)>
+     170-173: 0x213e00000069 <undefined>
+         174: 0x213e00290d59 <Map[16](JS_PROXY_TYPE)>
+         175: 0x213e00290d81 <Map[16](JS_PROXY_TYPE)>
+         176: 0x213e002890c9 <JSFunction Proxy (sfi = 0x213e0027cfad)>
+         177: 0x213e00290da9 <Map[16](JS_PROXY_TYPE)>
+         178: 0x213e00290dd1 <Map[20](HOLEY_ELEMENTS)>
+         179: 0x213e0028969d <Object map = 0x213e0028960d>
+         180: 1
+         181: 0x213e0028637d <JSFunction exec (sfi = 0x213e002791cd)>
+         182: 0x213e00285f69 <JSFunction RegExp (sfi = 0x213e0027919d)>
+         183: 0x213e00290e21 <Other heap object (REG_EXP_MATCH_INFO_TYPE)>
+         184: 0x213e0028630d <JSFunction [Symbol.matchAll] (sfi = 0x213e0027949d)>
+         185: 0x213e002862f1 <JSFunction [Symbol.match] (sfi = 0x213e0027946d)>
+         186: 0x213e00286299 <Object map = 0x213e00285fc5>
+         187: 0x213e00285fc5 <Map[28](HOLEY_ELEMENTS)>
+         188: 0x213e00286329 <JSFunction [Symbol.replace] (sfi = 0x213e002794cd)>
+         189: 0x213e00290e4d <Map[40](HOLEY_ELEMENTS)>
+         190: 0x213e00290ed9 <Map[44](HOLEY_ELEMENTS)>
+         191: 0x213e00290f71 <Map[20](HOLEY_ELEMENTS)>
+         192: 0x213e00286345 <JSFunction [Symbol.search] (sfi = 0x213e002794fd)>
+         193: 0x213e00286361 <JSFunction [Symbol.split] (sfi = 0x213e0027952d)>
+         194: 0x213e00290fc1 <Map[24](HOLEY_ELEMENTS)>
+         195: 0x213e002910ad <ScriptContextTable[16]>
+         196: 0x213e00000069 <undefined>
+         197: 0x213e00293311 <JSGlobalObject>
+         198: 0x213e00000725 <FixedArray[0]>
+         199: 0x213e00291235 <Map[20](HOLEY_ELEMENTS)>
+         200: 0x213e0029127d <Map[20](HOLEY_ELEMENTS)>
+         201: 0x213e00291341 <JSFunction SharedArrayBuffer (sfi = 0x213e0027b6ed)>
+         202: 0x213e0028e1a1 <Map[20](PACKED_ELEMENTS)>
+         203: 0x213e00291511 <Map[20](SLOW_SLOPPY_ARGUMENTS_ELEMENTS)>
+         204: 0x213e0029156d <Map[16](PACKED_ELEMENTS)>
+         205: 0x213e002915d5 <Map[12](HOLEY_ELEMENTS)>
+         206: 0x213e002915fd <Map[12](HOLEY_ELEMENTS)>
+         207: 0x213e00291625 <SimpleNumberDictionary[1027]>
+         208: 0x213e00292639 <OrderedHashSet[13]>
+         209: 0x213e00000725 <FixedArray[0]>
+         210: 0x213e00292675 <PropertyCell name=0x213e000000a1 <String[0]: #> value=1>
+         211: 0x213e00281ea1 <Map[32](HOLEY_ELEMENTS)>
+         212: 0x213e00292689 <Map[36](HOLEY_ELEMENTS)>
+         213: 0x213e002926fd <Map[28](HOLEY_ELEMENTS)>
+         214: 0x213e0028f425 <Map[32](HOLEY_ELEMENTS)>
+         215: 0x213e002827a9 <Map[32](HOLEY_ELEMENTS)>
+         216: 0x213e00292765 <Map[36](HOLEY_ELEMENTS)>
+         217: 0x213e00282531 <Map[32](HOLEY_ELEMENTS)>
+         218: 0x213e00281f15 <Map[28](HOLEY_ELEMENTS)>
+         219: 0x213e002927c1 <Map[32](HOLEY_ELEMENTS)>
+         220: 0x213e0028d691 <Map[28](HOLEY_ELEMENTS)>
+         221: 0x213e00292811 <Map[32](HOLEY_ELEMENTS)>
+         222: 0x213e0028fbc9 <Map[32](HOLEY_ELEMENTS)>
+         223: 0x213e00292861 <Map[36](HOLEY_ELEMENTS)>
+         224: 0x213e0028d82d <Map[32](HOLEY_ELEMENTS)>
+         225: 0x213e002928bd <Map[36](HOLEY_ELEMENTS)>
+         226: 0x213e00292919 <Map[32](HOLEY_ELEMENTS)>
+         227: 0x213e00286939 <JSFunction String (sfi = 0x213e00277abd)>
+         228: 0x213e002869f5 <Map[16](FAST_STRING_WRAPPER_ELEMENTS)>
+         229: 0x213e00282bad <JSFunction Symbol (sfi = 0x213e002784dd)>
+         230: 1
+         231: 0
+         232: 0x213e00292d79 <WebAssembly map = 0x213e00292969>
+         233: 0x213e002926fd <Map[28](HOLEY_ELEMENTS)>
+         234: 0x213e0028f94d <JSFunction Tag (sfi = 0x213e00148181)>
+         235: 0x213e0028fa01 <JSFunction Exception (sfi = 0x213e00148249)>
+         236: 0x213e0028f821 <JSFunction Global (sfi = 0x213e00147f7d)>
+         237: 0x213e0028f4b5 <JSFunction Instance (sfi = 0x213e00147a41)>
+         238: 0x213e00292dc9 <Tag map = 0x213e0028f96d>
+         239: 0x213e0028f711 <JSFunction Memory (sfi = 0x213e00147de1)>
+         240: 0x213e0028f325 <JSFunction Module (sfi = 0x213e00147975)>
+         241: 0x213e0028f59d <JSFunction Table (sfi = 0x213e00147b75)>
+     242-246: 0x213e00000069 <undefined>
+         247: 0x213e00282ea9 <JSFunction TypedArray (sfi = 0x213e0027baad)>
+         248: 0x213e00283221 <Object map = 0x213e00282f3d>
+         249: 0x213e0028cd65 <JSFunction entries (sfi = 0x213e0027745d)>
+         250: 0x213e0028cd9d <JSFunction forEach (sfi = 0x213e002774bd)>
+         251: 0x213e0028cd49 <JSFunction keys (sfi = 0x213e0027742d)>
+         252: 0x213e0028cd81 <JSFunction values (sfi = 0x213e0027748d)>
+         253: 0x213e002846c1 <JSFunction Error (sfi = 0x213e00279cdd)>
+         254: 0x213e002847d9 <JSFunction toString (sfi = 0x213e00279d3d)>
+         255: 0x213e0028826d <JSFunction EvalError (sfi = 0x213e00279d9d)>
+         256: 0x213e00286525 <JSFunction AggregateError (sfi = 0x213e00279d6d)>
+         257: 0x213e00289129 <JSFunction eval (sfi = 0x213e0027da5d)>
+         258: 0x213e00285899 <JSFunction parseFloat (sfi = 0x213e002779cd)>
+         259: 0x213e00287d81 <JSFunction parseInt (sfi = 0x213e002779fd)>
+         260: 0x213e0029337d <JSFunction (sfi = 0x213e0029334d)>
+         261: 0x213e00284395 <JSFunction delete (sfi = 0x213e0027c97d)>
+         262: 0x213e0028443d <JSFunction get (sfi = 0x213e0027c8ed)>
+         263: 0x213e00284379 <JSFunction has (sfi = 0x213e0027c94d)>
+         264: 0x213e00284459 <JSFunction set (sfi = 0x213e0027c91d)>
+         265: 0x213e0029322d <JSFunction cleanupSome (sfi = 0x213e0027d30d)>
+         266: 0x213e00281fd5 <JSFunction [Symbol.hasInstance] (sfi = 0x213e00276f4d)>
+         267: 0x213e00281fb9 <JSFunction toString (sfi = 0x213e00276f1d)>
+         268: 0x213e002826c9 <JSFunction toString (sfi = 0x213e00276d6d)>
+         269: 0x213e002826e5 <JSFunction valueOf (sfi = 0x213e00276d9d)>
+         270: 0x213e0028953d <JSFunction all (sfi = 0x213e00278fed)>
+         271: 0x213e00289559 <JSFunction allSettled (sfi = 0x213e0027901d)>
+         272: 0x213e00289575 <JSFunction any (sfi = 0x213e0027904d)>
+         273: 0x213e002894f1 <JSFunction Promise (sfi = 0x213e00278f8d)>
+         274: 0x213e0028983d <JSFunction RangeError (sfi = 0x213e00279dcd)>
+         275: 0x213e00288035 <JSFunction ReferenceError (sfi = 0x213e00279dfd)>
+         276: 0x213e0028762d <JSFunction add (sfi = 0x213e0027cc7d)>
+         277: 0x213e00287585 <JSFunction delete (sfi = 0x213e0027ccad)>
+         278: 0x213e00287611 <JSFunction has (sfi = 0x213e0027cc4d)>
+     279-280: 0x213e00000069 <undefined>
+         281: 0x213e0028c54d <JSFunction SyntaxError (sfi = 0x213e00279e2d)>
+         282: 0x213e00285059 <JSFunction TypeError (sfi = 0x213e00279e5d)>
+         283: 0x213e00284901 <JSFunction URIError (sfi = 0x213e00279e8d)>
+         284: 0x213e00292df5 <JSFunction CompileError (sfi = 0x213e00279ebd)>
+         285: 0x213e00292f25 <JSFunction LinkError (sfi = 0x213e00279eed)>
+         286: 0x213e00293055 <JSFunction RuntimeError (sfi = 0x213e00279f1d)>
+         287: 0x213e0028687d <JSFunction set (sfi = 0x213e0027ce8d)>
+         288: 0x213e00286861 <JSFunction get (sfi = 0x213e0027ce5d)>
+         289: 0x213e00286845 <JSFunction delete (sfi = 0x213e0027ce2d)>
+         290: 0x213e00283d21 <JSFunction add (sfi = 0x213e0027cf7d)>
+         291: 0x213e00000069 <undefined>
+         292: 0x213e00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+     293-294: 0x213e00000069 <undefined>
+ - microtask_queue: 0x5555555fcd60
+pwndbg> x/30wx 0x213e00281729-1
+0x213e00281728:	0x00281701	0x0000024e	0x00006241	0x00000000
+0x213e00281738:	0x00293311	0x002816c9	0x00048089	0x00000069
+0x213e00281748:	0x0028d205	0x0028d221	0x0028a8dd	0x0028a78d
+0x213e00281758:	0x002896e9	0x00281f65	0x002837d9	0x00283945
+0x213e00281768:	0x00288df5	0x0028a561	0x002899f5	0x0028452d
+0x213e00281778:	0x00288f61	0x0028a3f5	0x0028366d	0x00283dc5
+0x213e00281788:	0x0028a289	0x00000069	0x0028d23d	0x0028d265
+0x213e00281798:	0x0028d28d	0x0028d2b5
+pwndbg> 
+0x213e002817a0:	0x0028d2dd	0x0028d305	0x0028d32d	0x0028d355
+0x213e002817b0:	0x0028d37d	0x0028d3a5	0x0028d3cd	0x00000069
+0x213e002817c0:	0x0028d3f5	0x00000069	0x00289f7d	0x00289fcd
+0x213e002817d0:	0x0028d45d	0x0028c751	0x00000069	0x00000069
+0x213e002817e0:	0x0028d479	0x0028d65d	0x0028d769	0x0028d7f9
+0x213e002817f0:	0x00283f3d	0x00287e19	0x0028da15	0x0028da65
+0x213e00281800:	0x0028dab5	0x0028dad1	0x0028daed	0x0028df7d
+0x213e00281810:	0x0028e041	0x002876c5
+pwndbg> 
+0x213e00281818:	0x0028843d	0x00000069	0x00281dc9	0x00000069
+0x213e00281828:	0x00000069	0x00000000	0x0028e105	0x0028e159
+0x213e00281838:	0x0028e231	0x00281e6d	0x00281dc9	0x0028fb95
+0x213e00281848:	0x0028fe49	0x0028fe71	0x0028fe99	0x0028ff2d
+0x213e00281858:	0x0028ca59	0x002847bd	0x0028fd91	0x0028d50d
+0x213e00281868:	0x0028d95d	0x0028fd0d	0x00000069	0x0028fff1
+0x213e00281878:	0x00284219	0x00282611	0x00290095	0x0028753d
+0x213e00281888:	0x002987b1	0x002900cd
+pwndbg> 
+0x213e00281890:	0x00290161	0x00286ca9	0x0028675d	0x00283c29
+0x213e002818a0:	0x0028acf9	0x0028c069	0x0028bca9	0x00000069
+0x213e002818b0:	0x0028aa9d	0x0028b751	0x0028b55d	0x0028b15d
+0x213e002818c0:	0x0028b35d	0x0028be6d	0x002901b9	0x002902c1
+0x213e002818d0:	0x0029031d	0x00290385	0x0029816d	0x002980a9
+0x213e002818e0:	0x00298209	0x002982b5	0x00298361	0x00297811
+0x213e002818f0:	0x00297a5d	0x00290471	0x0028c7e5	0x0028d0a5
+0x213e00281900:	0x0028d165	0x0028d1a5
+pwndbg> 
+
+/// =================================
+wasm_instance: 0x29aea8
+DebugPrint: 0x1cb90029afd9: [Function] in OldSpace
+ - map: 0x1cb9002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x1cb900281dc9 <JSFunction (sfi = 0x1cb9001474d1)>
+ - elements: 0x1cb900000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x1cb90029afa9 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x1cb9000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x1cb900281729 <NativeContext[295]>
+ - code: 0x1cb900265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x246c00040ced <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x1cb900000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x1cb900000d99: [String] in ReadOnlySpace: #length: 0x1cb900271bbd <AccessorInfo name= 0x1cb900000d99 <String[6]: #length>, data= 0x1cb900000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x1cb900000dc5: [String] in ReadOnlySpace: #name: 0x1cb900271ba5 <AccessorInfo name= 0x1cb900000dc5 <String[4]: #name>, data= 0x1cb900000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x1cb900004215: [String] in ReadOnlySpace: #arguments: 0x1cb900271b75 <AccessorInfo name= 0x1cb900004215 <String[9]: #arguments>, data= 0x1cb900000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x1cb9000044a9: [String] in ReadOnlySpace: #caller: 0x1cb900271b8d <AccessorInfo name= 0x1cb9000044a9 <String[6]: #caller>, data= 0x1cb900000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0x1cb9002926fd: [Map] in OldSpace
+ - map: 0x1cb9002816d9 <MetaMap (0x1cb900281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x1cb900000069 <undefined>
+ - prototype_validity cell: 0x1cb900000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x1cb900292725 <DescriptorArray[4]>
+ - prototype: 0x1cb900281dc9 <JSFunction (sfi = 0x1cb9001474d1)>
+ - constructor: 0x1cb900281e6d <JSFunction Function (sfi = 0x1cb900276e5d)>
+ - dependent code: 0x1cb900000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+/// =================================
+
+wasm funcrtion: 0xba60029afb9
+
+pwndbg> job 0xba60029afb9
+0xba60029afb9: [Function] in OldSpace
+ - map: 0x0ba6002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0ba600281dc9 <JSFunction (sfi = 0xba6001474d1)>
+ - elements: 0x0ba600000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x0ba60029af89 <SharedFunctionInfo js-to-wasm::i>
+ - name: 0x0ba6000027e1 <String[1]: #0>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 0
+ - kind: NormalFunction
+ - context: 0x0ba600281729 <NativeContext[295]>
+ - code: 0x0ba600265afd <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x27c500040cc5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 0
+ - properties: 0x0ba600000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xba600000d99: [String] in ReadOnlySpace: #length: 0x0ba600271bbd <AccessorInfo name= 0x0ba600000d99 <String[6]: #length>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xba600000dc5: [String] in ReadOnlySpace: #name: 0x0ba600271ba5 <AccessorInfo name= 0x0ba600000dc5 <String[4]: #name>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xba600004215: [String] in ReadOnlySpace: #arguments: 0x0ba600271b75 <AccessorInfo name= 0x0ba600004215 <String[9]: #arguments>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xba6000044a9: [String] in ReadOnlySpace: #caller: 0x0ba600271b8d <AccessorInfo name= 0x0ba6000044a9 <String[6]: #caller>, data= 0x0ba600000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+pwndbg> x/20wx 0xba60029afb9-1
+0xba60029afb8:	0x002926fd	0x00000725	0x00000725	0x002bf801
+0xba60029afc8:	0x0029af89	0x00281729	0x001400a9	0x002816d9
+0xba60029afd8:	0x30050307	0x0d000421	0x0a400bff	0x00000085
+0xba60029afe8:	0x00282139	0x0004a865	0x00000735	0x00000a89
+0xba60029aff8:	0x00000000	0x002816d9	0x30050307	0x2d000421
+pwndbg> 
