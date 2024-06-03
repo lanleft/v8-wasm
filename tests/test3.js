@@ -83,7 +83,7 @@ function arb_write16(addr, value){
 }
 
 
-
+/* =======  wasm attemped faild ===========
 // https://wasdk.github.io/WasmFiddle/
 var wasm_code = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
 var wasm_mod = new WebAssembly.Module(wasm_code);
@@ -106,6 +106,10 @@ console.log("=================================================================="
 %SystemBreak();
 // console.log("test reading oob: " + arb_read(started_array+0x80010000).toString(16));
 //0x36b800000000
+// %DebugPrint(Math.min);
+// %DebugPrint(f);
+// %SystemBreak();
+================================================================= */ 
 
 // ======= attemp faild ===========
 // can not read negative offset
@@ -114,9 +118,11 @@ console.log("=================================================================="
 // %DebugPrint(u16arr);
 /// =================================
 
-// %DebugPrint(Math.min);
-// %DebugPrint(f);
-// %SystemBreak();
+
+
+let a = new Uint8Array(0x100);
+%DebugPrint(a);
+%SystemBreak();
 
 // access out-of-bounds
 // test(34212359, 0x4343);
