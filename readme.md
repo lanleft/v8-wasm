@@ -635,10 +635,17 @@ V8 sandbox has 3 tables outside of box:
   ![code-pointer-sandboxing](image-1.png)
 
   - Trusted space: https://docs.google.com/document/d/1IrvzL4uX_Zv0k2Iakdp_q_z33bj-qlYF5IesGpXW0fM/edit
+    -  interpreted bytecode likes vm opcodes, that will be executed by intepreter
   ![trusted-space](image-2.png)
   
-  - ctf: https://github.com/google/google-ctf/tree/main/2023/quals/sandbox-v8box/solution
+  - ctf: https://github.com/google/google-ctf/tree/main/2023/quals/sandbox-v8box/solution 
+    => they used `ldar` and `star` opcodes => load/store a value from a register into the accumulator.
 
+  - tagging in v8 uses to identify the type of objects. If the last bit of a memory location is a 1, we are dealing with a pointer, and if it’s 0, we are dealing with a SMI.
+  ![tagged-pointers](image-3.png)
+
+  - Following the commit can make us know how many files is relative with the special object, e.g: https://source.chromium.org/chromium/_/chromium/v8/v8/+/093967a51ed5a30e9d6e9fd14bf9a4a0bd2af524
+  - By corrupting BytecodeArray, we can execute arbitrary bytecode, corrupting stack:  https://kaist-hacking.github.io/pubs/2024/lee:v8-ctf-slides.pdf
 
 ### WebAssembly 
 
@@ -1146,3 +1153,6 @@ Node* WasmGraphAssembler::BuildDecodeTrustedPointer(Node* handle,
 #endif  // V8_ENABLE_SANDBOX
 }
 ```
+## Another Approach
+
+reading `v8/src/sandbox` folder
