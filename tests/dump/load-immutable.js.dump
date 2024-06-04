@@ -1,0 +1,23 @@
+55795b91d000-55795b922000 r--p 00000000 08:03 129882                     /usr/bin/dash
+55795b922000-55795b935000 r-xp 00005000 08:03 129882                     /usr/bin/dash
+55795b935000-55795b93b000 r--p 00018000 08:03 129882                     /usr/bin/dash
+55795b93b000-55795b93d000 r--p 0001d000 08:03 129882                     /usr/bin/dash
+55795b93d000-55795b93e000 rw-p 0001f000 08:03 129882                     /usr/bin/dash
+55795b93e000-55795b940000 rw-p 00000000 00:00 0 
+55795d2df000-55795d300000 rw-p 00000000 00:00 0                          [heap]
+7fb5dfc94000-7fb5dfcb6000 r--p 00000000 08:03 143137                     /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fb5dfcb6000-7fb5dfe2e000 r-xp 00022000 08:03 143137                     /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fb5dfe2e000-7fb5dfe7c000 r--p 0019a000 08:03 143137                     /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fb5dfe7c000-7fb5dfe80000 r--p 001e7000 08:03 143137                     /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fb5dfe80000-7fb5dfe82000 rw-p 001eb000 08:03 143137                     /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fb5dfe82000-7fb5dfe88000 rw-p 00000000 00:00 0 
+7fb5dfea6000-7fb5dfea7000 r--p 00000000 08:03 143129                     /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fb5dfea7000-7fb5dfeca000 r-xp 00001000 08:03 143129                     /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fb5dfeca000-7fb5dfed2000 r--p 00024000 08:03 143129                     /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fb5dfed3000-7fb5dfed4000 r--p 0002c000 08:03 143129                     /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fb5dfed4000-7fb5dfed5000 rw-p 0002d000 08:03 143129                     /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fb5dfed5000-7fb5dfed6000 rw-p 00000000 00:00 0 
+7fff98737000-7fff98758000 rw-p 00000000 00:00 0                          [stack]
+7fff98783000-7fff98786000 r--p 00000000 00:00 0                          [vvar]
+7fff98786000-7fff98787000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]

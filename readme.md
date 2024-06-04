@@ -651,7 +651,7 @@ V8 sandbox has 3 tables outside of box:
 
 How it can load the webassembly function 
 
-- wasm instance object
+#### wasm instance object
 ```cpp
 DebugPrint: 0x345a0029ae89: [WasmInstanceObject] in OldSpace
  - map: 0x345a0028f4d5 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
@@ -764,7 +764,7 @@ RUNTIME_FUNCTION(Runtime_WasmCompileLazy) {
 }
 ```
 
-Struct wasm function 
+#### wasm function 
 
 ```cpp
 DebugPrint: 0x345a0029afb9: [Function] in OldSpace
@@ -859,55 +859,263 @@ $3 = 0x354bc
 *RSP  0x7fffffffd420 —▸ 0x7fffffffd460 —▸ 0x7fffffffd490 —▸ 0x7f
 ```
 
+#### Memory limited
+
+```js
+// r --expose-gc --allow-natives-syntax --sandbox-testing ../../../tests/test3.js
+
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+
+
+
+const gsab = new SharedArrayBuffer(0x16,{"maxByteLength":0x4242});
+const u16arr = new Uint16Array(gsab,0x10);
+// u16arr[1] = 1;
+// console.log(u16arr[1]);
+
+function foo(obj,index, val) {
+    obj[index] += val;
+    return obj[index];
+
+}
+
+function test(iii,val) {
+    return foo(u16arr, iii, val);
+}
+
+for (var i = 0; i < 0x10000; ++i) {
+    test(1,0);
+}
+// %DebugPrint(gsab);
+%DebugPrint(u16arr);
+console.log(addrOf(u16arr));
+console.log(v8_read64(addrOf(u16arr)+0x17));
+
+v8_write64(addrOf(u16arr)+0x19,0x2e00000n);
+
+%DebugPrint(u16arr);
+d8.file.execute('/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js');
+const builder = new WasmModuleBuilder();
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+
+builder.addFunction("func0", $sig_i_l).exportFunc().addBody([ // function 1 convert from int32 to int64
+  kExprLocalGet, 0,
+  kExprI32ConvertI64,
+]);
+let instance = builder.instantiate();
+
+console.log("===============================================================");
+%DebugPrint(instance);
+/// instance
+DebugPrint: 0xe12002afd39: [WasmInstanceObject] in OldSpace
+ - exports_object: 0x0e12000691c5 <Object map = 0xe12002afe55>
+
+pwndbg> job 0x0e12000691c5
+0xe12000691c5: [JS_OBJECT_TYPE]
+ - All own properties (excluding elements): {
+    0xe1200299bb9: [String] in OldSpace: #func0: 0x0e12002afe11 <JSFunction js-to-wasm:l:i (sfi = 0xe12002afde1)> (const data field 0, attrs: [_E_]), location: in-object
+ }
+pwndbg> job 0x0e12002afe11
+0xe12002afe11: [Function] in OldSpace
+ - code: 0x0e1200265afd <Code BUILTIN JSToWasmWrapper>
+
+pwndbg> job 0x0e1200265afd
+0xe1200265afd: [Code] in ReadOnlySpace
+ - instruction_start: 
+ 
+pwndbg> vmmap 0x7fff7fda38c0
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+             Start                End Perm     Size Offset File
+    0x7fff60000000     0x7fff7f480000 rwxp 1f480000      0 [anon_7fff60000]
+►   0x7fff7f480000     0x7fff7fff3000 r-xp   b73000 195d000 /home/vult/Desktop/v8/v8/out/debug/libv8.so +0x9238c0
+    0x7fff7fff3000     0x7fff80000000 rwxp     d000      0 [anon_7fff7fff3]
+pwndbg> vmmap 0x7fff7fda38c0
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+             Start                End Perm     Size Offset File
+    0x7fff60000000     0x7fff7f480000 rwxp 1f480000      0 [anon_7fff60000]
+►   0x7fff7f480000     0x7fff7fff3000 r-xp   b73000 195d000 /home/vult/Desktop/v8/v8/out/debug/libv8.so +0x9238c0
+    0x7fff7fff3000     0x7fff80000000 rwxp     d000      0 [anon_7fff7fff3]
+
+Memory layout 
+pwndbg> vmmap
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+             Start                End Perm     Size Offset File
+     0xe0a00000000      0xe1200000000 ---p 800000000      0 [anon_e0a00000]
+     0xe1200000000      0xe1200010000 r--p    10000      0 [anon_e1200000]
+     0xe1200010000      0xe1200020000 ---p    10000      0 [anon_e1200010]
+     0xe1200020000      0xe1200040000 r--p    20000      0 [anon_e1200020]
+     0xe1200040000      0xe1200149000 rw-p   109000      0 [anon_e1200040]
+     0xe1200149000      0xe1200180000 ---p    37000      0 [anon_e1200149]
+     0xe1200180000      0xe120027e000 r--p    fe000      0 [anon_e1200180]
+     0xe120027e000      0xe1200280000 ---p     2000      0 [anon_e120027e]
+     0xe1200280000      0xe1200340000 rw-p    c0000      0 [anon_e1200280]
+     0xe1200340000      0xe1300000000 ---p ffcc0000      0 [anon_e1200340]
+     0xe1300000000      0xe1300100000 rw-p   100000      0 [anon_e1300000]
+     0xe1300100000      0xe1500000000 ---p 1fff00000      0 [anon_e1300100]
+     0xe1500000000      0xe1500001000 rw-p     1000      0 [anon_e1500000]
+     0xe1500001000      0xf1a00000000 ---p 104fffff000      0 [anon_e1500001]
+    0x1610e928c000     0x1610e928d000 rwxp     1000      0 [anon_1610e928c]
+    0x319100000000     0x319100001000 rw-p     1000      0 [anon_319100000]
+ 
+/// ===============================================================================
+
+instance.exports.func0(0n);
+
+
+%SystemBreak();
+
+var ret = test(0x123,0);
+console.log(ret);
+```
+
+#### FunctionData
+
+- https://source.chromium.org/chromium/_/chromium/v8/v8/+/cf9373a0d6760146534b096cee60675a3ea09ad7
+
+=> this commit removed all the `func_ref` (function pointer) into sandbox memory:
+![removing-func-ptr](image-4.png)
+
+```cpp
+  TNode<WasmInternalFunction> LoadWasmInternalFunctionFromFunctionData(
+      TNode<WasmFunctionData> data) {
+    return CAST(LoadProtectedPointerField(
+        data, WasmFunctionData::kProtectedInternalOffset)); 
+        // WasmFunctionData::kProtectedInternalOffset = 0x14
+  }
+```
+Example:
+
+```js
+var wasm_code = new Uint8Array([0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,0,1,127,3,130,128,128,128,0,1,0,4,132,128,128,128,0,1,112,0,0,5,131,128,128,128,0,1,0,1,6,129,128,128,128,0,0,7,145,128,128,128,0,2,6,109,101,109,111,114,121,2,0,4,109,97,105,110,0,0,10,138,128,128,128,0,1,132,128,128,128,0,0,65,42,11]);
+var wasm_mod = new WebAssembly.Module(wasm_code);
+var wasm_instance = new WebAssembly.Instance(wasm_mod);
+var f = wasm_instance.exports.main;
+
+let wasm_instance_addr = addrOf(wasm_instance);
+console.log("wasm_instance: 0x" + wasm_instance_addr.toString(16));
+
+
+
+// %SystemBreak();
+
+for (let i=0; i<10000; i++){
+    f();
+}
+%DebugPrint(f);
+//==================================================================
+DebugPrint: 0x3fd70029afd9: [Function] in OldSpace
+ - map: 0x3fd7002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x3fd700281dc9 <JSFunction (sfi = 0x3fd7001474d1)>
+ - elements: 0x3fd700000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x3fd70029afa9 <SharedFunctionInfo js-to-wasm::i>
+
+/// =======================================================================
+// get shared_info
+Node* WasmGraphAssembler::LoadSharedFunctionInfo(Node* js_function) {
+  return LoadFromObject(
+      MachineType::TaggedPointer(), js_function,
+      wasm::ObjectAccess::SharedFunctionInfoOffsetInTaggedJSFunction()); // offset = 0x10
+}
+// get function data
+Node* WasmGraphAssembler::LoadFunctionDataFromJSFunction(Node* js_function) {
+  Node* shared = LoadSharedFunctionInfo(js_function);
+#if V8_ENABLE_SANDBOX
+    static constexpr int kOffset =
+        SharedFunctionInfo::kTrustedFunctionDataOffset; // 4
+#else
+    static constexpr int kOffset = SharedFunctionInfo::kFunctionDataOffset;
+#endif
+  return LoadTrustedPointerFromObject(shared,
+                                      wasm::ObjectAccess::ToTagged(kOffset),
+                                      kWasmFunctionDataIndirectPointerTag);
+}
+/// ...
+/// v8/src/compiler/wasm-graph-assembler.cc
+Node* WasmGraphAssembler::LoadTrustedPointerFromObject(Node* object,
+                                                       int field_offset,
+                                                       IndirectPointerTag tag) {
+  Node* offset = IntPtrConstant(field_offset);
+#ifdef V8_ENABLE_SANDBOX
+  Node* handle = LoadFromObject(MachineType::Uint32(), object, offset);
+  return BuildDecodeTrustedPointer(handle, tag);
+#else
+  return LoadFromObject(MachineType::TaggedPointer(), object, offset);
+#endif
+}
+// next call
+// v8/src/compiler/wasm-graph-assembler.cc
+Node* WasmGraphAssembler::LoadFromObject(MachineType type, Node* base,
+                                         Node* offset) {
+  return AddNode(graph()->NewNode(
+      simplified_.LoadFromObject(ObjectAccess(type, kNoWriteBarrier)), base,
+      offset, effect(), control()));
+}
+// next call
+// %rdi, %rsi, %rdx, %rcx, %r8, and %r9.
+
+// next call : src/compiler/simplified-operator.cc:2187
+ACCESS_OP_LIST(ACCESS)
+
+//next 
+  // When V8_ENABLE_PRECISE_ZONE_STATS is defined, the allocated bytes are
+  // associated with the T type.
+  template <typename T, typename... Args>
+  T* New(Args&&... args) {
+    static_assert(alignof(T) <= kAlignmentInBytes);
+    void* memory = Allocate<T>(sizeof(T));
+    return new (memory) T(std::forward<Args>(args)...);
+  }
+// next 
+// v8/src/compiler/operator.h
+// A templatized implementation of Operator that has one static parameter of
+// type {T} with the proper default equality and hashing functions.
+template <typename T, typename Pred = OpEqualTo<T>, typename Hash = OpHash<T>>
+class Operator1 : public Operator {
+ public:
+  Operator1(Opcode opcode, Properties properties, const char* mnemonic,
+            size_t value_in, size_t effect_in, size_t control_in,
+            size_t value_out, size_t effect_out, size_t control_out,
+            T parameter, Pred const& pred = Pred(), Hash const& hash = Hash())
+      : Operator(opcode, properties, mnemonic, value_in, effect_in, control_in,
+                 value_out, effect_out, control_out),
+        parameter_(parameter),
+        pred_(pred),
+        hash_(hash) {}
+
+/// ====================================================================================
+// jsfuncion 
+pwndbg> x/30wx 0x3fd70029afd9-1
+0x3fd70029afd8:	0x002926fd	0x00000725	0x00000725	0x00401c01
+0x3fd70029afe8:	0x0029afa9	0x00281729	0x001400a9	0x002816d9
+// shared_info ptr
+pwndbg> x/30wx 0x3fd70029afa9-1
+0x3fd70029afa8:	0x00000d39	0x00401600	0xfffffffe	0x000027e1
+
+```
+
 
 
 ### JSArray
 
-```cpp
+```js
 
-pwndbg> vmmap
-LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
-             Start                End Perm     Size Offset File
-     0x12400000000      0x12c00000000 ---p 800000000      0 [anon_12400000]
-     0x12c00000000      0x12c00010000 r--p    10000      0 [anon_12c00000]
-     0x12c00010000      0x12c00020000 ---p    10000      0 [anon_12c00010]
-     0x12c00020000      0x12c00040000 r--p    20000      0 [anon_12c00020]
-     0x12c00040000      0x12c00149000 rw-p   109000      0 [anon_12c00040]
-     0x12c00149000      0x12c00180000 ---p    37000      0 [anon_12c00149]
-     0x12c00180000      0x12c0027e000 r--p    fe000      0 [anon_12c00180]
-     0x12c0027e000      0x12c00280000 ---p     2000      0 [anon_12c0027e]
-     0x12c00280000      0x12c00340000 rw-p    c0000      0 [anon_12c00280]
-     0x12c00340000      0x12d00000000 ---p ffcc0000      0 [anon_12c00340]
-     0x12d00000000      0x12d00100000 rw-p   100000      0 [anon_12d00000]
-     0x12d00100000      0x12f00000000 ---p 1fff00000      0 [anon_12d00100]
-     0x12f00000000      0x12f00001000 rw-p     1000      0 [anon_12f00000]
-     0x12f00001000      0x23400000000 ---p 104fffff000      0 [anon_12f00001]
-     0xc52710d7000      0xc52710d8000 r--p     1000      0 [anon_c52710d7]
-    0x2e0c00000000     0x2e0c00001000 rw-p     1000      0 [anon_2e0c00000]
-    0x2e0c00001000     0x2e0c00040000 ---p    3f000      0 [anon_2e0c00001]
-    0x2e0c00040000     0x2e0c00100000 rw-p    c0000      0 [anon_2e0c00040]
-    0x2e0c00100000     0x2e0c40000000 ---p 3ff00000      0 [anon_2e0c00100]
-    0x555555554000     0x55555558e000 r--p    3a000      0 /home/vult/Desktop/v8/v8/out/debug/d8
-    0x55555558e000     0x5555555db000 r-xp    4d000  39000 /home/vult/Desktop/v8/v8/out/debug/d8
-    0x5555555db000     0x5555555dd000 r--p     2000  85000 /home/vult/Desktop/v8/v8/out/debug/d8
-    0x5555555dd000     0x5555555df000 rw-p     2000  86000 /home/vult/Desktop/v8/v8/out/debug/d8
-    0x5555555df000     0x5555556da000 rw-p    fb000      0 [heap]
-    0x7ffef0000000     0x7ffef0021000 rw-p    21000      0 [anon_7ffef0000]
-    0x7ffef0021000     0x7ffef4000000 ---p  3fdf000      0 [anon_7ffef0021]
-    0x7ffef8000000     0x7ffef8010000 r--p    10000      0 [anon_7ffef8000]
-    0x7ffef8010000     0x7fff00000000 ---p  7ff0000      0 [anon_7ffef8010]
-    0x7fff00000000     0x7fff00010000 r--p    10000      0 [anon_7fff00000]
-    0x7fff00010000     0x7fff00020000 rw-p    10000      0 [anon_7fff00010]
-    0x7fff00020000     0x7fff20000000 ---p 1ffe0000      0 [anon_7fff00020]
-    0x7fff20000000     0x7fff20010000 r--p    10000      0 [anon_7fff20000]
-    0x7fff20010000     0x7fff40000000 ---p 1fff0000      0 [anon_7fff20010]
-    0x7fff40000000     0x7fff40010000 r--p    10000      0 [anon_7fff40000]
-    0x7fff40010000     0x7fff40030000 rw-p    20000      0 [anon_7fff40010]
-    0x7fff40030000     0x7fff60000000 ---p 1ffd0000      0 [anon_7fff40030]
-    0x7fff60000000     0x7fff7f480000 rwxp 1f480000      0 [anon_7fff60000]
-    0x7fff7f480000     0x7fff7fff3000 r-xp   b73000 195d000 /home/vult/Desktop/v8/v8/out/debug/libv8.so
-    0x7fff7fff3000     0x7fff80000000 rwxp     d000      0 [anon_7fff7fff3]
-/// 
+const buffer = new Uint8Array(0x100);
+%DebugPrint(buffer);
+
+/// ===================================================
 DebugPrint: 0x12c0004a541: [JSTypedArray]
  - map: 0x012c0028380d <Map[76](UINT8ELEMENTS)> [FastProperties]
  - prototype: 0x012c002838a1 <Object map = 0x12c00283835>
@@ -926,35 +1134,10 @@ DebugPrint: 0x12c0004a541: [JSTypedArray]
  - elements: 0x012c00000ec1 <ByteArray[0]> {
        0-255: 0
  }
- - embedder fields = {
-    0, aligned pointer: (nil)
-    0, aligned pointer: (nil)
- }
-0x12c0028380d: [Map] in OldSpace
- - map: 0x012c002816d9 <MetaMap (0x012c00281729 <NativeContext[295]>)>
- - type: JS_TYPED_ARRAY_TYPE
- - instance size: 76
- - inobject properties: 0
- - unused property fields: 0
- - elements kind: UINT8ELEMENTS
- - enum length: invalid
- - stable_map
- - back pointer: 0x012c00000069 <undefined>
- - prototype_validity cell: 0x012c00000a89 <Cell value= 1>
- - instance descriptors (own) #0: 0x012c00000759 <DescriptorArray[0]>
- - prototype: 0x012c002838a1 <Object map = 0x12c00283835>
- - constructor: 0x012c002837d9 <JSFunction Uint8Array (sfi = 0x12c0027c1fd)>
- - dependent code: 0x012c00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
- - construction counter: 0
+/// ==============================================
 pwndbg> x/30wx 0x12c0004a541-1
 0x12c0004a540:	0x0028380d	0x00000725	0x00000ec1	0x00000000
 0x12c0004a550:	0x0004a4fd	0x00000068	0x00000000	0x00000000
-0x12c0004a560:	0x00000000	0x00000020	0x00000000	0x00000020
-0x12c0004a570:	0x00000000	0x01000000	0x00000000	0x00000000
-0x12c0004a580:	0x00000000	0x00000000	0x00000000	0xbeadbeef
-0x12c0004a590:	0xbeadbeef	0xbeadbeef	0xbeadbeef	0xbeadbeef
-0x12c0004a5a0:	0xbeadbeef	0xbeadbeef	0xbeadbeef	0xbeadbeef
-0x12c0004a5b0:	0xbeadbeef	0xbeadbeef
 ///
 pwndbg> job 0x012c0004a4fd
 0x12c0004a4fd: [JSArrayBuffer]
@@ -977,182 +1160,17 @@ pwndbg> job 0x012c0004a4fd
 pwndbg> x/20wx 0x012c0004a4fd-1
 0x12c0004a4fc:	0x00289fcd	0x00000725	0x00000725	0x00000000
 0x12c0004a50c:	0x00000069	0x00000000	0x00000020	0x00000000
-0x12c0004a51c:	0x00000020	0x00000000	0x01000000	0x00100100
-0x12c0004a52c:	0x00000002	0x00000000	0x00000000	0x00000000
-0x12c0004a53c:	0x00000000	0x0028380d	0x00000725	0x00000ec1
-
-
 ```
 
-Turn on turbofan
-```cpp
-==================================================================
-wasm_instance: 0x29aea0
-DebugPrint: 0x3ada0029afd1: [Function] in OldSpace
- - map: 0x3ada002926fd <Map[28](HOLEY_ELEMENTS)> [FastProperties]
- - prototype: 0x3ada00281dc9 <JSFunction (sfi = 0x3ada001474d1)>
- - elements: 0x3ada00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
- - function prototype: <no-prototype-slot>
- - shared_info: 0x3ada0029afa1 <SharedFunctionInfo js-to-wasm::i>
- - name: 0x3ada000027e1 <String[1]: #0>
- - formal_parameter_count: 0
- - kind: NormalFunction
- - context: 0x3ada00281729 <NativeContext[295]>
- - code: 0x2bc700040e29 <Code JS_TO_WASM_FUNCTION>
- - Wasm instance data: 0x2bc700040ce5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
- - Wasm function index: 0
- - properties: 0x3ada00000725 <FixedArray[0]>
- - All own properties (excluding elements): {
-    0x3ada00000d99: [String] in ReadOnlySpace: #length: 0x3ada00271bbd <AccessorInfo name= 0x3ada00000d99 <String[6]: #length>, data= 0x3ada00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
-    0x3ada00000dc5: [String] in ReadOnlySpace: #name: 0x3ada00271ba5 <AccessorInfo name= 0x3ada00000dc5 <String[4]: #name>, data= 0x3ada00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
-    0x3ada00004215: [String] in ReadOnlySpace: #arguments: 0x3ada00271b75 <AccessorInfo name= 0x3ada00004215 <String[9]: #arguments>, data= 0x3ada00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
-    0x3ada000044a9: [String] in ReadOnlySpace: #caller: 0x3ada00271b8d <AccessorInfo name= 0x3ada000044a9 <String[6]: #caller>, data= 0x3ada00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
- }
- - feedback vector: feedback metadata is not available in SFI
-0x3ada002926fd: [Map] in OldSpace
- - map: 0x3ada002816d9 <MetaMap (0x3ada00281729 <NativeContext[295]>)>
- - type: JS_FUNCTION_TYPE
- - instance size: 28
- - inobject properties: 0
- - unused property fields: 0
- - elements kind: HOLEY_ELEMENTS
- - enum length: invalid
- - stable_map
- - callable
- - back pointer: 0x3ada00000069 <undefined>
- - prototype_validity cell: 0x3ada00000a89 <Cell value= 1>
- - instance descriptors (own) #4: 0x3ada00292725 <DescriptorArray[4]>
- - prototype: 0x3ada00281dc9 <JSFunction (sfi = 0x3ada001474d1)>
- - constructor: 0x3ada00281e6d <JSFunction Function (sfi = 0x3ada00276e5d)>
- - dependent code: 0x3ada00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
- - construction counter: 0
-/// ==========================================================
+**==> they DON'T store array's length into v8 heap memory**
 
-pwndbg> job 0x2bc700040e29
-0x2bc700040e29: [Code]
- - map: 0x3ada00000d61 <Map[60](CODE_TYPE)>
- - kind: JS_TO_WASM_FUNCTION
- - deoptimization_data_or_interpreter_data: 0
- - position_table: 0x2bc700000011 <Other heap object (TRUSTED_BYTE_ARRAY_TYPE)>
- - instruction_stream: 0x7fff60041d71 <InstructionStream JS_TO_WASM_FUNCTION>
- - instruction_start: 0x7fff60041d80
- - is_turbofanned: 1
- - stack_slots: 7
- - marked_for_deoptimization: 0
- - embedded_objects_cleared: 0
- - can_have_weak_objects: 0
- - instruction_size: 560
- - metadata_size: 20
- - inlined_bytecode_size: 0
- - osr_offset: -1
- - handler_table_offset: 20
- - unwinding_info_offset: 20
- - code_comments_offset: 20
- - instruction_stream.relocation_info: 0x2bc700040e19 <Other heap object (TRUSTED_BYTE_ARRAY_TYPE)>
- - instruction_stream.body_size: 580
 
---- Disassembly: ---
-kind = JS_TO_WASM_FUNCTION
-compiler = turbofan
-address = 0x2bc700040e29
-
-/// =================================================
-pwndbg> vmmap 0x7fff60041d80
-LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
-             Start                End Perm     Size Offset File
-    0x7fff40030000     0x7fff60000000 ---p 1ffd0000      0 [anon_7fff40030]
-►   0x7fff60000000     0x7fff7f480000 rwxp 1f480000      0 [anon_7fff60000] +0x41d80
-    0x7fff7f480000     0x7fff7fff3000 r-xp   b73000 195d000 /home/vult/Desktop/v8/v8/out/debug/libv8.so
-pwndbg> x/30wx 0x3ada0029afd1-1
-0x3ada0029afd0:	0x002926fd	0x00000725	0x00000725	0x00401c01
-0x3ada0029afe0:	0x0029afa1	0x00281729	0x001400a9	0x002816d9
-0x3ada0029aff0:	0x30050307	0x0d000421	0x0a400bff	0x00000085
-0x3ada0029b000:	0x00282139	0x0004a925	0x00000735	0x00000a89
-0x3ada0029b010:	0x00000000	0x002816d9	0x30050307	0x2d000421
-0x3ada0029b020:	0x00400bff	0x00000085	0x00282139	0x0004a94d
-0x3ada0029b030:	0x00000735	0x00000a89	0x00000000	0x002816d9
-0x3ada0029b040:	0x30050307	0x0d000421
-
-///  ../../src/diagnostics/objects-printer.cc:127
-pwndbg> x/10wx 0x2bc700040e19-1
-0x2bc700040e18:	0x00000921	0x00000010	0x1f231f11	0x1f365304
-0x2bc700040e28:	0x00000d61	0x00401c01	0x00000000	0x00000011
-0x2bc700040e38:	0x0029b095	0x60041d71
-pwndbg> job 0x2bc700040e19
-0x2bc700040e19: [TrustedByteArray]
- - map: 0x3ada00000921 <Map(TRUSTED_BYTE_ARRAY_TYPE)>
- - length: 8
- - begin: 0x2bc700040e20
-pwndbg> Quit
-
-```
 
 ### ArrayBuffer
 
-```cpp
-DebugPrint: 0x38a60004a5a9: [JSArrayBuffer]
- - map: 0x38a600289fcd <Map[68](HOLEY_ELEMENTS)> [FastProperties]
- - prototype: 0x38a60028a161 <Object map = 0x38a600289ff5>
- - elements: 0x38a600000725 <FixedArray[0]> [HOLEY_ELEMENTS]
- - embedder fields: 2
- - cpp_heap_wrappable: 0
- - backing_store: 0x38a700000000
- - byte_length: 8
- - max_byte_length: 8
- - detach key: 0x38a600000069 <undefined>
- - detachable
- - properties: 0x38a600000725 <FixedArray[0]>
- - All own properties (excluding elements): {}
- - embedder fields = {
-    0, aligned pointer: (nil)
-    0, aligned pointer: (nil)
- }
-0x38a600289fcd: [Map] in OldSpace
- - map: 0x38a6002816d9 <MetaMap (0x38a600281729 <NativeContext[295]>)>
- - type: JS_ARRAY_BUFFER_TYPE
- - instance size: 68
- - inobject properties: 0
- - unused property fields: 0
- - elements kind: HOLEY_ELEMENTS
- - enum length: invalid
- - stable_map
- - back pointer: 0x38a600000069 <undefined>
- - prototype_validity cell: 0x38a600000a89 <Cell value= 1>
- - instance descriptors (own) #0: 0x38a600000759 <DescriptorArray[0]>
- - prototype: 0x38a60028a161 <Object map = 0x38a600289ff5>
- - constructor: 0x38a600289f7d <JSFunction ArrayBuffer (sfi = 0x38a60027b4ad)>
- - dependent code: 0x38a600000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
- - construction counter: 0
+```js
 
 
 ```
 
-Thinking about "how they can read `trusted_data` field? 
 
-```cpp
-// v8/src/compiler/wasm-graph-assembler.cc:214
-Node* WasmGraphAssembler::BuildDecodeTrustedPointer(Node* handle,
-                                                    IndirectPointerTag tag) {
-#if V8_ENABLE_SANDBOX
-  Node* index = Word32Shr(handle, Int32Constant(kTrustedPointerHandleShift));
-  Node* offset = ChangeUint32ToUint64(
-      Word32Shl(index, Int32Constant(kTrustedPointerTableEntrySizeLog2)));
-  Node* table = Load(MachineType::Pointer(), LoadRootRegister(),
-                     IsolateData::trusted_pointer_table_offset() +
-                         Internals::kTrustedPointerTableBasePointerOffset);
-  Node* decoded_ptr = Load(MachineType::Pointer(), table, offset);
-  // Untag the pointer and remove the marking bit in one operation.
-  decoded_ptr = WordAnd(decoded_ptr,
-                        IntPtrConstant(~(tag | kTrustedPointerTableMarkBit)));
-  // We have to change the type of the result value to Tagged, so if the value
-  // gets spilled on the stack, it will get processed by the GC.
-  decoded_ptr = BitcastWordToTagged(decoded_ptr);
-  return decoded_ptr;
-#else
-  UNREACHABLE();
-#endif  // V8_ENABLE_SANDBOX
-}
-```
-## Another Approach
-
-reading `v8/src/sandbox` folder

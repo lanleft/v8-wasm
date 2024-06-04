@@ -103,8 +103,8 @@ for (let i=0; i<10000; i++){
 %DebugPrint(f);
 console.log("==================================================================");
 
-%DebugPrint(wasm_instance);
-// f();
+// %DebugPrint(wasm_instance);
+f();
 %SystemBreak();
 
 // console.log("test reading oob: " + arb_read(started_array+0x80010000).toString(16));
@@ -112,7 +112,26 @@ console.log("=================================================================="
 // %DebugPrint(Math.min);
 // %DebugPrint(f);
 // %SystemBreak();
-// ================================================================= */ 
+// ============================ Another solution ===================================== */ 
+// d8.file.execute('/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js');
+// const builder = new WasmModuleBuilder();
+// let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+
+// builder.addFunction("func0", $sig_i_l).exportFunc().addBody([ // function 1 convert from int32 to int64
+//   kExprLocalGet, 0,
+//   kExprI32ConvertI64,
+// ]);
+// let instance = builder.instantiate();
+
+// console.log("===============================================================");
+// // %DebugPrint(instance);
+// instance.exports.func0(0n);
+
+// // %SystemBreak();
+
+
+
+/// =========================================================================
 
 // ======= attemp faild ===========
 // can not read negative offset
