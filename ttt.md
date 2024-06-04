@@ -133,6 +133,34 @@ Continuing.
 Couldn't get registers: No such process.
 ```
 
+## Confirmed?
+
+Disable the debug check 
+https://source.chromium.org/chromium/chromium/src/+/main:v8/src/objects/deoptimization-data.cc;l=274
+and run again 
+https://source.chromium.org/chromium/chromium/src/+/main:v8/src/deoptimizer/translated-state.cc;l=1798
+```js
+Continuing.
+# Ignoring debug check failure in ../../src/base/vector.h, line 77: index < length_ (80 vs. 80)
+
+
+#
+# Safely terminating process due to error in ../../src/deoptimizer/translated-state.cc, line 1649
+# The following harmless error was encountered: We should never get here - unexpected deopt info.
+#
+#
+#
+#FailureMessage Object: 0x7fffffffce30
+==== C stack trace ===============================
+
+    /util/v8_sandbox/v8/out/test/libv8_libbase.so(v8::base::debug::StackTrace::StackTrace()+0x13) [0x7ffff3ff53d3]
+    /util/v8_sandbox/v8/out/test/libv8_libplatform.so(+0x1631d) [0x7ffff7faf31d]
+    /util/v8_sandbox/v8/out/test/libv8_libbase.so(V8_Fatal(char const*, int, char const*, ...)+0x17d) [0x7ffff3fd67fd]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x19b0535) [0x7ffff59b0535]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x19b0c1a) [0x7ffff59b0c1a]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x199bbdb) [0x7ffff599bbdb]
+    [0x7fff7f3801ff]
+```
 ```js
 
 Object.prototype.__defineGetter__(0, () => {
