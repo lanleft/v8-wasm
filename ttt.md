@@ -1,4 +1,13 @@
 
+To get the offset `console.log(v8_read64(addrOf(dummy)+0x24e5a2).toString(16));` breakpoint at `./../src/common/ptr-compr.h:174` 
+`=> 0x7ffff599d5fa <_ZNK2v88internal11Deoptimizer21ComputeInputFrameSizeEv+58>:	movzx  r12d,WORD PTR [r14])`
+and calculate by 
+```js
+gdb$ p/x $r14-0x159b0004b241 (DebugPrint: 0x159b0004b241: [JSTypedArray])
+$1 = 0x24e5a1
+```
+Plus 1 for correct offset.
+
 ```js
 // Copyright 2017 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
