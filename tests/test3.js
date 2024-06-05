@@ -93,8 +93,6 @@ var f = wasm_instance.exports.main;
 let wasm_instance_addr = addrOf(wasm_instance);
 console.log("wasm_instance: 0x" + wasm_instance_addr.toString(16));
 
-
-
 // %SystemBreak();
 
 for (let i=0; i<10000; i++){

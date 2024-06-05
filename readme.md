@@ -49,6 +49,9 @@ condition 3 (chunk_metadata.reservation_.region_.address_&0xffffff)==0x40000
 
 p chunk_metadata.reservation_.region_.address_
 
+// set byte 
+set {char}0x11223344 = 0x01
+
 ```
 
 - Challenges:
@@ -83,13 +86,6 @@ p chunk_metadata.reservation_.region_.address_
 pwndbg> x/20gx 0x1397000493f5-1
 0x1397000493f4:	0x414141410028380d	0x0000000000004141
 0x139700049404:	0x00000068000493b1	0x0000000000000000
-0x139700049414:	0x0000000100000000	0x0000000100000000
-0x139700049424:	0x0100000000000000	0x0000000000000000
-0x139700049434:	0x0000000000000000	0xbeadbeef00000000
-0x139700049444:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
-0x139700049454:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
-0x139700049464:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
-0x139700049474:	0xbeadbeefbeadbeef	0xbeadbeefbeadbeef
 
 ```
 ### Studying Previous Sandbox Escape Techniques
@@ -149,12 +145,8 @@ DebugPrint: 0x170f0029a781: [Function] in OldSpace
  - Wasm instance data: 0x1ba1000404c9 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
  - Wasm function index: 0
  - properties: 0x170f00000725 <FixedArray[0]>
- - All own properties (excluding elements): {
-    0x170f00000d99: [String] in ReadOnlySpace: #length: 0x170f00271bbd <AccessorInfo name= 0x170f00000d99 <String[6]: #length>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
-    0x170f00000dc5: [String] in ReadOnlySpace: #name: 0x170f00271ba5 <AccessorInfo name= 0x170f00000dc5 <String[4]: #name>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
-    0x170f00004215: [String] in ReadOnlySpace: #arguments: 0x170f00271b75 <AccessorInfo name= 0x170f00004215 <String[9]: #arguments>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
-    0x170f000044a9: [String] in ReadOnlySpace: #caller: 0x170f00271b8d <AccessorInfo name= 0x170f000044a9 <String[6]: #caller>, data= 0x170f00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
- }
+
+
  - feedback vector: feedback metadata is not available in SFI
 0x170f002926fd: [Map] in OldSpace
  - map: 0x170f002816d9 <MetaMap (0x170f00281729 <NativeContext[295]>)>
@@ -1166,6 +1158,17 @@ pwndbg> x/20wx 0x012c0004a4fd-1
 ```
 
 **==> they DON'T store array's length into v8 heap memory**
+
+**v8/src/builtins** 
+this directory contains the implementation of various built-in functions and objects provided by JavaScript. Purpose of `src/builtins`
+
+1. Implementation of Standard Built-in Objects, such as `Array`, `Object`, `String`, `Number`, `Function`, `Date`, and more. 
+2. Native JavaScript Functions. For example, methods like `Array.prototype.push`, `Object.keys`, `String.prototype.substring`, and many others are implemented here.
+3. Performance Optimizations
+4. Internal Utilities
+
+///===============================================================
+
 
 
 
