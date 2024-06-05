@@ -987,7 +987,10 @@ console.log(ret);
 => this commit removed all the `func_ref` (function pointer) into sandbox memory:
 ![removing-func-ptr](image-4.png)
 
+Loading function from functionData:
+
 ```cpp
+// v8/src/codegen/code-stub-assembler.h
   TNode<WasmInternalFunction> LoadWasmInternalFunctionFromFunctionData(
       TNode<WasmFunctionData> data) {
     return CAST(LoadProtectedPointerField(
