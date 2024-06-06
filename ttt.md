@@ -249,35 +249,27 @@ DebugPrint: 0x2c9700069059: [JSTypedArray]
 
 
  ```bash
- result: ALLOCATOR =====> 0x2d8d00000000
------------------------------------------------------------------------------------------------------------------------[e[1m][regs]
-  RAX: 0x0000000000001FFF  RBX: 0x0000000000000FFF  RBP: 0x00007FFFFFFFDAA0  RSP: 0x00007FFFFFFFDA50  [e[1m][e[0;31m]o d I t s z a P c
-  RDI: 0xFFFFFFFFF7FF0FFF  RSI: 0x0000000000000000  RDX: 0x0000000000000001  RCX: 0x0000000000000000  RIP:[e[0;31m] 0x00007FFFF3FF1609
-  R8 : 0x0000000000010000  R9 : 0x00007FFFF3FFD7F8  R10: 0x00005555555D8A20  R11: 0x0000000000000246  R12: 0x0000000000000000
-  R13: 0x0000000000001000  R14: 0x0000000008000000  R15: 0x000000000800F000
-  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
------------------------------------------------------------------------------------------------------------------------[e[1m][code]
-=> 0x7ffff3ff1609 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+329>:	cmp    ecx,0x6
-   0x7ffff3ff160c <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+332>:	jae    0x7ffff3ff177c <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+700>
-   0x7ffff3ff1612 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+338>:	mov    r14,r8
-   0x7ffff3ff1615 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+341>:	neg    r14
-   0x7ffff3ff1618 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+344>:	and    rsi,r14
-   0x7ffff3ff161b <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+347>:	add    rbx,r15
-   0x7ffff3ff161e <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+350>:	neg    r13
-   0x7ffff3ff1621 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+353>:	and    r13,rbx
------------------------------------------------------------------------------------------------------------------------------
-
-Thread 1 "d8" hit Breakpoint 3.1, v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=<optimized out>, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:158
-158	  int prot = GetProtectionFromMemoryPermission(access);
+ 
+Thread 1 "d8" hit Breakpoint 2, v8::base::GetProtectionFromMemoryPermission (access=v8::base::OS::MemoryPermission::kNoAccess) at ../../src/base/platform/platform-posix.cc:205
+205	  switch (access) {
 gdb$ bt
-#0  v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=<optimized out>, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:158
-#1  v8::base::OS::Allocate (hint=<optimized out>, size=0x8000000, alignment=alignment@entry=0x10000, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:418
-#2  0x00007ffff3ff2d98 in v8::base::OS::CreateAddressSpaceReservation (hint=0x0, size=0x8000000, alignment=0x10000, max_permission=65536) at ../../src/base/platform/platform-posix.cc:621
-#3  0x00007ffff3ff003b in v8::base::VirtualAddressSpace::AllocateSubspace (this=0x7ffff7f94248 <v8::internal::GetPlatformVirtualAddressSpace()::vas>, hint=0x0, size=0x8000000, alignment=0x10000, max_page_permissions=v8::PagePermissions::kReadWrite) at ../../src/base/virtual-address-space.cc:154
-#4  0x00007ffff5d5c95a in v8::internal::ExternalEntityTable<v8::internal::CodePointerTableEntry, 134217728ul>::Initialize (this=0x7ffff7f93ec0 <v8::internal::GetProcessWideCodePointerTable()::object>) at ../../src/sandbox/external-entity-table-inl.h:92
-#5  0x00007ffff5d5c671 in v8::internal::V8::Initialize () at ../../src/init/v8.cc:196
-#6  0x00007ffff55e9001 in v8::V8::Initialize (build_config=0xf7ff0fff) at ../../src/api/api.cc:6434
-#7  0x00005555555aa76a in v8::V8::Initialize () at ../../include/v8-initialization.h:111
+#0  v8::base::GetProtectionFromMemoryPermission (access=v8::base::OS::MemoryPermission::kNoAccess) at ../../src/base/platform/platform-posix.cc:205
+#1  v8::base::(anonymous namespace)::Allocate (hint=0x3b9500000000, size=size@entry=0x110fffff000, access=v8::base::OS::MemoryPermission::kNoAccess, page_type=page_type@entry=v8::base::(anonymous namespace)::PageType::kPrivate) at ../../src/base/platform/platform-posix.cc:168
+#2  0x00007ffff3ff169a in v8::base::OS::Allocate (hint=<optimized out>, size=<optimized out>, alignment=alignment@entry=0x100000000, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:429
+#3  0x00007ffff3ff2e78 in v8::base::OS::CreateAddressSpaceReservation (hint=0x3b9500000000, size=0x11000000000, alignment=0x100000000, max_permission=v8::base::OS::MemoryPermission::kNoAccess) at ../../src/base/platform/platform-posix.cc:632
+#4  0x00007ffff3ff00ab in v8::base::VirtualAddressSpace::AllocateSubspace (this=0x7ffff7f94248 <v8::internal::GetPlatformVirtualAddressSpace()::vas>, hint=0x3b9500000000, size=0x11000000000, alignment=0x100000000, max_page_permissions=v8::PagePermissions::kReadWrite) at ../../src/base/virtual-address-space.cc:154
+#5  0x00007ffff64f0f9e in v8::internal::Sandbox::Initialize (this=this@entry=0x7ffff7f93ed8 <v8::internal::GetProcessWideSandbox()::object>, vas=vas@entry=0x7ffff7f94248 <v8::internal::GetPlatformVirtualAddressSpace()::vas>, size=size@entry=0x10000000000, use_guard_regions=0x1) at ../../src/sandbox/sandbox.cc:167
+#6  0x00007ffff64f08ca in v8::internal::Sandbox::Initialize (this=0x7ffff7f93ed8 <v8::internal::GetProcessWideSandbox()::object>, vas=0x7ffff7f94248 <v8::internal::GetPlatformVirtualAddressSpace()::vas>) at ../../src/sandbox/sandbox.cc:123
+#7  0x00007ffff5d5c652 in v8::internal::V8::Initialize () at ../../src/init/v8.cc:193
+#8  0x00007ffff55e9001 in v8::V8::Initialize (build_config=0x0) at ../../src/api/api.cc:6434
+#9  0x00005555555aa76a in v8::V8::Initialize () at ../../include/v8-initialization.h:111
+#10 v8::Shell::Main (argc=<optimized out>, argv=0x7fffffffe308) at ../../src/d8/d8.cc:5958
+#11 0x00007ffff3829d90 in ?? () from /lib/x86_64-linux-gnu/libc.so.6
+#12 0x00007ffff3829e40 in __libc_start_main () from /lib/x86_64-linux-gnu/libc.so.6
+#13 0x0000555555576afa in _start ()
+gdb$ c
+Continuing.
+Allocate (     110fffff000) hint: 0x3b9500000000 =====> 0x00003b9500000000
 
 ```
 
