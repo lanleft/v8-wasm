@@ -75,31 +75,23 @@ var wasm_instance = new WebAssembly.Instance(wasm_mod, {env: { memory: memory }}
 const store = wasm_instance.exports.store;
 const load = wasm_instance.exports.load;
 
-// Use the WebAssembly store function to write a value to memory
 store(0, 0x41); // Store the value 42 at address 0
 
-// Use the WebAssembly load function to read the value from memory
-const value = load(0); // Load the value from address 0
-console.log(`Value at address 0: ${value}`); // Should print 42
 
-// Directly manipulate the memory from JavaScript
-const memoryView = new Float64Array(memory.buffer);
-memoryView[2] = 0x42; // Store the value 84 at the second 32-bit slot
+// // Use the WebAssembly store function to write a value to memory
 
-
-%DebugPrint(memory.buffer);
+%DebugPrint(store);
+// console.log("=====================================================================");
+// const dummy = new Int8Array(150);
+// %DebugPrint(dummy);
 %SystemBreak();
-// Verify the memory content from WebAssembly
-// const jsValue = load(0xffffff); // Load the value from address 4 (since each 32-bit int is 4 bytes)
-
-const jsValue = load(2);
-console.log(`Value at address: ${jsValue}`); // Should print 84
 
 /// ==================================================================
 
 
 
 %SystemBreak();
+store(1, 0x41); 
 
 // access out-of-bounds
 // test(34212359, 0x4343);
