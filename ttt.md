@@ -1,4 +1,380 @@
 
+
+Seems the rwx randomly placed at different runs?
+Let find the code reponsible for different memory section in v8.
+
+
+- [ Memory for wasm code ](#1-wasm-memory)
+- [ Memory for v8 js object](#2-memory-for-jsobject)
+
+
+## 1. WASM memory
+```js
+
+%SystemBreak();
+d8.file.execute('v8/test/mjsunit/wasm/wasm-module-builder.js');
+
+const builder = new WasmModuleBuilder();
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+
+```
+
+
+
+```js
+gdb$break mmap
+gdb$ b mmap
+Note: breakpoint 2 (disabled) also set at pc 0x7ffff391ea10.
+Breakpoint 3 at 0x7ffff391ea10
+gdb$ c
+Continuing.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000003  RBX: 0x0000555555667BB0  RBP: 0x00007FFFFFFFD130  RSP: 0x00007FFFFFFFD068  [e[1m][e[0;31m]o d I t s Z a P c
+  RDI: 0x000032442D412000  RSI: 0x0000000000011ACC  RDX: 0x0000000000000001  RCX: 0x0000000000000002  RIP:[e[0;31m] 0x00007FFFF391EA10
+  R8 : 0x0000000000000003  R9 : 0x0000000000000000  R10: 0x0000000000001000  R11: 0x0000000000000246  R12: 0x0000000000000002
+  R13: 0x000032442D412000  R14: 0x0000000000000001  R15: 0x0000000000011ACC
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff391ea10 <mmap64>:	endbr64
+   0x7ffff391ea14 <mmap64+4>:	mov    r10d,ecx
+   0x7ffff391ea17 <mmap64+7>:	test   r9d,0xfff
+   0x7ffff391ea1e <mmap64+14>:	jne    0x7ffff391ea30 <mmap64+32>
+   0x7ffff391ea20 <mmap64+16>:	mov    eax,0x9
+   0x7ffff391ea25 <mmap64+21>:	syscall
+   0x7ffff391ea27 <mmap64+23>:	cmp    rax,0xfffffffffffff000
+   0x7ffff391ea2d <mmap64+29>:	ja     0x7ffff391ea50 <mmap64+64>
+-----------------------------------------------------------------------------------------------------------------------------
+
+Thread 1 "d8" hit Breakpoint 3, 0x00007ffff391ea10 in mmap64 () from /lib/x86_64-linux-gnu/libc.so.6
+gdb$ finish
+Run till exit from #0  0x00007ffff391ea10 in mmap64 () from /lib/x86_64-linux-gnu/libc.so.6
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x000032442D412000  RBX: 0x0000555555667BB0  RBP: 0x00007FFFFFFFD130  RSP: 0x00007FFFFFFFD070  [e[1m][e[0;31m]o d I t s z a P C
+  RDI: 0x000032442D412000  RSI: 0x0000000000011ACC  RDX: 0x0000000000000001  RCX: 0x00007FFFF391EA27  RIP:[e[0;31m] 0x00007FFFF3FF3164
+  R8 : 0x0000000000000003  R9 : 0x0000000000000000  R10: 0x0000000000000002  R11: 0x0000000000000246  R12: 0x0000000000000002
+  R13: 0x000032442D412000  R14: 0x0000000000000001  R15: 0x0000000000011ACC
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff3164 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+292>:	cmp    rax,0xffffffffffffffff
+   0x7ffff3ff3168 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+296>:	je     0x7ffff3ff30f5 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+181>
+   0x7ffff3ff316a <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+298>:	mov    r14,rax
+   0x7ffff3ff316d <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+301>:	mov    edi,0x20
+   0x7ffff3ff3172 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+306>:	call   0x7ffff3ffb270 <_Znwm@plt>
+   0x7ffff3ff3177 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+311>:	lea    rcx,[rip+0xa75a]        # 0x7ffff3ffd8d8 <_ZTVN2v84base21PosixMemoryMappedFileE+16>
+   0x7ffff3ff317e <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+318>:	mov    QWORD PTR [rax],rcx
+   0x7ffff3ff3181 <_ZN2v84base2OS16MemoryMappedFile4openEPKcNS2_8FileModeE+321>:	mov    QWORD PTR [rax+0x8],rbx
+-----------------------------------------------------------------------------------------------------------------------------
+v8::base::OS::MemoryMappedFile::open (name=<optimized out>, mode=<optimized out>) at ../../src/base/platform/platform-posix.cc:775
+775	in ../../src/base/platform/platform-posix.cc
+gdb$ bt
+#0  v8::base::OS::MemoryMappedFile::open (name=<optimized out>, mode=<optimized out>) at ../../src/base/platform/platform-posix.cc:775
+#1  0x000055555558fda7 in v8::Shell::ReadFile (isolate=isolate@entry=0x5555555e3000, name=0x55555565df90 "v8/test/mjsunit/wasm/wasm-module-builder.js", should_throw=0x1) at ../../src/d8/d8.cc:4151
+#2  0x000055555559c31a in v8::Shell::ExecuteFile (info=...) at ../../src/d8/d8.cc:2779
+
+
+gdb$ finish
+Run till exit from #0  0x00007ffff391ea10 in mmap64 () from /lib/x86_64-linux-gnu/libc.so.6
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x00002612B5DB1000  RBX: 0x0000000000000001  RBP: 0x00007FFFFFFFCA90  RSP: 0x00007FFFFFFFCA40  [e[1m][e[0;31m]o d I t s z a P C
+  RDI: 0x00002612B5DB1000  RSI: 0x0000000000001000  RDX: 0x0000000000000000  RCX: 0x00007FFFF391EA27  RIP:[e[0;31m] 0x00007FFFF3FF15F0
+  R8 : 0x00000000FFFFFFFF  R9 : 0x0000000000000000  R10: 0x0000000000004022  R11: 0x0000000000000246  R12: 0x0000000000000000
+  R13: 0x0000000000001000  R14: 0x0000000000001000  R15: 0xFFFFFFFFFFFFF000
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff15f0 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+400>:	mov    rcx,rax
+   0x7ffff3ff15f3 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+403>:	inc    rax
+   0x7ffff3ff15f6 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+406>:	cmp    rax,0x2
+   0x7ffff3ff15fa <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+410>:	jae    0x7ffff3ff160e <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+430>
+   0x7ffff3ff15fc <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+412>:	mov    rax,r12
+   0x7ffff3ff15ff <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+415>:	add    rsp,0x28
+   0x7ffff3ff1603 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+419>:	pop    rbx
+   0x7ffff3ff1604 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+420>:	pop    r12
+-----------------------------------------------------------------------------------------------------------------------------
+0x00007ffff3ff15f0 in v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=0x1000, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:160
+160	in ../../src/base/platform/platform-posix.cc
+gdb$ bt
+#0  0x00007ffff3ff15f0 in v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=0x1000, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:160
+#1  v8::base::OS::Allocate (hint=<optimized out>, size=0x1000, alignment=<optimized out>, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:417
+#2  0x00007ffff6567dc2 in v8::internal::AllocatePages (page_allocator=0x5555555cf530, hint=hint@entry=0x2612b5db1000, size=size@entry=0x1000, alignment=alignment@entry=0x1000, access=access@entry=v8::PageAllocator::kNoAccessWillJitLater) at ../../src/utils/allocation.cc:174
+#3  0x00007ffff65681f5 in v8::internal::VirtualMemory::VirtualMemory (this=0x7fffffffcb50, page_allocator=<optimized out>, size=0x1000, hint=0x2612b5db1000, alignment=0x1000, permissions=v8::PageAllocator::kNoAccessWillJitLater) at ../../src/utils/allocation.cc:218
+#4  0x00007ffff6d40ec8 in v8::internal::wasm::WasmCodeManager::TryAllocate (this=this@entry=0x5555555dd940, size=size@entry=0x1000) at ../../src/wasm/wasm-code-manager.cc:2011
+#5  0x00007ffff6d48e19 in v8::internal::wasm::WasmCodeManager::NewNativeModule (this=<optimized out>, isolate=<optimized out>, enabled=..., compile_imports=..., code_size_estimate=<optimized out>, module=...) at ../../src/wasm/wasm-code-manager.cc:2252
+#6  0x00007ffff6d79c8e in v8::internal::wasm::WasmEngine::NewNativeModule (this=0x5555555dd9a8, isolate=0x5555555e3000, enabled=..., compile_imports=..., module=..., code_size_estimate=0x87) at ../../src/wasm/wasm-engine.cc:1463
+#7  0x00007ffff6c13a45 in v8::internal::wasm::CompileToNativeModule (isolate=0x5555555e3000, enabled_features=enabled_features@entry=..., compile_imports=compile_imports@entry=..., thrower=thrower@entry=0x7fffffffd050, module=..., wire_bytes=..., compilation_id=0x0, context_id=..., pgo_info=0x0) at ../../src/wasm/module-compiler.cc:2440
+#8  0x00007ffff6d73a1b in v8::internal::wasm::WasmEngine::SyncCompile (this=0x5555555dd9a8, isolate=0x5555555e3000, enabled=..., compile_imports=..., thrower=0x7fffffffd050, bytes=...) at ../../src/wasm/wasm-engine.cc:721
+#9  0x00007ffff6d912a0 in v8::(anonymous namespace)::WebAssemblyModuleImpl (info=...) at ../../src/wasm/wasm-js.cc:864
+#10 v8::internal::wasm::WebAssemblyModule (info=...) at ../../src/wasm/wasm-js.cc:3071
+#11 0x00007ffff5698315 in v8::internal::FunctionCallbackArguments::Call (this=this@entry=0x7fffffffd190, function=...) at ../../src/api/api-arguments-inl.h:114
+#12 0x00007ffff5696e44 in v8::internal::(anonymous namespace)::HandleApiCallHelper<true> (isolate=isolate@entry=0x5555555e3000, new_target=..., fun_data=fun_data@entry=..., receiver=..., argv=argv@entry=0x7fffffffd358, argc=argc@entry=0x2) at ../../src/builtins/builtins-api.cc:108
+#13 0x00007ffff5695737 in v8::internal::Builtin_Impl_HandleApiConstruct (args=..., isolate=isolate@entry=0x5555555e3000) at ../../src/builtins/builtins-api.cc:139
+#14 0x00007ffff5694f2d in v8::internal::Builtin_HandleApiConstruct (args_length=0x7, args_object=0x7fffffffd360, isolate=0x5555555e3000) at ../../src/builtins/builtins-api.cc:130
+
+gdb$ info proc mappings
+process 2303068
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+      0x2612b5db1000     0x2612b5db2000     0x1000        0x0  rwxp
+      0x33e400000000     0x33ec00000000 0x800000000        0x0  ---p
+      
+```
+
+
+
+
+
+## 2. Memory for JSObject
+At the beginning:
+```js
+process 2631211
+Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset  Perms  objfile
+      0x1cc300000000     0x1cc300001000     0x1000        0x0  rw-p
+      0x1cc300001000     0x1cc300040000    0x3f000        0x0  ---p
+      0x1cc300040000     0x1cc300080000    0x40000        0x0  rw-p
+      0x1cc300080000     0x1cc340000000 0x3ff80000        0x0  ---p
+      0x1ced00000000     0x1cf500000000 0x800000000        0x0  ---p
+      0x1cf500000000     0x1cf500010000    0x10000        0x0  r--p
+      0x1cf500010000     0x1cf500020000    0x10000        0x0  ---p
+      0x1cf500020000     0x1cf500040000    0x20000        0x0  r--p
+      0x1cf500040000     0x1cf500149000   0x109000        0x0  rw-p 
+      0x1cf500149000     0x1cf500180000    0x37000        0x0  ---p
+      0x1cf500180000     0x1cf50027e000    0xfe000        0x0  r--p
+      0x1cf50027e000     0x1cf500280000     0x2000        0x0  ---p
+      0x1cf500280000     0x1cf5002c0000    0x40000        0x0  rw-p
+      0x1cf5002c0000     0x1dfd00000000 0x107ffd40000        0x0  ---p
+      0x2345e00d9000     0x2345e00da000     0x1000        0x0  r--p
+      0x555555554000     0x555555576000    0x22000        0x0  r--p   /util/v8_sandbox/v8/out/test/d8
+
+
+
+DebugPrint: 0x1cf500069059: [JSTypedArray]
+
+ - map: 0x1cf50028d249 <Map[76](RAB_GSAB_UINT8ELEMENTS)> [FastProperties]
+ - prototype: 0x1cf5002838ad <Object map = 0x1cf500283841>
+ - elements: 0x1cf500000ed1 <ByteArray[0]> [RAB_GSAB_UINT8ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x1cf500069015 <SharedArrayBuffer map = 0x1cf500291381>
+ - byte_offset: 23
+ - byte_length: 0
+ - length: 0
+ - data_ptr: 0x1cf800000010
+   - base_pointer: (nil)
+   - external_pointer: 0x1cf800000010
+ - length-tracking
+ - properties: 0x1cf500000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+ infoaddr 0x1cf500069059
+Address 0x1cf500069059 belongs to section:
+Start: 0x1cf500040000, End: 0x1cf500149000, Size: 0x109000, Offset: 0x0, Permissions: rw-p, Path:
+ ```
+
+
+ Mean that the heap for v8 obj has been created before it run.
+
+
+ ```cpp
+ void* Allocate(void* hint, size_t size, OS::MemoryPermission access,
+               PageType page_type) {
+  int prot = GetProtectionFromMemoryPermission(access);
+  int flags = GetFlagsForMemoryPermission(access, page_type);
+  void* result = mmap(hint, size, prot, flags, kMmapFd, kMmapFdOffset);
+  printf("result: ALLOCATOR =====> %p\n", result);
+  if (result == MAP_FAILED) return nullptr;
+
+#if V8_OS_LINUX && V8_ENABLE_PRIVATE_MAPPING_FORK_OPTIMIZATION
+  // This is advisory, so we ignore errors.
+  madvise(result, size, MADV_DONTFORK);
+#endif
+```
+```bash
+result: ALLOCATOR =====> 0x2c8f00000000
+result: ALLOCATOR =====> 0x7fff92fef000
+result: ALLOCATOR =====> 0xc764b628000
+Sandbox testing mode is enabled. Write to the page starting at 0xc764b628000 (available from JavaScript as `Sandbox.targetPage`) to demonstrate a sandbox bypass.
+result: ALLOCATOR =====> 0x7ffff3f6b000
+result: ALLOCATOR =====> 0xb6f00000000
+result: ALLOCATOR =====> 0x7fff72fb1000
+result: ALLOCATOR =====> 0x7fff72fb1000
+result: ALLOCATOR =====> 0x7fff72fb1000
+result: ALLOCATOR =====> 0x7fff72fb1000
+result: ALLOCATOR =====> 0x7fff72fb1000
+result: ALLOCATOR =====> 0x7fff72fb1000
+```
+
+
+Final map:
+```bash
+   0xb6f00000000      0xb6f00001000     0x1000        0x0  rw-p
+       0xb6f00001000      0xb6f00040000    0x3f000        0x0  ---p
+       0xb6f00040000      0xb6f00100000    0xc0000        0x0  rw-p
+       0xb6f00100000      0xb6f40000000 0x3ff00000        0x0  ---p
+       0xc764b628000      0xc764b629000     0x1000        0x0  r--p
+      0x22b7ce127000     0x22b7ce128000     0x1000        0x0  rwxp
+      0x2c8f00000000     0x2c9700000000 0x800000000        0x0  ---p
+      0x2c9700000000     0x2c9700010000    0x10000        0x0  r--p
+      0x2c9700010000     0x2c9700020000    0x10000        0x0  ---p
+      0x2c9700020000     0x2c9700040000    0x20000        0x0  r--p
+      0x2c9700040000     0x2c9700149000   0x109000        0x0  rw-p
+      0x2c9700149000     0x2c9700180000    0x37000        0x0  ---p
+      0x2c9700180000     0x2c970027e000    0xfe000        0x0  r--p
+      0x2c970027e000     0x2c9700280000     0x2000        0x0  ---p
+      0x2c9700280000     0x2c9700300000    0x80000        0x0  rw-p
+      0x2c9700300000     0x2c9800000000 0xffd00000        0x0  ---p
+      0x2c9800000000     0x2c9800100000   0x100000        0x0  rw-p
+      0x2c9800100000     0x2c9a00000000 0x1fff00000        0x0  ---p
+      0x2c9a00000000     0x2c9a00001000     0x1000        0x0  rw-p
+      0x2c9a00001000     0x2d9f00000000 0x104fffff000        0x0  ---p
+```
+```bash
+DebugPrint: 0x2c9700069059: [JSTypedArray]
+ - map: 0x2c970028d249 <Map[76](RAB_GSAB_UINT8ELEMENTS)> [FastProperties]
+ - prototype: 0x2c97002838ad <Object map = 0x2c9700283841>
+ - elements: 0x2c9700000ed1 <ByteArray[0]> [RAB_GSAB_UINT8ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x2c9700069015 <SharedArrayBuffer map = 0x2c9700291381>
+ - byte_offset: 23
+ - byte_length: 0
+ - length: 0
+ - data_ptr: 0x2c9a00000010
+ ```
+ 
+
+
+ ```bash
+ result: ALLOCATOR =====> 0x2d8d00000000
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000001FFF  RBX: 0x0000000000000FFF  RBP: 0x00007FFFFFFFDAA0  RSP: 0x00007FFFFFFFDA50  [e[1m][e[0;31m]o d I t s z a P c
+  RDI: 0xFFFFFFFFF7FF0FFF  RSI: 0x0000000000000000  RDX: 0x0000000000000001  RCX: 0x0000000000000000  RIP:[e[0;31m] 0x00007FFFF3FF1609
+  R8 : 0x0000000000010000  R9 : 0x00007FFFF3FFD7F8  R10: 0x00005555555D8A20  R11: 0x0000000000000246  R12: 0x0000000000000000
+  R13: 0x0000000000001000  R14: 0x0000000008000000  R15: 0x000000000800F000
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff1609 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+329>:	cmp    ecx,0x6
+   0x7ffff3ff160c <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+332>:	jae    0x7ffff3ff177c <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+700>
+   0x7ffff3ff1612 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+338>:	mov    r14,r8
+   0x7ffff3ff1615 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+341>:	neg    r14
+   0x7ffff3ff1618 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+344>:	and    rsi,r14
+   0x7ffff3ff161b <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+347>:	add    rbx,r15
+   0x7ffff3ff161e <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+350>:	neg    r13
+   0x7ffff3ff1621 <_ZN2v84base2OS8AllocateEPvmmNS1_16MemoryPermissionE+353>:	and    r13,rbx
+-----------------------------------------------------------------------------------------------------------------------------
+
+Thread 1 "d8" hit Breakpoint 3.1, v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=<optimized out>, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:158
+158	  int prot = GetProtectionFromMemoryPermission(access);
+gdb$ bt
+#0  v8::base::(anonymous namespace)::Allocate (hint=<optimized out>, size=<optimized out>, page_type=v8::base::(anonymous namespace)::PageType::kPrivate, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:158
+#1  v8::base::OS::Allocate (hint=<optimized out>, size=0x8000000, alignment=alignment@entry=0x10000, access=<optimized out>) at ../../src/base/platform/platform-posix.cc:418
+#2  0x00007ffff3ff2d98 in v8::base::OS::CreateAddressSpaceReservation (hint=0x0, size=0x8000000, alignment=0x10000, max_permission=65536) at ../../src/base/platform/platform-posix.cc:621
+#3  0x00007ffff3ff003b in v8::base::VirtualAddressSpace::AllocateSubspace (this=0x7ffff7f94248 <v8::internal::GetPlatformVirtualAddressSpace()::vas>, hint=0x0, size=0x8000000, alignment=0x10000, max_page_permissions=v8::PagePermissions::kReadWrite) at ../../src/base/virtual-address-space.cc:154
+#4  0x00007ffff5d5c95a in v8::internal::ExternalEntityTable<v8::internal::CodePointerTableEntry, 134217728ul>::Initialize (this=0x7ffff7f93ec0 <v8::internal::GetProcessWideCodePointerTable()::object>) at ../../src/sandbox/external-entity-table-inl.h:92
+#5  0x00007ffff5d5c671 in v8::internal::V8::Initialize () at ../../src/init/v8.cc:196
+#6  0x00007ffff55e9001 in v8::V8::Initialize (build_config=0xf7ff0fff) at ../../src/api/api.cc:6434
+#7  0x00005555555aa76a in v8::V8::Initialize () at ../../include/v8-initialization.h:111
+
+```
+
+
+```js
+function foo() {
+    const v11 = new Int8Array(150);
+    Object(v11,...v11,v11);
+  }
+  
+  foo();
+  const dummy = new Int8Array(150);
+  %DebugPrint(dummy);
+  %SystemBreak();
+  
+  foo();
+```
+```bash
+DebugPrint: 0x3b3e0004a32d: [JSTypedArray]
+ - map: 0x3b3e00283985 <Map[76](INT8ELEMENTS)> [FastProperties]
+ - prototype: 0x3b3e00283a19 <Object map = 0x3b3e002839ad>
+ - elements: 0x3b3e00000ed1 <ByteArray[0]> [INT8ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x3b3e0004a2e9 <ArrayBuffer map = 0x3b3e00289fd9>
+ - byte_offset: 0
+ - byte_length: 150
+ - length: 150
+ - data_ptr: 0x3b3f00000100
+   - base_pointer: (nil)
+   - external_pointer: 0x3b3f00000100
+ - properties: 0x3b3e00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - elements: 0x3b3e00000ed1 <ByteArray[0]> {
+       0-149: 0
+ }
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+0x3b3e00283985: [Map] in OldSpace
+ - map: 0x3b3e002816d9 <MetaMap (0x3b3e00281729 <NativeContext[295]>)>
+ - type: JS_TYPED_ARRAY_TYPE
+ - instance size: 76
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: INT8ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x3b3e00000069 <undefined>
+ - prototype_validity cell: 0x3b3e00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x3b3e00000759 <DescriptorArray[0]>
+ - prototype: 0x3b3e00283a19 <Object map = 0x3b3e002839ad>
+ - constructor: 0x3b3e00283951 <JSFunction Int8Array (sfi = 0x3b3e0027b9ed)>
+ - dependent code: 0x3b3e00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000000  RBX: 0x00005555555E3000  RBP: 0x00007FFFFFFFD400  RSP: 0x00007FFFFFFFD400  [e[1m][e[0;31m]o d I t s z a p c
+  RDI: 0x0000000000000000  RSI: 0x00005555555E3000  RDX: 0x00005555555E3000  RCX: 0x00003B3E00000000  RIP:[e[0;31m] 0x00007FFFF3FF3035
+  R8 : 0x00007FFFFFFFD530  R9 : 0x0000000000000053  R10: 0x00007FFFF3FB0A30  R11: 0x00007FFFF3FF3030  R12: 0x0000000000000005
+  R13: 0x00005555555E3080  R14: 0x000055555565E6E8  R15: 0x000055555565E6E8
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff3035 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x7ffff3ff3036 <_ZN2v84base2OS10DebugBreakEv+6>:	ret
+   0x7ffff3ff3037:	int3
+   0x7ffff3ff3038:	int3
+   0x7ffff3ff3039:	int3
+   0x7ffff3ff303a:	int3
+   0x7ffff3ff303b:	int3
+   0x7ffff3ff303c:	int3
+-----------------------------------------------------------------------------------------------------------------------------
+v8::base::OS::DebugBreak () at ../../src/base/platform/platform-posix.cc:737
+warning: 737	../../src/base/platform/platform-posix.cc: No such file or directory
+gdb$ x/20gx 0x3b3e00000ed1+0x298d0b
+0x3b3e00299bdc:	0x00299b1d00209601	0x00299ba100299bb9
+0x3b3e00299bec:	0x00000a9100000741	0x0000aaa000299a41
+gdb$ set *0x3b3e00299bdc=0xffffffff
+gdb$ c
+Continuing.
+
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000001  RBX: 0x0000000000000000  RBP: 0x00007FFFFFFFD530  RSP: 0x00007FFFFFFFD4D8  [e[1m][e[0;31m]o d I t s z A P c
+  RDI: 0x00003B3E00299BD1  RSI: 0x00003B3E00299BB9  RDX: 0x00003B3E00000069  RCX: 0x0000000007FFFFF0  RIP:[e[0;31m] 0x00007FFF7F482F60
+  R8 : 0x00003B3E00000069  R9 : 0x000000000000005C  R10: 0x00007FFF92FF0000  R11: 0x00003B3E00299BD1  R12: 0x00003B3E00299BB9
+  R13: 0x00005555555E3080  R14: 0x00003B3E00000000  R15: 0x000055555561A980
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7fff7f482f60:	mov    rcx,QWORD PTR [r10+rcx*1]
+   0x7fff7f482f64:	jmp    rcx
+```
+
+
 To get the offset `console.log(v8_read64(addrOf(dummy)+0x24e5a2).toString(16));` breakpoint at `./../src/common/ptr-compr.h:174` 
 `=> 0x7ffff599d5fa <_ZNK2v88internal11Deoptimizer21ComputeInputFrameSizeEv+58>:	movzx  r12d,WORD PTR [r14])`
 and calculate by 
