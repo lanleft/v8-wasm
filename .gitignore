@@ -4,3 +4,5 @@ v8/third_party
 v8/build
 v8/buildtools
 .cache/
+wabt-1.0.35-ubuntu-20.04.tar.gz
+wabt-1.0.35/

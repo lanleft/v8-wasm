@@ -1174,9 +1174,28 @@ this directory contains the implementation of various built-in functions and obj
 
 ### ArrayBuffer
 
+### SharedArrayBuffer
+
+sab is a special type of buffer that allows multiple threads to read and write to the same memory space concurrently.
+
 ```js
 
 
 ```
 
+### DataView
 
+```js
+const gsab = new SharedArrayBuffer(0x100,{"maxByteLength":0x4242});
+const data = new DataView(gsab);
+%DebugPrint(data);
+/// ====================================================================
+DebugPrint: 0xad000049a4d: [JSRabGsabDataView]
+ - map: 0x0ad000290769 <Map[64](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0ad000287919 <Object map = 0xad000287721>
+ - elements: 0x0ad000049a99 <FixedArray[19]> [HOLEY_ELEMENTS]
+ - embedder fields: 2
+ - buffer =0x0ad000049a09 <SharedArrayBuffer map = 0xad000291375>
+
+
+```
