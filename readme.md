@@ -1,10 +1,22 @@
 
 ## Table of Contents
-- [Debugging V8](#Debugging-V8)
-- [V8 Sandbox](#V8-(heap)-Sandbox)
-  - [Studying Previous Sandbox Escape Techniques](#Studying-Previous-Sandbox-Escape-Techniques)
-  - [Understanding Mutable Page Metadata](#Understanding-Mutable-Page-Metadata)
-- [Conclusion](#Conclusion)
+- [Debugging V8](#debugging-v8)
+- [V8 Sandbox](#v8-heap-sandbox)
+  - [Studying Previous Sandbox Escape Techniques](#studying-previous-sandbox-escape-techniques)
+  - [Understanding Mutable Page Metadata](#understanding-mutable-page-metadata)
+  - [Finally](#finally)
+
+- [Escapse V8 Sandbox with changing JIT variables](#escapse-v8-sandbox-with-changing-jit-variables)
+
+- [Studying v8 sandbox table mamping](#studying-v8-sandbox-table-mamping)
+  - [Blogs](#blogs)
+  - [WebAssembly](#webassembly)
+    - [wasm instance object](#wasm-instance-object)
+    - [wasm function](#wasm-function)
+    - [Memory limited](#memory-limited)
+    - [FunctionData](#functiondata)
+  - [JSArray](#jsarray)
+  - [DataView](#dataview)
 
 
 
