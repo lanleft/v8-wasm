@@ -228,7 +228,7 @@ HandleApiCallAsFunctionOrConstructorDelegate(Isolate* isolate,
   DCHECK(obj->map()->is_callable());
   Tagged<JSFunction> constructor =
       JSFunction::cast(obj->map()->GetConstructor());
-  DCHECK(constructor->shared()->IsApiFunction());
+  // DCHECK(constructor->shared()->IsApiFunction());
   Tagged<Object> handler =
       constructor->shared()->api_func_data()->GetInstanceCallHandler();
   DCHECK(!IsUndefined(handler, isolate));

