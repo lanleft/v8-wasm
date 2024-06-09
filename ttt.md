@@ -1,5 +1,5 @@
-```
-//r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 poc.js
+```js
+// --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 poc.js
 d8.file.execute('./test/mjsunit/wasm/wasm-module-builder.js');
 let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
 
