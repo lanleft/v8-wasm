@@ -223,7 +223,7 @@ CheckObject
 ### Idea 2: Understanding Torque
 
 - Torque works:
-![alt text](image-1.png)
+![alt text](image-2.png)
 
 `v8/src/builtins/js-to-wasm.tq` -> `v8/out/debug/gen/torque-generated/src/builtins/js-to-wasm-tq-csa.cc`
 
