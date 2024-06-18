@@ -219,15 +219,6 @@ CheckObject
 *RAX  0x7ffff6033710 (v8::internal::CheckObjectType(unsigned long, unsigned long, unsigned long)) ◂— push rbp
 ```
 
-
-### Idea 2: Understanding Torque
-
-- Torque works:
-![alt text](image-2.png)
-
-`v8/src/builtins/js-to-wasm.tq` -> `v8/out/debug/gen/torque-generated/src/builtins/js-to-wasm-tq-csa.cc`
-
-
 how stack works:
 ![alt text](image.png)
 
@@ -245,4 +236,13 @@ Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit
 Builtins_CallFunction_ReceiverIsNullOrUndefined
 Generate_JSEntryTrampolineHelper(..., false)
 ```
+
+
+### Idea 2: Understanding Torque
+
+- Torque works:
+![alt text](image-2.png)
+
+`v8/src/builtins/js-to-wasm.tq` -> `v8/out/debug/gen/torque-generated/src/builtins/js-to-wasm-tq-csa.cc`
+
 
