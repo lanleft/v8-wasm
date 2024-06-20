@@ -6,7 +6,7 @@
    - [Idea 2: Understanding Torque](#idea-2-understanding-torque)
    - [Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function](#idea-3-overwrite-v8internalhistogram-__hidden-this-pointer-of-addsample-function)
 
-
+- [Jump function decoder](#jump-function-decoder)
 
 # Exploreing
 
@@ -835,6 +835,7 @@ pwndbg> tele 0x7fff98000000+0x15fc0
 if we changes this value, we can point rcx to whatever functions...
 
 **How to exploit it?**
+
 Bruteforce
 State before `jump rcx`
 ```go
@@ -867,6 +868,7 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
 ```
 
 **Solution 1**
+
 ```js
 // =============== jump to Builtins_JSToJSWrapper ====================
 // RDI  0x3e3a001dccfd ◂— 0x2500000725001923
