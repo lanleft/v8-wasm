@@ -47,15 +47,15 @@ function BasicMemory64Tests(num_pages, use_atomic_ops) {
   let load = module.exports.load;
   let store = module.exports.store;
 
-  //assertEquals(num_bytes, memory.buffer.byteLength);
+  assertEquals(num_bytes, memory.buffer.byteLength);
   // Test that we can create a TypedArray from that large buffer.
   let array = new Int8Array(memory.buffer);
-  //assertEquals(num_bytes, array.length);
+  assertEquals(num_bytes, array.length);
 
   const GB = Math.pow(2, 30);
   let unalignedAndOobTrap =
     use_atomic_ops ? kTrapUnalignedAccess : kTrapMemOutOfBounds;
-  //assertEquals(0, load(num_bytes - 4));
+  assertEquals(0, load(num_bytes - 4));
   assertTraps(kTrapMemOutOfBounds, () => load(num_bytes));
   assertTraps(unalignedAndOobTrap, () => load(num_bytes - 3));
   assertTraps(kTrapMemOutOfBounds, () => load(num_bytes - 4 + 4 * GB));
@@ -68,11 +68,11 @@ function BasicMemory64Tests(num_pages, use_atomic_ops) {
   }
 
   store(num_bytes - 4, 0x12345678);
-  //assertEquals(0x12345678, load(num_bytes - 4));
+  assertEquals(0x12345678, load(num_bytes - 4));
 
   let kStoreOffset = use_atomic_ops ? 40 : 27;
   store(kStoreOffset, 11);
-  //assertEquals(11, load(kStoreOffset));
+  assertEquals(11, load(kStoreOffset));
 
   // Now check some interesting positions, plus 100 random positions.
   const positions = [
@@ -97,7 +97,7 @@ function BasicMemory64Tests(num_pages, use_atomic_ops) {
       expected = [0x12, 0x34, 0x56, 0x78][num_bytes - position - 1];
     }
     let value = new Int8Array(memory.buffer, position, 1)[0];
-    //assertEquals(expected, value);
+    assertEquals(expected, value);
   }
 }
 
@@ -180,15 +180,15 @@ function allowOOM(fn) {
 
   let instance = builder.instantiate();
 
-  //assertEquals(1n, instance.exports.grow(2n));
-  //assertEquals(3n, instance.exports.grow(1n));
-  //assertEquals(-1n, instance.exports.grow(-1n));
-  //assertEquals(-1n, instance.exports.grow(1n << 31n));
-  //assertEquals(-1n, instance.exports.grow(1n << 32n));
-  //assertEquals(-1n, instance.exports.grow(1n << 33n));
-  //assertEquals(-1n, instance.exports.grow(1n << 63n));
-  //assertEquals(-1n, instance.exports.grow(7n));  // Above the maximum of 10.
-  //assertEquals(4n, instance.exports.grow(6n));   // Just at the maximum of 10.
+  assertEquals(1n, instance.exports.grow(2n));
+  assertEquals(3n, instance.exports.grow(1n));
+  assertEquals(-1n, instance.exports.grow(-1n));
+  assertEquals(-1n, instance.exports.grow(1n << 31n));
+  assertEquals(-1n, instance.exports.grow(1n << 32n));
+  assertEquals(-1n, instance.exports.grow(1n << 33n));
+  assertEquals(-1n, instance.exports.grow(1n << 63n));
+  assertEquals(-1n, instance.exports.grow(7n));  // Above the maximum of 10.
+  assertEquals(4n, instance.exports.grow(6n));   // Just at the maximum of 10.
 })();
 
 (function TestGrow64_ToMemory() {
@@ -214,15 +214,15 @@ function allowOOM(fn) {
     return i64_arr[0];
   }
 
-  //assertEquals(1n, grow(2n));
-  //assertEquals(3n, grow(1n));
-  //assertEquals(-1n, grow(-1n));
-  //assertEquals(-1n, grow(1n << 31n));
-  //assertEquals(-1n, grow(1n << 32n));
-  //assertEquals(-1n, grow(1n << 33n));
-  //assertEquals(-1n, grow(1n << 63n));
-  //assertEquals(-1n, grow(7n));  // Above the maximum of 10.
-  //assertEquals(4n, grow(6n));   // Just at the maximum of 10.
+  assertEquals(1n, grow(2n));
+  assertEquals(3n, grow(1n));
+  assertEquals(-1n, grow(-1n));
+  assertEquals(-1n, grow(1n << 31n));
+  assertEquals(-1n, grow(1n << 32n));
+  assertEquals(-1n, grow(1n << 33n));
+  assertEquals(-1n, grow(1n << 63n));
+  assertEquals(-1n, grow(7n));  // Above the maximum of 10.
+  assertEquals(4n, grow(6n));   // Just at the maximum of 10.
 })();
 
 (function TestGrow64_Above4GB() {
@@ -242,24 +242,24 @@ function allowOOM(fn) {
   let instance = builder.instantiate();
 
   // Grow from 1 to 3 pages.
-  //assertEquals(1n, instance.exports.grow(2n));
+  assertEquals(1n, instance.exports.grow(2n));
   // Grow from 3 to {max_pages - 1} pages.
   // This step can fail. We have to allow this, even though it weakens this test
   // (we do not know if we failed because of OOM or because of a wrong
   // engine-internal limit of 4GB).
   let grow_big_result = instance.exports.grow(BigInt(max_pages) - 4n);
   if (grow_big_result == -1) return;
-  //assertEquals(3n, grow_big_result);
+  assertEquals(3n, grow_big_result);
   // Cannot grow by 2 pages.
-  //assertEquals(-1n, instance.exports.grow(2n));
+  assertEquals(-1n, instance.exports.grow(2n));
   // Cannot grow by 2^32 pages.
-  //assertEquals(-1n, instance.exports.grow(1n << 32n));
+  assertEquals(-1n, instance.exports.grow(1n << 32n));
   // Grow by one more page to the maximum.
   grow_big_result = instance.exports.grow(1n);
   if (grow_big_result == -1) return;
-  //assertEquals(BigInt(max_pages) - 1n, grow_big_result);
+  assertEquals(BigInt(max_pages) - 1n, grow_big_result);
   // Cannot grow further.
-  //assertEquals(-1n, instance.exports.grow(1n));
+  assertEquals(-1n, instance.exports.grow(1n));
 })();
 
 (function TestBulkMemoryOperations() {
@@ -312,13 +312,13 @@ function allowOOM(fn) {
 
   // Empty init (size=0).
   init(0n, 0, 0);
-  //assertEquals([0, 0], memory(0, 2));
+  assertEquals([0, 0], memory(0, 2));
   // Init memory[5..7] with [10..12].
   init(5n, 10, 3);
-  //assertEquals([0, 0, 10, 11, 12, 0, 0], memory(3, 7));
+  assertEquals([0, 0, 10, 11, 12, 0, 0], memory(3, 7));
   // Init the end of memory ([kMemSize-2, kMemSize-1]) with [20, 21].
   init(BigInt(kMemSize-2), 20, 2);
-  //assertEquals([0, 0, 20, 21], memory(kMemSize - 4, 4));
+  assertEquals([0, 0, 20, 21], memory(kMemSize - 4, 4));
   // Writing slightly OOB.
   assertTraps(kTrapMemOutOfBounds, () => init(BigInt(kMemSize-2), 20, 3));
   // Writing OOB, but the low 32-bit are in-bound.
@@ -334,10 +334,10 @@ function allowOOM(fn) {
   copy(0n, 0n, 0n);
   // Copy memory[5..7] (containing [10..12]) to [3..5].
   copy(3n, 5n, 3n);
-  //assertEquals([0, 0, 0, 10, 11, 12, 11, 12, 0], memory(0, 9));
+  assertEquals([0, 0, 0, 10, 11, 12, 11, 12, 0], memory(0, 9));
   // Copy to the end of memory ([kMemSize-2, kMemSize-1]).
   copy(BigInt(kMemSize-2), 3n, 2n);
-  //assertEquals([0, 0, 10, 11], memory(kMemSize - 4, 4));
+  assertEquals([0, 0, 10, 11], memory(kMemSize - 4, 4));
   // Writing slightly OOB.
   assertTraps(kTrapMemOutOfBounds, () => copy(BigInt(kMemSize-2), 0n, 3n));
   // Writing OOB, but the low 32-bit are in-bound.
@@ -354,10 +354,10 @@ function allowOOM(fn) {
   fill(0n, 0, 0n);
   // Fill memory[15..17] with 3s.
   fill(15n, 3, 3n);
-  //assertEquals([0, 3, 3, 3, 0], memory(14, 5));
+  assertEquals([0, 3, 3, 3, 0], memory(14, 5));
   // Fill the end of memory ([kMemSize-2, kMemSize-1]) with 7s.
   fill(BigInt(kMemSize-2), 7, 2n);
-  //assertEquals([0, 0, 7, 7], memory(kMemSize - 4, 4));
+  assertEquals([0, 0, 7, 7], memory(kMemSize - 4, 4));
   // Writing slightly OOB.
   assertTraps(kTrapMemOutOfBounds, () => fill(BigInt(kMemSize-2), 0, 3n));
   // Writing OOB, but the low 32-bit are in-bound.
@@ -410,11 +410,11 @@ function allowOOM(fn) {
 
   // Init memory[5..7] with [10..12].
   init(10, 3);
-  //assertEquals([0, 0, 10, 11, 12, 0, 0], memory(3, 7));
+  assertEquals([0, 0, 10, 11, 12, 0, 0], memory(3, 7));
 
   // Fill memory[15..17] with 3s.
   fill(3, 3n);
-  //assertEquals([0, 3, 3, 3, 0], memory(14, 5));
+  assertEquals([0, 3, 3, 3, 0], memory(14, 5));
 })();
 
 (function TestMemory64SharedBasic() {
@@ -432,7 +432,7 @@ function allowOOM(fn) {
 
   assertTrue(instance.exports.memory instanceof WebAssembly.Memory);
   assertTrue(instance.exports.memory.buffer instanceof SharedArrayBuffer);
-  //assertEquals(0, instance.exports.load(0n));
+  assertEquals(0, instance.exports.load(0n));
 })();
 
 (function TestMemory64SharedBetweenWorkers() {
@@ -466,21 +466,21 @@ function allowOOM(fn) {
   let module = builder.toModule();
   let instance = new WebAssembly.Instance(module, {imp: {mem: shared_mem64}});
 
-  //assertEquals(1n, instance.exports.grow(2n));
-  //assertEquals(3n, instance.exports.grow(1n));
+  assertEquals(1n, instance.exports.grow(2n));
+  assertEquals(3n, instance.exports.grow(1n));
   const kOffset1 = 47n;
   const kOffset2 = 128n;
   const kValue = 21;
-  //assertEquals(0, instance.exports.load(kOffset1));
+  assertEquals(0, instance.exports.load(kOffset1));
   instance.exports.store(kOffset1, kValue);
-  //assertEquals(kValue, instance.exports.load(kOffset1));
+  assertEquals(kValue, instance.exports.load(kOffset1));
   let worker = new Worker(function() {
     onmessage = function([mem, module]) {
       function workerAssert(condition, message) {
         if (!condition) postMessage(`Check failed: ${message}`);
       }
 
-      function worker//assertEquals(expected, actual, message) {
+      function workerAssertEquals(expected, actual, message) {
         if (expected != actual) {
           postMessage(`Check failed (${message}): ${expected} != ${actual}`);
         }
@@ -491,20 +491,20 @@ function allowOOM(fn) {
       const kValue = 21;
       workerAssert(mem instanceof WebAssembly.Memory, 'Wasm memory');
       workerAssert(mem.buffer instanceof SharedArrayBuffer);
-      worker//assertEquals(4, mem.grow(1), 'grow');
+      workerAssertEquals(4, mem.grow(1), 'grow');
       let instance = new WebAssembly.Instance(module, {imp: {mem: mem}});
       let exports = instance.exports;
-      worker//assertEquals(kValue, exports.load(kOffset1), 'load 1');
-      worker//assertEquals(0, exports.load(kOffset2), 'load 2');
+      workerAssertEquals(kValue, exports.load(kOffset1), 'load 1');
+      workerAssertEquals(0, exports.load(kOffset2), 'load 2');
       exports.store(kOffset2, kValue);
-      worker//assertEquals(kValue, exports.load(kOffset2), 'load 3');
+      workerAssertEquals(kValue, exports.load(kOffset2), 'load 3');
       postMessage('OK');
     }
   }, {type: 'function'});
   worker.postMessage([shared_mem64, module]);
-  //assertEquals('OK', worker.getMessage());
-  //assertEquals(kValue, instance.exports.load(kOffset2));
-  //assertEquals(5n, instance.exports.grow(1n));
+  assertEquals('OK', worker.getMessage());
+  assertEquals(kValue, instance.exports.load(kOffset2));
+  assertEquals(5n, instance.exports.grow(1n));
 })();
 
 (function TestAtomics_SmallMemory() {
@@ -634,7 +634,7 @@ function InstantiatingWorkerCode() {
 
   let worker = new Worker(InstantiatingWorkerCode, {type: 'function'});
   worker.postMessage([mem64, module2]);
-  //assertEquals(
+  assertEquals(
       'Exception: LinkError: WebAssembly.Instance(): ' +
           'cannot import memory64 as memory32',
       worker.getMessage());
@@ -655,7 +655,7 @@ function InstantiatingWorkerCode() {
 
   let worker = new Worker(InstantiatingWorkerCode, {type: 'function'});
   worker.postMessage([mem32, module2]);
-  //assertEquals(
+  assertEquals(
       'Exception: LinkError: WebAssembly.Instance(): ' +
           'cannot import memory32 as memory64',
       worker.getMessage());

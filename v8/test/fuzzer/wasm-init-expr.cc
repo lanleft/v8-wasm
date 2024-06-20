@@ -48,7 +48,7 @@ Handle<Object> GetExport(Isolate* isolate, Handle<WasmInstanceObject> instance,
                          const char* name) {
   Handle<JSObject> exports_object;
   Handle<Name> exports = isolate->factory()->InternalizeUtf8String("exports");
-  exports_object = Handle<JSObject>::cast(
+  exports_object = Cast<JSObject>(
       JSObject::GetProperty(isolate, instance, exports).ToHandleChecked());
 
   Handle<Name> main_name = isolate->factory()->NewStringFromAsciiChecked(name);
@@ -85,8 +85,8 @@ void CheckEquivalent(const WasmValue& lhs, const WasmValue& rhs,
     if (SeenAlready(lhs, rhs)) return;
     CHECK(IsWasmArray(lhs));
     CHECK(IsWasmArray(rhs));
-    Tagged<WasmArray> lhs_array = WasmArray::cast(lhs);
-    Tagged<WasmArray> rhs_array = WasmArray::cast(rhs);
+    Tagged<WasmArray> lhs_array = Cast<WasmArray>(lhs);
+    Tagged<WasmArray> rhs_array = Cast<WasmArray>(rhs);
     CHECK_EQ(lhs_array->map(), rhs_array->map());
     CHECK_EQ(lhs_array->length(), rhs_array->length());
     cmp.reserve(cmp.size() + lhs_array->length());
@@ -100,8 +100,8 @@ void CheckEquivalent(const WasmValue& lhs, const WasmValue& rhs,
     if (SeenAlready(lhs, rhs)) return;
     CHECK(IsWasmStruct(lhs));
     CHECK(IsWasmStruct(rhs));
-    Tagged<WasmStruct> lhs_struct = WasmStruct::cast(lhs);
-    Tagged<WasmStruct> rhs_struct = WasmStruct::cast(rhs);
+    Tagged<WasmStruct> lhs_struct = Cast<WasmStruct>(lhs);
+    Tagged<WasmStruct> rhs_struct = Cast<WasmStruct>(rhs);
     CHECK_EQ(lhs_struct->map(), rhs_struct->map());
     uint32_t field_count = lhs_struct->type()->field_count();
     for (uint32_t i = 0; i < field_count; ++i) {
@@ -218,6 +218,10 @@ void FuzzIt(base::Vector<const uint8_t> data) {
   //  jobs finishing at random times.
   FlagScope<bool> sync_tier_up(&v8_flags.wasm_sync_tier_up, true);
 
+  // Experiment: Disable inlining. It seems, inlining can cause timeouts in the
+  // fuzzer.
+  FlagScope<bool> inlining(&v8_flags.experimental_wasm_inlining, false);
+
   v8::TryCatch try_catch(isolate);
   HandleScope scope(i_isolate);
   AccountingAllocator allocator;
@@ -260,8 +264,8 @@ void FuzzIt(base::Vector<const uint8_t> data) {
     char buffer[22];
     snprintf(buffer, sizeof buffer, "f%zu", i);
     // Execute corresponding function.
-    auto function = Handle<WasmExportedFunction>::cast(
-        GetExport(i_isolate, instance, buffer));
+    auto function =
+        Cast<WasmExportedFunction>(GetExport(i_isolate, instance, buffer));
     Handle<Object> undefined = i_isolate->factory()->undefined_value();
     Handle<Object> function_result =
         Execution::Call(i_isolate, function, undefined, 0, {})
@@ -269,7 +273,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
     // Get global value.
     snprintf(buffer, sizeof buffer, "g%zu", i);
     auto global =
-        Handle<WasmGlobalObject>::cast(GetExport(i_isolate, instance, buffer));
+        Cast<WasmGlobalObject>(GetExport(i_isolate, instance, buffer));
     switch (global->type().kind()) {
       case ValueKind::kF32: {
         float global_val = global->GetF32();
@@ -278,7 +282,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
           func_val = Smi::ToInt(*function_result);
         } else {
           CHECK(IsHeapNumber(*function_result));
-          func_val = HeapNumber::cast(*function_result)->value();
+          func_val = Cast<HeapNumber>(*function_result)->value();
         }
         CHECK_FLOAT_EQ(func_val, global_val);
         break;
@@ -290,7 +294,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
           func_val = Smi::ToInt(*function_result);
         } else {
           CHECK(IsHeapNumber(*function_result));
-          func_val = HeapNumber::cast(*function_result)->value();
+          func_val = Cast<HeapNumber>(*function_result)->value();
         }
         CHECK_FLOAT_EQ(func_val, global_val);
         break;
@@ -302,7 +306,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
           func_val = Smi::ToInt(*function_result);
         } else {
           CHECK(IsHeapNumber(*function_result));
-          func_val = HeapNumber::cast(*function_result)->value();
+          func_val = Cast<HeapNumber>(*function_result)->value();
         }
         CHECK_EQ(func_val, global_val);
         break;
@@ -315,7 +319,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
         } else {
           CHECK(IsBigInt(*function_result));
           bool lossless;
-          func_val = BigInt::cast(*function_result)->AsInt64(&lossless);
+          func_val = Cast<BigInt>(*function_result)->AsInt64(&lossless);
           CHECK(lossless);
         }
         CHECK_EQ(func_val, global_val);
@@ -326,7 +330,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
         // For reference types the expectations are more limited.
         // Any struct.new would create a new object, so reference equality
         // comparisons will not work.
-        Handle<Object> global_val = global->GetRef();
+        DirectHandle<Object> global_val = global->GetRef();
         CHECK_EQ(IsUndefined(*global_val), IsUndefined(*function_result));
         CHECK_EQ(IsNullOrWasmNull(*global_val),
                  IsNullOrWasmNull(*function_result));
@@ -340,7 +344,7 @@ void FuzzIt(base::Vector<const uint8_t> data) {
             CHECK(
                 WasmExportedFunction::IsWasmExportedFunction(*function_result));
             CHECK(*WasmInternalFunction::GetOrCreateExternal(handle(
-                      WasmFuncRef::cast(*global_val)->internal(i_isolate),
+                      Cast<WasmFuncRef>(*global_val)->internal(i_isolate),
                       i_isolate)) == *function_result);
           } else {
             // On arrays and structs, perform a deep comparison.

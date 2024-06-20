@@ -45,9 +45,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = builder.instantiate();
 
   print(" --three--");
-  //assertEquals(6, module.exports.main(3));
+  assertEquals(6, module.exports.main(3));
   print(" --four--");
-  //assertEquals(24, module.exports.main(4));
+  assertEquals(24, module.exports.main(4));
 })();
 
 (function TestIndirectFactorialReturnCall() {
@@ -95,9 +95,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = builder.instantiate();
 
   print(" --three--");
-  //assertEquals(6, module.exports.main(3));
+  assertEquals(6, module.exports.main(3));
   print(" --four--");
-  //assertEquals(24, module.exports.main(4));
+  assertEquals(24, module.exports.main(4));
 })();
 
 (function TestImportReturnCall() {
@@ -122,9 +122,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     pick: function(a, b, c) { return c ? a : b; }}});
 
   print(" --left--");
-  //assertEquals(-2, module.exports.main(1, -2, 3));
+  assertEquals(-2, module.exports.main(1, -2, 3));
   print(" --right--");
-  //assertEquals(3, module.exports.main(0, -2, 3));
+  assertEquals(3, module.exports.main(0, -2, 3));
 })();
 
 (function TestImportIndirectReturnCall() {
@@ -157,9 +157,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   }});
 
   print(" --left--");
-  //assertEquals(-2, module.exports.main(1, -2, 3));
+  assertEquals(-2, module.exports.main(1, -2, 3));
   print(" --right--");
-  //assertEquals(3, module.exports.main(0, -2, 3));
+  assertEquals(3, module.exports.main(0, -2, 3));
 })();
 
 (function TestMultiReturnCallWithLongSig() {
@@ -201,6 +201,6 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       expect.push(inputs[inputs.length - 1]);
     }
     expect.reverse();
-    //assertEquals(expect, module.exports.main(...inputs));
+    assertEquals(expect, module.exports.main(...inputs));
   }
 })();

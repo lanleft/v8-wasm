@@ -12,28 +12,28 @@ let globalCounter = 10000000;
 function testProperties(obj) {
   for (let i = 0; i < 3; i++) {
     obj.x = 1001;
-    //assertEquals(1001, obj.x);
+    assertEquals(1001, obj.x);
 
     obj.y = "old";
-    //assertEquals("old", obj.y);
+    assertEquals("old", obj.y);
 
     delete obj.y;
-    //assertEquals("undefined", typeof obj.y);
+    assertEquals("undefined", typeof obj.y);
 
     let uid = globalCounter++;
     let fresh = "f_" + uid;
 
     obj.z = fresh;
-    //assertEquals(fresh, obj.z);
+    assertEquals(fresh, obj.z);
 
     obj[fresh] = uid;
-    //assertEquals(uid, obj[fresh]);
+    assertEquals(uid, obj[fresh]);
 
     verifyHeap();
 
-    //assertEquals(1001, obj.x);
-    //assertEquals(fresh, obj.z);
-    //assertEquals(uid, obj[fresh]);
+    assertEquals(1001, obj.x);
+    assertEquals(fresh, obj.z);
+    assertEquals(uid, obj[fresh]);
   }
 
   // These properties are special for JSFunctions.

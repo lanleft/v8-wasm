@@ -67,7 +67,7 @@ const instance =
 
 function checkExternRefTable(getter, start, count, value) {
   for (i = 0; i < count; ++i) {
-    //assertEquals(value, getter(start + i));
+    assertEquals(value, getter(start + i));
   }
 }
 
@@ -128,7 +128,7 @@ function checkExternRefTable(getter, start, count, value) {
 function checkAnyFuncTable(call, start, count, value) {
   for (i = 0; i < count; ++i) {
     if (value) {
-      //assertEquals(value, call(start + i));
+      assertEquals(value, call(start + i));
     } else {
       assertTraps(kTrapFuncSigMismatch, () => call(start + i));
     }

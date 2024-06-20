@@ -19,8 +19,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("get_anyfunc_global");
 
   const instance = builder.instantiate();
-  //assertEquals(null, instance.exports.get_externref_global());
-  //assertEquals(null, instance.exports.get_anyfunc_global());
+  assertEquals(null, instance.exports.get_externref_global());
+  assertEquals(null, instance.exports.get_anyfunc_global());
 })();
 
 (function TestDefaultValueSecondGlobal() {
@@ -46,8 +46,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("get_anyfunc_global");
 
   const instance = builder.instantiate();
-  //assertEquals(null, instance.exports.get_externref_global({}));
-  //assertEquals(null, instance.exports.get_anyfunc_global(
+  assertEquals(null, instance.exports.get_externref_global({}));
+  assertEquals(null, instance.exports.get_anyfunc_global(
     instance.exports.get_externref_global));
 })();
 
@@ -141,7 +141,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const result = instance.exports.get_global();
 
-  //assertEquals('world', result.hello);
+  assertEquals('world', result.hello);
 })();
 
 (function TestImportedExternRef() {
@@ -418,19 +418,19 @@ function dummy_func() {
 
   // Check if instance2 can make changes visible for instance1.
   instance2.exports.set_globals(null, undefined);
-  //assertEquals(null, instance1.exports.get_global2());
-  //assertEquals(undefined, instance1.exports.get_global3());
+  assertEquals(null, instance1.exports.get_global2());
+  assertEquals(undefined, instance1.exports.get_global3());
 
-  //assertEquals(null, instance2.exports.reexport2.value);
-  //assertEquals(undefined, instance2.exports.reexport3.value);
+  assertEquals(null, instance2.exports.reexport2.value);
+  assertEquals(undefined, instance2.exports.reexport3.value);
 
   // Check if instance1 can make changes visible for instance2.
   instance1.exports.set_globals("foo", 66343);
-  //assertEquals("foo", instance2.exports.get_global2());
-  //assertEquals(66343, instance2.exports.get_global3());
+  assertEquals("foo", instance2.exports.get_global2());
+  assertEquals(66343, instance2.exports.get_global3());
 
-  //assertEquals("foo", instance2.exports.reexport2.value);
-  //assertEquals(66343, instance2.exports.reexport3.value);
+  assertEquals("foo", instance2.exports.reexport2.value);
+  assertEquals(66343, instance2.exports.reexport3.value);
 
   const bar2 = { f: "oo" };
   const bar3 = { b: "ar" };
@@ -515,19 +515,19 @@ function dummy_func() {
 
   // Check if instance2 can make changes visible for instance1.
   instance2.exports.set_globals(null, obj4);
-  //assertEquals(null, instance1.exports.get_global2());
-  //assertEquals(obj4, instance1.exports.get_global3());
+  assertEquals(null, instance1.exports.get_global2());
+  assertEquals(obj4, instance1.exports.get_global3());
 
-  //assertEquals(null, instance2.exports.reexport2.value);
-  //assertEquals(obj4, instance2.exports.reexport3.value);
+  assertEquals(null, instance2.exports.reexport2.value);
+  assertEquals(obj4, instance2.exports.reexport3.value);
 
   // Check if instance1 can make changes visible for instance2.
   instance1.exports.set_globals(obj2, obj3);
-  //assertEquals(obj2, instance2.exports.get_global2());
-  //assertEquals(obj3, instance2.exports.get_global3());
+  assertEquals(obj2, instance2.exports.get_global2());
+  assertEquals(obj3, instance2.exports.get_global3());
 
-  //assertEquals(obj2, instance2.exports.reexport2.value);
-  //assertEquals(obj3, instance2.exports.reexport3.value);
+  assertEquals(obj2, instance2.exports.reexport2.value);
+  assertEquals(obj3, instance2.exports.reexport3.value);
 })();
 
 (function TestImportMutableAnyFuncGlobalAsExternRefFails() {
@@ -556,7 +556,7 @@ function dummy_func() {
     .exportAs('get_anyfunc_global');
 
   const instance = builder.instantiate();
-  //assertEquals(
+  assertEquals(
       instance.exports.get_anyfunc_global,
       instance.exports.get_anyfunc_global());
 })();

@@ -39,7 +39,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate();
 
   assertTrue(Object.prototype.hasOwnProperty.call(instance.exports, 'ex'));
-  //assertEquals("object", typeof instance.exports.ex);
+  assertEquals("object", typeof instance.exports.ex);
   assertInstanceof(instance.exports.ex, WebAssembly.Tag);
   assertSame(instance.exports.ex.constructor, WebAssembly.Tag);
 })();
@@ -54,7 +54,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({ m: { ex: js_ex_i32 }});
   let res = instance.exports.ex;
-  //assertEquals(res, js_ex_i32);
+  assertEquals(res, js_ex_i32);
 })();
 
 
@@ -106,9 +106,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   print(arguments.callee.name);
   let tag = new WebAssembly.Tag({parameters: []});
   let exn = new WebAssembly.Exception(tag, []);
-  //assertEquals(undefined, exn.stack);
+  assertEquals(undefined, exn.stack);
   exn = new WebAssembly.Exception(tag, [], {traceStack: false});
-  //assertEquals(undefined, exn.stack);
+  assertEquals(undefined, exn.stack);
   exn = new WebAssembly.Exception(tag, [], {traceStack: true});
   assertTrue(exn.stack.indexOf(arguments.callee.name) > 0);
   assertThrows(() => new WebAssembly.Exception(tag, [], 0), TypeError,
@@ -140,9 +140,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   }
   let instance = builder.instantiate({m: {js_func, js_tag}});
   tag = js_tag;
-  //assertEquals(1, instance.exports.catch());
+  assertEquals(1, instance.exports.catch());
   tag = instance.exports.wasm_tag;
-  //assertEquals(2, instance.exports.catch());
+  assertEquals(2, instance.exports.catch());
 })();
 
 function TestCatchJS(types_str, types, values) {
@@ -172,9 +172,9 @@ function TestCatchJS(types_str, types, values) {
   let expected = values.length == 1 ? values[0] : values;
   let instance = builder.instantiate({m: {js_func, js_tag}});
   exception = new WebAssembly.Exception(js_tag, values);
-  //assertEquals(expected, instance.exports.catch());
+  assertEquals(expected, instance.exports.catch());
   exception = new WebAssembly.Exception(instance.exports.wasm_tag, values);
-  //assertEquals(expected, instance.exports.catch());
+  assertEquals(expected, instance.exports.catch());
 }
 
 (function TestCatchJSExceptionWithPayload() {
@@ -193,7 +193,7 @@ function TestGetArgHelper(types_str, types, values) {
   let tag = new WebAssembly.Tag({parameters: types_str});
   let exception = new WebAssembly.Exception(tag, values);
   for (i = 0; i < types.length; ++i) {
-    //assertEquals(exception.getArg(tag, i), values[i]);
+    assertEquals(exception.getArg(tag, i), values[i]);
   }
 
   let builder = new WasmModuleBuilder();
@@ -211,7 +211,7 @@ function TestGetArgHelper(types_str, types, values) {
     instance.exports.throw(...values);
   } catch (e) {
     for (i = 0; i < types.length; ++i) {
-      //assertEquals(e.getArg(tag, i), values[i]);
+      assertEquals(e.getArg(tag, i), values[i]);
     }
   }
 }
@@ -261,7 +261,7 @@ function TestGetArgHelper(types_str, types, values) {
   print(arguments.callee.name);
   assertTrue(WebAssembly.JSTag instanceof WebAssembly.Tag);
   let desc = Object.getOwnPropertyDescriptor(WebAssembly, 'JSTag');
-  //assertEquals(typeof desc.value, 'object');
+  assertEquals(typeof desc.value, 'object');
   assertFalse(desc.writable);
   assertFalse(desc.enumerable);
   assertTrue(desc.configurable);

@@ -143,11 +143,11 @@ for (let [typeName, type] of Object.entries(tableTypes)) {
 
   // Set null.
   table.set(0, null);
-  //assertEquals(null, wasm.tableGet(0));
-  //assertEquals(null, table.get(0));
+  assertEquals(null, wasm.tableGet(0));
+  assertEquals(null, table.get(0));
   wasm.tableSet(1, wasm.createNull);
-  //assertEquals(null, wasm.tableGet(1));
-  //assertEquals(null, table.get(1));
+  assertEquals(null, wasm.tableGet(1));
+  assertEquals(null, table.get(1));
   // Set i31.
   if (typeName != "structref" && typeName != "arrayref") {
     table.set(2, wasm.exported(wasm.createI31));
@@ -160,40 +160,40 @@ for (let [typeName, type] of Object.entries(tableTypes)) {
   if (typeName != "arrayref" && typeName != "i31ref") {
     table.set(4, wasm.exported(wasm.createStruct));
     assertSame(table.get(4), wasm.tableGet(4));
-    //assertEquals(12, wasm.tableGetStructVal(4));
+    assertEquals(12, wasm.tableGetStructVal(4));
     wasm.tableSet(5, wasm.createStruct);
     assertSame(table.get(5), wasm.tableGet(5));
-    //assertEquals(12, wasm.tableGetStructVal(5));
+    assertEquals(12, wasm.tableGetStructVal(5));
     assertNotSame(table.get(4), table.get(5));
   }
   // Set array.
   if (typeName != "structref" && typeName != "i31ref") {
     table.set(6, wasm.exported(wasm.createArray));
     assertSame(table.get(6), wasm.tableGet(6));
-    //assertEquals(12, wasm.tableGetArrayVal(6));
+    assertEquals(12, wasm.tableGetArrayVal(6));
     wasm.tableSet(7, wasm.createArray);
     assertSame(table.get(7), wasm.tableGet(7));
-    //assertEquals(12, wasm.tableGetArrayVal(7));
+    assertEquals(12, wasm.tableGetArrayVal(7));
     assertNotSame(table.get(6), table.get(7));
   }
 
   // Set stringref.
   if (typeName == "anyref") {
     table.set(8, "TestString");
-    //assertEquals("TestString", wasm.tableGet(8));
-    //assertEquals("TestString", table.get(8));
+    assertEquals("TestString", wasm.tableGet(8));
+    assertEquals("TestString", table.get(8));
     let largeString = "Another test string, this time larger to prevent"
                     + " any kind of short string optimization.";
     wasm.tableSetFromExtern(9, largeString);
-    //assertEquals(largeString, wasm.tableGet(9));
-    //assertEquals(largeString, table.get(9));
+    assertEquals(largeString, wasm.tableGet(9));
+    assertEquals(largeString, table.get(9));
   }
 
   if (typeName != "arrayref" && typeName != "i31ref") {
     // Grow table with explicit value.
     table.grow(2, wasm.exported(wasm.createStruct));
-    //assertEquals(12, wasm.tableGetStructVal(size));
-    //assertEquals(12, wasm.tableGetStructVal(size + 1));
+    assertEquals(12, wasm.tableGetStructVal(size));
+    assertEquals(12, wasm.tableGetStructVal(size + 1));
     assertTraps(kTrapTableOutOfBounds, () => wasm.tableGetStructVal(size + 2));
     // Grow by 1 without initial value.
     table.grow(1, null);
@@ -209,20 +209,20 @@ for (let [typeName, type] of Object.entries(tableTypes)) {
   }
   if (typeName == "anyref") {
     table.grow(1, "Grow using a string");
-    //assertEquals("Grow using a string", wasm.tableGet(14));
-    //assertEquals("Grow using a string", table.get(14));
+    assertEquals("Grow using a string", wasm.tableGet(14));
+    assertEquals("Grow using a string", table.get(14));
   }
   if (typeName == "i31ref" || typeName == "anyref") {
     table.set(0, 123);
-    //assertEquals(123, table.get(0));
+    assertEquals(123, table.get(0));
     table.set(1, -123);
-    //assertEquals(-123, table.get(1));
+    assertEquals(-123, table.get(1));
     if (typeName == "i31ref") {
       assertThrows(() => table.set(0, 1 << 31), TypeError);
     } else {
       // anyref can reference boxed numbers as well.
       table.set(0, 1 << 31)
-      //assertEquals(1 << 31, table.get(0));
+      assertEquals(1 << 31, table.get(0));
     }
   }
 

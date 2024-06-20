@@ -24,7 +24,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(10, wasm.roundtrip(10));
+  assertEquals(10, wasm.roundtrip(10));
 })();
 
 (function SharedGlobalAbstractType() {
@@ -51,7 +51,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(10, wasm.roundtrip(10));
+  assertEquals(10, wasm.roundtrip(10));
 })();
 
 (function SharedGlobalInNonSharedFunction() {
@@ -67,7 +67,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(10, wasm.roundtrip(10));
+  assertEquals(10, wasm.roundtrip(10));
 })();
 
 (function SharedGlobalInNonSharedFunctionExported() {
@@ -84,10 +84,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(10, wasm.roundtrip(10));
-  //assertEquals(10, wasm.g.value);
+  assertEquals(10, wasm.roundtrip(10));
+  assertEquals(10, wasm.g.value);
   wasm.g.value = 20;
-  //assertEquals(20, wasm.g.value);
+  assertEquals(20, wasm.g.value);
 })();
 
 (function InvalidGlobalInSharedFunction() {
@@ -143,7 +143,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(42, wasm.main(42));
+  assertEquals(42, wasm.main(42));
 })();
 
 (function InvalidLocal() {
@@ -255,7 +255,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(null, instance.exports.get(0));
+  assertEquals(null, instance.exports.get(0));
 })();
 
 (function TableInNonSharedFunction() {
@@ -278,10 +278,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(null, wasm.get(0));
+  assertEquals(null, wasm.get(0));
   let o = wasm.allocate();
   wasm.t.set(1, o);
-  //assertEquals(o, wasm.t.get(1));
+  assertEquals(o, wasm.t.get(1));
 })();
 
 (function FunctionTableInNonSharedFunction() {
@@ -349,22 +349,22 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
 
-  //assertEquals(30, wasm.call(10, 20, 0));
-  //assertEquals(200, wasm.call(10, 20, 1));
-  //assertEquals(30, wasm.call_through_get(10, 20, 0));
-  //assertEquals(200, wasm.call_through_get(10, 20, 1));
+  assertEquals(30, wasm.call(10, 20, 0));
+  assertEquals(200, wasm.call(10, 20, 1));
+  assertEquals(30, wasm.call_through_get(10, 20, 0));
+  assertEquals(200, wasm.call_through_get(10, 20, 1));
   wasm.set();
-  //assertEquals(200, wasm.call(10, 20, 0));
+  assertEquals(200, wasm.call(10, 20, 0));
   wasm.grow();
   assertTraps(kTrapFuncSigMismatch, () => wasm.call(10, 20, 42));
   wasm.fill();
-  //assertEquals(30, wasm.call(10, 20, 42));
+  assertEquals(30, wasm.call(10, 20, 42));
   wasm.init();
-  //assertEquals(200, wasm.call(10, 20, 21));
+  assertEquals(200, wasm.call(10, 20, 21));
   wasm.copy();
-  //assertEquals(30, wasm.call(10, 20, 30));
-  //assertEquals(200, wasm.call(10, 20, 31));
-  //assertEquals(52, wasm.size());
+  assertEquals(30, wasm.call(10, 20, 30));
+  assertEquals(200, wasm.call(10, 20, 31));
+  assertEquals(52, wasm.size());
 })();
 
 (function InvalidTableInFunction() {
@@ -444,8 +444,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = builder.instantiate(
     {m : {imp0 : (x, y) => x * y, imp1: exported_function}}).exports;
 
-  //assertEquals(200, wasm.call(10, 20, 0));
-  //assertEquals(42 + 10 + 20, wasm.call(10, 20, 1));
+  assertEquals(200, wasm.call(10, 20, 0));
+  assertEquals(42 + 10 + 20, wasm.call(10, 20, 1));
 })();
 
 (function CallIndirectSharedImportedWrongNonSharedType() {
@@ -502,10 +502,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = builder.instantiate().exports;
 
   // The first two calls have to call into the builtin.
-  //assertEquals(30, wasm.caller(10, 20, 1));
-  //assertEquals(200, wasm.caller(10, 20, 0));
-  //assertEquals(30, wasm.caller(10, 20, 1));
-  //assertEquals(200, wasm.caller(10, 20, 0));
+  assertEquals(30, wasm.caller(10, 20, 1));
+  assertEquals(200, wasm.caller(10, 20, 0));
+  assertEquals(30, wasm.caller(10, 20, 1));
+  assertEquals(200, wasm.caller(10, 20, 0));
 })();
 
 (function SharedArrayNewAndInitInNonSharedFunction() {
@@ -550,15 +550,15 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let array = wasm.new_segment();
 
-  //assertEquals(0, wasm.get(array, 0));
-  //assertEquals(1, wasm.get(array, 1));
-  //assertEquals(2, wasm.get(array, 2));
-  //assertEquals(3, wasm.get(array, 3));
+  assertEquals(0, wasm.get(array, 0));
+  assertEquals(1, wasm.get(array, 1));
+  assertEquals(2, wasm.get(array, 2));
+  assertEquals(3, wasm.get(array, 3));
 
   wasm.init_segment(array);
 
-  //assertEquals(0, wasm.get(array, 0));
-  //assertEquals(1, wasm.get(array, 1));
-  //assertEquals(0, wasm.get(array, 2));
-  //assertEquals(1, wasm.get(array, 3));
+  assertEquals(0, wasm.get(array, 0));
+  assertEquals(1, wasm.get(array, 1));
+  assertEquals(0, wasm.get(array, 2));
+  assertEquals(1, wasm.get(array, 3));
 })();

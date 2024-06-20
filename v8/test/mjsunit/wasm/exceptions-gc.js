@@ -45,18 +45,18 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   let wasm = instance.exports;
 
   let o = new Object();
-  //assertEquals(o, wasm.throw_catch_param_extern(o));
-  //assertEquals(1, wasm.throw_catch_param_extern(1));
-  //assertEquals(2.3, wasm.throw_catch_param_extern(2.3));
-  //assertEquals("str", wasm.throw_catch_param_extern("str"));
+  assertEquals(o, wasm.throw_catch_param_extern(o));
+  assertEquals(1, wasm.throw_catch_param_extern(1));
+  assertEquals(2.3, wasm.throw_catch_param_extern(2.3));
+  assertEquals("str", wasm.throw_catch_param_extern("str"));
 
   let struct_obj = wasm.struct_producer(42);
 
-  //assertEquals(struct_obj, wasm.throw_catch_param_struct(struct_obj));
+  assertEquals(struct_obj, wasm.throw_catch_param_struct(struct_obj));
 
   let doubler_obj = wasm.doubler;
-  //assertEquals(doubler_obj, wasm.throw_catch_param_sig(doubler_obj));
-  //assertEquals(20, wasm.throw_catch_param_sig(doubler_obj)(10));
+  assertEquals(doubler_obj, wasm.throw_catch_param_sig(doubler_obj));
+  assertEquals(20, wasm.throw_catch_param_sig(doubler_obj)(10));
 })();
 
 // Test the encoding of a thrown exception with a null-ref value.
@@ -119,7 +119,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   // Make sure we roundtrip corretly through wasm using
   // the Exception constructor/getArg.
   for (i = 0 ; i < values.length; i++) {
-    //assertEquals(exn.getArg(tag, i), values[i]);
+    assertEquals(exn.getArg(tag, i), values[i]);
   }
 
   let t = () => { throw exn; }
@@ -186,7 +186,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     return builder.instantiate({m: {t: t, tag: tag}}).exports
   })();
 
-  //assertEquals(30 + 123 + 42 + (-33) + 42 + 10, consumer.catching());
+  assertEquals(30 + 123 + 42 + (-33) + 42 + 10, consumer.catching());
 })();
 
 (function TestWasmToJS() {
@@ -214,7 +214,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   // decoded as JS objects.
   try { wasm.thrower() }
   catch (e) {
-    //assertEquals(null, e.getArg(wasm.tag, 0));
-    //assertEquals(99, e.getArg(wasm.tag, 1)(44, 55));
+    assertEquals(null, e.getArg(wasm.tag, 0));
+    assertEquals(99, e.getArg(wasm.tag, 1)(44, 55));
   }
 })();

@@ -12,7 +12,7 @@ function addFunction(builder, k) {
 
 function assertCall(call, ...elems) {
   for (var i = 0; i < elems.length; i++) {
-    //assertEquals(elems[i], call(i));
+    assertEquals(elems[i], call(i));
   }
 }
 
@@ -76,9 +76,9 @@ function assertCall(call, ...elems) {
   table.set(3, y.exports.f3);
   table.set(4, y.exports.f4);
 
-  //assertEquals(2003, table.get(3)(3));
-  //assertEquals(2003, x_call(3));
-  //assertEquals(2003, y_call(3));
+  assertEquals(2003, table.get(3)(3));
+  assertEquals(2003, x_call(3));
+  assertEquals(2003, y_call(3));
 
   // Check that calling copy on either of them updates the dispatch table
   // on both of them.

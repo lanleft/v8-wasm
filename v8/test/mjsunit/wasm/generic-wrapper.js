@@ -25,8 +25,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main());
-  //assertEquals(x, 20);
+  assertEquals(undefined, instance.exports.main());
+  assertEquals(x, 20);
 })();
 
 (function testGenericWrapper0ParamTraps() {
@@ -75,8 +75,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(5));
-  //assertEquals(17, x);
+  assertEquals(undefined, instance.exports.main(5));
+  assertEquals(17, x);
 })();
 
 (function testGenericWrapper1ParamNotSmi() {
@@ -98,8 +98,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let y = { valueOf: () => { print("Hello!"); gc(); return 24; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(y));
-  //assertEquals(36, x);
+  assertEquals(undefined, instance.exports.main(y));
+  assertEquals(36, x);
 })();
 
 (function testGenericWrapper4Param() {
@@ -126,8 +126,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let param2 = { valueOf: () => { gc(); return 6; } };
   let param3 = { valueOf: () => { gc(); return 3; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(9, param2, param3, 0));
-  //assertEquals(60, x);
+  assertEquals(undefined, instance.exports.main(9, param2, param3, 0));
+  assertEquals(60, x);
   // Now we test if the evaluation order of the parameters is correct.
   x = 12;
   param3 = {
@@ -138,8 +138,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       return 3;
     }
   };
-  //assertEquals(undefined, instance.exports.main(9, param2, param3, 0));
-  //assertEquals(60, x);
+  assertEquals(undefined, instance.exports.main(9, param2, param3, 0));
+  assertEquals(60, x);
 })();
 
 let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
@@ -177,8 +177,8 @@ let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
   let param6 = { valueOf: () => { gc(); return 10; } };
   let param8 = { valueOf: () => { gc(); return 12; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(param1, 6, 7, param4, 9, param6, 11, param8));
-  //assertEquals(360, x);
+  assertEquals(undefined, instance.exports.main(param1, 6, 7, param4, 9, param6, 11, param8));
+  assertEquals(360, x);
 })();
 
 // Passing less parameters than expected.
@@ -205,8 +205,8 @@ let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
 
   let param2 = { valueOf: () => { gc(); return 3; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(5, param2));
-  //assertEquals(20, x);
+  assertEquals(undefined, instance.exports.main(5, param2));
+  assertEquals(20, x);
 })();
 
 // Passing more parameters than expected.
@@ -234,8 +234,8 @@ let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
   let param2 = { valueOf: () => { gc(); return 3; } };
   let param3 = { valueOf: () => { gc(); return 6; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(5, param2, param3, 7, 200, 300, 400));
-  //assertEquals(33, x);
+  assertEquals(undefined, instance.exports.main(5, param2, param3, 7, 200, 300, 400));
+  assertEquals(33, x);
 })();
 
 (function testGenericWrapper1I32ReturnSmi() {
@@ -256,7 +256,7 @@ let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(17, instance.exports.main(5));
+  assertEquals(17, instance.exports.main(5));
 })();
 
 (function testGenericWrapper1I32ReturnHeapNumber() {
@@ -278,7 +278,7 @@ let kSig_v_iiiiiiii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI32,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(2147483645, instance.exports.main(5));
+  assertEquals(2147483645, instance.exports.main(5));
 })();
 
 let kSig_i_lili = makeSig([kWasmI64, kWasmI32, kWasmI64, kWasmI32], [kWasmI32]);
@@ -307,7 +307,7 @@ let kSig_i_lili = makeSig([kWasmI64, kWasmI32, kWasmI64, kWasmI32], [kWasmI32]);
   let param2 = { valueOf: () => { gc(); return 6; } };
   let param3 = { valueOf: () => { gc(); return 3n; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(60, instance.exports.main(9n, param2, param3, 0));
+  assertEquals(60, instance.exports.main(9n, param2, param3, 0));
 })();
 
 let kSig_v_iiili = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI64,
@@ -338,8 +338,8 @@ let kSig_v_iiili = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI64,
   let param2 = { valueOf: () => { gc(); return 6; } };
   let param3 = { valueOf: () => { gc(); return 3; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(9, param2, param3, 0n, 2));
-  //assertEquals(72, x);
+  assertEquals(undefined, instance.exports.main(9, param2, param3, 0n, 2));
+  assertEquals(72, x);
 })();
 
 let kSig_v_iiilii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI64,
@@ -371,8 +371,8 @@ let kSig_v_iiilii = makeSig([kWasmI32, kWasmI32, kWasmI32, kWasmI64,
   let param2 = { valueOf: () => { gc(); return 6; } };
   let param3 = { valueOf: () => { gc(); return 3; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(9, param2, param3, 0n, 2, 3));
-  //assertEquals(93, x);
+  assertEquals(undefined, instance.exports.main(9, param2, param3, 0n, 2, 3));
+  assertEquals(93, x);
 })();
 
 let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
@@ -411,7 +411,7 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   let param6 = { valueOf: () => { gc(); return 10; } };
   let param8 = { valueOf: () => { gc(); return 12; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(360, instance.exports.main(param1, 6, 7, param4, 9n, param6, 11, param8, 0n));
+  assertEquals(360, instance.exports.main(param1, 6, 7, param4, 9n, param6, 11, param8, 0n));
 })();
 
 // The function expects BigInt, but gets Number.
@@ -452,7 +452,7 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(10000000000n, instance.exports.main());
+  assertEquals(10000000000n, instance.exports.main());
 })();
 
 (function testGenericWrapper1F32Return() {
@@ -472,7 +472,7 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(0.5, instance.exports.main());
+  assertEquals(0.5, instance.exports.main());
 })();
 
 (function testGenericWrapper1F64Return() {
@@ -492,7 +492,7 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(0.25, instance.exports.main());
+  assertEquals(0.25, instance.exports.main());
 })();
 
 (function testGenericWrapper1Float32() {
@@ -513,8 +513,8 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(12.5));
-  //assertEquals(25, x);
+  assertEquals(undefined, instance.exports.main(12.5));
+  assertEquals(25, x);
 })();
 
 (function testGenericWrapper1Float64() {
@@ -535,8 +535,8 @@ let kSig_v_liilliiil = makeSig([kWasmI64, kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(12.5));
-  //assertEquals(25, x);
+  assertEquals(undefined, instance.exports.main(12.5));
+  assertEquals(25, x);
 })();
 
 let kSig_v_ffddddff = makeSig([kWasmF32, kWasmF32, kWasmF64, kWasmF64,
@@ -574,9 +574,9 @@ let kSig_v_ffddddff = makeSig([kWasmF32, kWasmF32, kWasmF64, kWasmF64,
   let param6 = { valueOf: () => { gc(); return 6.5; } };
   let param8 = { valueOf: () => { gc(); return 8.5; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(param1, 2.5, 3.5, param4,
+  assertEquals(undefined, instance.exports.main(param1, 2.5, 3.5, param4,
     5.5, param6, 7.5, param8));
-  //assertEquals(234, x);
+  assertEquals(234, x);
 })();
 
 let kSig_v_iiliffddlfdff = makeSig([kWasmI32, kWasmI32, kWasmI64,
@@ -619,10 +619,10 @@ let kSig_v_iiliffddlfdff = makeSig([kWasmI32, kWasmI32, kWasmI64,
   }
 
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(5, 6, 7n, 8, 1.5, 2.5, 3.5,
+  assertEquals(undefined, instance.exports.main(5, 6, 7n, 8, 1.5, 2.5, 3.5,
     4.5, 11n, 5.5, 6.5, 7.5, 8.5));
-  //assertEquals(137, x);
-  //assertEquals(223, y);
+  assertEquals(137, x);
+  assertEquals(223, y);
 })();
 
 let kSig_v_iiliiiffddli = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
@@ -667,10 +667,10 @@ let kSig_v_iiliiiffddli = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
   let param6 = { valueOf: () => { gc(); return 10; } };
   let param8 = { valueOf: () => { gc(); return 12; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(undefined, instance.exports.main(param1, 6, 7n, param4, 9, param6,
+  assertEquals(undefined, instance.exports.main(param1, 6, 7n, param4, 9, param6,
     1.5, 2.5, 3.6, 4.4, 11n, param8));
-  //assertEquals(360, x);
-  //assertEquals(13, y);
+  assertEquals(360, x);
+  assertEquals(13, y);
 })();
 
 let kSig_f_iiliiiffddlifffdi = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
@@ -726,9 +726,9 @@ let kSig_f_iiliiiffddlifffdi = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
   let paramf3 = { valueOf: () => { gc(); return 5.5; } };
   let param9 = { valueOf: () => { gc(); return 0; } };
   let instance = builder.instantiate({ mod: { func: import_func } });
-  //assertEquals(223, instance.exports.main(param1, 6, 7n, param4, 9, param6,
+  assertEquals(223, instance.exports.main(param1, 6, 7n, param4, 9, param6,
     1.5, 2.5, paramd1, 4.5, 11n, param8, paramf3, 6.5, 7.5, 8.5, param9));
-  //assertEquals(360, x);
+  assertEquals(360, x);
 })();
 
 (function testCallFromOptimizedFunction() {
@@ -761,7 +761,7 @@ let kSig_f_iiliiiffddlifffdi = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
     .exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(15, instance.exports.f1());
+  assertEquals(15, instance.exports.f1());
 })();
 
 (function testDeoptWithIncorrectNumberOfParams() {
@@ -809,5 +809,5 @@ let kSig_f_iiliiiffddlifffdi = makeSig([kWasmI32, kWasmI32, kWasmI64, kWasmI32,
   let instance = new WebAssembly.Instance(module);
   let res = instance.exports.func0(1, 2, "3", "4", "5", "6", "7",
                                    "8", 9, 10, 11, 12, 13);
-  //assertEquals("8", res);
+  assertEquals("8", res);
 })();

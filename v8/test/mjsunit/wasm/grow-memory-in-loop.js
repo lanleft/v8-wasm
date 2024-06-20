@@ -56,7 +56,7 @@ function generateBuilder() {
     let iterations = 0;
     let expectedPages = initialPages + iterations * deltaPages;
     assertTrue(expectedPages <= maximumPages);
-    //assertEquals(expectedPages, instance.exports.main(iterations));
+    assertEquals(expectedPages, instance.exports.main(iterations));
   }
   {
     // Enter the loop branch (growing memory).
@@ -64,7 +64,7 @@ function generateBuilder() {
     let iterations = 2;
     let expectedPages = initialPages + iterations * deltaPages;
     assertTrue(expectedPages <= maximumPages);
-    //assertEquals(expectedPages, instance.exports.main(iterations));
+    assertEquals(expectedPages, instance.exports.main(iterations));
   }
 })();
 
@@ -108,7 +108,7 @@ function generateBuilder() {
     let iterations = 0;
     let expectedPages = initialPages + deltaPagesOut;
     assertTrue(expectedPages <= maximumPages);
-    //assertEquals(expectedPages, instance.exports.main(iterations));
+    assertEquals(expectedPages, instance.exports.main(iterations));
   }
   {
     // Avoid the loop branch (grow memory by deltaPagesOut
@@ -118,7 +118,7 @@ function generateBuilder() {
     let expectedPages =
         initialPages + deltaPagesOut + (iterations * deltaPagesIn);
     assertTrue(expectedPages <= maximumPages);
-    //assertEquals(expectedPages, instance.exports.main(iterations));
+    assertEquals(expectedPages, instance.exports.main(iterations));
   }
 })();
 
@@ -168,7 +168,7 @@ function generateBuilder() {
     let iterations = 0;
     let expectedValue = initialValue + iterations;
     instance.exports.store(index, initialValue);
-    //assertEquals(expectedValue, instance.exports.main(iterations, index));
+    assertEquals(expectedValue, instance.exports.main(iterations, index));
   }
   {
     // Enter the loop (growing memory + increasing counter in grown memory).
@@ -176,7 +176,7 @@ function generateBuilder() {
     let iterations = 2;
     let expectedValue = initialValue + iterations;
     instance.exports.store(index, initialValue);
-    //assertEquals(expectedValue, instance.exports.main(iterations, index));
+    assertEquals(expectedValue, instance.exports.main(iterations, index));
   }
 })();
 
@@ -239,7 +239,7 @@ function generateBuilder() {
     let iterations = 0;
     let expectedValue = initialValue + 1;
     instance.exports.store(index, initialValue);
-    //assertEquals(expectedValue, instance.exports.main(iterations, index));
+    assertEquals(expectedValue, instance.exports.main(iterations, index));
   }
   {
     // Enter the loop (grow memory and increment counter outside/inside loop).
@@ -247,6 +247,6 @@ function generateBuilder() {
     let iterations = 3;
     let expectedValue = initialValue + iterations + 1;
     instance.exports.store(index, initialValue);
-    //assertEquals(expectedValue, instance.exports.main(iterations, index));
+    assertEquals(expectedValue, instance.exports.main(iterations, index));
   }
 })();

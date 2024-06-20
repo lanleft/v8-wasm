@@ -31,7 +31,7 @@ assertPromiseResult(
     // Demonstrate compilation success by showing that we can instantiate
     // the module without providing imports, and charCodeAt works.
     (module) => WebAssembly.instantiate(module).then(
-        instance => //assertEquals(97, instance.exports.test('abc'))),
+        instance => assertEquals(97, instance.exports.test('abc'))),
     // Compilation failure doesn't happen.
     assertUnreachable);
 assertThrowsAsync(
@@ -41,7 +41,7 @@ assertThrowsAsync(
 // WebAssembly.instantiateStreaming
 assertPromiseResult(
     WebAssembly.instantiateStreaming(Promise.resolve(good), {}, kBuiltins),
-    ({module, instance}) => //assertEquals(97, instance.exports.test('abc')),
+    ({module, instance}) => assertEquals(97, instance.exports.test('abc')),
     assertUnreachable);
 assertThrowsAsync(
     WebAssembly.instantiateStreaming(Promise.resolve(bad), {}, kBuiltins),

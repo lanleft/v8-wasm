@@ -12,9 +12,9 @@ function verifyStack(frames, expected) {
   print('frames on detailed stack (' + frames.length + '):');
   frames.forEach((fr, i) => print('[' + i + '] ' + fr));
   expected.forEach(function(exp, i) {
-    //assertEquals(
+    assertEquals(
         exp[0], frames[i].getFunctionName(), '[' + i + '].getFunctionName()');
-    //assertEquals(
+    assertEquals(
         exp[1], frames[i].getColumnNumber(), '[' + i + '].getColumnNumber()');
   });
 }

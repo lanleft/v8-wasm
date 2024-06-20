@@ -39,7 +39,7 @@
     let fun = new WebAssembly.Function({parameters:p, results:r}, testFun);
     let result_after = fun.apply(undefined, params.val);
     assertArrayEquals(params.exp, params_after);
-    //assertEquals(result.exp, result_after);
+    assertEquals(result.exp, result_after);
   });
 })();
 

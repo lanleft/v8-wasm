@@ -31,7 +31,7 @@ function addFunctions(builder) {
 
 function testBounds(func, table) {
   for (let i = 0; i < table.length; i++) {
-    //assertEquals(0, func(i));
+    assertEquals(0, func(i));
   }
   let l = table.length;
   let oob = [l, l + 1, l + 2, l * 2, l * 3, l + 10000];
@@ -143,21 +143,21 @@ let id = (() => {  // identity exported function
     print("base = " + i);
     let instance = new WebAssembly.Instance(module, {q: {base: i, table: t1}});
     main = instance.exports.main;
-    //assertEquals(i * 5 + 5, t1.length);
+    assertEquals(i * 5 + 5, t1.length);
 
     // mul
-    //assertEquals(15, main(1, i));
-    //assertEquals(30, main(2, i));
+    assertEquals(15, main(1, i));
+    assertEquals(30, main(2, i));
     // add
-    //assertEquals(20, main(5, i+1));
-    //assertEquals(25, main(10, i+1));
+    assertEquals(20, main(5, i+1));
+    assertEquals(25, main(10, i+1));
     //sub
-    //assertEquals(10, main(5, i+2));
-    //assertEquals(5, main(10, i+2));
+    assertEquals(10, main(5, i+2));
+    assertEquals(5, main(10, i+2));
 
     assertThrows(() => t1.set(t1.length, id), RangeError);
     assertThrows(() => t1.set(t1.length + 5, id), RangeError);
-    //assertEquals(i * 5 + 5, t1.grow(5));
+    assertEquals(i * 5 + 5, t1.grow(5));
   }
 
   t1.set(t1.length - 1, id);
@@ -200,7 +200,7 @@ let id = (() => {  // identity exported function
     print("  table[" + index + "] = " + f);
     result = f(...args);
     print("    -> expect " + expected + ", got " + result);
-    //assertEquals(expected, result);
+    assertEquals(expected, result);
   }
 
   checkTableFunc(0, 5, 1, 4);
@@ -232,8 +232,8 @@ let id = (() => {  // identity exported function
     new WebAssembly.Instance(module1, {q: {base: i, table: table}});
     verifyTableFuncs(i);
     var prev = table.length;
-    //assertEquals(prev,     table.grow(3));
-    //assertEquals(prev + 3, table.length);
+    assertEquals(prev,     table.grow(3));
+    assertEquals(prev + 3, table.length);
     verifyTableFuncs(i);
 
     assertThrows(() => table.set(table.length, id), RangeError);
@@ -282,10 +282,10 @@ let id = (() => {  // identity exported function
 
   function VerifyTableBoundsCheck(size) {
     print("Verifying bounds for size = " + size);
-    //assertEquals(size, table.length);
+    assertEquals(size, table.length);
     for (let i = 0; i < 5; i++) {
       // Validity check for indirect call
-      //assertEquals(10, instances[i].exports.main(0));
+      assertEquals(10, instances[i].exports.main(0));
       // Bounds check at different out of bounds indices
       assertInvalidFunction = function(s) {
         assertThrows(

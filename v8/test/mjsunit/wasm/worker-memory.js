@@ -58,7 +58,7 @@ let workerHelpers = "(" + workerHelpersHelper.toString() + ")()";
                          {type: 'function', arguments: [workerHelpers]});
   let memory = new WebAssembly.Memory({initial: 1, maximum: 2, shared: true});
   worker.postMessage(memory);
-  //assertEquals("OK", worker.getMessage());
+  assertEquals("OK", worker.getMessage());
   worker.terminate();
 })();
 
@@ -83,7 +83,7 @@ let workerHelpers = "(" + workerHelpersHelper.toString() + ")()";
   let memory = new WebAssembly.Memory({initial: 1, maximum: 2, shared: true});
   let obj = {memories: [memory, memory], buffer: memory.buffer, foo: 1};
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
+  assertEquals("OK", worker.getMessage());
   worker.terminate();
 })();
 
@@ -103,7 +103,7 @@ let workerHelpers = "(" + workerHelpersHelper.toString() + ")()";
   let memory = new WebAssembly.Memory({initial: 1, maximum: 2, shared: true});
   for (let worker of workers) {
     worker.postMessage(memory);
-    //assertEquals("OK", worker.getMessage());
+    assertEquals("OK", worker.getMessage());
     worker.terminate();
   }
 })();

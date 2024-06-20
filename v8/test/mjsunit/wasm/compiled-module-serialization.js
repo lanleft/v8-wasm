@@ -49,9 +49,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
                                               memory: mem_1}
                                             });
 
-  //assertEquals(43, i1.exports.main(0));
+  assertEquals(43, i1.exports.main(0));
 
-  //assertEquals(42, outval_1);
+  assertEquals(42, outval_1);
   var buff = %SerializeWasmModule(module);
   module = null;
   gc();
@@ -69,11 +69,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
                                               memory: mem_2}
                                             });
 
-  //assertEquals(51, i2.exports.main(0));
+  assertEquals(51, i2.exports.main(0));
 
-  //assertEquals(50, outval_2);
+  assertEquals(50, outval_2);
   // The instances don't share memory through deserialization.
-  //assertEquals(43, i1.exports.main(0));
+  assertEquals(43, i1.exports.main(0));
 })();
 
 (function DeserializeInvalidObject() {
@@ -82,7 +82,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const invalid_buffer_view = new Uint8Array(10);
 
   module = %DeserializeWasmModule(invalid_buffer, invalid_buffer_view);
-  //assertEquals(module, undefined);
+  assertEquals(module, undefined);
 })();
 
 (function RelationBetweenModuleAndClone() {
@@ -100,7 +100,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertNotNull(clone);
   assertFalse(clone == undefined);
   assertFalse(clone == compiled_module);
-  //assertEquals(clone.constructor, compiled_module.constructor);
+  assertEquals(clone.constructor, compiled_module.constructor);
 })();
 
 (function SerializeWrappersWithSameSignature() {
@@ -121,7 +121,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertNotNull(clone);
   assertFalse(clone == undefined);
   assertFalse(clone == compiled_module);
-  //assertEquals(clone.constructor, compiled_module.constructor);
+  assertEquals(clone.constructor, compiled_module.constructor);
 })();
 
 (function SerializeAfterInstantiation() {
@@ -141,7 +141,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertNotNull(clone);
   assertFalse(clone == undefined);
   assertFalse(clone == compiled_module);
-  //assertEquals(clone.constructor, compiled_module.constructor);
+  assertEquals(clone.constructor, compiled_module.constructor);
   var instance3 = new WebAssembly.Instance(clone);
   assertFalse(instance3 == undefined);
 })();
@@ -166,7 +166,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertNotNull(clone);
   assertFalse(clone == undefined);
   assertFalse(clone == compiled_module);
-  //assertEquals(clone.constructor, compiled_module.constructor);
+  assertEquals(clone.constructor, compiled_module.constructor);
   var instance2 = new WebAssembly.Instance(clone, ffi);
   assertFalse(instance2 == undefined);
 })();
@@ -195,8 +195,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   var i2 = new WebAssembly.Instance(module_clone);
   i1.exports.write(1);
   i2.exports.write(2);
-  //assertEquals(1, i1.exports.read());
-  //assertEquals(2, i2.exports.read());
+  assertEquals(1, i1.exports.read());
+  assertEquals(2, i2.exports.read());
 })();
 
 (function SharedTableTest() {
@@ -258,14 +258,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   var i2_prime = new WebAssembly.Instance(m2_clone,
                                           {z: {table: i3.exports.table}});
 
-  //assertEquals(11, i1.exports.main(0));
-  //assertEquals(11, i2.exports.main(0));
+  assertEquals(11, i1.exports.main(0));
+  assertEquals(11, i2.exports.main(0));
 
-  //assertEquals(22, i1.exports.main(1));
-  //assertEquals(22, i2.exports.main(1));
+  assertEquals(22, i1.exports.main(1));
+  assertEquals(22, i2.exports.main(1));
 
-  //assertEquals(33, i3.exports.main(0));
-  //assertEquals(33, i2_prime.exports.main(0));
+  assertEquals(33, i3.exports.main(0));
+  assertEquals(33, i2_prime.exports.main(0));
 
   assertThrows(() => i1.exports.main(2));
   assertThrows(() => i2.exports.main(2));
@@ -306,8 +306,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   module = %DeserializeWasmModule(buffer, wire_bytes);
   const instance = new WebAssembly.Instance(module);
 
-  //assertEquals(0, instance.exports.main(0));
-  //assertEquals(0, instance.exports.main(kPageSize - 4));
+  assertEquals(0, instance.exports.main(0));
+  assertEquals(0, instance.exports.main(kPageSize - 4));
   assertTraps(
       kTrapMemOutOfBounds, _ => instance.exports.main(kPageSize - 3));
 })();
@@ -331,7 +331,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   module = %DeserializeWasmModule(buffer, wire_bytes);
   var instance = new WebAssembly.Instance(module);
 
-  //assertEquals(65, instance.exports.main());
+  assertEquals(65, instance.exports.main());
 })();
 
 (function ImportCallAfterSerialization() {
@@ -352,7 +352,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   module = %DeserializeWasmModule(buffer, wire_bytes);
   var instance = new WebAssembly.Instance(module, {"": {my_import: () => 42 }});
 
-  //assertEquals(65, instance.exports.main());
+  assertEquals(65, instance.exports.main());
 })();
 
 (function BranchTableAfterSerialization() {
@@ -397,12 +397,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   module = %DeserializeWasmModule(buffer, wire_bytes);
   var instance = new WebAssembly.Instance(module);
 
-  //assertEquals(3, instance.exports.main(0));
-  //assertEquals(7, instance.exports.main(1));
-  //assertEquals(9, instance.exports.main(2));
-  //assertEquals(11, instance.exports.main(3));
-  //assertEquals(23, instance.exports.main(4));
-  //assertEquals(35, instance.exports.main(5));
-  //assertEquals(42, instance.exports.main(6));
-  //assertEquals(42, instance.exports.main(9));
+  assertEquals(3, instance.exports.main(0));
+  assertEquals(7, instance.exports.main(1));
+  assertEquals(9, instance.exports.main(2));
+  assertEquals(11, instance.exports.main(3));
+  assertEquals(23, instance.exports.main(4));
+  assertEquals(35, instance.exports.main(5));
+  assertEquals(42, instance.exports.main(6));
+  assertEquals(42, instance.exports.main(9));
 })();

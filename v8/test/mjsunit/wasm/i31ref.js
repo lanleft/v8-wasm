@@ -21,14 +21,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(123, instance.exports.signed(123));
-  //assertEquals(123, instance.exports.unsigned(123));
+  assertEquals(123, instance.exports.signed(123));
+  assertEquals(123, instance.exports.unsigned(123));
   // Truncation:
-  //assertEquals(0x1234, instance.exports.signed(0x80001234));
-  //assertEquals(0x1234, instance.exports.unsigned(0x80001234));
+  assertEquals(0x1234, instance.exports.signed(0x80001234));
+  assertEquals(0x1234, instance.exports.unsigned(0x80001234));
   // Sign/zero extention:
-  //assertEquals(-1, instance.exports.signed(0x7fffffff));
-  //assertEquals(0x7fffffff, instance.exports.unsigned(0x7fffffff));
+  assertEquals(-1, instance.exports.signed(0x7fffffff));
+  assertEquals(0x7fffffff, instance.exports.unsigned(0x7fffffff));
 })();
 
 (function I31RefNullable() {
@@ -49,7 +49,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(42, instance.exports.i31_null(0));
+  assertEquals(42, instance.exports.i31_null(0));
   assertTraps(kTrapNullDereference, () => instance.exports.i31_null(1));
 })();
 
@@ -76,64 +76,64 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(0, instance.exports.roundtrip(0));
-  //assertEquals(0, instance.exports.signed(0));
-  //assertEquals(0, instance.exports.unsigned(0));
-  //assertEquals(0, instance.exports.new(0));
+  assertEquals(0, instance.exports.roundtrip(0));
+  assertEquals(0, instance.exports.signed(0));
+  assertEquals(0, instance.exports.unsigned(0));
+  assertEquals(0, instance.exports.new(0));
 
-  //assertEquals(123, instance.exports.roundtrip(123));
-  //assertEquals(123, instance.exports.signed(123));
-  //assertEquals(123, instance.exports.unsigned(123));
-  //assertEquals(123, instance.exports.new(123));
+  assertEquals(123, instance.exports.roundtrip(123));
+  assertEquals(123, instance.exports.signed(123));
+  assertEquals(123, instance.exports.unsigned(123));
+  assertEquals(123, instance.exports.new(123));
 
   // Max value.
-  //assertEquals(0x3fffffff, instance.exports.roundtrip(0x3fffffff));
-  //assertEquals(0x3fffffff, instance.exports.signed(0x3fffffff));
-  //assertEquals(0x3fffffff, instance.exports.unsigned(0x3fffffff));
-  //assertEquals(0x3fffffff, instance.exports.new(0x3fffffff));
+  assertEquals(0x3fffffff, instance.exports.roundtrip(0x3fffffff));
+  assertEquals(0x3fffffff, instance.exports.signed(0x3fffffff));
+  assertEquals(0x3fffffff, instance.exports.unsigned(0x3fffffff));
+  assertEquals(0x3fffffff, instance.exports.new(0x3fffffff));
 
   // Double number.
-  //assertEquals(1234.567, instance.exports.roundtrip(1234.567));
+  assertEquals(1234.567, instance.exports.roundtrip(1234.567));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(1234.567));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(1234.567));
 
   // Out-of-bounds positive integer.
-  //assertEquals(0x40000000, instance.exports.roundtrip(0x40000000));
+  assertEquals(0x40000000, instance.exports.roundtrip(0x40000000));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(0x40000000));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(0x40000000));
-  //assertEquals(-0x40000000, instance.exports.new(0x40000000));
+  assertEquals(-0x40000000, instance.exports.new(0x40000000));
 
   // Out-of-bounds negative integer.
-  //assertEquals(-0x40000001, instance.exports.roundtrip(-0x40000001));
+  assertEquals(-0x40000001, instance.exports.roundtrip(-0x40000001));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(-0x40000001));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(-0x40000001));
-  //assertEquals(0x3fffffff, instance.exports.new(-0x40000001));
+  assertEquals(0x3fffffff, instance.exports.new(-0x40000001));
 
   // Sign/zero extention.
-  //assertEquals(-2, instance.exports.roundtrip(-2));
-  //assertEquals(-2, instance.exports.signed(-2));
-  //assertEquals(0x7ffffffe, instance.exports.unsigned(-2));
-  //assertEquals(-2, instance.exports.new(-2));
+  assertEquals(-2, instance.exports.roundtrip(-2));
+  assertEquals(-2, instance.exports.signed(-2));
+  assertEquals(0x7ffffffe, instance.exports.unsigned(-2));
+  assertEquals(-2, instance.exports.new(-2));
 
   // Min value.
-  //assertEquals(-0x40000000, instance.exports.roundtrip(-0x40000000));
-  //assertEquals(-0x40000000, instance.exports.signed(-0x40000000));
-  //assertEquals(0x40000000, instance.exports.unsigned(-0x40000000));
-  //assertEquals(-0x40000000, instance.exports.new(-0x40000000));
+  assertEquals(-0x40000000, instance.exports.roundtrip(-0x40000000));
+  assertEquals(-0x40000000, instance.exports.signed(-0x40000000));
+  assertEquals(0x40000000, instance.exports.unsigned(-0x40000000));
+  assertEquals(-0x40000000, instance.exports.new(-0x40000000));
 
-  //assertEquals(NaN, instance.exports.roundtrip(NaN));
+  assertEquals(NaN, instance.exports.roundtrip(NaN));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(NaN));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(NaN));
 
-  //assertEquals(-0, instance.exports.roundtrip(-0));
+  assertEquals(-0, instance.exports.roundtrip(-0));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(-0));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(-0));
 
-  //assertEquals(Infinity, instance.exports.roundtrip(Infinity));
+  assertEquals(Infinity, instance.exports.roundtrip(Infinity));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(Infinity));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(Infinity));
 
-  //assertEquals(-Infinity, instance.exports.roundtrip(-Infinity));
+  assertEquals(-Infinity, instance.exports.roundtrip(-Infinity));
   assertTraps(kTrapIllegalCast, () => instance.exports.signed(-Infinity));
   assertTraps(kTrapIllegalCast, () => instance.exports.unsigned(-Infinity));
 })();

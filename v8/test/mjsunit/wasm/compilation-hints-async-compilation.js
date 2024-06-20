@@ -18,7 +18,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.compile(bytes)
     .then(assertUnreachable,
-          error => //assertEquals("WebAssembly.compile(): Invalid compilation " +
+          error => assertEquals("WebAssembly.compile(): Invalid compilation " +
           "hint 0x19 (forbidden downgrade) @+49", error.message)));
 })();
 
@@ -34,7 +34,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.compile(bytes).then(
       assertUnreachable,
-      error => //assertEquals(
+      error => assertEquals(
           'WebAssembly.compile(): Compiling function #0:"id" failed: type ' +
               'error in fallthru[0] (expected i32, got i64) @+56',
           error.message)));
@@ -58,7 +58,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
          .exportFunc();
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiate(bytes)
-    .then(({module, instance}) => //assertEquals(42, instance.exports.id(42))));
+    .then(({module, instance}) => assertEquals(42, instance.exports.id(42))));
 })();
 
 (function testCompileLazyBaselineEagerTopTierModule() {
@@ -72,5 +72,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
          .exportFunc();
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiate(bytes)
-    .then(({module, instance}) => //assertEquals(42, instance.exports.id(42))));
+    .then(({module, instance}) => assertEquals(42, instance.exports.id(42))));
 })();

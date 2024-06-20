@@ -35,7 +35,7 @@ function TestSingleLiveInstance(gc) {
       print(" [" + i + "]...");
       gc();
       var instance = newInstance(module, i + 99);
-      //assertEquals(i + 99, instance.exports.main());
+      assertEquals(i + 99, instance.exports.main());
     })();
   }
 }
@@ -58,21 +58,21 @@ function TestMultiInstance(gc) {
   (() => { // don't leak references!
     print(" [0]...");
     gc();
-    //assertEquals(33, roots[0].exports.main());
+    assertEquals(33, roots[0].exports.main());
     roots[0] = null;
   })();
 
   (() => { // don't leak references!
     print(" [1]...");
     gc();
-    //assertEquals(4444, roots[1].exports.main());
+    assertEquals(4444, roots[1].exports.main());
     roots[1] = null;
   })();
 
   (() => { // don't leak references!
     print(" [2]...");
     gc();
-    //assertEquals(555555, roots[2].exports.main());
+    assertEquals(555555, roots[2].exports.main());
     roots[2] = null;
   })();
 }
@@ -91,8 +91,8 @@ function TestReclaimingCompiledModule() {
 
   (() => { // don't leak references!
     print(" [0]...");
-    //assertEquals(7777, roots[0].exports.main());
-    //assertEquals(8888, roots[1].exports.main());
+    assertEquals(7777, roots[0].exports.main());
+    assertEquals(8888, roots[1].exports.main());
     roots[1] = null;
   })();
 
@@ -100,8 +100,8 @@ function TestReclaimingCompiledModule() {
     print(" [1]...");
     gc();
     roots[1] = newInstance(module, 9999);
-    //assertEquals(7777, roots[0].exports.main());
-    //assertEquals(9999, roots[1].exports.main());
+    assertEquals(7777, roots[0].exports.main());
+    assertEquals(9999, roots[1].exports.main());
     roots[0] = null;
     roots[1] = null;
   })();
@@ -111,8 +111,8 @@ function TestReclaimingCompiledModule() {
     gc();
     roots[0] = newInstance(module, 11111);
     roots[1] = newInstance(module, 22222);
-    //assertEquals(11111, roots[0].exports.main());
-    //assertEquals(22222, roots[1].exports.main());
+    assertEquals(11111, roots[0].exports.main());
+    assertEquals(22222, roots[1].exports.main());
     roots[0] = null;
     roots[1] = null;
   })();

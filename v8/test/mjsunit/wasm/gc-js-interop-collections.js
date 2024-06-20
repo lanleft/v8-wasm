@@ -10,18 +10,18 @@ let {struct, array} = CreateWasmObjects();
 for (const wasm_obj of [struct, array]) {
 
   // Test Array.
-  repeated(() => //assertEquals([], Array.from(wasm_obj)));
+  repeated(() => assertEquals([], Array.from(wasm_obj)));
   repeated(() => assertFalse(Array.isArray(wasm_obj)));
-  repeated(() => //assertEquals([wasm_obj], Array.of(wasm_obj)));
+  repeated(() => assertEquals([wasm_obj], Array.of(wasm_obj)));
   testThrowsRepeated(() => [1, 2].at(wasm_obj), TypeError);
-  repeated(() => //assertEquals([1, wasm_obj], [1].concat(wasm_obj)));
+  repeated(() => assertEquals([1, wasm_obj], [1].concat(wasm_obj)));
   testThrowsRepeated(() => [1, 2].copyWithin(wasm_obj), TypeError);
   testThrowsRepeated(() => [1, 2].every(wasm_obj), TypeError);
   repeated(
-      () => //assertEquals([1, wasm_obj, 3], [1, 2, 3].fill(wasm_obj, 1, 2)));
+      () => assertEquals([1, wasm_obj, 3], [1, 2, 3].fill(wasm_obj, 1, 2)));
   testThrowsRepeated(() => [1, 2].filter(wasm_obj), TypeError);
   repeated(
-      () => //assertEquals(
+      () => assertEquals(
           [wasm_obj], [undefined, wasm_obj, null].filter(function(v) {
             return v == this;
           }, wasm_obj)));
@@ -37,21 +37,21 @@ for (const wasm_obj of [struct, array]) {
     [1, 2].forEach(function(x) {
       res.push(this);
     }, wasm_obj);
-    //assertEquals([wasm_obj, wasm_obj], res);
+    assertEquals([wasm_obj, wasm_obj], res);
   });
   repeated(() => assertTrue([wasm_obj].includes(wasm_obj)));
   repeated(() => assertFalse([1].includes(wasm_obj)));
-  repeated(() => //assertEquals(1, [0, wasm_obj, 2].indexOf(wasm_obj)));
+  repeated(() => assertEquals(1, [0, wasm_obj, 2].indexOf(wasm_obj)));
   testThrowsRepeated(() => ['a', 'b'].join(wasm_obj), TypeError);
-  repeated(() => //assertEquals(1, [0, wasm_obj, 2].lastIndexOf(wasm_obj)));
+  repeated(() => assertEquals(1, [0, wasm_obj, 2].lastIndexOf(wasm_obj)));
   testThrowsRepeated(() => [1, 2].map(wasm_obj), TypeError);
-  repeated(() => //assertEquals([wasm_obj, wasm_obj], [1, 2].map(function() {
+  repeated(() => assertEquals([wasm_obj, wasm_obj], [1, 2].map(function() {
              return this;
            }, wasm_obj)));
   repeated(() => {
     let arr = [1];
     arr.push(wasm_obj, 3);
-    //assertEquals([1, wasm_obj, 3], arr);
+    assertEquals([1, wasm_obj, 3], arr);
   });
   testThrowsRepeated(() => [1, 2].reduce(wasm_obj), TypeError);
   repeated(() => assertSame(wasm_obj, [].reduce(() => null, wasm_obj)));
@@ -63,9 +63,9 @@ for (const wasm_obj of [struct, array]) {
   repeated(() => {
     let arr = [1, 2];
     arr.unshift(wasm_obj);
-    //assertEquals([wasm_obj, 1, 2], arr);
+    assertEquals([wasm_obj, 1, 2], arr);
   });
-  repeated(() => //assertEquals(Int8Array.from([]), Int8Array.from(wasm_obj)));
+  repeated(() => assertEquals(Int8Array.from([]), Int8Array.from(wasm_obj)));
   testThrowsRepeated(() => Int8Array.of(wasm_obj), TypeError);
   for (let ArrayType
            of [Int8Array, Int16Array, Int32Array, Uint8Array, Uint16Array,
@@ -81,9 +81,9 @@ for (const wasm_obj of [struct, array]) {
     testThrowsRepeated(() => array.findLastIndex(wasm_obj), TypeError);
     testThrowsRepeated(() => array.forEach(wasm_obj), TypeError);
     repeated(() => assertFalse(array.includes(wasm_obj)));
-    repeated(() => //assertEquals(-1, array.indexOf(wasm_obj)));
+    repeated(() => assertEquals(-1, array.indexOf(wasm_obj)));
     testThrowsRepeated(() => array.join(wasm_obj), TypeError);
-    repeated(() => //assertEquals(-1, array.lastIndexOf(wasm_obj)));
+    repeated(() => assertEquals(-1, array.lastIndexOf(wasm_obj)));
     testThrowsRepeated(() => array.map(wasm_obj), TypeError);
     testThrowsRepeated(() => array.map(() => wasm_obj), TypeError);
     testThrowsRepeated(() => array.reduce(wasm_obj), TypeError);
@@ -102,7 +102,7 @@ for (const wasm_obj of [struct, array]) {
       let val = new String('a');
       let map = new MapType([[val, wasm_obj], [wasm_obj, val]]);
       assertSame(wasm_obj, map.get(val));
-      //assertEquals(val, map.get(wasm_obj));
+      assertEquals(val, map.get(wasm_obj));
       assertTrue(map.has(wasm_obj));
       map.delete(wasm_obj);
       assertFalse(map.has(wasm_obj));

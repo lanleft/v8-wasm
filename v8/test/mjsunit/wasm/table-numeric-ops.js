@@ -85,53 +85,53 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
     wasm.table_init(0, kTableSize, 0);
 
     wasm.table_init(0, 0, 1);
-    //assertEquals(0, wasm.call(0));
+    assertEquals(0, wasm.call(0));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(1));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(2));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(3));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(4));
 
     wasm.table_init(0, 0, 2);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(2));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(3));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(4));
 
     wasm.table_init(0, 0, 3);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
-    //assertEquals(2, wasm.call(2));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
+    assertEquals(2, wasm.call(2));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(3));
     assertTraps(kTrapFuncSigMismatch, () => wasm.call(4));
 
     wasm.table_init(3, 0, 2);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
-    //assertEquals(2, wasm.call(2));
-    //assertEquals(0, wasm.call(3));
-    //assertEquals(1, wasm.call(4));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
+    assertEquals(2, wasm.call(2));
+    assertEquals(0, wasm.call(3));
+    assertEquals(1, wasm.call(4));
 
     wasm.table_init(3, 1, 2);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
-    //assertEquals(2, wasm.call(2));
-    //assertEquals(1, wasm.call(3));
-    //assertEquals(2, wasm.call(4));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
+    assertEquals(2, wasm.call(2));
+    assertEquals(1, wasm.call(3));
+    assertEquals(2, wasm.call(4));
 
     wasm.table_init(3, 2, 2);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
-    //assertEquals(2, wasm.call(2));
-    //assertEquals(2, wasm.call(3));
-    //assertEquals(3, wasm.call(4));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
+    assertEquals(2, wasm.call(2));
+    assertEquals(2, wasm.call(3));
+    assertEquals(3, wasm.call(4));
 
     wasm.table_init(3, 3, 2);
-    //assertEquals(0, wasm.call(0));
-    //assertEquals(1, wasm.call(1));
-    //assertEquals(2, wasm.call(2));
-    //assertEquals(3, wasm.call(3));
-    //assertEquals(4, wasm.call(4));
+    assertEquals(0, wasm.call(0));
+    assertEquals(1, wasm.call(1));
+    assertEquals(2, wasm.call(2));
+    assertEquals(3, wasm.call(3));
+    assertEquals(4, wasm.call(4));
 
     // Now drop the passive segment twice. This should work.
     wasm.drop();

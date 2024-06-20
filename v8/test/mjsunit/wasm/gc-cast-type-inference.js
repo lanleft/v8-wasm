@@ -53,8 +53,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   ]).exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(42, wasm.refCastRemovesNullability(42));
-  //assertEquals(-1, wasm.refCastRemovesNullability(-1));
+  assertEquals(42, wasm.refCastRemovesNullability(42));
+  assertEquals(-1, wasm.refCastRemovesNullability(-1));
   assertTraps(kTrapIllegalCast, () => wasm.refCastRemovesNullability(null));
 })();
 
@@ -107,11 +107,11 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate();
   let wasm = instance.exports;
   assertTraps(kTrapNullDereference, () => wasm.brOnCastNullNonNullOnPassThrough(null));
-  //assertEquals(42, wasm.brOnCastNullNonNullOnPassThrough(42));
-  //assertEquals(0, wasm.brOnCastNullNonNullOnPassThrough("cast fails"));
-  //assertEquals(0, wasm.brOnCastNonNullOnBranch(null));
-  //assertEquals(42, wasm.brOnCastNonNullOnBranch(42));
-  //assertEquals(0, wasm.brOnCastNonNullOnBranch("cast fails"));
+  assertEquals(42, wasm.brOnCastNullNonNullOnPassThrough(42));
+  assertEquals(0, wasm.brOnCastNullNonNullOnPassThrough("cast fails"));
+  assertEquals(0, wasm.brOnCastNonNullOnBranch(null));
+  assertEquals(42, wasm.brOnCastNonNullOnBranch(42));
+  assertEquals(0, wasm.brOnCastNonNullOnBranch("cast fails"));
 })();
 
 (function TestBrOnCastFailNullability() {
@@ -161,10 +161,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
   let instance = builder.instantiate();
   let wasm = instance.exports;
-  //assertEquals(1, wasm.brOnCastFailNonNullOnPassThrough(null));
-  //assertEquals(42, wasm.brOnCastFailNonNullOnPassThrough(42));
-  //assertEquals(1, wasm.brOnCastFailNonNullOnPassThrough("cast fails"));
+  assertEquals(1, wasm.brOnCastFailNonNullOnPassThrough(null));
+  assertEquals(42, wasm.brOnCastFailNonNullOnPassThrough(42));
+  assertEquals(1, wasm.brOnCastFailNonNullOnPassThrough("cast fails"));
   assertTraps(kTrapNullDereference, () => wasm.brOnCastFailNullNonNullOnBranch(null));
-  //assertEquals(42, wasm.brOnCastFailNullNonNullOnBranch(42));
-  //assertEquals(1, wasm.brOnCastFailNullNonNullOnBranch("cast fails"));
+  assertEquals(42, wasm.brOnCastFailNullNonNullOnBranch(42));
+  assertEquals(1, wasm.brOnCastFailNullNonNullOnBranch("cast fails"));
 })();

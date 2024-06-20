@@ -9,5 +9,5 @@
 
   assertFalse(m.buffer.resizable);
   // For non-resizable buffers, maxByteLength returns byteLength.
-  //assertEquals(m.buffer.maxByteLength, m.buffer.byteLength);
+  assertEquals(m.buffer.maxByteLength, m.buffer.byteLength);
 })();

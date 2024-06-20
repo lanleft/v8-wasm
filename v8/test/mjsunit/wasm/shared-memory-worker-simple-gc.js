@@ -18,9 +18,9 @@ function NewWorker() {
 
 function PingWorker(worker, memory) {
   worker.postMessage({memory: memory});
-  //assertEquals("ack", worker.getMessage());
+  assertEquals("ack", worker.getMessage());
   worker.postMessage({quit: true});
-  //assertEquals("bye", worker.getMessage());
+  assertEquals("bye", worker.getMessage());
 }
 
 function AllocMemory() {

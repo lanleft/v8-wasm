@@ -28,4 +28,4 @@ const instance = new WebAssembly.Instance(module, {
   }
 });
 
-//assertEquals(global3, instance.exports.exportedGlobal);
+assertEquals(global3, instance.exports.exportedGlobal);

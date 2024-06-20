@@ -55,11 +55,11 @@ function testOptimized(run, fctToOptimize) {
     assertSame(instance, frame.getThis());
     assertSame(null, frame.getTypeName());
     assertSame(1, frame.getFunction());
-    //assertEquals('getElement', frame.getFunctionName());
+    assertEquals('getElement', frame.getFunctionName());
     assertSame(null, frame.getMethodName());
     assertMatches(/wasm:\/\/wasm\/[0-9a-f]+/,
                  frame.getFileName());
-    //assertEquals(0x53, frame.getColumnNumber());
+    assertEquals(0x53, frame.getColumnNumber());
     assertSame(undefined, frame.getEvalOrigin());
     assertFalse(frame.isToplevel());
     assertFalse(frame.isEval());
@@ -74,11 +74,11 @@ function testOptimized(run, fctToOptimize) {
     assertSame(this, frame.getThis());
     assertSame(null, frame.getTypeName());
     assertSame(getTrap, frame.getFunction());
-    //assertEquals(getTrap.name, frame.getFunctionName());
+    assertEquals(getTrap.name, frame.getFunctionName());
     assertSame(null, frame.getMethodName());
     assertMatches(/.*wasm-gc-inlining-stacktrace-api\.js/,
                  frame.getFileName());
-    //assertEquals(17, frame.getColumnNumber());
+    assertEquals(17, frame.getColumnNumber());
     assertSame(undefined, frame.getEvalOrigin());
     assertTrue(frame.isToplevel());
     assertFalse(frame.isEval());
@@ -97,7 +97,7 @@ function testOptimized(run, fctToOptimize) {
       getTrap();
       assertUnreachable();
     } catch(e) {
-      //assertEquals('This is a stack trace', e.stack);
+      assertEquals('This is a stack trace', e.stack);
     }
   };
   testOptimized(testTrap, getTrap);
@@ -112,7 +112,7 @@ function testOptimized(run, fctToOptimize) {
       try {
         return wasm.getElement(null);
       } catch (e) {
-        //assertEquals('This is a stack trace', e.stack);
+        assertEquals('This is a stack trace', e.stack);
       }
     };
 
@@ -121,11 +121,11 @@ function testOptimized(run, fctToOptimize) {
       assertSame(instance, frame.getThis());
       assertSame(null, frame.getTypeName());
       assertSame(1, frame.getFunction());
-      //assertEquals('getElement', frame.getFunctionName());
+      assertEquals('getElement', frame.getFunctionName());
       assertSame(null, frame.getMethodName());
       assertMatches(/wasm:\/\/wasm\/[0-9a-f]+/,
                    frame.getFileName());
-      //assertEquals(0x53, frame.getColumnNumber());
+      assertEquals(0x53, frame.getColumnNumber());
       assertSame(undefined, frame.getEvalOrigin());
       assertFalse(frame.isToplevel());
       assertFalse(frame.isEval());
@@ -140,11 +140,11 @@ function testOptimized(run, fctToOptimize) {
       assertSame(this, frame.getThis());
       assertSame(null, frame.getTypeName());
       assertSame(getTrapTryCatch, frame.getFunction());
-      //assertEquals(getTrapTryCatch.name, frame.getFunctionName());
+      assertEquals(getTrapTryCatch.name, frame.getFunctionName());
       assertSame(null, frame.getMethodName());
       assertMatches(/.*wasm-gc-inlining-stacktrace-api\.js/,
                    frame.getFileName());
-      //assertEquals(21, frame.getColumnNumber());
+      assertEquals(21, frame.getColumnNumber());
       assertSame(undefined, frame.getEvalOrigin());
       assertTrue(frame.isToplevel());
       assertFalse(frame.isEval());

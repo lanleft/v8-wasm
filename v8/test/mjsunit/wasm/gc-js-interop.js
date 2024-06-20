@@ -43,11 +43,11 @@ for (const wasm_obj of [struct, array]) {
     repeated(() => assertSame(wasm_obj, js_obj[0]));
   }
 
-  repeated(() => //assertEquals(42, wasm_obj ? 42 : 0));
+  repeated(() => assertEquals(42, wasm_obj ? 42 : 0));
   testThrowsRepeated(() => wasm_obj(), TypeError);
 
   testThrowsRepeated(() => [...wasm_obj], TypeError);
-  repeated(() => //assertEquals({}, {...wasm_obj}));
+  repeated(() => assertEquals({}, {...wasm_obj}));
   repeated(() => ((...wasm_obj) => {})());
   repeated(() => assertSame(wasm_obj, ({wasm_obj}).wasm_obj));
   testThrowsRepeated(() => ({[wasm_obj]: null}), TypeError);
@@ -56,7 +56,7 @@ for (const wasm_obj of [struct, array]) {
   testThrowsRepeated(() => new wasm_obj, TypeError);
   repeated(() => assertSame(undefined, wasm_obj?.property));
 
-  repeated(() => //assertEquals(undefined, void wasm_obj));
+  repeated(() => assertEquals(undefined, void wasm_obj));
   // These deopt loops can also be triggered with JS only code, e.g.
   // `2 == {valueOf: () => +2n}`.
   testThrowsRepeated(() => 2 == wasm_obj, TypeError, ignoreDeopts);
@@ -89,7 +89,7 @@ for (const wasm_obj of [struct, array]) {
   repeated(() => {
     let tmp = 1;
     with(wasm_obj) var with_lookup = tmp;
-    //assertEquals(tmp, with_lookup);
+    assertEquals(tmp, with_lookup);
   });
   repeated(() => {
     switch (wasm_obj) {
@@ -104,7 +104,7 @@ for (const wasm_obj of [struct, array]) {
     try {
       throw wasm_obj;
     } catch (e) {
-      //assertEquals(e, wasm_obj);
+      assertEquals(e, wasm_obj);
     }
   });
   testThrowsRepeated(
@@ -128,14 +128,14 @@ for (const wasm_obj of [struct, array]) {
     let fct = function(x) {
       return [this, x]
     };
-    repeated(() => //assertEquals([wasm_obj, 1], fct.apply(wasm_obj, [1])));
+    repeated(() => assertEquals([wasm_obj, 1], fct.apply(wasm_obj, [1])));
     repeated(
         () =>
-            //assertEquals([new Number(1), wasm_obj], fct.apply(1, [wasm_obj])));
+            assertEquals([new Number(1), wasm_obj], fct.apply(1, [wasm_obj])));
     repeated(
-        () => //assertEquals([new Number(1), undefined], fct.apply(1, wasm_obj)));
-    repeated(() => //assertEquals([wasm_obj, 1], fct.bind(wasm_obj)(1)));
-    repeated(() => //assertEquals([wasm_obj, 1], fct.call(wasm_obj, 1)));
+        () => assertEquals([new Number(1), undefined], fct.apply(1, wasm_obj)));
+    repeated(() => assertEquals([wasm_obj, 1], fct.bind(wasm_obj)(1)));
+    repeated(() => assertEquals([wasm_obj, 1], fct.call(wasm_obj, 1)));
   }
 
   testThrowsRepeated(() => Symbol.for(wasm_obj), TypeError);
@@ -232,13 +232,13 @@ for (const wasm_obj of [struct, array]) {
   testThrowsRepeated(() => Atomics.xor(i8Array, 1, wasm_obj), TypeError);
 
   testThrowsRepeated(() => JSON.parse(wasm_obj), TypeError);
-  repeated(() => //assertEquals({x: 1}, JSON.parse('{"x": 1}', wasm_obj)));
-  repeated(() => //assertEquals(undefined, JSON.stringify(wasm_obj)));
-  repeated(() => //assertEquals('{"x":1}', JSON.stringify({x: 1}, wasm_obj)));
+  repeated(() => assertEquals({x: 1}, JSON.parse('{"x": 1}', wasm_obj)));
+  repeated(() => assertEquals(undefined, JSON.stringify(wasm_obj)));
+  repeated(() => assertEquals('{"x":1}', JSON.stringify({x: 1}, wasm_obj)));
   repeated(
-      () => //assertEquals('{"x":1}', JSON.stringify({x: 1}, null, wasm_obj)));
+      () => assertEquals('{"x":1}', JSON.stringify({x: 1}, null, wasm_obj)));
   repeated(
-      () => //assertEquals("{}", JSON.stringify({wasm_obj})));
+      () => assertEquals("{}", JSON.stringify({wasm_obj})));
 
   // Yielding wasm objects from a generator function is valid.
   repeated(() => {
@@ -252,8 +252,8 @@ for (const wasm_obj of [struct, array]) {
     let gen = (function*() {
       assertSame(wasm_obj, yield 1);
     })();
-    //assertEquals(1, gen.next().value);
-    assertTrue(gen.next(wasm_obj).done);  // triggers the //assertEquals.
+    assertEquals(1, gen.next().value);
+    assertTrue(gen.next(wasm_obj).done);  // triggers the assertEquals.
   });
   // Test passing wasm objects via return() to a generator function.
   repeated(() => {
@@ -261,7 +261,7 @@ for (const wasm_obj of [struct, array]) {
       yield 1;
       assertTrue(false);
     })();
-    //assertEquals({value: wasm_obj, done: true}, gen.return(wasm_obj));
+    assertEquals({value: wasm_obj, done: true}, gen.return(wasm_obj));
   });
   // Test passing wasm objects via throw() to a generator function.
   repeated(() => {
@@ -274,9 +274,9 @@ for (const wasm_obj of [struct, array]) {
         return 2;
       }
     })();
-    //assertEquals({value: 1, done: false}, gen.next());
+    assertEquals({value: 1, done: false}, gen.next());
     // wasm_obj is caught inside the generator
-    //assertEquals({value: 2, done: true}, gen.throw(wasm_obj));
+    assertEquals({value: 2, done: true}, gen.throw(wasm_obj));
   });
   // Treating wasm objects as generators is invalid.
   repeated(() => {

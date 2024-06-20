@@ -85,7 +85,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
       let instance = builder.instantiate({imports});
-      //assertEquals(42, instance.exports.read_global());
+      assertEquals(42, instance.exports.read_global());
     } else {
       assertThrows(
         () => builder.instantiate({imports}),
@@ -179,7 +179,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
       let instance = builder.instantiate({imports});
-      //assertEquals(imported_value == "null" ? -1 : 42,
+      assertEquals(imported_value == "null" ? -1 : 42,
                    instance.exports.read_global());
     } else {
       assertThrows(
@@ -277,16 +277,16 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     any: "Content of any",
   }});
 
-  //assertEquals("Content of string1", instance.exports.get_string1());
-  //assertEquals(null, instance.exports.get_string2());
-  //assertEquals("Content of any", instance.exports.get_any());
+  assertEquals("Content of string1", instance.exports.get_string1());
+  assertEquals(null, instance.exports.get_string2());
+  assertEquals("Content of any", instance.exports.get_any());
 })();
 
 (function TestAnyRefGlobalFromJS() {
   print(arguments.callee.name);
   let anyref_global = new WebAssembly.Global(
       { value: "anyref", mutable: true }, "initial value");
-  //assertEquals("initial value", anyref_global.value);
+  assertEquals("initial value", anyref_global.value);
 
   let builder = new WasmModuleBuilder();
   builder.addImportedGlobal("imports", "anyref_global", kWasmAnyRef, true);
@@ -328,31 +328,31 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   anyref_global.value = "Set anyref from string";
-  //assertEquals("Set anyref from string", anyref_global.value);
-  //assertEquals("Set anyref from string", wasm.get_extern());
+  assertEquals("Set anyref from string", anyref_global.value);
+  assertEquals("Set anyref from string", wasm.get_extern());
   anyref_global.value = wasm.create_struct(42);
-  //assertEquals(42, wasm.get_struct_val());
+  assertEquals(42, wasm.get_struct_val());
   anyref_global.value = wasm.create_array(43);
-  //assertEquals(43, wasm.get_array_val());
+  assertEquals(43, wasm.get_array_val());
   anyref_global.value = null;
-  //assertEquals(null, anyref_global.value);
-  //assertEquals(null, wasm.get_extern());
+  assertEquals(null, anyref_global.value);
+  assertEquals(null, wasm.get_extern());
   anyref_global.value = 12345;
-  //assertEquals(12345, wasm.get_extern());
+  assertEquals(12345, wasm.get_extern());
 
   let o = {};
   anyref_global.value = o;
-  //assertEquals(o, anyref_global.value);
-  //assertEquals(o, wasm.get_extern());
+  assertEquals(o, anyref_global.value);
+  assertEquals(o, wasm.get_extern());
   anyref_global.value = undefined;
-  //assertEquals(undefined, anyref_global.value);
+  assertEquals(undefined, anyref_global.value);
 })();
 
 (function TestEqRefGlobalFromJS() {
   print(arguments.callee.name);
   let eqref_global = new WebAssembly.Global(
       { value: "eqref", mutable: true }, null);
-  //assertEquals(null, eqref_global.value);
+  assertEquals(null, eqref_global.value);
 
   let builder = new WasmModuleBuilder();
   builder.addImportedGlobal("imports", "eqref_global", kWasmEqRef, true);
@@ -394,14 +394,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   eqref_global.value = wasm.create_struct(42);
-  //assertEquals(42, wasm.get_struct_val());
+  assertEquals(42, wasm.get_struct_val());
   eqref_global.value = wasm.create_array(43);
-  //assertEquals(43, wasm.get_array_val());
+  assertEquals(43, wasm.get_array_val());
   eqref_global.value = null;
-  //assertEquals(null, eqref_global.value);
-  //assertEquals(null, wasm.get_extern());
+  assertEquals(null, eqref_global.value);
+  assertEquals(null, wasm.get_extern());
   eqref_global.value = 12345;
-  //assertEquals(12345, wasm.get_extern());
+  assertEquals(12345, wasm.get_extern());
 
   assertThrows(() => eqref_global.value = {}, TypeError);
   assertThrows(() => eqref_global.value = undefined, TypeError);
@@ -443,9 +443,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   structref_global.value = wasm.create_struct(42);
-  //assertEquals(42, wasm.get_struct_val());
+  assertEquals(42, wasm.get_struct_val());
   structref_global.value = null;
-  //assertEquals(null, structref_global.value);
+  assertEquals(null, structref_global.value);
 
   assertThrows(() => structref_global.value = undefined, TypeError);
   assertThrows(() => structref_global.value = "string", TypeError);
@@ -488,9 +488,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   arrayref_global.value = wasm.create_array(43);
-  //assertEquals(43, wasm.get_array_val());
+  assertEquals(43, wasm.get_array_val());
   arrayref_global.value = null;
-  //assertEquals(null, arrayref_global.value);
+  assertEquals(null, arrayref_global.value);
 
   assertThrows(() => arrayref_global.value = undefined, TypeError);
   assertThrows(() => arrayref_global.value = "string", TypeError);
@@ -501,7 +501,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   print(arguments.callee.name);
   let i31ref_global = new WebAssembly.Global(
       { value: "i31ref", mutable: true }, 123);
-  //assertEquals(123, i31ref_global.value);
+  assertEquals(123, i31ref_global.value);
 
   let builder = new WasmModuleBuilder();
   builder.addImportedGlobal("imports", "i31ref_global", kWasmI31Ref, true);
@@ -523,13 +523,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({imports : {i31ref_global}});
   let wasm = instance.exports;
-  //assertEquals(123, i31ref_global.value);
+  assertEquals(123, i31ref_global.value);
 
   i31ref_global.value = 42;
-  //assertEquals(42, i31ref_global.value);
-  //assertEquals(42, wasm.get_i31());
+  assertEquals(42, i31ref_global.value);
+  assertEquals(42, wasm.get_i31());
   i31ref_global.value = null;
-  //assertEquals(null, i31ref_global.value);
+  assertEquals(null, i31ref_global.value);
 
   assertThrows(() => i31ref_global.value = undefined, TypeError);
   assertThrows(() => i31ref_global.value = "string", TypeError);

@@ -28,7 +28,7 @@ builder.addFunction('readArrayLength', makeSig([kWasmExternRef], [kWasmI32]))
 
 let instance = builder.instantiate();
 let wasm = instance.exports;
-//assertEquals(42, wasm.readStruct(struct));
-//assertEquals(2, wasm.readArrayLength(array));
+assertEquals(42, wasm.readStruct(struct));
+assertEquals(2, wasm.readArrayLength(array));
 assertTraps(kTrapIllegalCast, () => wasm.readStruct(array));
 assertTraps(kTrapIllegalCast, () => wasm.readArrayLength(struct));

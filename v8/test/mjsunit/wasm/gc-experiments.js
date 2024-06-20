@@ -22,5 +22,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   ]).exportFunc();
 
   var instance = builder.instantiate();
-  //assertEquals(42, instance.exports.main(42));
+  assertEquals(42, instance.exports.main(42));
 })();

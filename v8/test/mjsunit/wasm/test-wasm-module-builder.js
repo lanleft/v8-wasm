@@ -22,7 +22,7 @@ function instantiate(buffer, ffi) {
 
   var buffer = builder.toBuffer(debug);
   var instance = instantiate(buffer);
-  //assertEquals(11, instance.exports.blarg());
+  assertEquals(11, instance.exports.blarg());
 })();
 
 (function ImportTest() {
@@ -49,8 +49,8 @@ function instantiate(buffer, ffi) {
 
   var buffer = builder.toBuffer(debug);
   var instance = instantiate(buffer);
-  //assertEquals(19, instance.exports.main(19));
-  //assertEquals(27777, instance.exports.main(27777));
+  assertEquals(19, instance.exports.main(19));
+  assertEquals(27777, instance.exports.main(27777));
 })();
 
 (function LocalsTest2() {
@@ -71,8 +71,8 @@ function instantiate(buffer, ffi) {
 
     var buffer = builder.toBuffer(debug);
     var instance = instantiate(buffer);
-    //assertEquals(19, instance.exports.main(19));
-    //assertEquals(27777, instance.exports.main(27777));
+    assertEquals(19, instance.exports.main(19));
+    assertEquals(27777, instance.exports.main(27777));
   }
 })();
 
@@ -87,8 +87,8 @@ function instantiate(buffer, ffi) {
       .exportAs('main');
 
   var instance = builder.instantiate();
-  //assertEquals(44, instance.exports.main(11, 33));
-  //assertEquals(7777, instance.exports.main(2222, 5555));
+  assertEquals(44, instance.exports.main(11, 33));
+  assertEquals(7777, instance.exports.main(2222, 5555));
 })();
 
 (function IndirectCallTest() {
@@ -106,8 +106,8 @@ function instantiate(buffer, ffi) {
   builder.appendToTable([0]);
 
   var instance = builder.instantiate();
-  //assertEquals(44, instance.exports.main(0, 11, 33));
-  //assertEquals(7777, instance.exports.main(0, 2222, 5555));
+  assertEquals(44, instance.exports.main(0, 11, 33));
+  assertEquals(7777, instance.exports.main(0, 2222, 5555));
   assertThrows(() => instance.exports.main(1, 1, 1));
 })();
 
@@ -122,7 +122,7 @@ function instantiate(buffer, ffi) {
 
   var buffer = builder.toBuffer(debug);
   var instance = instantiate(buffer);
-  //assertEquals(151587081, instance.exports.load(0));
+  assertEquals(151587081, instance.exports.load(0));
 })();
 
 (function BasicTestWithUint8Array() {
@@ -136,7 +136,7 @@ function instantiate(buffer, ffi) {
   var buffer = builder.toBuffer(debug);
   var array = new Uint8Array(buffer);
   var instance = instantiate(array);
-  //assertEquals(17, instance.exports.blarg());
+  assertEquals(17, instance.exports.blarg());
 
   var kPad = 5;
   var buffer2 = new ArrayBuffer(kPad + buffer.byteLength + kPad);
@@ -149,7 +149,7 @@ function instantiate(buffer, ffi) {
     array2[i] = array[i];
   }
   var instance = instantiate(array2);
-  //assertEquals(17, instance.exports.blarg());
+  assertEquals(17, instance.exports.blarg());
 })();
 
 (function ImportTestTwoLevel() {
@@ -180,7 +180,7 @@ function instantiate(buffer, ffi) {
         .addBody([...wasmI32Const(i)])
         .exportAs('main');
     let instance = builder.instantiate();
-    //assertEquals(i, instance.exports.main());
+    assertEquals(i, instance.exports.main());
   }
 })();
 

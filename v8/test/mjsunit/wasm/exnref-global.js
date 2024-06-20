@@ -36,7 +36,7 @@ let kSig_e_v = makeSig([], [kWasmExnRef]);
       .exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.push_and_check_exnref());
+  assertEquals(1, instance.exports.push_and_check_exnref());
 })();
 
 // Test custom initialization index for a global "exnref" variable.

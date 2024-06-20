@@ -414,12 +414,12 @@ class WasmRunnerBase : public InitializedHandleScope {
     if (retval.is_null()) {
       CHECK_EQ(expected, static_cast<double>(0xDEADBEEF));
     } else {
-      Handle<Object> result = retval.ToHandleChecked();
+      DirectHandle<Object> result = retval.ToHandleChecked();
       if (IsSmi(*result)) {
         CHECK_EQ(expected, Smi::ToInt(*result));
       } else {
         CHECK(IsHeapNumber(*result));
-        CHECK_DOUBLE_EQ(expected, HeapNumber::cast(*result)->value());
+        CHECK_DOUBLE_EQ(expected, Cast<HeapNumber>(*result)->value());
       }
     }
   }
@@ -535,17 +535,17 @@ class WasmRunner : public WasmRunnerBase {
       return static_cast<ReturnType>(0xDEADBEEFDEADBEEF);
     }
 
-    Handle<Object> result = retval.ToHandleChecked();
+    DirectHandle<Object> result = retval.ToHandleChecked();
     // For int64_t and uint64_t returns we will get a BigInt.
     if constexpr (std::is_integral_v<ReturnType> &&
                   sizeof(ReturnType) == sizeof(int64_t)) {
       CHECK(IsBigInt(*result));
-      return BigInt::cast(*result)->AsInt64();
+      return Cast<BigInt>(*result)->AsInt64();
     }
 
     // Otherwise it must be a number (Smi or HeapNumber).
     CHECK(IsNumber(*result));
-    double value = Object::Number(*result);
+    double value = Object::NumberValue(Cast<Number>(*result));
     // The JS API interprets all Wasm values as signed, hence we cast via the
     // signed equivalent type to avoid undefined behaviour in the casting.
     if constexpr (std::is_integral_v<ReturnType> &&

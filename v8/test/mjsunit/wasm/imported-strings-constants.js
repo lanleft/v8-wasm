@@ -59,9 +59,9 @@ let kImports = {
 };
 let instance = builder.instantiate(kImports, kBuiltins);
 instance.exports.main();
-//assertEquals(hello_world, callback_value);
+assertEquals(hello_world, callback_value);
 instance.exports.multi();
-//assertEquals(multi_byte, callback_value);
+assertEquals(multi_byte, callback_value);
 // The magically satisfied string import isn't in the imports list.
 let runtime_imports = WebAssembly.Module.imports(builder.toModule(kBuiltins));
 assertArrayEquals(
@@ -69,4 +69,4 @@ assertArrayEquals(
 // If we don't set the flag, we do get the plain old imports.
 let instance2 = builder.instantiate(kImports, {importedStringConstants: false});
 instance2.exports.main();
-//assertEquals("This isn't the right string", callback_value);
+assertEquals("This isn't the right string", callback_value);

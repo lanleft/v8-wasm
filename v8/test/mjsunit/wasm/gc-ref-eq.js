@@ -23,5 +23,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.equal());
+  assertEquals(1, instance.exports.equal());
 })();

@@ -36,7 +36,7 @@ function NewExportedTag() {
   let instance = builder.instantiate({ m: { ex1: exported, ex2: exported }});
 
   assertTrue(except1 < except3 && except2 < except3);
-  //assertEquals(undefined, instance.exports.ex1);
+  assertEquals(undefined, instance.exports.ex1);
   assertSame(exported, instance.exports.ex2);
   assertNotSame(exported, instance.exports.ex3);
 })();

@@ -11,7 +11,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
 // This is the sentinel placed in the bytes. It's a 5 byte LEB-encoded integer.
 const sentinel = wasmSignedLeb(0x12345678);
-//assertEquals(5, sentinel.length);
+assertEquals(5, sentinel.length);
 
 const builder = new WasmModuleBuilder();
 builder.addFunction('f', kSig_i_i).addBody([kExprI32Const, ...sentinel]);
@@ -25,7 +25,7 @@ const find_sentinel = i =>
     module_bytes.slice(i).findIndex((e, i) => has_sentinel(i));
 const sentinel_position = find_sentinel(0);
 assertTrue(has_sentinel(sentinel_position), 'found sentinel');
-//assertEquals(-1, find_sentinel(sentinel_position + 1), 'exactly one sentinel');
+assertEquals(-1, find_sentinel(sentinel_position + 1), 'exactly one sentinel');
 
 // Generating {num_modules} modules should not run out of memory, since the code
 // space needed per module is quite low.

@@ -30,8 +30,8 @@ let test_fail = builder.addFunction("test_fail",
 (function TestCanonicalizationSameInstance() {
   print(arguments.callee.name);
   let instance = builder.instantiate({});
-  //assertEquals(1, instance.exports.test_pass(instance.exports.struct_init()));
-  //assertEquals(0, instance.exports.test_fail(instance.exports.struct_init()));
+  assertEquals(1, instance.exports.test_pass(instance.exports.struct_init()));
+  assertEquals(0, instance.exports.test_fail(instance.exports.struct_init()));
 })();
 
 (function TestCanonicalizationSameModuleDifferentInstances() {
@@ -39,8 +39,8 @@ let test_fail = builder.addFunction("test_fail",
   let module = builder.toModule();
   let instance1 = new WebAssembly.Instance(module, {});
   let instance2 = new WebAssembly.Instance(module, {});
-  //assertEquals(1, instance2.exports.test_pass(instance1.exports.struct_init()));
-  //assertEquals(0, instance2.exports.test_fail(instance1.exports.struct_init()));
+  assertEquals(1, instance2.exports.test_pass(instance1.exports.struct_init()));
+  assertEquals(0, instance2.exports.test_fail(instance1.exports.struct_init()));
 })();
 
 // GC between tests so that the type registry is cleared.
@@ -50,8 +50,8 @@ gc();
   print(arguments.callee.name);
   let instance1 = builder.instantiate({});
   let instance2 = builder.instantiate({});
-  //assertEquals(1, instance2.exports.test_pass(instance1.exports.struct_init()));
-  //assertEquals(0, instance2.exports.test_fail(instance1.exports.struct_init()));
+  assertEquals(1, instance2.exports.test_pass(instance1.exports.struct_init()));
+  assertEquals(0, instance2.exports.test_fail(instance1.exports.struct_init()));
 })();
 
 (function TestCanonicalizationDifferentModulesAfterGC() {
@@ -62,6 +62,6 @@ gc();
   // A the live {struct} object keeps the instance alive.
   gc();
   let instance = builder.instantiate({});
-  //assertEquals(1, instance.exports.test_pass(struct));
-  //assertEquals(0, instance.exports.test_fail(struct));
+  assertEquals(1, instance.exports.test_pass(struct));
+  assertEquals(0, instance.exports.test_fail(struct));
 })();

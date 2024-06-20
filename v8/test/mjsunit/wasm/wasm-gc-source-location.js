@@ -12,7 +12,7 @@ function TestStackTrace(testFct, trap, expected) {
   } catch(e) {
     let regex = /at [^ ]+ \(wasm[^\[]+\[[0-9+]\]:(0x[0-9a-f]+)\)/;
     let match = e.stack.match(regex);
-    //assertEquals(expected, match[1])
+    assertEquals(expected, match[1])
   }
 }
 
@@ -158,6 +158,6 @@ function TestStackTrace(testFct, trap, expected) {
   let wasm = instance.exports;
 
   let wasmStruct = wasm.createStruct(123);
-  //assertEquals(123, wasm.structGet(wasmStruct));
+  assertEquals(123, wasm.structGet(wasmStruct));
   TestStackTrace(() => wasm.structGet(null), kTrapIllegalCast, '0x5a');
 })();

@@ -23,7 +23,7 @@ function CheckInstance(instance) {
   assertFalse(instance === undefined);
   assertFalse(instance === null);
   assertFalse(instance === 0);
-  //assertEquals('object', typeof instance);
+  assertEquals('object', typeof instance);
 
   // Check the exports object is frozen.
   assertFalse(Object.isExtensible(instance.exports));
@@ -34,11 +34,11 @@ function CheckInstance(instance) {
   assertFalse(mem === undefined);
   assertFalse(mem === null);
   assertFalse(mem === 0);
-  //assertEquals('object', typeof mem);
+  assertEquals('object', typeof mem);
   assertTrue(mem instanceof WebAssembly.Memory);
   var buf = mem.buffer;
   assertTrue(buf instanceof ArrayBuffer);
-  //assertEquals(65536, buf.byteLength);
+  assertEquals(65536, buf.byteLength);
   for (var i = 0; i < 4; i++) {
     instance.exports.memory = 0;  // should be ignored
     mem.buffer = 0;               // should be ignored
@@ -51,9 +51,9 @@ function CheckInstance(instance) {
   assertFalse(main === undefined);
   assertFalse(main === null);
   assertFalse(main === 0);
-  //assertEquals('function', typeof main);
+  assertEquals('function', typeof main);
 
-  //assertEquals(kReturnValue, main());
+  assertEquals(kReturnValue, main());
 }
 
 // Official API
@@ -165,11 +165,11 @@ assertFalse(WebAssembly.validate(bytes(88, 88, 88, 88, 88, 88, 88, 88)));
     '': {memory: mem_2}
   });
 
-  //assertEquals(43, i1.exports.main(0));
-  //assertEquals(1002, i2.exports.main(0));
+  assertEquals(43, i1.exports.main(0));
+  assertEquals(1002, i2.exports.main(0));
 
-  //assertEquals(42, outval_1);
-  //assertEquals(1000, outval_2);
+  assertEquals(42, outval_1);
+  assertEquals(1000, outval_2);
 })();
 
 (function GlobalsArePrivateToTheInstance() {
@@ -189,8 +189,8 @@ assertFalse(WebAssembly.validate(bytes(88, 88, 88, 88, 88, 88, 88, 88)));
   var i2 = new WebAssembly.Instance(module);
   i1.exports.write(1);
   i2.exports.write(2);
-  //assertEquals(1, i1.exports.read());
-  //assertEquals(2, i2.exports.read());
+  assertEquals(1, i1.exports.read());
+  assertEquals(2, i2.exports.read());
 })();
 
 (function InstanceMemoryIsIsolated() {
@@ -213,8 +213,8 @@ assertFalse(WebAssembly.validate(bytes(88, 88, 88, 88, 88, 88, 88, 88)));
   var i1 = new WebAssembly.Instance(module, {'': {memory: mem_1}});
   var i2 = new WebAssembly.Instance(module, {'': {memory: mem_2}});
 
-  //assertEquals(1, i1.exports.f());
-  //assertEquals(1000, i2.exports.f());
+  assertEquals(1, i1.exports.f());
+  assertEquals(1000, i2.exports.f());
 })();
 
 (function MustBeMemory() {
@@ -251,5 +251,5 @@ assertFalse(WebAssembly.validate(bytes(88, 88, 88, 88, 88, 88, 88, 88)));
   let exports_count = 0;
   for (var e in instance.exports) ++exports_count;
 
-  //assertEquals(5, exports_count);
+  assertEquals(5, exports_count);
 })();

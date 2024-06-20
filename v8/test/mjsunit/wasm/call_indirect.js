@@ -32,8 +32,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
     let instance = builder.instantiate({m: {f: js_function}});
 
-    //assertEquals(left, instance.exports.main(1));
-    //assertEquals(right, instance.exports.main(0));
+    assertEquals(left, instance.exports.main(1));
+    assertEquals(right, instance.exports.main(0));
   }
 
   test(true);
@@ -115,12 +115,12 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       {m: {imp: exporting_instance.exports.export,
            imp_m: exporting_instance.exports.export_mistyped}});
 
-  //assertEquals(1, importing_instance.exports.main(10, imported))
-  //assertEquals(0, importing_instance.exports.main(-5, imported))
-  //assertEquals(0, importing_instance.exports.main(10, local1))
-  //assertEquals(1, importing_instance.exports.main(-5, local1))
-  //assertEquals(0, importing_instance.exports.main(10, local2))
-  //assertEquals(1, importing_instance.exports.main(0, local2))
+  assertEquals(1, importing_instance.exports.main(10, imported))
+  assertEquals(0, importing_instance.exports.main(-5, imported))
+  assertEquals(0, importing_instance.exports.main(10, local1))
+  assertEquals(1, importing_instance.exports.main(-5, local1))
+  assertEquals(0, importing_instance.exports.main(10, local2))
+  assertEquals(1, importing_instance.exports.main(0, local2))
   // Mistyped entries
   assertTraps(kTrapFuncSigMismatch,
               () => importing_instance.exports.main(10, mistyped));

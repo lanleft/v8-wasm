@@ -24,8 +24,8 @@ function CheckStackTrace(thrower, reference, topmost_wasm_func) {
   assertInstanceof(actual_exception, reference_exception.constructor);
   let actual_stack = actual_exception.stack.split('\n');
   let reference_stack = reference_exception.stack.split('\n');
-  //assertEquals(reference_stack[0], actual_stack[0]);
-  //assertEquals(reference_stack[1], actual_stack[1]);
+  assertEquals(reference_stack[0], actual_stack[0]);
+  assertEquals(reference_stack[1], actual_stack[1]);
   assertTrue(
       actual_stack[2].startsWith(`    at ${topmost_wasm_func} (wasm://wasm/`));
 }
@@ -47,9 +47,9 @@ let recognizable_imports = { m: { toLowerCase: recognizable } };
 
 let instance1 = new WebAssembly.Instance(module, recognizable_imports);
 let call_tolower = instance1.exports.call_tolower;
-//assertEquals("abc", call_tolower("ABC"));
+assertEquals("abc", call_tolower("ABC"));
 %WasmTierUpFunction(call_tolower);
-//assertEquals("abc", call_tolower("ABC"));
+assertEquals("abc", call_tolower("ABC"));
 
 // Null should be handled correctly (by throwing the same TypeError that
 // JavaScript would throw).
@@ -61,16 +61,16 @@ CheckStackTrace(
 // recompilation.
 console.log("Second instance.");
 let instance2 = new WebAssembly.Instance(module, recognizable_imports);
-//assertEquals("def", instance2.exports.call_tolower("DEF"));
+assertEquals("def", instance2.exports.call_tolower("DEF"));
 
 // Creating a third instance with different imports must not reuse the
 // existing optimized code.
 console.log("Third instance.");
 let other_imports = { m: { toLowerCase: () => "foo" } };
 let instance3 = new WebAssembly.Instance(module, other_imports);
-//assertEquals("foo", instance3.exports.call_tolower("GHI"));
-//assertEquals("def", instance2.exports.call_tolower("DEF"));
-//assertEquals("abc", instance1.exports.call_tolower("ABC"));
+assertEquals("foo", instance3.exports.call_tolower("GHI"));
+assertEquals("def", instance2.exports.call_tolower("DEF"));
+assertEquals("abc", instance1.exports.call_tolower("ABC"));
 
 (function TestStringToLowercaseStringRef() {
   console.log('Testing String.toLowerCase with stringRef');
@@ -86,7 +86,7 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
                             .exports.tolower_nullable;
 
   %WasmTierUpFunction(toLowerCaseNullable);
-  //assertEquals('abc', toLowerCaseNullable('ABC'));
+  assertEquals('abc', toLowerCaseNullable('ABC'));
   CheckStackTrace(
       () => toLowerCaseNullable(null),
       () => String.prototype.toLowerCase.call(null), 'tolower_nullable');
@@ -108,7 +108,7 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
           .exports.tolower_non_nullable;
 
   %WasmTierUpFunction(toLowerCaseNonNullable);
-  //assertEquals('abc', toLowerCaseNonNullable('ABC'));
+  assertEquals('abc', toLowerCaseNonNullable('ABC'));
 })();
 
 (function TestIntToString() {
@@ -125,11 +125,11 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
   let instance = builder.instantiate({ m: { intToString: func } });
   let call_inttostring = instance.exports.call_inttostring;
   %WasmTierUpFunction(call_inttostring);
-  //assertEquals("42", call_inttostring(42, 10));
-  //assertEquals("-123", call_inttostring(-123, 10));
-  //assertEquals("2a", call_inttostring(42, 16));
-  //assertEquals("2147483647", call_inttostring(2147483647, 10));
-  //assertEquals("-2147483648", call_inttostring(-2147483648, 10));
+  assertEquals("42", call_inttostring(42, 10));
+  assertEquals("-123", call_inttostring(-123, 10));
+  assertEquals("2a", call_inttostring(42, 16));
+  assertEquals("2147483647", call_inttostring(2147483647, 10));
+  assertEquals("-2147483648", call_inttostring(-2147483648, 10));
   CheckStackTrace(
       () => call_inttostring(1, 99), () => func(1, 99), 'call_inttostring');
 })();
@@ -174,12 +174,12 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
   %WasmTierUpFunction(d2s);
   %WasmTierUpFunction(s2d_nullable);
   %WasmTierUpFunction(s2d_non_nullable);
-  //assertEquals("42", d2s(42));
-  //assertEquals("1234.5", d2s(1234.5));
-  //assertEquals("NaN", d2s(NaN));
-  //assertEquals(1234.5, s2d_nullable("1234.5"));
-  //assertEquals(1234.5, s2d_non_nullable("1234.5"));
-  //assertEquals(NaN, s2d_nullable(null));
+  assertEquals("42", d2s(42));
+  assertEquals("1234.5", d2s(1234.5));
+  assertEquals("NaN", d2s(NaN));
+  assertEquals(1234.5, s2d_nullable("1234.5"));
+  assertEquals(1234.5, s2d_non_nullable("1234.5"));
+  assertEquals(NaN, s2d_nullable(null));
 })();
 
 (function TestIndexOfWithStringRef() {
@@ -198,15 +198,15 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
       m: {indexOf: Function.prototype.call.bind(String.prototype.indexOf)}
   }).exports.call_indexof;
   %WasmTierUpFunction(indexOf);
-  //assertEquals(2, indexOf("xxfooxx", "foo", 0));
-  //assertEquals(2, indexOf("xxfooxx", "foo", -2));
-  //assertEquals(-1, indexOf("xxfooxx", "foo", 100));
+  assertEquals(2, indexOf("xxfooxx", "foo", 0));
+  assertEquals(2, indexOf("xxfooxx", "foo", -2));
+  assertEquals(-1, indexOf("xxfooxx", "foo", 100));
   // Make sure we don't lose bits when Smi-tagging of the start position.
-  //assertEquals(-1, indexOf("xxfooxx", "foo", 0x4000_0000));
-  //assertEquals(-1, indexOf("xxfooxx", "foo", 0x2000_0000));
-  //assertEquals(2, indexOf("xxfooxx", "foo", 0x8000_0000));  // Negative i32.
+  assertEquals(-1, indexOf("xxfooxx", "foo", 0x4000_0000));
+  assertEquals(-1, indexOf("xxfooxx", "foo", 0x2000_0000));
+  assertEquals(2, indexOf("xxfooxx", "foo", 0x8000_0000));  // Negative i32.
   // When first arg is null, throw; when second arg is null, convert.
-  //assertEquals(2, indexOf("xxnullxx", null, 0));
+  assertEquals(2, indexOf("xxnullxx", null, 0));
   CheckStackTrace(
       () => indexOf(null, 'null', 0),
       () => String.prototype.indexOf.call(null, 'null', 0), 'call_indexof');
@@ -227,7 +227,7 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
       m: {indexOf: Function.prototype.call.bind(String.prototype.indexOf)}
   }).exports.call_indexof;
   %WasmTierUpFunction(indexOf);
-  //assertEquals(2, indexOf("xxfooxx", "foo", 0));
+  assertEquals(2, indexOf("xxfooxx", "foo", 0));
 })();
 
 (function TestToLocaleLower() {
@@ -246,20 +246,20 @@ let instance3 = new WebAssembly.Instance(module, other_imports);
     }
   }).exports.call_tolower;
   %WasmTierUpFunction(tolower);
-  //assertEquals("abc", tolower("ABC", "en"));
+  assertEquals("abc", tolower("ABC", "en"));
   let has_i18n = typeof Intl !== "undefined";
   if (has_i18n) {
     // Check that the locale isn't ignored.
-    //assertEquals("\u0131", tolower("I", "az"));
+    assertEquals("\u0131", tolower("I", "az"));
     CheckStackTrace(
         () => tolower('ABC', null),
         () => String.prototype.toLocaleLowerCase.call('ABC', null),
         'call_tolower');
   } else {
     // Non-i18n builds ignore the locale parameter.
-    //assertEquals("i", tolower("I", "az"));
-    //assertEquals('abc', tolower('ABC', null));
-    //assertEquals('abc', String.prototype.toLocaleLowerCase.call('ABC', null));
+    assertEquals("i", tolower("I", "az"));
+    assertEquals('abc', tolower('ABC', null));
+    assertEquals('abc', String.prototype.toLocaleLowerCase.call('ABC', null));
   }
   CheckStackTrace(
       () => tolower(null, 'en'),

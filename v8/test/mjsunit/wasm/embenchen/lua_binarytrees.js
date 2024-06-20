@@ -12,7 +12,7 @@ var Module = {
   print: function(x) {Module.printBuffer += x + '\n';},
   preRun: [function() {Module.printBuffer = ''}],
   postRun: [function() {
-    //assertEquals(EXPECTED_OUTPUT, Module.printBuffer);
+    assertEquals(EXPECTED_OUTPUT, Module.printBuffer);
   }],
 };
 

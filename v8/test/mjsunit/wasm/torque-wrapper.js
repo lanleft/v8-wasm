@@ -372,7 +372,7 @@ function RunTest(params, returns, map) {
   }
   let result = instance.exports.main(...args);
   if (returns.length == 0) {
-    //assertEquals(result, undefined);
+    assertEquals(result, undefined);
     return;
   }
   if (returns.length == 1) {
@@ -382,9 +382,15 @@ function RunTest(params, returns, map) {
 
   // Check result
   for (let i = 0; i < returns.length; ++i) {
-    //assertEquals(
+    let details = undefined;
+    if (debug) {
+      details = `${i}, converting ${args[map[i]]} \
+                 from ${TypeString(params[map[i]])} \
+                 to ${TypeString(returns[i])}`;
+    }
+    assertEquals(
         ConversionFunction(returns[i], params[map[i]], args[map[i]]),
-        result[i]);
+        result[i], details);
   }
 }
 

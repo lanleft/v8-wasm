@@ -20,7 +20,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   const instance = new WebAssembly.Instance(module);
   const instance2 = new WebAssembly.Instance(module);
 
-  //assertEquals(%IsLiftoffFunction(instance.exports.i32_add),
+  assertEquals(%IsLiftoffFunction(instance.exports.i32_add),
                %IsLiftoffFunction(instance2.exports.i32_add));
 })();
 

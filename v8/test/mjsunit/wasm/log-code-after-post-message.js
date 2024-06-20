@@ -29,7 +29,7 @@ function workerCode() {
 
 const worker = new Worker(workerCode, {type: 'function'});
 
-//assertEquals("Starting worker", worker.getMessage());
+assertEquals("Starting worker", worker.getMessage());
 
 const builder = new WasmModuleBuilder();
 const sig_index = builder.addType(kSig_v_v);

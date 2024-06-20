@@ -83,10 +83,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     let wasmFct = wasm[`caller${testCase.name}`];
     // Collect feedback.
     for (let i = 0; i < 100; ++i) {
-      //assertEquals(42, wasmFct(wasm.id));
+      assertEquals(42, wasmFct(wasm.id));
     }
     // Compile with Turboshaft and run again.
     %WasmTierUpFunction(wasmFct);
-    //assertEquals(42, wasmFct(wasm.id));
+    assertEquals(42, wasmFct(wasm.id));
   }
 })();

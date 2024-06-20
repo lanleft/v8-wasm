@@ -25,7 +25,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes),
                                                        {mod: {pow: Math.pow}})
-    .then(({module, instance}) => //assertEquals(27, instance.exports.upow2(3))));
+    .then(({module, instance}) => assertEquals(27, instance.exports.upow2(3))));
 })();
 
 (function testInstantiateStreamingWithBadLazyHint() {
@@ -48,7 +48,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes),
                                                        {mod: {pow: Math.pow}})
     .then(assertUnreachable,
-          error => //assertEquals("WebAssembly.instantiateStreaming(): Invalid " +
+          error => assertEquals("WebAssembly.instantiateStreaming(): Invalid " +
                                 "compilation hint 0x19 (forbidden downgrade) " +
                                 "@+78",
                                 error.message)));
@@ -76,7 +76,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
           .instantiateStreaming(Promise.resolve(bytes), {mod: {pow: Math.pow}})
           .then(
               assertUnreachable,
-              error => //assertEquals(
+              error => assertEquals(
                   'WebAssembly.instantiateStreaming(): Compiling ' +
                       'function #1:"upow" failed: call[0] ' +
                       'expected type f32, found local.get of type ' +
@@ -108,7 +108,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes),
                                                        {mod: {pow: Math.pow}})
-    .then(({module, instance}) => //assertEquals(27, instance.exports.upow(3))));
+    .then(({module, instance}) => assertEquals(27, instance.exports.upow(3))));
 })();
 
 (function testInstantiateStreamingLazyBaselineModule() {
@@ -126,5 +126,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes),
                                                        {mod: {pow: Math.pow}})
-    .then(({module, instance}) => //assertEquals(27, instance.exports.upow(3))));
+    .then(({module, instance}) => assertEquals(27, instance.exports.upow(3))));
 })();

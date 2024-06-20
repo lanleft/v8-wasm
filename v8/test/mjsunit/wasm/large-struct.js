@@ -59,7 +59,7 @@ let kMaxStructFieldIndexForImplicitNullCheck = 4000;
       () => instance.exports[
           "structLargeSet" + field_index](null));
     instance.exports["structLargeSet" + field_index](struct_large_obj);
-    //assertEquals(0x03020100,
+    assertEquals(0x03020100,
                   instance.exports["structLargeGet" + field_index](
                     struct_large_obj));
   }
@@ -116,7 +116,7 @@ let kMaxStructFieldIndexForImplicitNullCheck = 4000;
       () => instance.exports[
           "structLargeSet" + field_index](null));
     instance.exports["structLargeSet" + field_index](struct_large_obj);
-    //assertEquals(42, instance.exports["structLargeGet" + field_index](
+    assertEquals(42, instance.exports["structLargeGet" + field_index](
                          struct_large_obj));
   }
 })();

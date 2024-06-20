@@ -15,7 +15,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.compileStreaming(Promise.resolve(bytes)).then(
     module => WebAssembly.instantiate(module)).then(
-      instance => //assertEquals(5, instance.exports.main(5))));
+      instance => assertEquals(5, instance.exports.main(5))));
 })();
 
 (function TestInstantiateStreaming() {
@@ -26,21 +26,21 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
          .exportAs("main");
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes)).then(
-    ({module, instance}) => //assertEquals(5, instance.exports.main(5))));
+    ({module, instance}) => assertEquals(5, instance.exports.main(5))));
 })();
 
 (function TestCompileStreamingRejectedInputPromise() {
   print(arguments.callee.name);
   assertPromiseResult(WebAssembly.compileStreaming(Promise.reject("myError")),
     assertUnreachable,
-    error => //assertEquals(error, "myError"));
+    error => assertEquals(error, "myError"));
 })();
 
 (function TestInstantiateStreamingRejectedInputPromise() {
   print(arguments.callee.name);
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.reject("myError")),
     assertUnreachable,
-    error => //assertEquals(error, "myError"));
+    error => assertEquals(error, "myError"));
 })();
 
 (function TestStreamingErrorMessage() {
@@ -54,13 +54,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let bytes = builder.toBuffer();
   assertPromiseResult(WebAssembly.compileStreaming(Promise.resolve(bytes)),
     assertUnreachable,
-    error => //assertEquals("WebAssembly.compileStreaming(): Compiling " +
+    error => assertEquals("WebAssembly.compileStreaming(): Compiling " +
                           "function #0:\"main\" failed: f32.mul[0] expected " +
                           "type f32, found local.get of type i32 @+35",
                           error.message));
   assertPromiseResult(WebAssembly.instantiateStreaming(Promise.resolve(bytes)),
     assertUnreachable,
-    error => //assertEquals("WebAssembly.instantiateStreaming(): Compiling " +
+    error => assertEquals("WebAssembly.instantiateStreaming(): Compiling " +
                           "function #0:\"main\" failed: f32.mul[0] expected " +
                           "type f32, found local.get of type i32 @+35",
                           error.message));

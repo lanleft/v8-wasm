@@ -20,7 +20,7 @@ function getBuilder() {
 (function BasicTest() {
   var builder = getBuilder();
   var main = builder.instantiate().exports.main;
-  //assertEquals(kReturnValue, main());
+  assertEquals(kReturnValue, main());
 })();
 
 (function AsyncTest() {
@@ -29,5 +29,5 @@ function getBuilder() {
   assertPromiseResult(
     WebAssembly.instantiate(buffer)
       .then(pair => pair.instance.exports.main(), assertUnreachable)
-      .then(result => //assertEquals(kReturnValue, result), assertUnreachable));
+      .then(result => assertEquals(kReturnValue, result), assertUnreachable));
 })();

@@ -35,7 +35,7 @@ var module = builder.instantiate();
   } catch (e) {
     var lines = e.stack.split(/\r?\n/);
     lines.shift();
-    //assertEquals(names.length, lines.length);
+    assertEquals(names.length, lines.length);
     for (var i = 0; i < names.length; ++i) {
       var line = lines[i].trim();
       if (names[i] === null) continue;
@@ -59,9 +59,9 @@ Error.prepareStackTrace = function(error, frames) {
     module.exports.main();
     assertFalse('should throw');
   } catch (e) {
-    //assertEquals(names.length, e.stack.length, 'stack length');
+    assertEquals(names.length, e.stack.length, 'stack length');
     for (var i = 0; i < names.length; ++i) {
-      //assertEquals(
+      assertEquals(
           names[i], e.stack[i].getFunctionName(), 'function name at ' + i);
     }
   }

@@ -42,15 +42,15 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   const instance2 = builder2.instantiate({mod: {store: instance1.exports.store}});
   const mem2 = new Int32Array(instance2.exports.memory.buffer);
 
-  //assertEquals(0, mem1[0]);
-  //assertEquals(0, mem2[0]);
+  assertEquals(0, mem1[0]);
+  assertEquals(0, mem2[0]);
   instance2.exports.call_store(3);
-  //assertEquals(3, mem1[0]);
-  //assertEquals(0, mem2[0]);
+  assertEquals(3, mem1[0]);
+  assertEquals(0, mem2[0]);
   %FreezeWasmLazyCompilation(instance1);
   %FreezeWasmLazyCompilation(instance2);
   instance2.exports.call_store(7);
-  //assertEquals(7, mem1[0]);
+  assertEquals(7, mem1[0]);
 })();
 
 (function exportImportedFunction() {
@@ -94,10 +94,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   const mem2 = new Int32Array(instance2.exports.memory.buffer);
 
   instance2.exports.exp_store(3);
-  //assertEquals(3, mem1[0]);
-  //assertEquals(0, mem2[0]);
+  assertEquals(3, mem1[0]);
+  assertEquals(0, mem2[0]);
   %FreezeWasmLazyCompilation(instance1);
   %FreezeWasmLazyCompilation(instance2);
   instance2.exports.exp_store(7);
-  //assertEquals(7, mem1[0]);
+  assertEquals(7, mem1[0]);
 })();

@@ -11,21 +11,21 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let table = new WebAssembly.Table({element: "externref", initial: 10});
 
   // Table should be initialized with undefined.
-  //assertEquals(undefined, table.get(1));
+  assertEquals(undefined, table.get(1));
   let obj = {'hello' : 'world'};
   table.set(2, obj);
   assertSame(obj, table.get(2));
   table.set(3, 1234);
-  //assertEquals(1234, table.get(3));
+  assertEquals(1234, table.get(3));
   table.set(4, 123.5);
-  //assertEquals(123.5, table.get(4));
+  assertEquals(123.5, table.get(4));
   table.set(5, undefined);
-  //assertEquals(undefined, table.get(5));
+  assertEquals(undefined, table.get(5));
   // Overwrite entry 4, because null would otherwise be the default value.
   table.set(4, null);
-  //assertEquals(null, table.get(4));
+  assertEquals(null, table.get(4));
   table.set(7, print);
-  //assertEquals(print, table.get(7));
+  assertEquals(print, table.get(7));
 
   assertThrows(() => table.set(12), RangeError);
 })();
@@ -100,8 +100,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
     const instance = builder.instantiate();
 
-    //assertEquals(1, instance.exports.main(0, 1));
-    //assertEquals(33, instance.exports.main(5, 33));
+    assertEquals(1, instance.exports.main(0, 1));
+    assertEquals(33, instance.exports.main(5, 33));
   }
 
   test(true);
@@ -113,10 +113,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const testObject = {};
   const argument = { "element": "externref", "initial": 3 };
   const table = new WebAssembly.Table(argument, testObject);
-  //assertEquals(table.length, 3);
-  //assertEquals(table.get(0), testObject);
-  //assertEquals(table.get(1), testObject);
-  //assertEquals(table.get(2), testObject);
+  assertEquals(table.length, 3);
+  assertEquals(table.get(0), testObject);
+  assertEquals(table.get(1), testObject);
+  assertEquals(table.get(2), testObject);
 })();
 
 function getDummy(val) {
@@ -135,10 +135,10 @@ function getDummy(val) {
 
   const argument = { "element": "anyfunc", "initial": 3 };
   const table = new WebAssembly.Table(argument, dummy);
-  //assertEquals(table.length, 3);
-  //assertEquals(table.get(0)(), expected);
-  //assertEquals(table.get(1)(), expected);
-  //assertEquals(table.get(2)(), expected);
+  assertEquals(table.length, 3);
+  assertEquals(table.get(0)(), expected);
+  assertEquals(table.get(1)(), expected);
+  assertEquals(table.get(2)(), expected);
 })();
 
 (function TestExternFuncTableSetWithoutValue() {
@@ -148,9 +148,9 @@ function getDummy(val) {
   const dummy = getDummy(expected);
   const argument = { "element": "anyfunc", "initial": 3 };
   const table = new WebAssembly.Table(argument, dummy);
-  //assertEquals(table.get(1)(), expected);
+  assertEquals(table.get(1)(), expected);
   table.set(1);
-  //assertEquals(table.get(1), null);
+  assertEquals(table.get(1), null);
 })();
 
 (function TestExternRefTableSetWithoutValue() {
@@ -159,9 +159,9 @@ function getDummy(val) {
   const testObject = {};
   const argument = { "element": "externref", "initial": 3 };
   const table = new WebAssembly.Table(argument, testObject);
-  //assertEquals(table.get(1), testObject);
+  assertEquals(table.get(1), testObject);
   table.set(1);
-  //assertEquals(table.get(1), undefined);
+  assertEquals(table.get(1), undefined);
 })();
 
 (function TestFunctionExternRefTableRoundtrip() {
@@ -199,10 +199,10 @@ function getDummy(val) {
 
   instance.exports.setup(wasm_js_function, instance.exports.setup);
 
-  //assertEquals(instance.exports.global.value, wasm_js_function);
-  //assertEquals(instance.exports.get(0), js_function);
-  //assertEquals(instance.exports.get(1), wasm_js_function);
-  //assertEquals(instance.exports.get(2), instance.exports.setup);
+  assertEquals(instance.exports.global.value, wasm_js_function);
+  assertEquals(instance.exports.get(0), js_function);
+  assertEquals(instance.exports.get(1), wasm_js_function);
+  assertEquals(instance.exports.get(2), instance.exports.setup);
 })();
 
 (function TestFunctionExternRefTableRoundtrip2() {
@@ -225,8 +225,8 @@ function getDummy(val) {
   table.set(1, wasm_js_function);
   table.set(2, instance.exports.dummy);
   table.grow(1, wasm_js_function);
-  //assertEquals(table.get(0), js_function);
-  //assertEquals(table.get(1), wasm_js_function);
-  //assertEquals(table.get(2), instance.exports.dummy);
-  //assertEquals(table.get(3), wasm_js_function);
+  assertEquals(table.get(0), js_function);
+  assertEquals(table.get(1), wasm_js_function);
+  assertEquals(table.get(2), instance.exports.dummy);
+  assertEquals(table.get(3), wasm_js_function);
 })();

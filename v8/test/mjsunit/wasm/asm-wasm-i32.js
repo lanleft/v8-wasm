@@ -233,12 +233,12 @@ var funcs = [
     RunAsmJsTest(WrapInAsmModule(func), function (module) {
       if (func.length == 1) {
         for (a of inputs) {
-          //assertEquals(func(a), module.main(a));
+          assertEquals(func(a), module.main(a));
         }
       } else {
         for (a of inputs) {
           for (b of inputs) {
-            //assertEquals(func(a, b), module.main(a, b));
+            assertEquals(func(a, b), module.main(a, b));
           }
         }
       }

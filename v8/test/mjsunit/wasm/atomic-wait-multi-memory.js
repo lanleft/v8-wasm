@@ -50,14 +50,14 @@ const k10s = 10000;
 
 (function TestWaitNotEqual() {
   print(arguments.callee.name);
-  //assertEquals(kAtomicWaitNotEqual, wait0(0, mem0_value + 1, k10Ms));
-  //assertEquals(kAtomicWaitNotEqual, wait1(0, mem1_value + 1, k10Ms));
+  assertEquals(kAtomicWaitNotEqual, wait0(0, mem0_value + 1, k10Ms));
+  assertEquals(kAtomicWaitNotEqual, wait1(0, mem1_value + 1, k10Ms));
 })();
 
 (function TestWaitTimeout() {
   print(arguments.callee.name);
-  //assertEquals(kAtomicWaitTimedOut, wait0(0, mem0_value, k10Ms));
-  //assertEquals(kAtomicWaitTimedOut, wait1(0, mem1_value, k10Ms));
+  assertEquals(kAtomicWaitTimedOut, wait0(0, mem0_value, k10Ms));
+  assertEquals(kAtomicWaitTimedOut, wait1(0, mem1_value, k10Ms));
 })();
 
 (function TestWakeUpWorker() {
@@ -82,7 +82,7 @@ const k10s = 10000;
   let worker = new Worker(workerCode, {type: 'function'});
 
   worker.postMessage({module: module, imports: imports});
-  //assertEquals('instantiated', worker.getMessage());
+  assertEquals('instantiated', worker.getMessage());
 
   const offset = 48;
   for (let [mem_idx, mem_value] of [
@@ -92,12 +92,12 @@ const k10s = 10000;
     // Test "not equals".
     worker.postMessage(
         {action: `wait${mem_idx}`, arguments: [offset, mem_value + 1, k10Ms]});
-    //assertEquals(kAtomicWaitNotEqual, worker.getMessage());
+    assertEquals(kAtomicWaitNotEqual, worker.getMessage());
 
     // Test "timed out".
     worker.postMessage(
         {action: `wait${mem_idx}`, arguments: [offset, mem_value, k10Ms]});
-    //assertEquals(kAtomicWaitTimedOut, worker.getMessage());
+    assertEquals(kAtomicWaitTimedOut, worker.getMessage());
 
     // Test "ok".
     worker.postMessage(
@@ -111,8 +111,8 @@ const k10s = 10000;
         throw new Error('Could not notify worker within 10s');
       }
     }
-    //assertEquals(1, notified);
-    //assertEquals(kAtomicWaitOk, worker.getMessage());
+    assertEquals(1, notified);
+    assertEquals(kAtomicWaitOk, worker.getMessage());
   }
 
   worker.terminate();

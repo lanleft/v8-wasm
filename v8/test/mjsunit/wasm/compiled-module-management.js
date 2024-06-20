@@ -28,23 +28,23 @@ var instance4;
   module = new WebAssembly.Module(builder.toBuffer());
 
   print("Initial instances=0");
-  //assertEquals(0, %WasmGetNumberOfInstances(module));
+  assertEquals(0, %WasmGetNumberOfInstances(module));
   instance1 = new WebAssembly.Instance(module, {"": {getValue: () => 1}});
 
   print("Initial instances=1");
-  //assertEquals(1, %WasmGetNumberOfInstances(module));
+  assertEquals(1, %WasmGetNumberOfInstances(module));
   instance2 = new WebAssembly.Instance(module, {"": {getValue: () => 2}});
 
   print("Initial instances=2");
-  //assertEquals(2, %WasmGetNumberOfInstances(module));
+  assertEquals(2, %WasmGetNumberOfInstances(module));
   instance3 = new WebAssembly.Instance(module, {"": {getValue: () => 3}});
 
   print("Initial instances=3");
-  //assertEquals(3, %WasmGetNumberOfInstances(module));
+  assertEquals(3, %WasmGetNumberOfInstances(module));
 })();
 
 (function CompiledModuleInstancesClear1() {
-  //assertEquals(1, instance1.exports.f());
+  assertEquals(1, instance1.exports.f());
   instance1 = null;
 })();
 
@@ -52,10 +52,10 @@ var instance4;
 gc();
 gc();
 print("After gc instances=2");
-//assertEquals(2, %WasmGetNumberOfInstances(module));
+assertEquals(2, %WasmGetNumberOfInstances(module));
 
 (function CompiledModuleInstancesClear3() {
-  //assertEquals(3, instance3.exports.f());
+  assertEquals(3, instance3.exports.f());
   instance3 = null;
 })();
 
@@ -63,10 +63,10 @@ print("After gc instances=2");
 gc();
 gc();
 print("After gc instances=1");
-//assertEquals(1, %WasmGetNumberOfInstances(module));
+assertEquals(1, %WasmGetNumberOfInstances(module));
 
 (function CompiledModuleInstancesClear2() {
-  //assertEquals(2, instance2.exports.f());
+  assertEquals(2, instance2.exports.f());
   instance2 = null;
 })();
 
@@ -74,11 +74,11 @@ print("After gc instances=1");
 gc();
 gc();
 print("After gc instances=0");
-//assertEquals(0, %WasmGetNumberOfInstances(module));
+assertEquals(0, %WasmGetNumberOfInstances(module));
 
 (function CompiledModuleInstancesInitialize4AndClearModule() {
   instance4 = new WebAssembly.Instance(module, {"": {getValue: () => 4}});
-  //assertEquals(4, instance4.exports.f());
+  assertEquals(4, instance4.exports.f());
   module = null;
   instance4 = null;
 })();

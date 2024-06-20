@@ -23,7 +23,7 @@ let wasm = instance.exports;
     return wasm.passThrough(a.find(x => x === o.x));
   }
   %PrepareFunctionForOptimization(foo);
-  //assertEquals(3, foo([1, 2, 3], {x:3}));
+  assertEquals(3, foo([1, 2, 3], {x:3}));
   %OptimizeFunctionOnNextCall(foo);
-  //assertEquals(3, foo([1, 2, 3], {x:3}));
+  assertEquals(3, foo([1, 2, 3], {x:3}));
 })();

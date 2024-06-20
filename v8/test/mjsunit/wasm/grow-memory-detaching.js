@@ -22,21 +22,21 @@ let module = (() => {
   let growMem = (pages) => memory.grow(pages);
 
   let b1 = memory.buffer;
-  //assertEquals(kPageSize, b1.byteLength);
+  assertEquals(kPageSize, b1.byteLength);
 
   growMem(0);
   let b2 = memory.buffer;
   assertFalse(b1 === b2);
-  //assertEquals(0, b1.byteLength);
-  //assertEquals(kPageSize, b2.byteLength);
+  assertEquals(0, b1.byteLength);
+  assertEquals(kPageSize, b2.byteLength);
 
   growMem(1);
   let b3 = memory.buffer;
   assertFalse(b1 === b3);
   assertFalse(b2 === b3);
-  //assertEquals(0, b1.byteLength);
-  //assertEquals(0, b2.byteLength);
-  //assertEquals(2 * kPageSize, b3.byteLength);
+  assertEquals(0, b1.byteLength);
+  assertEquals(0, b2.byteLength);
+  assertEquals(2 * kPageSize, b3.byteLength);
 })();
 
 (function TestDetachingViaBytecode() {
@@ -46,19 +46,19 @@ let module = (() => {
   let memory = instance.exports.memory;
 
   let b1 = memory.buffer;
-  //assertEquals(kPageSize, b1.byteLength);
+  assertEquals(kPageSize, b1.byteLength);
 
   growMem(0);
   let b2 = memory.buffer;
   assertFalse(b1 === b2);
-  //assertEquals(0, b1.byteLength);
-  //assertEquals(kPageSize, b2.byteLength);
+  assertEquals(0, b1.byteLength);
+  assertEquals(kPageSize, b2.byteLength);
 
   growMem(1);
   let b3 = memory.buffer;
   assertFalse(b1 === b3);
   assertFalse(b2 === b3);
-  //assertEquals(0, b1.byteLength);
-  //assertEquals(0, b2.byteLength);
-  //assertEquals(2 * kPageSize, b3.byteLength);
+  assertEquals(0, b1.byteLength);
+  assertEquals(0, b2.byteLength);
+  assertEquals(2 * kPageSize, b3.byteLength);
 })();

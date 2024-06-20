@@ -58,14 +58,14 @@ function testMemoryGrowReadWriteBase(size, load_fn, store_fn) {
   // Instead of checking every n-th offset, check the first 5.
   for(offset = 0; offset <= (4*size); offset+=size) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
   for (offset = kPageSize - (size - 1); offset < kPageSize + size; offset++) {
     assertTraps(kTrapMemOutOfBounds, poke);
     assertTraps(kTrapMemOutOfBounds, peek);
   }
 
-  //assertEquals(1, growMem(3));
+  assertEquals(1, growMem(3));
 
   for (let n = 1; n <= 3; n++) {
     for (offset = n * kPageSize - 5 * size; offset <= n * kPageSize + 4 * size;
@@ -78,14 +78,14 @@ function testMemoryGrowReadWriteBase(size, load_fn, store_fn) {
       //       |        first offset      last offset
       //       +-> size bytes
       poke(20);
-      //assertEquals(20, peek());
+      assertEquals(20, peek());
     }
   }
 
   // Check the last 5 valid offsets of the last page.
   for (offset = 4*kPageSize-size-(4*size); offset <= 4*kPageSize -size; offset+=size) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
 
   for (offset = 4*kPageSize - (size-1); offset < 4*kPageSize + size; offset++) {
@@ -93,15 +93,15 @@ function testMemoryGrowReadWriteBase(size, load_fn, store_fn) {
     assertTraps(kTrapMemOutOfBounds, peek);
   }
 
-  //assertEquals(4, growMem(15));
+  assertEquals(4, growMem(15));
 
   for (offset = 4*kPageSize - (size-1); offset <= 4*kPageSize + size; offset+=size) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
   for (offset = 19*kPageSize - 10; offset <= 19*kPageSize - size; offset+=size) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
   for (offset = 19*kPageSize - (size-1); offset < 19*kPageSize + 5; offset++) {
     assertTraps(kTrapMemOutOfBounds, poke);
@@ -137,18 +137,18 @@ function testMemoryGrowReadWriteBase(size, load_fn, store_fn) {
   assertTraps(kTrapMemOutOfBounds, peek);
   assertTraps(kTrapMemOutOfBounds, poke);
 
-  //assertEquals(0, growMem(1));
+  assertEquals(0, growMem(1));
 
   // Check first 5 offsets.
   for(offset = 0; offset <= 5; offset++) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
 
   // Check last 5 offsets.
   for(offset = kPageSize - 5*4; offset <= kPageSize - 4; offset++) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
 
   for(offset = kPageSize - 3; offset <= kPageSize + 5; offset++) {
@@ -158,10 +158,10 @@ function testMemoryGrowReadWriteBase(size, load_fn, store_fn) {
   offset = 3*kPageSize;
   for (var i = 1; i < 4; i++) {
     assertTraps(kTrapMemOutOfBounds, poke);
-    //assertEquals(i, growMem(1));
+    assertEquals(i, growMem(1));
   }
   poke(20);
-  //assertEquals(20, peek());
+  assertEquals(20, peek());
 })();
 
 function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
@@ -178,18 +178,18 @@ function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
   assertTraps(kTrapMemOutOfBounds, peek);
   assertTraps(kTrapMemOutOfBounds, poke);
 
-  //assertEquals(0, growMem(1));
+  assertEquals(0, growMem(1));
 
   // Instead of checking every offset, check the first 5.
   for(offset = 0; offset <= 4; offset++) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
 
   // Check the last 5 valid ones.
   for(offset = kPageSize - (size * 4); offset <= kPageSize - size; offset++) {
     poke(20);
-    //assertEquals(20, peek());
+    assertEquals(20, peek());
   }
 
   for(offset = kPageSize - (size - 1); offset <= kPageSize + 5; offset++) {
@@ -218,7 +218,7 @@ function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
   builder.addMemory(0, undefined);
   var module = builder.instantiate();
   function growMem(pages) { return module.exports.grow_memory(pages); }
-  //assertEquals(-1, growMem(kV8MaxPages + 1));
+  assertEquals(-1, growMem(kV8MaxPages + 1));
 })();
 
 (function testMemoryGrowTrapMaxPages() {
@@ -227,7 +227,7 @@ function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
   builder.addMemory(1, 1);
   var module = builder.instantiate();
   function growMem(pages) { return module.exports.grow_memory(pages); }
-  //assertEquals(-1, growMem(kV8MaxPages));
+  assertEquals(-1, growMem(kV8MaxPages));
 })();
 
 (function testMemoryGrowTrapsWithNonSmiInput() {
@@ -238,7 +238,7 @@ function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
   function growMem(pages) { return module.exports.grow_memory(pages); }
   // The parameter of grow_memory is unsigned. Therefore -1 stands for
   // UINT32_MIN, which cannot be represented as SMI.
-  //assertEquals(-1, growMem(-1));
+  assertEquals(-1, growMem(-1));
 })();
 
 (function testMemoryGrowCurrentMemory() {
@@ -251,9 +251,9 @@ function testMemoryGrowZeroInitialSizeBase(size, load_fn, store_fn) {
   var module = builder.instantiate();
   function growMem(pages) { return module.exports.grow_memory(pages); }
   function MemSize() { return module.exports.memory_size(); }
-  //assertEquals(1, MemSize());
-  //assertEquals(1, growMem(1));
-  //assertEquals(2, MemSize());
+  assertEquals(1, MemSize());
+  assertEquals(1, growMem(1));
+  assertEquals(2, MemSize());
 })();
 
 function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
@@ -272,25 +272,25 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   // Check the first 5 offsets.
   for(offset = 0; offset <= (4*size); offset+=size) {
     poke(offset % max);
-    //assertEquals(offset % max, peek());
+    assertEquals(offset % max, peek());
   }
 
   // Check the last 5 valid offsets.
   for(offset = kPageSize - 5*size; offset <= (kPageSize - size); offset+=size) {
     poke(offset % max);
-    //assertEquals(offset % max, peek());
+    assertEquals(offset % max, peek());
   }
 
-  //assertEquals(1, growMem(3));
+  assertEquals(1, growMem(3));
 
   // Check the first 5 offsets are preserved by growMem.
   for(offset = 0; offset <= (4*size); offset+=size) {
-    //assertEquals(offset % max, peek());
+    assertEquals(offset % max, peek());
   }
 
   // Check the last 5 valid offsets are preserved by growMem.
   for(offset = kPageSize - 5*size; offset <= (kPageSize - size); offset+=size) {
-    //assertEquals(offset % max, peek());
+    assertEquals(offset % max, peek());
   }
 }
 
@@ -322,22 +322,22 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   offset = 3*kPageSize + 4;
   assertTraps(kTrapMemOutOfBounds, poke);
 
-  //assertEquals(1, growMem(1));
+  assertEquals(1, growMem(1));
   assertTraps(kTrapMemOutOfBounds, poke);
 
-  //assertEquals(2, growMem(1));
+  assertEquals(2, growMem(1));
   assertTraps(kTrapMemOutOfBounds, poke);
 
-  //assertEquals(3, growMem(1));
+  assertEquals(3, growMem(1));
 
   for (offset = 3*kPageSize; offset <= 3*kPageSize + 4; offset++) {
     poke(0xaced);
-    //assertEquals(0xaced, peek());
+    assertEquals(0xaced, peek());
   }
 
   for (offset = 4*kPageSize-8; offset <= 4*kPageSize - 4; offset++) {
     poke(0xaced);
-    //assertEquals(0xaced, peek());
+    assertEquals(0xaced, peek());
   }
 
   for (offset = 4*kPageSize - 3; offset <= 4*kPageSize + 4; offset++) {
@@ -367,9 +367,9 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   builder.addMemory(1, 16);
   var module = builder.instantiate();
   function growMem(pages) { return module.exports.grow_memory(pages); }
-  //assertEquals(1, growMem(5));
-  //assertEquals(6, growMem(5));
-  //assertEquals(-1, growMem(6));
+  assertEquals(1, growMem(5));
+  assertEquals(6, growMem(5));
+  assertEquals(-1, growMem(6));
 })();
 
 (function testMemoryGrowInternalMaxTraps() {
@@ -380,8 +380,8 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   builder.addMemory(1, kSpecMaxPages);
   var module = builder.instantiate();
   function growMem(pages) { return module.exports.grow_memory(pages); }
-  //assertEquals(1, growMem(20));
-  //assertEquals(-1, growMem(kV8MaxPages - 20));
+  assertEquals(1, growMem(20));
+  assertEquals(-1, growMem(kV8MaxPages - 20));
 })();
 
 (function testMemoryGrow4Gb() {
@@ -397,25 +397,25 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   // Check first 5 offsets.
   for (offset = 0; offset <= 4 * 4; offset += 4) {
     poke(100000 - offset);
-    //assertEquals(100000 - offset, peek());
+    assertEquals(100000 - offset, peek());
   }
 
   // Check last 5 offsets.
   for (offset = (kPageSize - 5 * 4); offset <= (kPageSize - 4); offset += 4) {
     poke(100000 - offset);
-    //assertEquals(100000 - offset, peek());
+    assertEquals(100000 - offset, peek());
   }
 
   let result = growMem(kV8MaxPages - 1);
   if (result == 1) {
     // Check first 5 offsets.
     for (offset = 0; offset <= 4 * 4; offset += 4) {
-      //assertEquals(100000 - offset, peek());
+      assertEquals(100000 - offset, peek());
     }
 
     // Check last 5 offsets.
     for (offset = (kPageSize - 5 * 4); offset <= (kPageSize - 4); offset += 4) {
-      //assertEquals(100000 - offset, peek());
+      assertEquals(100000 - offset, peek());
     }
 
     // Bounds check for large mem size.
@@ -425,12 +425,12 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
     for (offset = kMemSize - kPageSize; offset <= kMemSize - kPageSize + 4 * 4;
          offset += 4) {
       poke(0xaced);
-      //assertEquals(0xaced, peek());
+      assertEquals(0xaced, peek());
     }
     for (offset = kLastValidOffset - 5 * 4; offset <= kLastValidOffset;
          offset += 4) {
       poke(0xaced);
-      //assertEquals(0xaced, peek());
+      assertEquals(0xaced, peek());
     }
 
     for (offset = kLastValidOffset + 1; offset < kMemSize; offset++) {
@@ -439,7 +439,7 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   } else {
     // Allocating big chunks of memory can fail on gc_stress, especially on 32
     // bit platforms. When grow_memory fails, expected result is -1.
-    //assertEquals(-1, result);
+    assertEquals(-1, result);
   }
 })();
 
@@ -469,13 +469,13 @@ function testMemoryGrowPreservesDataMemOpBase(size, load_fn, store_fn) {
   // Growing can always fail if the system runs out of resources.
   let grow_result = grow(max_pages - 1);
   if (grow_result == -1) return;
-  //assertEquals(0, grow_result);
+  assertEquals(0, grow_result);
 
   // Then, grow by another page (this triggered the error in
   // https://crbug.com/1347668).
   grow_result = grow(1);
   if (grow_result == -1) return;
-  //assertEquals(max_pages - 1, grow_result);
-  //assertEquals(max_pages, grow(0));
-  //assertEquals(-1, grow(1));  // Fails.
+  assertEquals(max_pages - 1, grow_result);
+  assertEquals(max_pages, grow(0));
+  assertEquals(-1, grow(1));  // Fails.
 })();

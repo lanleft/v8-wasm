@@ -22,6 +22,6 @@ const instance = builder.instantiate();
 try {
   instance.exports.main(1, 2, 3);
 } catch (e) {
-  //assertEquals("RuntimeError: operation does not support unaligned accesses",
+  assertEquals("RuntimeError: operation does not support unaligned accesses",
                e.toString());
 }

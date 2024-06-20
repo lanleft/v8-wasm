@@ -79,8 +79,8 @@ let kTableSize = 50;
 
   for (i of [15, 17, 21, 26]) {
     print(i);
-    //assertEquals(i, i1.exports.call(i));
-    //assertEquals(i, i2.exports.call(i));
+    assertEquals(i, i1.exports.call(i));
+    assertEquals(i, i2.exports.call(i));
   }
   for (i of [0, 1, 5, 16]) {
     assertThrows(() => i1.exports.call(i));
@@ -150,8 +150,8 @@ function addConstFuncUsingGlobal(builder, val) {
 
   for (i of [14, 18, 22, 28]) {
     print(i);
-    //assertEquals(i, i1.exports.call(i));
-    //assertEquals(i, i2.exports.call(i));
+    assertEquals(i, i1.exports.call(i));
+    assertEquals(i, i2.exports.call(i));
   }
   for (i of [0, 1, 5, 16]) {
     assertThrows(() => i1.exports.call(i));
@@ -232,8 +232,8 @@ function addConstFuncUsingMemory(builder, val) {
 
   for (i of [13, 19, 23, 29]) {
     print(i);
-    //assertEquals(i, i1.exports.call(i));
-    //assertEquals(i, i2.exports.call(i));
+    assertEquals(i, i1.exports.call(i));
+    assertEquals(i, i2.exports.call(i));
   }
   for (i of [0, 1, 5, 16]) {
     assertThrows(() => i1.exports.call(i));

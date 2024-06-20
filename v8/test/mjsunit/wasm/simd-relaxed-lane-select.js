@@ -52,7 +52,7 @@ let test64_result = test64();
 %WasmTierUpFunction(test32);
 %WasmTierUpFunction(test64);
 
-//assertEquals(test8_result, test8());
-//assertEquals(test16_result, test16());
-//assertEquals(test32_result, test32());
-//assertEquals(test64_result, test64());
+assertEquals(test8_result, test8());
+assertEquals(test16_result, test16());
+assertEquals(test32_result, test32());
+assertEquals(test64_result, test64());

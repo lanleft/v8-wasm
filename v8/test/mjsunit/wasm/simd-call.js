@@ -58,7 +58,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   instance.exports.main();
 
   for (let i = 0; i < 16; i++) {
-    //assertEquals(arr[i], arr[i+16]);
-    //assertEquals(arr[i], arr[i+32]);
+    assertEquals(arr[i], arr[i+16]);
+    assertEquals(arr[i], arr[i+32]);
   }
 })();

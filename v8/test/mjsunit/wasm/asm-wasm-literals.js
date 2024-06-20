@@ -36,16 +36,16 @@ function PositiveIntLiterals() {
 }
 
 RunAsmJsTest(PositiveIntLiterals, function(module) {
-  //assertEquals(0, module.f0());
-  //assertEquals(1, module.f1());
-  //assertEquals(1, module.f1());
-  //assertEquals(4, module.f4());
-  //assertEquals(64, module.f64());
-  //assertEquals(128, module.f128());
-  //assertEquals(256, module.f256());
-  //assertEquals(1000, module.f1000());
-  //assertEquals(2000000, module.f2000000());
-  //assertEquals(2147483647, module.fmax());
+  assertEquals(0, module.f0());
+  assertEquals(1, module.f1());
+  assertEquals(1, module.f1());
+  assertEquals(4, module.f4());
+  assertEquals(64, module.f64());
+  assertEquals(128, module.f128());
+  assertEquals(256, module.f256());
+  assertEquals(1000, module.f1000());
+  assertEquals(2000000, module.f2000000());
+  assertEquals(2147483647, module.fmax());
 });
 
 function NegativeIntLiterals() {
@@ -64,15 +64,15 @@ function NegativeIntLiterals() {
 }
 
 RunAsmJsTest(NegativeIntLiterals, function (module) {
-  //assertEquals(-1, module.f1());
-  //assertEquals(-4, module.f4());
-  //assertEquals(-64, module.f64());
-  //assertEquals(-127, module.f127());
-  //assertEquals(-128, module.f128());
-  //assertEquals(-256, module.f256());
-  //assertEquals(-1000, module.f1000());
-  //assertEquals(-2000000, module.f2000000());
-  //assertEquals(-2147483648, module.fmin());
+  assertEquals(-1, module.f1());
+  assertEquals(-4, module.f4());
+  assertEquals(-64, module.f64());
+  assertEquals(-127, module.f127());
+  assertEquals(-128, module.f128());
+  assertEquals(-256, module.f256());
+  assertEquals(-1000, module.f1000());
+  assertEquals(-2000000, module.f2000000());
+  assertEquals(-2147483648, module.fmin());
 });
 
 function PositiveUnsignedLiterals() {
@@ -92,15 +92,15 @@ function PositiveUnsignedLiterals() {
 }
 
 RunAsmJsTest(PositiveUnsignedLiterals, function (module) {
-  //assertEquals(0, module.f0());
-  //assertEquals(1, module.f1());
-  //assertEquals(4, module.f4());
-  //assertEquals(64, module.f64());
-  //assertEquals(128, module.f128());
-  //assertEquals(256, module.f256());
-  //assertEquals(1000, module.f1000());
-  //assertEquals(2000000, module.f2000000());
-  //assertEquals(2147483647, module.fmax());
+  assertEquals(0, module.f0());
+  assertEquals(1, module.f1());
+  assertEquals(4, module.f4());
+  assertEquals(64, module.f64());
+  assertEquals(128, module.f128());
+  assertEquals(256, module.f256());
+  assertEquals(1000, module.f1000());
+  assertEquals(2000000, module.f2000000());
+  assertEquals(2147483647, module.fmax());
 });
 
 function LargeUnsignedLiterals() {
@@ -129,11 +129,11 @@ function LargeUnsignedLiterals() {
 }
 
 RunAsmJsTest(LargeUnsignedLiterals, function(module) {
-  //assertEquals(2147483648, module.a());
-  //assertEquals(2147483649, module.b());
-  //assertEquals(0x80000000, module.c());
-  //assertEquals(0x80000001, module.d());
-  //assertEquals(0xffffffff, module.e());
+  assertEquals(2147483648, module.a());
+  assertEquals(2147483649, module.b());
+  assertEquals(0x80000000, module.c());
+  assertEquals(0x80000001, module.d());
+  assertEquals(0xffffffff, module.e());
 });
 
 function ManyI32() {
@@ -165,7 +165,7 @@ function ManyI32() {
 }
 
 RunAsmJsTest(ManyI32, function(module) {
-  //assertEquals(-222411306, module.main());
+  assertEquals(-222411306, module.main());
 });
 
 
@@ -189,7 +189,7 @@ function ManyF64a() {
 }
 
 RunAsmJsTest(ManyF64a, function(module) {
-  //assertEquals(-8640233.599945681, module.main());
+  assertEquals(-8640233.599945681, module.main());
 });
 
 function ManyF64b() {
@@ -205,12 +205,12 @@ function ManyF64b() {
 }
 
 RunAsmJsTest(ManyF64b, function(module) {
-  //assertEquals(2.4e-24, module.k1());
-  //assertEquals(2.4e-19, module.k2());
-  //assertEquals(2.4e-14, module.k3());
-  //assertEquals(2.4e-9, module.k4());
-  //assertEquals(0.00024000000000000003, module.k5());
-  //assertEquals(24.5, module.k6());
+  assertEquals(2.4e-24, module.k1());
+  assertEquals(2.4e-19, module.k2());
+  assertEquals(2.4e-14, module.k3());
+  assertEquals(2.4e-9, module.k4());
+  assertEquals(0.00024000000000000003, module.k5());
+  assertEquals(24.5, module.k6());
 });
 
 
@@ -227,12 +227,12 @@ function ManyF64c() {
 }
 
 RunAsmJsTest(ManyF64c, function(module) {
-  //assertEquals(2.4000000000000004e+26, module.k1());
-  //assertEquals(2.4e+21, module.k2());
-  //assertEquals(2.4e+16, module.k3());
-  //assertEquals(2.4e+11, module.k4());
-  //assertEquals(2.4e+6, module.k5());
-  //assertEquals(26, module.k6());
+  assertEquals(2.4000000000000004e+26, module.k1());
+  assertEquals(2.4e+21, module.k2());
+  assertEquals(2.4e+16, module.k3());
+  assertEquals(2.4e+11, module.k4());
+  assertEquals(2.4e+6, module.k5());
+  assertEquals(26, module.k6());
 });
 
 function ManyF32a(stdlib) {
@@ -252,11 +252,11 @@ function ManyF32a(stdlib) {
 if (false) {
   // TODO(bradnelson): fails validation of F32 literals somehow.
 RunAsmJsTest(ManyF32a, function(module) {
-  //assertEquals(2.0999999917333043e-24, module.k1());
-  //assertEquals(2.099999868734112e-19, module.k2());
-  //assertEquals(2.099999997029825e-14, module.k3());
-  //assertEquals(2.099999951710174e-9, module.k4());
-  //assertEquals(0.0002099999983329326, module.k5());
-  //assertEquals(21.399999618530273, module.k6());
+  assertEquals(2.0999999917333043e-24, module.k1());
+  assertEquals(2.099999868734112e-19, module.k2());
+  assertEquals(2.099999997029825e-14, module.k3());
+  assertEquals(2.099999951710174e-9, module.k4());
+  assertEquals(0.0002099999983329326, module.k5());
+  assertEquals(21.399999618530273, module.k6());
 });
 }

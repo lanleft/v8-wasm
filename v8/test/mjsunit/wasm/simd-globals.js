@@ -32,7 +32,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   for (let i = 0; i < 4; i++) {
     // get0 will get lane0, which has value 1
-    //assertEquals(i+1, instance.exports[`get${i}`]());
+    assertEquals(i+1, instance.exports[`get${i}`]());
   }
 })();
 

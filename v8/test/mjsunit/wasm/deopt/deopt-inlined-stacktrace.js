@@ -5,7 +5,7 @@
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
 // Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged
-// Flags: --wasm-inlining-ignore-call-counts
+// Flags: --wasm-inlining-ignore-call-counts --no-jit-fuzzing
 
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
@@ -20,7 +20,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .addBody([kExprLocalGet, 0, kExprLocalGet, 1, kExprI32DivS])
     .exportFunc();
 
-  let mainSig = makeSig([kWasmI32, kWasmI32, wasmRefType(funcRefT)], [kWasmI32]);
+  let mainSig =
+    makeSig([kWasmI32, kWasmI32, wasmRefType(funcRefT)], [kWasmI32]);
   let inlinee = builder.addFunction("inlinee", mainSig)
     .addBody([
       kExprLocalGet, 0,
@@ -39,10 +40,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
   // Collect feedback.
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
   // Trigger tierup.
   %WasmTierUpFunction(wasm.main);
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
   assertTrue(%IsTurboFanFunction(wasm.main));
   // Trigger deopt which then calls a target that throws, i.e. the stack trace
   // contains frames created by the deoptimizer.

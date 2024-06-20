@@ -4,7 +4,7 @@
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
 // Flags: --experimental-wasm-inlining --liftoff
-// Flags: --turboshaft-wasm-instruction-selection-staged
+// Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
@@ -35,7 +35,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .addBody([kExprLocalGet, 0, kExprLocalGet, 1, kExprI32Eq,])
     .exportFunc();
 
-  let mainSig = makeSig([kWasmI32, kWasmI32, wasmRefType(funcRefT)], [kWasmI32]);
+  let mainSig =
+    makeSig([kWasmI32, kWasmI32, wasmRefType(funcRefT)], [kWasmI32]);
   builder.addFunction("main", mainSig)
     .addLocals(kWasmI32, 1)
     .addBody([
@@ -54,47 +55,47 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   ]).exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
   %WasmTierUpFunction(wasm.main);
   print("tierup");
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
   assertTrue(%IsTurboFanFunction(wasm.main));
   print("non-deopt call succeeded, now causing deopt");
-  //assertEquals(360, wasm.main(12, 30, wasm.mul));
+  assertEquals(360, wasm.main(12, 30, wasm.mul));
   assertFalse(%IsTurboFanFunction(wasm.main));
   print("deopt happened");
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
   print("collect more feedback in liftoff");
-  //assertEquals(-18, wasm.main(12, 30, wasm.sub));
+  assertEquals(-18, wasm.main(12, 30, wasm.sub));
   print("re-opt");
   %WasmTierUpFunction(wasm.main);
-  //assertEquals(360, wasm.main(12, 30, wasm.mul));
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
-  //assertEquals(-18, wasm.main(12, 30, wasm.sub));
+  assertEquals(360, wasm.main(12, 30, wasm.mul));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(-18, wasm.main(12, 30, wasm.sub));
   assertTrue(%IsTurboFanFunction(wasm.main));
-  //assertEquals(12, wasm.main(12, 30, wasm.first));
+  assertEquals(12, wasm.main(12, 30, wasm.first));
   assertFalse(%IsTurboFanFunction(wasm.main));
   print("deopt happened");
   print("re-opt with maximum polymorphism");
   %WasmTierUpFunction(wasm.main);
-  //assertEquals(360, wasm.main(12, 30, wasm.mul));
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
-  //assertEquals(-18, wasm.main(12, 30, wasm.sub));
-  //assertEquals(12, wasm.main(12, 30, wasm.first));
+  assertEquals(360, wasm.main(12, 30, wasm.mul));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(-18, wasm.main(12, 30, wasm.sub));
+  assertEquals(12, wasm.main(12, 30, wasm.first));
   assertTrue(%IsTurboFanFunction(wasm.main));
-  //assertEquals(30, wasm.main(12, 30, wasm.second));
+  assertEquals(30, wasm.main(12, 30, wasm.second));
   assertFalse(%IsTurboFanFunction(wasm.main));
   print("deopt happened");
   print("reopt again");
   %WasmTierUpFunction(wasm.main);
   // All previous call targets still succeed.
-  //assertEquals(360, wasm.main(12, 30, wasm.mul));
-  //assertEquals(42, wasm.main(12, 30, wasm.add));
-  //assertEquals(-18, wasm.main(12, 30, wasm.sub));
-  //assertEquals(12, wasm.main(12, 30, wasm.first));
-  //assertEquals(30, wasm.main(12, 30, wasm.second));
+  assertEquals(360, wasm.main(12, 30, wasm.mul));
+  assertEquals(42, wasm.main(12, 30, wasm.add));
+  assertEquals(-18, wasm.main(12, 30, wasm.sub));
+  assertEquals(12, wasm.main(12, 30, wasm.first));
+  assertEquals(30, wasm.main(12, 30, wasm.second));
   assertTrue(%IsTurboFanFunction(wasm.main));
   // Previously unseen call targets do not cause a deopt any more.
-  //assertEquals(1, wasm.main(42, 42, wasm.equals));
+  assertEquals(1, wasm.main(42, 42, wasm.equals));
   assertTrue(%IsTurboFanFunction(wasm.main));
 })();

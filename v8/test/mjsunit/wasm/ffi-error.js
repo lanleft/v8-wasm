@@ -117,7 +117,7 @@ function checkFailingInstantiation(
 
   checkSuccessfulInstantiation(
       CreateDefaultBuilder(), {mod: {fun: exported}},
-      instance => //assertEquals(33, instance.exports.main()));
+      instance => assertEquals(33, instance.exports.main()));
 })();
 
 (function I64InSignature() {
@@ -134,7 +134,7 @@ function checkFailingInstantiation(
 
   checkSuccessfulInstantiation(
       builder, undefined,
-      instance => //assertEquals(
+      instance => assertEquals(
         instance.exports.function_with_invalid_signature(33n, 88n), -55n));
 })();
 
@@ -149,7 +149,7 @@ function checkFailingInstantiation(
 
   checkSuccessfulInstantiation(
       builder, undefined,
-      instance => //assertEquals(12,
+      instance => assertEquals(12,
           instance.exports.function_with_invalid_signature(12n)));
 
 })();
@@ -168,7 +168,7 @@ function checkFailingInstantiation(
 
   checkSuccessfulInstantiation(
       builder, {'': {func: _ => {}}},
-      instance => //assertEquals(0, instance.exports.main(1)));
+      instance => assertEquals(0, instance.exports.main(1)));
 
 })();
 

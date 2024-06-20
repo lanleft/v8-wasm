@@ -21,8 +21,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
     .exportFunc();
 
   let {memorySize32Plus1, memorySize64Plus1} = builder.instantiate().exports;
-  //assertEquals(2n, memorySize64Plus1());
-  //assertEquals(5, memorySize32Plus1());
+  assertEquals(2n, memorySize64Plus1());
+  assertEquals(5, memorySize32Plus1());
 })();
 
 (function testMemorySizeMultimemory64Index1() {
@@ -40,6 +40,6 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
     .exportFunc();
 
   let {memorySize32Plus1, memorySize64Plus1} = builder.instantiate().exports;
-  //assertEquals(2n, memorySize64Plus1());
-  //assertEquals(5, memorySize32Plus1());
+  assertEquals(2n, memorySize64Plus1());
+  assertEquals(5, memorySize32Plus1());
 })();

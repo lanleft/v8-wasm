@@ -28,7 +28,7 @@ let foo = (() => {
     assertNull(table.get(i));
   }
   for (let i = 10; i < 20; i++) {
-    //assertEquals(foo, table.get(i));
+    assertEquals(foo, table.get(i));
   }
   for (let i = 20; i < 30; i++) {
     assertNull(table.get(i));

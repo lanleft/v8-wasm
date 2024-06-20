@@ -86,7 +86,7 @@ function decodeWtf8(wtf8, start, end) {
     }
     result += String.fromCodePoint(cp);
   }
-  //assertEquals(start, end);
+  assertEquals(start, end);
   return result;
 }
 
@@ -194,11 +194,11 @@ function makeWtf8TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
-    //assertEquals(str, instance.exports.string_new_wtf8(offset, length));
+    assertEquals(str, instance.exports.string_new_wtf8(offset, length));
     if (HasIsolatedSurrogate(str)) {
       assertThrows(() => instance.exports.string_new_utf8(offset, length),
                    WebAssembly.RuntimeError, "invalid UTF-8 string");
-      //assertEquals(null, instance.exports.string_new_utf8_try(offset, length));
+      assertEquals(null, instance.exports.string_new_utf8_try(offset, length));
 
       // Isolated surrogates have the three-byte pattern ED [A0,BF]
       // [80,BF].  When the sloppy decoder gets to the second byte, it
@@ -207,12 +207,12 @@ function makeWtf8TestDataSegment() {
       // replaces the second byte and continues with the next, which
       // also can't start a sequence.  The result is that one isolated
       // surrogate is replaced by three U+FFFD codepoints.
-      //assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
+      assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
                    instance.exports.string_new_utf8_sloppy(offset, length));
     } else {
-      //assertEquals(str, instance.exports.string_new_utf8(offset, length));
-      //assertEquals(str, instance.exports.string_new_utf8_try(offset, length));
-      //assertEquals(str,
+      assertEquals(str, instance.exports.string_new_utf8(offset, length));
+      assertEquals(str, instance.exports.string_new_utf8_try(offset, length));
+      assertEquals(str,
                    instance.exports.string_new_utf8_sloppy(offset, length));
     }
   }
@@ -221,7 +221,7 @@ function makeWtf8TestDataSegment() {
                  WebAssembly.RuntimeError, "invalid WTF-8 string");
     assertThrows(() => instance.exports.string_new_utf8(offset, length),
                  WebAssembly.RuntimeError, "invalid UTF-8 string");
-    //assertEquals(null, instance.exports.string_new_utf8_try(offset, length));
+    assertEquals(null, instance.exports.string_new_utf8_try(offset, length));
   }
 })();
 
@@ -244,12 +244,12 @@ function makeWtf8TestDataSegment() {
   let instance = builder.instantiate();
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
     print(offset, length);
-    //assertEquals(
+    assertEquals(
         +HasIsolatedSurrogate(str),
         instance.exports.is_null_new_utf8_try(offset, length));
   }
   for (let [str, {offset, length}] of Object.entries(data.invalid)) {
-    //assertEquals(1, instance.exports.is_null_new_utf8_try(offset, length));
+    assertEquals(1, instance.exports.is_null_new_utf8_try(offset, length));
   }
 })();
 
@@ -295,7 +295,7 @@ function makeWtf16TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
-    //assertEquals(str, instance.exports.string_new_wtf16(offset, length));
+    assertEquals(str, instance.exports.string_new_wtf16(offset, length));
   }
 })();
 
@@ -316,8 +316,8 @@ function makeWtf16TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let [index, str] of interestingStrings.entries()) {
-    //assertEquals(str, instance.exports["string_const" + index]());
-    //assertEquals(str, instance.exports["global" + index].value);
+    assertEquals(str, instance.exports["string_const" + index]());
+    assertEquals(str, instance.exports["global" + index].value);
   }
 })();
 
@@ -356,11 +356,11 @@ function makeWtf16TestDataSegment() {
   let instance = builder.instantiate();
   for (let str of interestingStrings) {
     let wtf8 = encodeWtf8(str);
-    //assertEquals(wtf8.length, instance.exports.string_measure_wtf8(str));
+    assertEquals(wtf8.length, instance.exports.string_measure_wtf8(str));
     if (HasIsolatedSurrogate(str)) {
-      //assertEquals(-1, instance.exports.string_measure_utf8(str));
+      assertEquals(-1, instance.exports.string_measure_utf8(str));
     } else {
-      //assertEquals(wtf8.length, instance.exports.string_measure_utf8(str));
+      assertEquals(wtf8.length, instance.exports.string_measure_utf8(str));
     }
   }
 
@@ -390,7 +390,7 @@ function makeWtf16TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let str of interestingStrings) {
-    //assertEquals(str.length, instance.exports.string_measure_wtf16(str));
+    assertEquals(str.length, instance.exports.string_measure_wtf16(str));
   }
 
   assertThrows(() => instance.exports.string_measure_wtf16_null(),
@@ -433,14 +433,14 @@ function makeWtf16TestDataSegment() {
   }
   function assertMemoryBytesZero(low, high) {
     for (let i = low; i < high; i++) {
-      //assertEquals(0, memory[i]);
+      assertEquals(0, memory[i]);
     }
   }
   function checkMemory(offset, bytes) {
     let slop = 64;
     assertMemoryBytesZero(Math.max(0, offset - slop), offset);
     for (let i = 0; i < bytes.length; i++) {
-      //assertEquals(bytes[i], memory[offset + i]);
+      assertEquals(bytes[i], memory[offset + i]);
     }
     assertMemoryBytesZero(offset + bytes.length,
                           Math.min(memory.length,
@@ -450,7 +450,7 @@ function makeWtf16TestDataSegment() {
   for (let str of interestingStrings) {
     let wtf8 = encodeWtf8(str);
     let offset = memory.length - wtf8.length;
-    //assertEquals(wtf8.length, instance.exports.encode_wtf8(str, offset));
+    assertEquals(wtf8.length, instance.exports.encode_wtf8(str, offset));
     checkMemory(offset, wtf8);
     clearMemory(offset, offset + wtf8.length);
   }
@@ -463,7 +463,7 @@ function makeWtf16TestDataSegment() {
           "Failed to encode string as UTF-8: contains unpaired surrogate");
     } else {
       let wtf8 = encodeWtf8(str);
-      //assertEquals(wtf8.length, instance.exports.encode_utf8(str, offset));
+      assertEquals(wtf8.length, instance.exports.encode_utf8(str, offset));
       checkMemory(offset, wtf8);
       clearMemory(offset, offset + wtf8.length);
     }
@@ -472,9 +472,9 @@ function makeWtf16TestDataSegment() {
   for (let str of interestingStrings) {
     let offset = 42;
     let replaced = ReplaceIsolatedSurrogates(str);
-    if (!HasIsolatedSurrogate(str)) //assertEquals(str, replaced);
+    if (!HasIsolatedSurrogate(str)) assertEquals(str, replaced);
     let wtf8 = encodeWtf8(replaced);
-    //assertEquals(wtf8.length, instance.exports.encode_replace(str, offset));
+    assertEquals(wtf8.length, instance.exports.encode_replace(str, offset));
     checkMemory(offset, wtf8);
     clearMemory(offset, offset + wtf8.length);
   }
@@ -529,14 +529,14 @@ function makeWtf16TestDataSegment() {
   }
   function assertMemoryBytesZero(low, high) {
     for (let i = low; i < high; i++) {
-      //assertEquals(0, memory[i]);
+      assertEquals(0, memory[i]);
     }
   }
   function checkMemory(offset, bytes) {
     let slop = 64;
     assertMemoryBytesZero(Math.max(0, offset - slop), offset);
     for (let i = 0; i < bytes.length; i++) {
-      //assertEquals(bytes[i], memory[offset + i]);
+      assertEquals(bytes[i], memory[offset + i]);
     }
     assertMemoryBytesZero(offset + bytes.length,
                           Math.min(memory.length,
@@ -546,7 +546,7 @@ function makeWtf16TestDataSegment() {
   for (let str of interestingStrings) {
     let wtf16 = encodeWtf16LE(str);
     let offset = memory.length - wtf16.length;
-    //assertEquals(str.length, instance.exports.encode_wtf16(str, offset));
+    assertEquals(str.length, instance.exports.encode_wtf16(str, offset));
     checkMemory(offset, wtf16);
     clearMemory(offset, offset + wtf16.length);
   }
@@ -554,7 +554,7 @@ function makeWtf16TestDataSegment() {
   for (let str of interestingStrings) {
     let wtf16 = encodeWtf16LE(str);
     let offset = 0;
-    //assertEquals(str.length, instance.exports.encode_wtf16(str, offset));
+    assertEquals(str.length, instance.exports.encode_wtf16(str, offset));
     checkMemory(offset, wtf16);
     clearMemory(offset, offset + wtf16.length);
   }
@@ -611,7 +611,7 @@ function makeWtf16TestDataSegment() {
 
   for (let head of interestingStrings) {
     for (let tail of interestingStrings) {
-      //assertEquals(head + tail, instance.exports.concat(head, tail));
+      assertEquals(head + tail, instance.exports.concat(head, tail));
     }
   }
 
@@ -660,14 +660,14 @@ function makeWtf16TestDataSegment() {
   for (let head of interestingStrings) {
     for (let tail of interestingStrings) {
       let result = (head == tail)|0;
-      //assertEquals(result, instance.exports.eq(head, tail));
-      //assertEquals(result, instance.exports.eq(head + head, tail + tail));
+      assertEquals(result, instance.exports.eq(head, tail));
+      assertEquals(result, instance.exports.eq(head + head, tail + tail));
     }
-    //assertEquals(0, instance.exports.eq_null_a(head))
-    //assertEquals(0, instance.exports.eq_null_b(head))
+    assertEquals(0, instance.exports.eq_null_a(head))
+    assertEquals(0, instance.exports.eq_null_b(head))
   }
 
-  //assertEquals(1, instance.exports.eq_both_null());
+  assertEquals(1, instance.exports.eq_both_null());
 })();
 
 (function TestStringIsUSVSequence() {
@@ -691,7 +691,7 @@ function makeWtf16TestDataSegment() {
   let instance = builder.instantiate();
 
   for (let str of interestingStrings) {
-    //assertEquals(HasIsolatedSurrogate(str) ? 0 : 1,
+    assertEquals(HasIsolatedSurrogate(str) ? 0 : 1,
                  instance.exports.is_usv_sequence(str));
   }
 
@@ -781,12 +781,12 @@ function makeWtf16TestDataSegment() {
   let instance = builder.instantiate();
   let memory = new Uint8Array(instance.exports.memory.buffer);
   for (let str of interestingStrings) {
-    //assertEquals(str.length, instance.exports.length(str));
+    assertEquals(str.length, instance.exports.length(str));
     for (let i = 0; i < str.length; i++) {
-      //assertEquals(str.charCodeAt(i),
+      assertEquals(str.charCodeAt(i),
                    instance.exports.get_codeunit(str, i));
     }
-    //assertEquals(str, instance.exports.slice(str, 0, -1));
+    assertEquals(str, instance.exports.slice(str, 0, -1));
   }
 
   function checkEncoding(str, slice, start, length) {
@@ -798,14 +798,14 @@ function makeWtf16TestDataSegment() {
     }
     function assertMemoryBytesZero(low, high) {
       for (let i = low; i < high; i++) {
-        //assertEquals(0, memory[i]);
+        assertEquals(0, memory[i]);
       }
     }
     function checkMemory(offset, bytes) {
       let slop = 64;
       assertMemoryBytesZero(Math.max(0, offset - slop), offset);
       for (let i = 0; i < bytes.length; i++) {
-        //assertEquals(bytes[i], memory[offset + i]);
+        assertEquals(bytes[i], memory[offset + i]);
       }
       assertMemoryBytesZero(offset + bytes.length,
                             Math.min(memory.length,
@@ -813,7 +813,7 @@ function makeWtf16TestDataSegment() {
     }
 
     for (let offset of [0, 42, memory.length - bytes.length]) {
-      //assertEquals(slice.length,
+      assertEquals(slice.length,
                    instance.exports.encode(str, offset, start, length));
       checkMemory(offset, bytes);
       clearMemory(offset, offset + bytes.length);
@@ -847,21 +847,21 @@ function makeWtf16TestDataSegment() {
   assertThrows(() => instance.exports.encode("foo", memory.length - 1, 0, 3),
                WebAssembly.RuntimeError, "memory access out of bounds");
 
-  //assertEquals("", instance.exports.slice("foo", 0, 0));
-  //assertEquals("f", instance.exports.slice("foo", 0, 1));
-  //assertEquals("fo", instance.exports.slice("foo", 0, 2));
-  //assertEquals("foo", instance.exports.slice("foo", 0, 3));
-  //assertEquals("foo", instance.exports.slice("foo", 0, 4));
-  //assertEquals("o", instance.exports.slice("foo", 1, 2));
-  //assertEquals("oo", instance.exports.slice("foo", 1, 3));
-  //assertEquals("oo", instance.exports.slice("foo", 1, 100));
-  //assertEquals("", instance.exports.slice("foo", 1, 0));
-  //assertEquals("", instance.exports.slice("foo", 3, 4));
-  //assertEquals("foo", instance.exports.slice("foo", 0, -1));
-  //assertEquals("", instance.exports.slice("foo", -1, 1));
+  assertEquals("", instance.exports.slice("foo", 0, 0));
+  assertEquals("f", instance.exports.slice("foo", 0, 1));
+  assertEquals("fo", instance.exports.slice("foo", 0, 2));
+  assertEquals("foo", instance.exports.slice("foo", 0, 3));
+  assertEquals("foo", instance.exports.slice("foo", 0, 4));
+  assertEquals("o", instance.exports.slice("foo", 1, 2));
+  assertEquals("oo", instance.exports.slice("foo", 1, 3));
+  assertEquals("oo", instance.exports.slice("foo", 1, 100));
+  assertEquals("", instance.exports.slice("foo", 1, 0));
+  assertEquals("", instance.exports.slice("foo", 3, 4));
+  assertEquals("foo", instance.exports.slice("foo", 0, -1));
+  assertEquals("", instance.exports.slice("foo", -1, 1));
 
-  //assertEquals(42, instance.exports.br_on_null("foo"));
-  //assertEquals(42, instance.exports.br_on_non_null("foo"));
+  assertEquals(42, instance.exports.br_on_null("foo"));
+  assertEquals(42, instance.exports.br_on_non_null("foo"));
 
   assertThrows(() => instance.exports.view_from_null(),
                WebAssembly.RuntimeError, 'dereferencing a null pointer');
@@ -875,24 +875,24 @@ function makeWtf16TestDataSegment() {
   const input = prefix + slice + suffix;
   const start = prefix.length;
   const end = start + slice.length;
-  //assertEquals(slice, instance.exports.slice(input, start, end));
+  assertEquals(slice, instance.exports.slice(input, start, end));
 
   // Check that we create one-byte substrings when possible.
   let onebyte = instance.exports.slice("\u1234abcABCDE", 1, 4);
-  //assertEquals("abc", onebyte);
+  assertEquals("abc", onebyte);
   assertTrue(isOneByteString(onebyte));
 
   // Check that the CodeStubAssembler implementation also creates one-byte
   // substrings.
   onebyte = instance.exports.slice("\u1234abcA", 1, 4);
-  //assertEquals("abc", onebyte);
+  assertEquals("abc", onebyte);
   assertTrue(isOneByteString(onebyte));
   // Cover the code path that checks 8 characters at a time.
   onebyte = instance.exports.slice("\u1234abcdefgh\u1234", 1, 9);
-  //assertEquals("abcdefgh", onebyte);  // Exactly 8 characters.
+  assertEquals("abcdefgh", onebyte);  // Exactly 8 characters.
   assertTrue(isOneByteString(onebyte));
   onebyte = instance.exports.slice("\u1234abcdefghijXYZ", 1, 11);
-  //assertEquals("abcdefghij", onebyte);  // Longer than 8.
+  assertEquals("abcdefghij", onebyte);  // Longer than 8.
   assertTrue(isOneByteString(onebyte));
 
   // Check that the runtime code path also creates one-byte substrings.
@@ -965,22 +965,22 @@ function makeWtf16TestDataSegment() {
   let memory = new Uint8Array(instance.exports.memory.buffer);
 
   for (let pos = 0; pos < "ascii".length; pos++) {
-    //assertEquals(pos + 1, instance.exports.advance("ascii", pos, 1));
+    assertEquals(pos + 1, instance.exports.advance("ascii", pos, 1));
   }
 
   for (let str of interestingStrings) {
     let wtf8 = encodeWtf8(str);
-    //assertEquals(wtf8.length, instance.exports.advance(str, 0, -1));
-    //assertEquals(wtf8.length, instance.exports.advance(str, -1, 0));
-    //assertEquals(wtf8.length, instance.exports.advance(str, 0, wtf8.length));
-    //assertEquals(wtf8.length, instance.exports.advance(str, wtf8.length, 0));
-    //assertEquals(wtf8.length,
+    assertEquals(wtf8.length, instance.exports.advance(str, 0, -1));
+    assertEquals(wtf8.length, instance.exports.advance(str, -1, 0));
+    assertEquals(wtf8.length, instance.exports.advance(str, 0, wtf8.length));
+    assertEquals(wtf8.length, instance.exports.advance(str, wtf8.length, 0));
+    assertEquals(wtf8.length,
                  instance.exports.advance(str, 0, wtf8.length + 1));
-    //assertEquals(wtf8.length,
+    assertEquals(wtf8.length,
                  instance.exports.advance(str, wtf8.length + 1, 0));
     for (let pos = 0; pos <= wtf8.length; pos++) {
       for (let bytes = 0; bytes <= wtf8.length - pos; bytes++) {
-        //assertEquals(
+        assertEquals(
             CodepointStart(wtf8, Wtf8PositionTreatment(wtf8, pos) + bytes),
             instance.exports.advance(str, pos, bytes));
       }
@@ -994,14 +994,14 @@ function makeWtf16TestDataSegment() {
   }
   function assertMemoryBytesZero(low, high) {
     for (let i = low; i < high; i++) {
-      //assertEquals(0, memory[i]);
+      assertEquals(0, memory[i]);
     }
   }
   function checkMemory(offset, bytes) {
     let slop = 16;
     assertMemoryBytesZero(Math.max(0, offset - slop), offset);
     for (let i = 0; i < bytes.length; i++) {
-      //assertEquals(bytes[i], memory[offset + i]);
+      assertEquals(bytes[i], memory[offset + i]);
     }
     assertMemoryBytesZero(offset + bytes.length,
                           Math.min(memory.length,
@@ -1073,7 +1073,7 @@ function makeWtf16TestDataSegment() {
         let expected_slice = decodeWtf8(wtf8,
                                         Wtf8PositionTreatment(wtf8, start),
                                         Wtf8PositionTreatment(wtf8, end));
-        //assertEquals(expected_slice, instance.exports.slice(str, start, end));
+        assertEquals(expected_slice, instance.exports.slice(str, start, end));
       }
     }
   }
@@ -1140,42 +1140,42 @@ function makeWtf16TestDataSegment() {
 
     instance.exports.iterate(str);
     for (let codepoint of codepoints) {
-      //assertEquals(codepoint, instance.exports.next());
+      assertEquals(codepoint, instance.exports.next());
     }
-    //assertEquals(-1, instance.exports.next());
-    //assertEquals(-1, instance.exports.next());
+    assertEquals(-1, instance.exports.next());
+    assertEquals(-1, instance.exports.next());
 
     for (let i = 1; i <= codepoints.length; i++) {
-      //assertEquals(i, instance.exports.rewind(i));
-      //assertEquals(codepoints[codepoints.length - i], instance.exports.next());
-      //assertEquals(i - 1, instance.exports.advance(-1));
+      assertEquals(i, instance.exports.rewind(i));
+      assertEquals(codepoints[codepoints.length - i], instance.exports.next());
+      assertEquals(i - 1, instance.exports.advance(-1));
     }
     for (let i = 0; i < codepoints.length; i++) {
       instance.exports.rewind(-1);
-      //assertEquals(i, instance.exports.advance(i));
-      //assertEquals(codepoints[i], instance.exports.next());
+      assertEquals(i, instance.exports.advance(i));
+      assertEquals(codepoints[i], instance.exports.next());
     }
 
-    //assertEquals(codepoints.length, instance.exports.rewind(-1));
-    //assertEquals(0, instance.exports.rewind(-1));
-    //assertEquals(codepoints.length, instance.exports.advance(-1));
-    //assertEquals(0, instance.exports.advance(-1));
+    assertEquals(codepoints.length, instance.exports.rewind(-1));
+    assertEquals(0, instance.exports.rewind(-1));
+    assertEquals(codepoints.length, instance.exports.advance(-1));
+    assertEquals(0, instance.exports.advance(-1));
 
     for (let start = 0; start <= codepoints.length; start++) {
       for (let end = start; end <= codepoints.length; end++) {
         let expected_slice =
             String.fromCodePoint(...codepoints.slice(start, end));
         instance.exports.iterate(str);
-        //assertEquals(start, instance.exports.advance(start));
-        //assertEquals(expected_slice, instance.exports.slice(end - start));
+        assertEquals(start, instance.exports.advance(start));
+        assertEquals(expected_slice, instance.exports.slice(end - start));
       }
     }
     instance.exports.iterate(str);
-    //assertEquals(str, instance.exports.slice(codepoints.length));
-    //assertEquals(str, instance.exports.slice(-1));
-    //assertEquals("", instance.exports.slice(0));
-    //assertEquals(codepoints.length, instance.exports.advance(-1));
-    //assertEquals("", instance.exports.slice(-1));
+    assertEquals(str, instance.exports.slice(codepoints.length));
+    assertEquals(str, instance.exports.slice(-1));
+    assertEquals("", instance.exports.slice(0));
+    assertEquals(codepoints.length, instance.exports.advance(-1));
+    assertEquals("", instance.exports.slice(-1));
   }
 })();
 
@@ -1197,7 +1197,7 @@ function makeWtf16TestDataSegment() {
     for (let rhs of interestingStrings) {
       print(`"${lhs}" <=> "${rhs}"`);
       const expected = lhs < rhs ? -1 : lhs > rhs ? 1 : 0;
-      //assertEquals(expected, instance.exports.compare(lhs, rhs));
+      assertEquals(expected, instance.exports.compare(lhs, rhs));
     }
   }
 
@@ -1256,7 +1256,7 @@ function makeWtf16TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let char of "Az1#\n\ucccc\ud800\udc00") {
-    //assertEquals(char, instance.exports.asString(char.codePointAt(0)));
+    assertEquals(char, instance.exports.asString(char.codePointAt(0)));
   }
   for (let codePoint of [0x110000, 0xFFFFFFFF, -1]) {
     assertThrows(() => instance.exports.asString(codePoint),
@@ -1275,22 +1275,22 @@ function makeWtf16TestDataSegment() {
     ]);
 
   let hash = builder.instantiate().exports.hash;
-  //assertEquals(hash(""), hash(""));
-  //assertEquals(hash("foo"), hash("foo"));
-  //assertEquals(hash("bar"), hash("bar"));
-  //assertEquals(hash("123"), hash("123"));
+  assertEquals(hash(""), hash(""));
+  assertEquals(hash("foo"), hash("foo"));
+  assertEquals(hash("bar"), hash("bar"));
+  assertEquals(hash("123"), hash("123"));
   // Assuming that hash collisions are very rare.
   assertNotEquals(hash("foo"), hash("bar"));
   // Test with cons strings.
-  //assertEquals(hash("f" + "o" + "o"), hash("foo"));
-  //assertEquals(hash("f" + 1), hash("f1"));
+  assertEquals(hash("f" + "o" + "o"), hash("foo"));
+  assertEquals(hash("f" + 1), hash("f1"));
 
-  //assertEquals(hash(new String(" foo ").trim()), hash("foo"));
-  //assertEquals(hash(new String("xfoox").substring(1, 4)), hash("foo"));
+  assertEquals(hash(new String(" foo ").trim()), hash("foo"));
+  assertEquals(hash(new String("xfoox").substring(1, 4)), hash("foo"));
 
   // Test integer index hash.
   let dummy_obj = {123: 456};
   let index_string = "123";
-  //assertEquals(456, dummy_obj[index_string]);
-  //assertEquals(hash("1" + "23"), hash(index_string));
+  assertEquals(456, dummy_obj[index_string]);
+  assertEquals(hash("1" + "23"), hash(index_string));
 })();

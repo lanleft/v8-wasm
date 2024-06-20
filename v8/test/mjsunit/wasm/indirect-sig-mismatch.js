@@ -116,7 +116,7 @@ function DoCalls(table, calls) {
       if (expectThrow) {
         assertThrows(() => func(i), WebAssembly.RuntimeError);
       } else {
-        //assertEquals(exported(0), func(i));
+        assertEquals(exported(0), func(i));
       }
     }
   }

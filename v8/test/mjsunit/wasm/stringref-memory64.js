@@ -61,18 +61,18 @@ builder.addFunction("encode_wtf16_view", kSig_i_wl).exportFunc().addBody([
 
 let instance = builder.instantiate();
 
-//assertEquals("ab", instance.exports.new_wtf8(0n, 2));
+assertEquals("ab", instance.exports.new_wtf8(0n, 2));
 
-//assertEquals("cd", instance.exports.new_wtf16(2n, 2));
+assertEquals("cd", instance.exports.new_wtf16(2n, 2));
 
-//assertEquals(2, instance.exports.encode_wtf8("ef", 100n));
-//assertEquals("ef", instance.exports.new_wtf8(100n, 2));
+assertEquals(2, instance.exports.encode_wtf8("ef", 100n));
+assertEquals("ef", instance.exports.new_wtf8(100n, 2));
 
-//assertEquals(2, instance.exports.encode_wtf8_view("gh", 100n));
-//assertEquals("gh", instance.exports.new_wtf8(100n, 2));
+assertEquals(2, instance.exports.encode_wtf8_view("gh", 100n));
+assertEquals("gh", instance.exports.new_wtf8(100n, 2));
 
-//assertEquals(2, instance.exports.encode_wtf16("ij", 102n));
-//assertEquals("ij", instance.exports.new_wtf16(102n, 2));
+assertEquals(2, instance.exports.encode_wtf16("ij", 102n));
+assertEquals("ij", instance.exports.new_wtf16(102n, 2));
 
-//assertEquals(2, instance.exports.encode_wtf16_view("kl", 102n));
-//assertEquals("kl", instance.exports.new_wtf16(102n, 2));
+assertEquals(2, instance.exports.encode_wtf16_view("kl", 102n));
+assertEquals("kl", instance.exports.new_wtf16(102n, 2));

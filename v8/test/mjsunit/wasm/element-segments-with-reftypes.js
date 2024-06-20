@@ -40,10 +40,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
 
   instance.exports.init();
-  //assertEquals(instance.exports.table.get(0)(10), 20);
-  //assertEquals(instance.exports.table.get(1)(10), 11);
-  //assertEquals(instance.exports.table.get(2)(10), 20);
-  //assertEquals(instance.exports.table.get(3)(10), 11);
+  assertEquals(instance.exports.table.get(0)(10), 20);
+  assertEquals(instance.exports.table.get(1)(10), 11);
+  assertEquals(instance.exports.table.get(2)(10), 20);
+  assertEquals(instance.exports.table.get(3)(10), 11);
 })();
 
 (function TestTypedFunctionElementSegment() {
@@ -83,10 +83,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
 
   instance.exports.init();
-  //assertEquals(instance.exports.table.get(0)(10), 20);
-  //assertEquals(instance.exports.table.get(1)(10), 11);
-  //assertEquals(instance.exports.table.get(2)(10), 20);
-  //assertEquals(instance.exports.table.get(3)(10), 11);
+  assertEquals(instance.exports.table.get(0)(10), 20);
+  assertEquals(instance.exports.table.get(1)(10), 11);
+  assertEquals(instance.exports.table.get(2)(10), 20);
+  assertEquals(instance.exports.table.get(3)(10), 11);
 })();
 
 // Test that mutable globals cannot be used in element segments, even with

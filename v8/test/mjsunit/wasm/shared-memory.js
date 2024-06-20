@@ -109,8 +109,8 @@ function assertMemoryIsValid(memory, shared) {
     .exportFunc();
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(0, instance.exports.main(0, 0x11111111));
-  //assertEquals(0x11111111, instance.exports.main(0, 0x11111111));
+  assertEquals(0, instance.exports.main(0, 0x11111111));
+  assertEquals(0x11111111, instance.exports.main(0, 0x11111111));
 })();
 
 (function TestMemoryConstructorShouldNotCallHasProperty() {

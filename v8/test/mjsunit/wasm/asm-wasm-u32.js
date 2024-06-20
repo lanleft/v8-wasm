@@ -212,7 +212,7 @@ var funcs = [
       for (a of inputs) {
         for (b of inputs) {
           var expected = func(a, b);
-          //assertEquals(expected, module.main(a, b));
+          assertEquals(expected, module.main(a, b));
         }
       }
     });

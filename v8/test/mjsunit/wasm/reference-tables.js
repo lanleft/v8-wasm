@@ -84,10 +84,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
   // The correct function reference is preserved when setting it to and getting
   // it back from a table.
-  //assertEquals(
+  assertEquals(
       43, instance.exports.table_test(exporting_instance.exports.succ));
   // Same for call indirect (the indirect call tables are also set correctly).
-  //assertEquals(
+  assertEquals(
       43,
       instance.exports.table_indirect_test(exporting_instance.exports.succ));
 
@@ -137,8 +137,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   assertTrue(!!instance);
 
   instance.exports.init();
-  //assertEquals(44, instance.exports.table_test(0, 33, 11));
-  //assertEquals(22, instance.exports.table_test(1, 33, 11));
+  assertEquals(44, instance.exports.table_test(0, 33, 11));
+  assertEquals(22, instance.exports.table_test(1, 33, 11));
 })();
 
 (function TestAnyRefTable() {
@@ -196,10 +196,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
   assertTrue(!!instance);
 
-  //assertEquals([111, 222], instance.exports.array_getter());
-  //assertEquals(-31, instance.exports.i31_getter());
-  //assertEquals(10, instance.exports.struct_getter());
-  //assertEquals(1, instance.exports.null_getter());
+  assertEquals([111, 222], instance.exports.array_getter());
+  assertEquals(-31, instance.exports.i31_getter());
+  assertEquals(10, instance.exports.struct_getter());
+  assertEquals(1, instance.exports.null_getter());
 })();
 
 (function TestAnyRefTableNotNull() {
@@ -270,16 +270,16 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
   let wasmTable = instance.exports.table;
 
-  //assertEquals([111, 222], instance.exports.array_getter());
-  //assertEquals(-31, instance.exports.i31_getter());
-  //assertEquals(10, instance.exports.struct_getter(2));
+  assertEquals([111, 222], instance.exports.array_getter());
+  assertEquals(-31, instance.exports.i31_getter());
+  assertEquals(10, instance.exports.struct_getter(2));
   assertTraps(kTrapTableOutOfBounds, () => instance.exports.struct_getter(3));
   instance.exports.grow_table();
-  //assertEquals(20, instance.exports.struct_getter(3));
+  assertEquals(20, instance.exports.struct_getter(3));
   assertThrows(() => wasmTable.grow(1), TypeError,
                /Argument 1 must be specified for non-nullable element type/);
   wasmTable.grow(1, instance.exports.create_struct(33));
-  //assertEquals(33, instance.exports.struct_getter(4));
+  assertEquals(33, instance.exports.struct_getter(4));
   // undefined is ok for (ref any), but not null.
   wasmTable.set(4, undefined);
   assertThrows(() => wasmTable.set(4, null), TypeError,
@@ -313,9 +313,9 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
   assertTrue(!!instance);
 
-  //assertEquals(10, instance.exports.struct_getter(0));
-  //assertEquals(11, instance.exports.struct_getter(1));
-  //assertEquals(1, instance.exports.null_getter(2));
+  assertEquals(10, instance.exports.struct_getter(0));
+  assertEquals(11, instance.exports.struct_getter(1));
+  assertEquals(1, instance.exports.null_getter(2));
 })();
 
 (function TestI31RefTable() {
@@ -343,12 +343,12 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
   assertTrue(!!instance);
 
-  //assertEquals(0, instance.exports.i31GetNull(0));
-  //assertEquals(0, instance.exports.i31GetNull(1));
-  //assertEquals(1, instance.exports.i31GetNull(2));
-  //assertEquals(1, instance.exports.i31GetNull(3));
-  //assertEquals(10, instance.exports.i31GetI32(0));
-  //assertEquals(-42, instance.exports.i31GetI32(1));
+  assertEquals(0, instance.exports.i31GetNull(0));
+  assertEquals(0, instance.exports.i31GetNull(1));
+  assertEquals(1, instance.exports.i31GetNull(2));
+  assertEquals(1, instance.exports.i31GetNull(3));
+  assertEquals(10, instance.exports.i31GetI32(0));
+  assertEquals(-42, instance.exports.i31GetI32(1));
   assertTraps(kTrapNullDereference, () => instance.exports.i31GetI32(2));
   assertTraps(kTrapNullDereference, () => instance.exports.i31GetI32(3));
 })();
@@ -382,13 +382,13 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({});
   assertTrue(!!instance);
 
-  //assertEquals(10, instance.exports.array_getter(0, 0));
-  //assertEquals(11, instance.exports.array_getter(0, 1));
-  //assertEquals(12, instance.exports.array_getter(0, 2));
-  //assertEquals(0, instance.exports.null_getter(1));
+  assertEquals(10, instance.exports.array_getter(0, 0));
+  assertEquals(11, instance.exports.array_getter(0, 1));
+  assertEquals(12, instance.exports.array_getter(0, 2));
+  assertEquals(0, instance.exports.null_getter(1));
   assertTraps(kTrapArrayOutOfBounds,
               () => instance.exports.array_getter(1, 0));
-  //assertEquals(1, instance.exports.null_getter(2));
+  assertEquals(1, instance.exports.null_getter(2));
 })();
 
 (function TestRefTableInvalidSegmentType() {
@@ -556,20 +556,20 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let wasmTable = instance.exports.table;
 
   // Initial values.
-  //assertEquals(111, instance.exports.struct_getter(0));
-  //assertEquals(111, instance.exports.struct_getter(1));
+  assertEquals(111, instance.exports.struct_getter(0));
+  assertEquals(111, instance.exports.struct_getter(1));
   assertTraps(kTrapTableOutOfBounds, () => instance.exports.struct_getter(2));
 
   assertThrows(() => wasmTable.grow(1), TypeError,
                /Argument 1 must be specified for non-nullable element type/);
   wasmTable.grow(1, instance.exports.create_struct(222));
-  //assertEquals(222, instance.exports.struct_getter(2));
+  assertEquals(222, instance.exports.struct_getter(2));
   assertThrows(() => wasmTable.set(2, undefined), TypeError,
                /Argument 1 is invalid/);
   assertThrows(() => wasmTable.set(2, null), TypeError,
                /Argument 1 is invalid/);
   wasmTable.set(2, instance.exports.create_struct(333));
-  //assertEquals(333, instance.exports.struct_getter(2));
+  assertEquals(333, instance.exports.struct_getter(2));
 })();
 
 (function TestTypedTableCallIndirect() {
@@ -613,12 +613,12 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate();
 
   // No type check needed, null check needed.
-  //assertEquals(10, instance.exports.call_indirect_super(0, 10));
-  //assertEquals(11, instance.exports.call_indirect_super(1, 10));
+  assertEquals(10, instance.exports.call_indirect_super(0, 10));
+  assertEquals(11, instance.exports.call_indirect_super(1, 10));
   assertTraps(kTrapFuncSigMismatch,
               () => instance.exports.call_indirect_super(2, 10));
   // Type check and null check needed.
-  //assertEquals(11, instance.exports.call_indirect_sub(1, 10));
+  assertEquals(11, instance.exports.call_indirect_sub(1, 10));
   assertTraps(kTrapFuncSigMismatch,
               () => instance.exports.call_indirect_sub(0, 10));
   assertTraps(kTrapFuncSigMismatch,

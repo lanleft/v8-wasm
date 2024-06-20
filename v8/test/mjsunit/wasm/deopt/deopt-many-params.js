@@ -5,7 +5,7 @@
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
 // Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged
-// Flags: --wasm-inlining-ignore-call-counts
+// Flags: --wasm-inlining-ignore-call-counts --no-jit-fuzzing
 
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
@@ -31,14 +31,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let values = [...Array(paramCount).keys()];
   let expectedSum = values.reduce((a, b) => a + b);
   let expectedDiff = values.reduce((a, b) => a - b);
-  //assertEquals(expectedSum, -expectedDiff);
+  assertEquals(expectedSum, -expectedDiff);
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(expectedSum, wasm.main(...values, wasm.add));
+  assertEquals(expectedSum, wasm.main(...values, wasm.add));
   %WasmTierUpFunction(wasm.main);
-  //assertEquals(expectedSum, wasm.main(...values, wasm.add));
+  assertEquals(expectedSum, wasm.main(...values, wasm.add));
   assertTrue(%IsTurboFanFunction(wasm.main));
-  //assertEquals(expectedDiff, wasm.main(...values, wasm.sub));
+  assertEquals(expectedDiff, wasm.main(...values, wasm.sub));
   assertFalse(%IsTurboFanFunction(wasm.main));
 
 

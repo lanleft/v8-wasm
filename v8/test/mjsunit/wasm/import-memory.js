@@ -12,7 +12,7 @@ var kV8MaxPages = 65536;
 (function TestOne() {
   print("TestOne");
   let memory = new WebAssembly.Memory({initial: 1});
-  //assertEquals(kPageSize, memory.buffer.byteLength);
+  assertEquals(kPageSize, memory.buffer.byteLength);
   let i32 = new Int32Array(memory.buffer);
   let builder = new WasmModuleBuilder();
   builder.addImportedMemory("mod", "mine");
@@ -23,11 +23,11 @@ var kV8MaxPages = 65536;
     .exportAs("main");
 
   let main = builder.instantiate({mod: {mine: memory}}).exports.main;
-  //assertEquals(0, main());
+  assertEquals(0, main());
 
   i32[0] = 993377;
 
-  //assertEquals(993377, main());
+  assertEquals(993377, main());
 })();
 
 (function TestIdentity() {
@@ -75,8 +75,8 @@ var kV8MaxPages = 65536;
     for (var j = 0; j < 10; j++) {
       var val = i + 99077 + j;
       i32[j] = val;
-      //assertEquals(val | 0, i1.exports.foo(j * 4));
-      //assertEquals(val | 0, i2.exports.bar(j * 4));
+      assertEquals(val | 0, i1.exports.foo(j * 4));
+      assertEquals(val | 0, i2.exports.bar(j * 4));
     }
   }
 })();
@@ -84,7 +84,7 @@ var kV8MaxPages = 65536;
 (function ValidateBoundsCheck() {
   print("ValidateBoundsCheck");
   let memory = new WebAssembly.Memory({initial: 1, maximum: 5});
-  //assertEquals(kPageSize, memory.buffer.byteLength);
+  assertEquals(kPageSize, memory.buffer.byteLength);
   let i32 = new Int32Array(memory.buffer);
   let builder = new WasmModuleBuilder();
   builder.addImportedMemory("gaz", "mine");
@@ -104,7 +104,7 @@ var kV8MaxPages = 65536;
     store(offset);
   }
   for (offset = 0; offset < kPageSize - 3; offset+=4) {
-    //assertEquals(offset, load());
+    assertEquals(offset, load());
   }
   for (offset = kPageSize - 3; offset < kPageSize + 4; offset++) {
     assertTraps(kTrapMemOutOfBounds, load);
@@ -114,7 +114,7 @@ var kV8MaxPages = 65536;
 (function TestMemoryGrowMaxDesc() {
   print("MaximumDescriptor");
   let memory = new WebAssembly.Memory({initial: 1, maximum: 5});
-  //assertEquals(kPageSize, memory.buffer.byteLength);
+  assertEquals(kPageSize, memory.buffer.byteLength);
   let i32 = new Int32Array(memory.buffer);
   let builder = new WasmModuleBuilder();
   builder.addImportedMemory("mine", "dog", 0, 20);
@@ -134,14 +134,14 @@ var kV8MaxPages = 65536;
     for (offset = (i - 1) * kPageSize; offset < i * kPageSize - 3; offset+=4) {
       store(offset * 2);
     }
-    //assertEquals(i, memory.grow(1));
-    //assertEquals((i + 1) * kPageSize, memory.buffer.byteLength);
+    assertEquals(i, memory.grow(1));
+    assertEquals((i + 1) * kPageSize, memory.buffer.byteLength);
   }
   for (offset = 4 * kPageSize; offset < 5 * kPageSize - 3; offset+=4) {
     store(offset * 2);
   }
   for (offset = 0; offset < 5 * kPageSize - 3; offset+=4) {
-    //assertEquals(offset * 2, load());
+    assertEquals(offset * 2, load());
   }
   for (offset = 5 * kPageSize; offset < 5 * kPageSize + 4; offset++) {
     assertThrows(load);
@@ -152,7 +152,7 @@ var kV8MaxPages = 65536;
 (function TestMemoryGrowZeroInitialMemory() {
   print("ZeroInitialMemory");
   let memory = new WebAssembly.Memory({initial: 0});
-  //assertEquals(0, memory.buffer.byteLength);
+  assertEquals(0, memory.buffer.byteLength);
   let i32 = new Int32Array(memory.buffer);
   let builder = new WasmModuleBuilder();
   builder.addImportedMemory("mine", "fro");
@@ -169,8 +169,8 @@ var kV8MaxPages = 65536;
   function store(value) { return instance.exports.store(offset, value); }
 
   for (var i = 1; i < 5; i++) {
-    //assertEquals(i - 1, memory.grow(1));
-    //assertEquals(i * kPageSize, memory.buffer.byteLength);
+    assertEquals(i - 1, memory.grow(1));
+    assertEquals(i * kPageSize, memory.buffer.byteLength);
     for (offset = (i - 1) * kPageSize; offset < i * kPageSize - 3; offset++) {
       store(offset * 2);
     }
@@ -184,7 +184,7 @@ var kV8MaxPages = 65536;
 (function ImportedMemoryBufferLength() {
   print("ImportedMemoryBufferLength");
   let memory = new WebAssembly.Memory({initial: 2, maximum: 10});
-  //assertEquals(2*kPageSize, memory.buffer.byteLength);
+  assertEquals(2*kPageSize, memory.buffer.byteLength);
   let builder = new WasmModuleBuilder();
   builder.addFunction("grow", kSig_i_i)
       .addBody([kExprLocalGet, 0, kExprMemoryGrow, kMemoryZero])
@@ -192,10 +192,10 @@ var kV8MaxPages = 65536;
   builder.addImportedMemory("cat", "mine");
   let instance = builder.instantiate({cat: {mine: memory}});
   function grow(pages) { return instance.exports.grow(pages); }
-  //assertEquals(2, grow(3));
-  //assertEquals(5*kPageSize, memory.buffer.byteLength);
-  //assertEquals(5, grow(5));
-  //assertEquals(10*kPageSize, memory.buffer.byteLength);
+  assertEquals(2, grow(3));
+  assertEquals(5*kPageSize, memory.buffer.byteLength);
+  assertEquals(5, grow(5));
+  assertEquals(10*kPageSize, memory.buffer.byteLength);
   assertThrows(() => memory.grow(1));
 })();
 
@@ -223,10 +223,10 @@ var kV8MaxPages = 65536;
       imported_mem: exp_instance.exports.exported_mem}});
   }
   for (var i = initial_size; i < maximum_size; i++) {
-    //assertEquals(i, instance.exports.grow(1));
-    //assertEquals((i+1), instance.exports.mem_size());
+    assertEquals(i, instance.exports.grow(1));
+    assertEquals((i+1), instance.exports.mem_size());
   }
-  //assertEquals(-1, instance.exports.grow(1));
+  assertEquals(-1, instance.exports.grow(1));
 })();
 
 (function TestMemoryGrowWebAssemblyInstances() {
@@ -246,10 +246,10 @@ var kV8MaxPages = 65536;
     instances.push(new WebAssembly.Instance(module, {lit: {imported_mem: memory}}));
   }
   function verify_mem_size(expected_pages) {
-    //assertEquals(expected_pages*kPageSize,
+    assertEquals(expected_pages*kPageSize,
         memory.buffer.byteLength);
     for (var i = 0; i < 6; i++) {
-      //assertEquals(expected_pages, instances[i].exports.mem_size());
+      assertEquals(expected_pages, instances[i].exports.mem_size());
     }
   }
 
@@ -261,9 +261,9 @@ var kV8MaxPages = 65536;
   var current_mem_size = 1;
   for (var i = 0; i < 5; i++) {
     function grow(pages) { return instances[i].exports.grow(pages); }
-    //assertEquals(current_mem_size, memory.grow(1));
+    assertEquals(current_mem_size, memory.grow(1));
     verify_mem_size(++current_mem_size);
-    //assertEquals(current_mem_size, instances[i].exports.grow(1));
+    assertEquals(current_mem_size, instances[i].exports.grow(1));
     verify_mem_size(++current_mem_size);
   }
 
@@ -292,9 +292,9 @@ var kV8MaxPages = 65536;
   function grow_instance_4(pages) { return instances[4].exports.grow(pages); }
 
   function verify_mem_size(expected_pages) {
-    //assertEquals(expected_pages*kPageSize, memory.buffer.byteLength);
+    assertEquals(expected_pages*kPageSize, memory.buffer.byteLength);
     for (var i = 0; i < 5; i++) {
-      //assertEquals(expected_pages, instances[i].exports.mem_size());
+      assertEquals(expected_pages, instances[i].exports.mem_size());
     }
   }
 
@@ -303,25 +303,25 @@ var kV8MaxPages = 65536;
 
   // Grow instance memory and buffer memory out of order and verify memory is
   // updated correctly.
-  //assertEquals(5, grow_instance_0(7));
+  assertEquals(5, grow_instance_0(7));
   verify_mem_size(12);
 
-  //assertEquals(12, memory.grow(4));
+  assertEquals(12, memory.grow(4));
   verify_mem_size(16);
 
-  //assertEquals(16, grow_instance_4(1));
+  assertEquals(16, grow_instance_4(1));
   verify_mem_size(17);
 
-  //assertEquals(17, grow_instance_1(6));
+  assertEquals(17, grow_instance_1(6));
   verify_mem_size(23);
 
-  //assertEquals(23, grow_instance_3(2));
+  assertEquals(23, grow_instance_3(2));
   verify_mem_size(25);
 
-  //assertEquals(25, memory.grow(10));
+  assertEquals(25, memory.grow(10));
   verify_mem_size(35);
 
-  //assertEquals(35, grow_instance_2(15));
+  assertEquals(35, grow_instance_2(15));
   verify_mem_size(50);
   assertThrows(() => memory.grow(51));
 })();
@@ -353,17 +353,17 @@ var kV8MaxPages = 65536;
   }
   function verify_mem_size(expected_pages) {
     for (var i = 0; i < 10; i++) {
-      //assertEquals(expected_pages, instances[i].exports.mem_size());
+      assertEquals(expected_pages, instances[i].exports.mem_size());
     }
   }
   var current_mem_size = 1;
   for (var i = 0; i < 10; i++) {
     function grow(pages) { return instances[i].exports.grow(pages); }
-    //assertEquals(current_mem_size, instances[i].exports.grow(1));
+    assertEquals(current_mem_size, instances[i].exports.grow(1));
     verify_mem_size(++current_mem_size);
   }
   for (var i = 0; i < 10; i++) {
-    //assertEquals(-1, instances[i].exports.grow(1));
+    assertEquals(-1, instances[i].exports.grow(1));
     verify_mem_size(current_mem_size);
   }
 })();
@@ -392,10 +392,10 @@ var kV8MaxPages = 65536;
     instance_2 = builder.instantiate({
       doo: {imported_mem: instance_1.exports.exported_mem}});
   }
-  //assertEquals(1, instance_1.exports.grow(20));
-  //assertEquals(21, instance_2.exports.grow(20));
-  //assertEquals(-1, instance_1.exports.grow(kV8MaxPages - 40));
-  //assertEquals(-1, instance_2.exports.grow(kV8MaxPages - 40));
+  assertEquals(1, instance_1.exports.grow(20));
+  assertEquals(21, instance_2.exports.grow(20));
+  assertEquals(-1, instance_1.exports.grow(kV8MaxPages - 40));
+  assertEquals(-1, instance_2.exports.grow(kV8MaxPages - 40));
 })();
 
 (function TestExportGrow() {
@@ -410,10 +410,10 @@ var kV8MaxPages = 65536;
     .addBody([kExprLocalGet, 0, kExprMemoryGrow, kMemoryZero])
     .exportFunc();
   instance = builder.instantiate();
-  //assertEquals(kPageSize, instance.exports.exported_mem.buffer.byteLength);
-  //assertEquals(1, instance.exports.grow(2));
-  //assertEquals(3, instance.exports.mem_size());
-  //assertEquals(3*kPageSize, instance.exports.exported_mem.buffer.byteLength);
+  assertEquals(kPageSize, instance.exports.exported_mem.buffer.byteLength);
+  assertEquals(1, instance.exports.grow(2));
+  assertEquals(3, instance.exports.mem_size());
+  assertEquals(3*kPageSize, instance.exports.exported_mem.buffer.byteLength);
 })();
 
 (function TestImportTooLarge() {
@@ -438,11 +438,11 @@ var kV8MaxPages = 65536;
   builder.addImportedMemory("m", "imported_mem");
   let instance = builder.instantiate({m: {imported_mem: memory}});
   let buffer = memory.buffer;
-  //assertEquals(kPageSize, buffer.byteLength);
-  //assertEquals(1, memory.grow(2));
+  assertEquals(kPageSize, buffer.byteLength);
+  assertEquals(1, memory.grow(2));
   assertTrue(buffer !== memory.buffer);
-  //assertEquals(0, buffer.byteLength);
-  //assertEquals(3*kPageSize, memory.buffer.byteLength);
+  assertEquals(0, buffer.byteLength);
+  assertEquals(3*kPageSize, memory.buffer.byteLength);
 })();
 
 (function TestInitialMemorySharedModule() {
@@ -463,7 +463,7 @@ var kV8MaxPages = 65536;
   var module = new WebAssembly.Module(builder.toBuffer());
   let memory1= new WebAssembly.Memory({initial: 1, maximum: 20});
   let instance1  = new WebAssembly.Instance(module, {m: {imported_mem: memory1}});
-  //assertEquals(0x20, instance1.exports.f());
+  assertEquals(0x20, instance1.exports.f());
 
   // Second instance should trap as it has no initial memory
   let memory2= new WebAssembly.Memory({initial: 0, maximum: 2});

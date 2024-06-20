@@ -19,7 +19,7 @@ function generateBuilder(add_memory, import_sig) {
     let idx = builder.addImport('import_module', 'other_module_fn', import_sig);
     // The imported function should always have index 0. With this assertion we
     // verify that we can use other_fn_idx to refer to this function.
-    //assertEquals(idx, other_fn_idx)
+    assertEquals(idx, other_fn_idx)
   }
   if (add_memory) {
     // Add the memory if we expect a module builder with memory and load/store.
@@ -39,34 +39,34 @@ function generateBuilder(add_memory, import_sig) {
 
 function assertMemoryIndependence(load_a, store_a, load_b, store_b) {
 
-  //assertEquals(0, load_a(0));
-  //assertEquals(0, load_b(0));
-  //assertEquals(0, load_a(4));
-  //assertEquals(0, load_b(4));
+  assertEquals(0, load_a(0));
+  assertEquals(0, load_b(0));
+  assertEquals(0, load_a(4));
+  assertEquals(0, load_b(4));
 
   store_a(0, 101);
-  //assertEquals(101, load_a(0));
-  //assertEquals(0,   load_b(0));
-  //assertEquals(0, load_a(4));
-  //assertEquals(0, load_b(4));
+  assertEquals(101, load_a(0));
+  assertEquals(0,   load_b(0));
+  assertEquals(0, load_a(4));
+  assertEquals(0, load_b(4));
 
   store_a(4, 102);
-  //assertEquals(101, load_a(0));
-  //assertEquals(0,   load_b(0));
-  //assertEquals(102, load_a(4));
-  //assertEquals(0,   load_b(4));
+  assertEquals(101, load_a(0));
+  assertEquals(0,   load_b(0));
+  assertEquals(102, load_a(4));
+  assertEquals(0,   load_b(4));
 
   store_b(0, 103);
-  //assertEquals(101, load_a(0));
-  //assertEquals(103, load_b(0));
-  //assertEquals(102, load_a(4));
-  //assertEquals(0,   load_b(4));
+  assertEquals(101, load_a(0));
+  assertEquals(103, load_b(0));
+  assertEquals(102, load_a(4));
+  assertEquals(0,   load_b(4));
 
   store_b(4, 107);
-  //assertEquals(101, load_a(0));
-  //assertEquals(103, load_b(0));
-  //assertEquals(102, load_a(4));
-  //assertEquals(107, load_b(4));
+  assertEquals(101, load_a(0));
+  assertEquals(103, load_b(0));
+  assertEquals(102, load_a(4));
+  assertEquals(107, load_b(4));
 
   store_a(0, 0);
   store_a(4, 0);
@@ -117,28 +117,28 @@ function assertMemoryIndependence(load_a, store_a, load_b, store_b) {
 
   var b = builder.instantiate({mod: {store: a.exports.store}});
 
-  //assertEquals(0, a.exports.load(0));
-  //assertEquals(0, b.exports.load(0));
-  //assertEquals(0, a.exports.load(4));
-  //assertEquals(0, b.exports.load(4));
+  assertEquals(0, a.exports.load(0));
+  assertEquals(0, b.exports.load(0));
+  assertEquals(0, a.exports.load(4));
+  assertEquals(0, b.exports.load(4));
 
   a.exports.store(0, 101);
-  //assertEquals(101, a.exports.load(0));
-  //assertEquals(0,   b.exports.load(0));
-  //assertEquals(0, a.exports.load(4));
-  //assertEquals(0, b.exports.load(4));
+  assertEquals(101, a.exports.load(0));
+  assertEquals(0,   b.exports.load(0));
+  assertEquals(0, a.exports.load(4));
+  assertEquals(0, b.exports.load(4));
 
   a.exports.store(4, 102);
-  //assertEquals(101, a.exports.load(0));
-  //assertEquals(0,   b.exports.load(0));
-  //assertEquals(102, a.exports.load(4));
-  //assertEquals(0,   b.exports.load(4));
+  assertEquals(101, a.exports.load(0));
+  assertEquals(0,   b.exports.load(0));
+  assertEquals(102, a.exports.load(4));
+  assertEquals(0,   b.exports.load(4));
 
   b.exports.store(4, 107);  // should forward to {a}.
-  //assertEquals(101, a.exports.load(0));
-  //assertEquals(0,   b.exports.load(0));
-  //assertEquals(107, a.exports.load(4));
-  //assertEquals(0,   b.exports.load(4));
+  assertEquals(101, a.exports.load(0));
+  assertEquals(0,   b.exports.load(0));
+  assertEquals(107, a.exports.load(4));
+  assertEquals(0,   b.exports.load(4));
 
 })();
 
@@ -170,9 +170,9 @@ function assertMemoryIndependence(load_a, store_a, load_b, store_b) {
       {import_module: {other_module_fn: second_instance.exports.load}});
   // Write the values in the second instance.
   second_instance.exports.store(index, second_value);
-  //assertEquals(second_value, second_instance.exports.load(index));
+  assertEquals(second_value, second_instance.exports.load(index));
   // Verify that the value is correct when passing from the imported function.
-  //assertEquals(second_value + 1, first_instance.exports.plus_one(index));
+  assertEquals(second_value + 1, first_instance.exports.plus_one(index));
 })();
 
 // This test verifies that when a Wasm module with memory invokes a function
@@ -206,10 +206,10 @@ function assertMemoryIndependence(load_a, store_a, load_b, store_b) {
   first_instance.exports.store(index, first_value);
   second_instance.exports.store(index, second_value);
   // Verify that the values were stored to memory.
-  //assertEquals(first_value, first_instance.exports.load(index));
-  //assertEquals(second_value, second_instance.exports.load(index));
+  assertEquals(first_value, first_instance.exports.load(index));
+  assertEquals(second_value, second_instance.exports.load(index));
   // Verify that the value is correct when passing from the imported function.
-  //assertEquals(second_value + 1, first_instance.exports.plus_one(index));
+  assertEquals(second_value + 1, first_instance.exports.plus_one(index));
 })();
 
 // This test verifies that the correct memory is accessed after returning
@@ -244,12 +244,12 @@ function assertMemoryIndependence(load_a, store_a, load_b, store_b) {
   let first_instance = first_module.instantiate(
       {import_module: {other_module_fn: second_instance.exports.store}});
   // Call the sandwich function and check that it returns the correct value.
-  //assertEquals(
+  assertEquals(
       first_value,
       first_instance.exports.sandwich(index, first_value, second_value));
   // Verify that the values are correct in both memories.
-  //assertEquals(first_value, first_instance.exports.load(index));
-  //assertEquals(second_value, second_instance.exports.load(index));
+  assertEquals(first_value, first_instance.exports.load(index));
+  assertEquals(second_value, second_instance.exports.load(index));
 })();
 
 // A test for memory-independence between modules when calling through

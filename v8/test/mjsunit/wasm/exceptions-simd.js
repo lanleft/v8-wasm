@@ -45,7 +45,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       .exportFunc();
   var instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.throw_catch_simd());
+  assertEquals(1, instance.exports.throw_catch_simd());
 })();
 
 (function TestThrowCatchS128WithValue() {

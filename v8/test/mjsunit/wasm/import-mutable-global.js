@@ -15,7 +15,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let main = builder.instantiate({mod: {g: global}}).exports.main;
-  //assertEquals(1, main());
+  assertEquals(1, main());
 })();
 
 (function TestTypeMismatch() {
@@ -85,11 +85,11 @@ function addGlobalGetterAndSetter(builder, index, name, type) {
     let get = inst.exports['get' + type];
     let set = inst.exports['set' + type];
 
-    //assertEquals(get(), global.value, type);
+    assertEquals(get(), global.value, type);
     set(1234567);
-    //assertEquals(1234567, global.value, type);
+    assertEquals(1234567, global.value, type);
     global.value = 7654321;
-    //assertEquals(7654321, get(), type);
+    assertEquals(7654321, get(), type);
   }
 })();
 
@@ -124,11 +124,11 @@ function addGlobalGetterAndSetter(builder, index, name, type) {
     let set1 = inst1.exports['set' + type];
     let set2 = inst2.exports['set' + type];
 
-    //assertEquals(get1(), get2(), type);
+    assertEquals(get1(), get2(), type);
     set1(1234567);
-    //assertEquals(1234567, get2(), type);
+    assertEquals(1234567, get2(), type);
     set2(7654321);
-    //assertEquals(7654321, get1(), type);
+    assertEquals(7654321, get1(), type);
   }
 })();
 
@@ -164,14 +164,14 @@ function addGlobalGetterAndSetter(builder, index, name, type) {
   addGettersAndSetters(builder);
   let inst2 = builder.instantiate({ mod: { i64: inst1.exports.i64 } });
 
-  //assertEquals(inst1.exports.geti64_lo(), inst2.exports.geti64_lo());
-  //assertEquals(inst1.exports.geti64_hi(), inst2.exports.geti64_hi());
+  assertEquals(inst1.exports.geti64_lo(), inst2.exports.geti64_lo());
+  assertEquals(inst1.exports.geti64_hi(), inst2.exports.geti64_hi());
   inst1.exports.seti64(13579, 24680);
-  //assertEquals(13579, inst2.exports.geti64_hi());
-  //assertEquals(24680, inst2.exports.geti64_lo());
+  assertEquals(13579, inst2.exports.geti64_hi());
+  assertEquals(24680, inst2.exports.geti64_lo());
   inst2.exports.seti64(97531, 86420);
-  //assertEquals(97531, inst1.exports.geti64_hi());
-  //assertEquals(86420, inst1.exports.geti64_lo());
+  assertEquals(97531, inst1.exports.geti64_hi());
+  assertEquals(86420, inst1.exports.geti64_lo());
 })();
 
 (function TestImportMutableAcrossGc() {
@@ -188,7 +188,7 @@ function addGlobalGetterAndSetter(builder, index, name, type) {
   gc();
 
   inst2.exports.seti32(0x789abcde);
-  //assertEquals(0x789abcde, inst2.exports.geti32());
+  assertEquals(0x789abcde, inst2.exports.geti32());
 })();
 
 (function TestImportedAndNonImportedMutableGlobal() {

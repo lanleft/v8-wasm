@@ -68,7 +68,7 @@ function testOptimized(run, fctToOptimize) {
     let fct = () => {
       for (let i = 1; i <= 10; ++i) {
         const struct = create(i);
-        //assertEquals(i, get(struct));
+        assertEquals(i, get(struct));
       }
     };
     testOptimized(fct);
@@ -178,16 +178,16 @@ function testOptimized(run, fctToOptimize) {
   let structVal = wasm.createStruct();
   print("- getI64");
   let getI64 =
-    () => //assertEquals(BigInt(i64Value), wasm.getI64(structVal));
+    () => assertEquals(BigInt(i64Value), wasm.getI64(structVal));
   testOptimized(getI64);
   print("- getF64");
-  let getF64 = () => //assertEquals(f64Value, wasm.getF64(structVal));
+  let getF64 = () => assertEquals(f64Value, wasm.getF64(structVal));
   testOptimized(getF64);
   print("- getI8");
-  let getI8 = () => //assertEquals(i8Value, wasm.getI8(structVal));
+  let getI8 = () => assertEquals(i8Value, wasm.getI8(structVal));
   testOptimized(getI8);
   print("- getI16");
-  let getI16 = () => //assertEquals(i16Value, wasm.getI16(structVal));
+  let getI16 = () => assertEquals(i16Value, wasm.getI16(structVal));
   testOptimized(getI16);
 })();
 
@@ -226,7 +226,7 @@ function testOptimized(run, fctToOptimize) {
   // Only one of the two calls can be fully inlined. For the other call only the
   // wrapper is inlined.
   let multiModule =
-    () => //assertEquals(444, moduleA.get(structA) + moduleB.get(structB));
+    () => assertEquals(444, moduleA.get(structA) + moduleB.get(structB));
   testOptimized(multiModule);
 
   // The struct types are incompatible (but both use type index 0).
@@ -354,7 +354,7 @@ function testOptimized(run, fctToOptimize) {
   let wasmArray = wasm.createArray(10, -1, 1234567);
   let get =
     (expected, array, index) =>
-      //assertEquals(expected, wasm.get(array, index));
+      assertEquals(expected, wasm.get(array, index));
   testOptimized(() => get(10, wasmArray, 0), get);
   testOptimized(() => get(-1, wasmArray, 1), get);
   testOptimized(() => get(1234567, wasmArray, 2), get);
@@ -411,7 +411,7 @@ function testOptimized(run, fctToOptimize) {
     print("- test getS");
     let getS =
       (expected, array, index) =>
-        //assertEquals(expected, wasm.getS(array, index));
+        assertEquals(expected, wasm.getS(array, index));
     testOptimized(() => getS(10, wasmArray, 0), getS);
     testOptimized(() => getS(-1, wasmArray, 1), getS);
     testOptimized(() => getS(-123, wasmArray, 2), getS);
@@ -428,7 +428,7 @@ function testOptimized(run, fctToOptimize) {
     print("- test getU");
     let getU =
       (expected, array, index) =>
-        //assertEquals(expected, wasm.getU(array, index));
+        assertEquals(expected, wasm.getU(array, index));
     testOptimized(() => getU(10, wasmArray, 0), getU);
     testOptimized(() => getU(255, wasmArray, 1), getU);
     testOptimized(() => getU(133, wasmArray, 2), getU);
@@ -484,7 +484,7 @@ function testOptimized(run, fctToOptimize) {
   testOptimized(() => assertTraps(trap, () => castArray(1), castArray));
   testOptimized(
     () => assertTraps(trap, () => castArray(wasmStruct), castArray));
-  testOptimized(() => //assertEquals(0, castArray(wasmArray)), castArray);
+  testOptimized(() => assertEquals(0, castArray(wasmArray)), castArray);
 })();
 
 (function TestInliningArraySet() {
@@ -530,7 +530,7 @@ function testOptimized(run, fctToOptimize) {
   let wasmArray = wasm.createArray(0n, 1n, 2n);
   let writeAndRead = (array, index, value) => {
     wasm.set(array, index, value);
-    //assertEquals(value, wasm.get(array, index));
+    assertEquals(value, wasm.get(array, index));
   };
   testOptimized(() => writeAndRead(wasmArray, 0, 123n), writeAndRead);
   testOptimized(() => writeAndRead(wasmArray, 1, -123n), writeAndRead);
@@ -587,7 +587,7 @@ function testOptimized(run, fctToOptimize) {
   let wasmStruct = wasm.createStruct(0n);
   let writeAndRead = (struct, value) => {
     wasm.set(struct, value);
-    //assertEquals(value, wasm.get(struct));
+    assertEquals(value, wasm.get(struct));
   };
   testOptimized(() => writeAndRead(wasmStruct, 123n), writeAndRead);
   testOptimized(() => writeAndRead(wasmStruct, -123n), writeAndRead);
@@ -663,7 +663,7 @@ function testStackTrace(error, expected) {
 
     let wasmStruct = wasm.createStruct(42);
     // Warmup without exception. This seems to help inlining the JS function.
-    testOptimized(() => //assertEquals(42, getTrapNested(wasmStruct)),
+    testOptimized(() => assertEquals(42, getTrapNested(wasmStruct)),
                   getTrapNested);
     try {
       getTrapNested(null);

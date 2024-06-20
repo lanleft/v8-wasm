@@ -26,7 +26,7 @@ print('[main] Starting worker.');
 const worker = new Worker(workerCode, {type: 'function'});
 print('[main] Sending module.');
 worker.postMessage(module);
-//assertEquals('start', worker.getMessage());
+assertEquals('start', worker.getMessage());
 print('[main] Terminating worker and waiting for it to finish.');
 worker.terminateAndWait();
 print('[main] All done.');

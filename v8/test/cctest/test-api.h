@@ -28,15 +28,21 @@ static void CheckReturnValue(const T& info, i::Address callback) {
     return true;
   };
 
+  // TODO(ishell): refactor the whole test.
   CHECK(IsTheHole(*returnObjectSlot, isolate) ||
-        IsUndefined(*returnObjectSlot, isolate));
+        IsUndefined(*returnObjectSlot, isolate) ||
+        // This is a default value for Deleter callbacks.
+        IsFalse(*returnObjectSlot, isolate) ||
+        // This is a default value for Query callbacks.
+        (*returnObjectSlot == i::Smi::FromInt(v8::None)));
   CHECK(CheckValueMap(returnValue));
   // Verify reset
   bool is_runtime = IsTheHole(*returnObjectSlot, isolate);
   if (is_runtime) {
     CHECK(returnValue.Get()->IsUndefined());
   } else {
-    i::Handle<i::Object> v = v8::Utils::OpenHandle(*returnValue.Get());
+    i::DirectHandle<i::Object> v =
+        v8::Utils::OpenDirectHandle(*returnValue.Get());
     CHECK_EQ(*v, *returnObjectSlot);
   }
   returnValue.Set(true);
@@ -57,7 +63,11 @@ static void CheckReturnValue(const T& info, i::Address callback) {
 
   returnValue.Set(v8::Local<v8::Object>());
   CHECK(IsTheHole(*returnObjectSlot, isolate) ||
-        IsUndefined(*returnObjectSlot, isolate));
+        IsUndefined(*returnObjectSlot, isolate) ||
+        // This is a default value for Deleter callbacks.
+        IsFalse(*returnObjectSlot, isolate) ||
+        // This is a default value for Query callbacks.
+        (*returnObjectSlot == i::Smi::FromInt(v8::None)));
   CHECK(CheckValueMap(returnValue));
 
   // If CPU profiler is active check that when API callback is invoked

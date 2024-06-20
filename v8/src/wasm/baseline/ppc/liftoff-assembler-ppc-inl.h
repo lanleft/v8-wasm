@@ -6,7 +6,7 @@
 #define V8_WASM_BASELINE_PPC_LIFTOFF_ASSEMBLER_PPC_INL_H_
 
 #include "src/codegen/assembler.h"
-#include "src/heap/mutable-page.h"
+#include "src/heap/mutable-page-metadata.h"
 #include "src/wasm/baseline/liftoff-assembler.h"
 #include "src/wasm/baseline/parallel-move-inl.h"
 #include "src/wasm/object-access.h"
@@ -1791,6 +1791,18 @@ void LiftoffAssembler::emit_i32_cond_jumpi(Condition cond, Label* label,
     CmpS32(lhs, Operand(imm), r0);
   } else {
     CmpU32(lhs, Operand(imm), r0);
+  }
+  b(to_condition(cond), label);
+}
+
+void LiftoffAssembler::emit_ptrsize_cond_jumpi(Condition cond, Label* label,
+                                               Register lhs, int32_t imm,
+                                               const FreezeCacheState& frozen) {
+  bool use_signed = is_signed(cond);
+  if (use_signed) {
+    CmpS64(lhs, Operand(imm), r0);
+  } else {
+    CmpU64(lhs, Operand(imm), r0);
   }
   b(to_condition(cond), label);
 }

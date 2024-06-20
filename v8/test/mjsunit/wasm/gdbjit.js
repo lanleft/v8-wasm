@@ -16,5 +16,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   const module = new WebAssembly.Module(builder.toBuffer());
   const instance = new WebAssembly.Instance(module);
 
-  //assertEquals(instance.exports.i32_add(1, 2), 3);
+  assertEquals(instance.exports.i32_add(1, 2), 3);
 }());

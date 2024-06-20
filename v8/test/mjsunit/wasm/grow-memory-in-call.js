@@ -34,7 +34,7 @@ print('=== grow_memory in direct calls ===');
   var instance = builder.instantiate();
   // The caller should be aware that the memory was grown by the callee.
   var deltaPages = 1;
-  //assertEquals(
+  assertEquals(
       initialMemoryPages + deltaPages, instance.exports.main(deltaPages));
 })();
 
@@ -68,7 +68,7 @@ print('=== grow_memory in direct calls ===');
   var deltaPages = 1;
   instance.exports.main(deltaPages, index, 1234);
   // The caller should be able to access memory that was grown by the callee.
-  //assertEquals(1234, instance.exports.load(index));
+  assertEquals(1234, instance.exports.load(index));
 })();
 
 // This test verifies that when a function (direct call) grows and store
@@ -106,7 +106,7 @@ print('=== grow_memory in direct calls ===');
       .exportFunc();
   var instance = builder.instantiate();
   // The caller should always read from grown memory.
-  //assertEquals(newValue, instance.exports.main());
+  assertEquals(newValue, instance.exports.main());
 })();
 
 // This test verifies that the effects of growing memory in an directly
@@ -148,7 +148,7 @@ print('=== grow_memory in direct calls ===');
   let instance = builder.instantiate();
   let iterations = 4;
   let deltaPages = 1;
-  //assertEquals(
+  assertEquals(
       initialMemoryPages + iterations * deltaPages,
       instance.exports.main(iterations, deltaPages));
 })();
@@ -210,7 +210,7 @@ print('=== grow_memory in direct calls ===');
   let initialValue = 1;
   let expectedValue = initialValue + iterations;
   instance.exports.store(index, initialValue);
-  //assertEquals(
+  assertEquals(
       expectedValue, instance.exports.main(iterations, deltaPages, index));
 })();
 
@@ -241,7 +241,7 @@ print('\n=== grow_memory in indirect calls ===');
   var instance = builder.instantiate();
   // The caller should be aware that the memory was grown by the callee.
   var deltaPages = 1;
-  //assertEquals(
+  assertEquals(
       initialMemoryPages + deltaPages,
       instance.exports.main(kGrowFunction, deltaPages));
 })();
@@ -280,7 +280,7 @@ print('\n=== grow_memory in indirect calls ===');
   let value = 1234;
   instance.exports.main(kGrowFunction, deltaPages, index, value);
   // The caller should be able to access memory that was grown by the callee.
-  //assertEquals(value, instance.exports.load(index));
+  assertEquals(value, instance.exports.load(index));
 })();
 
 // This test verifies that when a function (indirect call) grows and store
@@ -320,7 +320,7 @@ print('\n=== grow_memory in indirect calls ===');
   builder.appendToTable([kGrowFunction]);
   var instance = builder.instantiate();
   // The caller should always read from grown memory.
-  //assertEquals(42, instance.exports.main(kGrowFunction));
+  assertEquals(42, instance.exports.main(kGrowFunction));
 })();
 
 // This test verifies that the effects of growing memory in an indirectly
@@ -364,7 +364,7 @@ print('\n=== grow_memory in indirect calls ===');
   let instance = builder.instantiate();
   let deltaPages = 1;
   let iterations = 4;
-  //assertEquals(
+  assertEquals(
       initialMemoryPages + iterations * deltaPages,
       instance.exports.main(kGrowFunction, iterations, deltaPages));
 })();
@@ -430,7 +430,7 @@ print('\n=== grow_memory in indirect calls ===');
   let initialValue = 1;
   let expectedValue = initialValue + iterations;
   instance.exports.store(index, initialValue);
-  //assertEquals(
+  assertEquals(
       expectedValue,
       instance.exports.main(kGrowFunction, iterations, deltaPages, index));
 })();

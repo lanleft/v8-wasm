@@ -63,16 +63,16 @@ let kSig_iw_i = makeSig([kWasmI32], [kWasmI32, kWasmStringRef]);
   let str = 'ascii string';
   instance.exports.iterate(str);
   for (let i = 0; i < str.length; i++) {
-    //assertEquals([42, 1], instance.exports.advance(1));
+    assertEquals([42, 1], instance.exports.advance(1));
   }
-  //assertEquals([42, 0], instance.exports.advance(1));
+  assertEquals([42, 0], instance.exports.advance(1));
 
   for (let i = 0; i < str.length; i++) {
-    //assertEquals([42, 1], instance.exports.rewind(1));
+    assertEquals([42, 1], instance.exports.rewind(1));
   }
-  //assertEquals([42, 0], instance.exports.rewind(1));
+  assertEquals([42, 0], instance.exports.rewind(1));
 
   for (let i = 0; i < str.length; i++) {
-    //assertEquals([42, str.substring(0, i)], instance.exports.slice(i));
+    assertEquals([42, str.substring(0, i)], instance.exports.slice(i));
   }
 })();

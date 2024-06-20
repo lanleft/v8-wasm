@@ -35,7 +35,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate();
   let wrapper = WebAssembly.promising(instance.exports.test);
   wrapper();
-  //assertEquals(42, instance.exports.g.value);
+  assertEquals(42, instance.exports.g.value);
 })();
 
 (function TestStackSwitchSuspend() {
@@ -50,21 +50,21 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {import: js_import}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
   let combined_promise = wrapped_export();
-  assertPromiseResult(combined_promise, v => //assertEquals(42, v));
+  assertPromiseResult(combined_promise, v => assertEquals(42, v));
 
   // Also try with a JS function with a mismatching arity.
   js_import = new WebAssembly.Suspending((unused) => Promise.resolve(42));
   instance = builder.instantiate({m: {import: js_import}});
   wrapped_export = WebAssembly.promising(instance.exports.test);
   combined_promise = wrapped_export();
-  assertPromiseResult(combined_promise, v => //assertEquals(42, v));
+  assertPromiseResult(combined_promise, v => assertEquals(42, v));
 
   // Also try with a proxy.
   js_import = new WebAssembly.Suspending(new Proxy(() => Promise.resolve(42), {}));
   instance = builder.instantiate({m: {import: js_import}});
   wrapped_export = WebAssembly.promising(instance.exports.test);
   combined_promise = wrapped_export();
-  assertPromiseResult(combined_promise, v => //assertEquals(42, v));
+  assertPromiseResult(combined_promise, v => assertEquals(42, v));
   %CheckIsOnCentralStack();
 })();
 
@@ -105,8 +105,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {import: wasm_js_import}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
   let chained_promise = wrapped_export();
-  //assertEquals(0, instance.exports.g.value);
-  assertPromiseResult(chained_promise, _ => //assertEquals(15, instance.exports.g.value));
+  assertEquals(0, instance.exports.g.value);
+  assertPromiseResult(chained_promise, _ => assertEquals(15, instance.exports.g.value));
 })();
 
 // Call the GC in the import call.
@@ -139,7 +139,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({'m': {'import': js_import}});
   let wrapper = WebAssembly.promising(instance.exports.test);
   let arg = { valueOf: () => { gc(); return 24; } };
-  assertPromiseResult(wrapper(arg), v => //assertEquals(arg.valueOf(), v));
+  assertPromiseResult(wrapper(arg), v => assertEquals(arg.valueOf(), v));
 })();
 
 // Check that the suspender does not suspend if the import's
@@ -162,7 +162,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {import: wasm_js_import}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
   let result = wrapped_export();
-  //assertEquals(42, instance.exports.g.value);
+  assertEquals(42, instance.exports.g.value);
 })();
 
 (function TestStackSwitchSuspendArgs() {
@@ -195,7 +195,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let args = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   let combined_promise =
       wrapped_export.apply(null, args);
-  assertPromiseResult(combined_promise, v => //assertEquals(reduce(args), v));
+  assertPromiseResult(combined_promise, v => assertEquals(reduce(args), v));
 })();
 
 (function TestStackSwitchReturnFloat() {
@@ -214,7 +214,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {import: wasm_js_import}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
   let combined_promise = wrapped_export();
-  assertPromiseResult(combined_promise, v => //assertEquals(0.5, v));
+  assertPromiseResult(combined_promise, v => assertEquals(0.5, v));
 })();
 
 // Throw an exception before suspending. The export wrapper should return a
@@ -275,7 +275,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {import: wasm_js_import, tag: tag}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
   let combined_promise = wrapped_export();
-  assertPromiseResult(combined_promise, v => //assertEquals(v, 42));
+  assertPromiseResult(combined_promise, v => assertEquals(v, 42));
 })();
 
 function TestNestedSuspenders(suspend) {
@@ -308,7 +308,7 @@ function TestNestedSuspenders(suspend) {
   let instance = builder.instantiate({m: {inner, outer}});
   export_inner = WebAssembly.promising(instance.exports.inner);
   let export_outer = WebAssembly.promising(instance.exports.outer);
-  assertPromiseResult(export_outer(), v => //assertEquals(42, v));
+  assertPromiseResult(export_outer(), v => assertEquals(42, v));
 }
 
 (function TestNestedSuspendersSuspend() {
@@ -329,8 +329,8 @@ function TestNestedSuspenders(suspend) {
   let instance = builder.instantiate();
   let export_wrapper = WebAssembly.promising(instance.exports.export);
   let export_sig = export_wrapper.type();
-  //assertEquals([], export_sig.parameters);
-  //assertEquals(['externref'], export_sig.results);
+  assertEquals([], export_sig.parameters);
+  assertEquals(['externref'], export_sig.results);
 })();
 
 (function TestStackOverflow() {
@@ -364,7 +364,7 @@ function TestNestedSuspenders(suspend) {
   instance.exports.table.set(0, funcref);
 
   let exp = WebAssembly.promising(instance.exports.test);
-  assertPromiseResult(exp(), v => //assertEquals(42, v));
+  assertPromiseResult(exp(), v => assertEquals(42, v));
 })();
 
 (function SuspendCallIndirect() {
@@ -385,7 +385,7 @@ function TestNestedSuspenders(suspend) {
   let instance = builder.instantiate({m: {f: create_promise}});
 
   let exp = WebAssembly.promising(instance.exports.test);
-  assertPromiseResult(exp(), v => //assertEquals(42, v));
+  assertPromiseResult(exp(), v => assertEquals(42, v));
 })();
 
 (function TestSuspendJSFramesTraps() {
@@ -467,10 +467,10 @@ function TestNestedSuspenders(suspend) {
   }
 
   // Calling exported functions from the central stack.
-  //assertEquals(0, switchesToCS(() => instance.exports.test({})));
-  //assertEquals(0, switchesToCS(() => instance.exports.test2({})));
-  //assertEquals(0, switchesToCS(() => instance.exports.test3({})));
-  //assertEquals(0, switchesToCS(() => instance.exports.test4({})));
+  assertEquals(0, switchesToCS(() => instance.exports.test({})));
+  assertEquals(0, switchesToCS(() => instance.exports.test2({})));
+  assertEquals(0, switchesToCS(() => instance.exports.test3({})));
+  assertEquals(0, switchesToCS(() => instance.exports.test4({})));
 
   // Runtime call to table.grow.
   switchesToCS(wrapper);
@@ -498,7 +498,7 @@ function TestNestedSuspenders(suspend) {
       });
   let instance = builder.instantiate({m: {import: js_import}});
   let wrapped_export = WebAssembly.promising(instance.exports.test);
-  assertPromiseResult(wrapped_export(), v => //assertEquals(123, v));
+  assertPromiseResult(wrapped_export(), v => assertEquals(123, v));
 })();
 
 // Test that the wasm-to-js stack params get scanned.
@@ -524,7 +524,7 @@ function TestNestedSuspenders(suspend) {
   let instance = builder.instantiate({m: {import_}});
   let wrapper = WebAssembly.promising(instance.exports.test);
   let args = Array(num_params).fill({});
-  assertPromiseResult(wrapper(...args), results => { //assertEquals(args, results); });
+  assertPromiseResult(wrapper(...args), results => { assertEquals(args, results); });
 })();
 
 // Similar to TestNestedSuspenders, but trigger an infinite recursion inside the

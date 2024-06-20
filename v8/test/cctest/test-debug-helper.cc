@@ -416,9 +416,9 @@ TEST(GetObjectProperties) {
   CheckStructProp(*flags.struct_fields[2], "bool", "is_strict", 0, 1, 6);
 
   // Get data about a different bitfield struct which is contained within a smi.
-  Handle<i::JSFunction> function = Handle<i::JSFunction>::cast(o);
-  Handle<i::SharedFunctionInfo> shared(function->shared(), i_isolate);
-  Handle<i::DebugInfo> debug_info =
+  DirectHandle<i::JSFunction> function = Cast<i::JSFunction>(o);
+  DirectHandle<i::SharedFunctionInfo> shared(function->shared(), i_isolate);
+  DirectHandle<i::DebugInfo> debug_info =
       i_isolate->debug()->GetOrCreateDebugInfo(shared);
   props =
       d::GetObjectProperties(debug_info->ptr(), &ReadMemory, heap_addresses);
@@ -446,7 +446,7 @@ static void FrameIterationCheck(
                 "v8::internal::Tagged<v8::internal::JSFunction>",
                 "currently_executing_jsfunction", js_function.ptr());
       auto shared_function_info = js_function->shared();
-      auto script = i::Script::cast(shared_function_info->script());
+      auto script = i::Cast<i::Script>(shared_function_info->script());
       CheckProp(*props->properties[1],
                 "v8::internal::TaggedMember<v8::internal::Object>",
                 "script_name", static_cast<i::Tagged_t>(script->name().ptr()));
@@ -506,7 +506,7 @@ TEST(SmallOrderedHashSetGetObjectProperties) {
   PtrComprCageAccessScope ptr_compr_cage_access_scope(isolate);
   HandleScope scope(isolate);
 
-  Handle<SmallOrderedHashSet> set = factory->NewSmallOrderedHashSet();
+  DirectHandle<SmallOrderedHashSet> set = factory->NewSmallOrderedHashSet();
   const size_t number_of_buckets = 2;
   CHECK_EQ(number_of_buckets, set->NumberOfBuckets());
   CHECK_EQ(0, set->NumberOfElements());

@@ -28,23 +28,23 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let a = new WebAssembly.Instance(module);
   let b = new WebAssembly.Instance(module);
 
-  //assertEquals(0, a.exports.get());
-  //assertEquals(0, b.exports.get());
+  assertEquals(0, a.exports.get());
+  assertEquals(0, b.exports.get());
 
   a.exports.set(1);
 
-  //assertEquals(1, a.exports.get());
-  //assertEquals(0, b.exports.get());
+  assertEquals(1, a.exports.get());
+  assertEquals(0, b.exports.get());
 
   b.exports.set(6);
 
-  //assertEquals(1, a.exports.get());
-  //assertEquals(6, b.exports.get());
+  assertEquals(1, a.exports.get());
+  assertEquals(6, b.exports.get());
 
   a.exports.set(7);
 
-  //assertEquals(7, a.exports.get());
-  //assertEquals(6, b.exports.get());
+  assertEquals(7, a.exports.get());
+  assertEquals(6, b.exports.get());
 
 })();
 
@@ -59,7 +59,7 @@ function TestImported(type, val, expected) {
   builder.addGlobal(kWasmI32, false, false);  // pad
 
   var instance = builder.instantiate({uuu: {foo: val}});
-  //assertEquals(expected, instance.exports.main());
+  assertEquals(expected, instance.exports.main());
 }
 
 TestImported(kWasmI32, 300.1, 300);
@@ -83,11 +83,11 @@ TestImported(kWasmF64, 77777.88888, 77777.88888);
 
   print("  i 100...");
   let i100 = new WebAssembly.Instance(module, {mod: {g: 100}});
-  //assertEquals(100, i100.exports.main());
+  assertEquals(100, i100.exports.main());
 
   print("  i 300...");
   let i300 = new WebAssembly.Instance(module, {mod: {g: 300}});
-  //assertEquals(300, i300.exports.main());
+  assertEquals(300, i300.exports.main());
 })();
 
 function TestExported(type, val, expected) {
@@ -98,7 +98,7 @@ function TestExported(type, val, expected) {
   builder.addGlobal(kWasmI32, false, false);  // pad
 
   var instance = builder.instantiate();
-  //assertEquals(expected, instance.exports.foo.value);
+  assertEquals(expected, instance.exports.foo.value);
 }
 
 TestExported(kWasmI32, wasmI32Const(455.5), 455);
@@ -114,7 +114,7 @@ TestExported(kWasmF64, wasmF64Const(87347.66666), 87347.66666);
 
   var instance = builder.instantiate();
   assertTrue(instance.exports.foo instanceof WebAssembly.Global);
-  //assertEquals(instance.exports.foo.value, 1234n);
+  assertEquals(instance.exports.foo.value, 1234n);
 })();
 
 function TestImportedExported(type, val, expected) {
@@ -126,7 +126,7 @@ function TestImportedExported(type, val, expected) {
   builder.addGlobal(kWasmI32, false, false);  // pad
 
   var instance = builder.instantiate({ttt: {foo: val}});
-  //assertEquals(expected, instance.exports.bar.value);
+  assertEquals(expected, instance.exports.bar.value);
 }
 
 TestImportedExported(kWasmI32, 415.5, 415);
@@ -137,9 +137,9 @@ function TestGlobalIndexSpace(type, val) {
   print("TestGlobalIndexSpace(" + val + ") = " + val);
   var builder = new WasmModuleBuilder();
   var im = builder.addImportedGlobal("nnn", "foo", type);
-  //assertEquals(0, im);
+  assertEquals(0, im);
   var def = builder.addGlobal(type, false, false, [kExprGlobalGet, im]);
-  //assertEquals(1, def.index);
+  assertEquals(1, def.index);
 
   var sig = makeSig([], [type]);
   builder.addFunction("main", sig)
@@ -147,7 +147,7 @@ function TestGlobalIndexSpace(type, val) {
     .exportAs("main");
 
   var instance = builder.instantiate({nnn: {foo: val}});
-  //assertEquals(val, instance.exports.main());
+  assertEquals(val, instance.exports.main());
 }
 
 TestGlobalIndexSpace(kWasmI32, 123);
@@ -189,19 +189,19 @@ TestGlobalIndexSpace(kWasmF64, 12345.678);
   let get = a.exports.get;
   let set = a.exports.set;
 
-  //assertEquals(0, get(0));
-  //assertEquals(0, get(1));
+  assertEquals(0, get(0));
+  assertEquals(0, get(1));
   set(0, 1);
-  //assertEquals(1, get(0));
-  //assertEquals(0, get(1));
+  assertEquals(1, get(0));
+  assertEquals(0, get(1));
 
   set(0, 7);
-  //assertEquals(7, get(0));
-  //assertEquals(0, get(1));
+  assertEquals(7, get(0));
+  assertEquals(0, get(1));
 
   set(1, 9);
-  //assertEquals(7, get(0));
-  //assertEquals(9, get(1));
+  assertEquals(7, get(0));
+  assertEquals(9, get(1));
 
 })();
 

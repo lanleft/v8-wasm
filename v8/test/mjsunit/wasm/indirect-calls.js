@@ -45,13 +45,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertFalse(module === null);
   assertFalse(module === 0);
 
-  //assertEquals("object", typeof module.exports);
-  //assertEquals("function", typeof module.exports.main);
+  assertEquals("object", typeof module.exports);
+  assertEquals("function", typeof module.exports.main);
 
   print(" --x1--");
-  //assertEquals(19, module.exports.main(0, 12, 7));
+  assertEquals(19, module.exports.main(0, 12, 7));
   print(" --y1--");
-  //assertEquals(5, module.exports.main(1, 12, 7));
+  assertEquals(5, module.exports.main(1, 12, 7));
   print(" --z1--");
   assertTraps(kTrapFuncSigMismatch, () => module.exports.main(2, 12, 33));
   print(" --w1--");
@@ -91,9 +91,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   })();
 
   print(" --x2--");
-  //assertEquals(-6, module.exports.main(0, -2, 3));
+  assertEquals(-6, module.exports.main(0, -2, 3));
   print(" --y2--");
-  //assertEquals(99, module.exports.main(1, 22, 77));
+  assertEquals(99, module.exports.main(1, 22, 77));
   print(" --z2--");
   assertTraps(kTrapFuncSigMismatch, () => module.exports.main(2, 12, 33));
   print(" --q2--");
@@ -145,12 +145,12 @@ function AddFunctions(builder) {
     return builder.instantiate();
   })();
 
-  //assertEquals(33, module.exports.main(1, 0));
-  //assertEquals(66, module.exports.main(2, 0));
-  //assertEquals(34, module.exports.main(1, 1));
-  //assertEquals(35, module.exports.main(2, 1));
-  //assertEquals(32, module.exports.main(1, 2));
-  //assertEquals(31, module.exports.main(2, 2));
+  assertEquals(33, module.exports.main(1, 0));
+  assertEquals(66, module.exports.main(2, 0));
+  assertEquals(34, module.exports.main(1, 1));
+  assertEquals(35, module.exports.main(2, 1));
+  assertEquals(32, module.exports.main(1, 2));
+  assertEquals(31, module.exports.main(2, 2));
   assertTraps(kTrapTableOutOfBounds, () => module.exports.main(12, 3));
 })();
 
@@ -182,12 +182,12 @@ function AddFunctions(builder) {
     for (var j = 0; j < i; j++) {
       assertTraps(kTrapFuncSigMismatch, "main(12, " + j + ")");
     }
-    //assertEquals(34, main(1, i + 0));
-    //assertEquals(35, main(2, i + 0));
-    //assertEquals(32, main(1, i + 1));
-    //assertEquals(31, main(2, i + 1));
-    //assertEquals(33, main(1, i + 2));
-    //assertEquals(66, main(2, i + 2));
+    assertEquals(34, main(1, i + 0));
+    assertEquals(35, main(2, i + 0));
+    assertEquals(32, main(1, i + 1));
+    assertEquals(31, main(2, i + 1));
+    assertEquals(33, main(1, i + 2));
+    assertEquals(66, main(2, i + 2));
     assertTraps(kTrapTableOutOfBounds, () => main(12, 10));
   }
 })();
@@ -220,12 +220,12 @@ function AddFunctions(builder) {
     for (var j = 0; j < i; j++) {
       assertTraps(kTrapFuncSigMismatch, "main(12, " + j + ")");
     }
-    //assertEquals(33, main(1, i + 0));
-    //assertEquals(66, main(2, i + 0));
-    //assertEquals(34, main(1, i + 1));
-    //assertEquals(35, main(2, i + 1));
-    //assertEquals(32, main(1, i + 2));
-    //assertEquals(31, main(2, i + 2));
+    assertEquals(33, main(1, i + 0));
+    assertEquals(66, main(2, i + 0));
+    assertEquals(34, main(1, i + 1));
+    assertEquals(35, main(2, i + 1));
+    assertEquals(32, main(1, i + 2));
+    assertEquals(31, main(2, i + 2));
     assertTraps(kTrapTableOutOfBounds, () => main(12, 10));
   }
 })();

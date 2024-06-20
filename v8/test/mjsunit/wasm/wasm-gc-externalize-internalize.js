@@ -192,7 +192,7 @@ for (let type of ["struct", "i31", "array"]) {
   for (let consume of ["consumer", "internalize"]) {
     let fnConsume = instance.exports[`${type}_${consume}`];
     // A null is converted to (ref null none).
-    //assertEquals([0, 1], fnConsume(null));
+    assertEquals([0, 1], fnConsume(null));
     if (consume == "internalize") {
       // Passing a JavaScript object is fine on internalize but fails on
       // casting it to dataref/arrayref/i31ref.
@@ -209,7 +209,7 @@ for (let type of ["struct", "i31", "array"]) {
       let fnProduce = instance.exports[`${type}_${produce}`];
       // Test roundtrip of a value produced in Wasm passed back to Wasm.
       let obj42 = fnProduce(42);
-      //assertEquals([42, 0], fnConsume(obj42));
+      assertEquals([42, 0], fnConsume(obj42));
     }
   }
 }
@@ -217,6 +217,6 @@ for (let type of ["struct", "i31", "array"]) {
 // Differently to structs and arrays, the i31 value is directly accessible in
 // JavaScript. Similarly, a JS smi can be internalized as an i31ref.
 let createHeapNumber = (x) => x + x;
-//assertEquals(12345, instance.exports.i31_externalize(12345));
-//assertEquals([12345, 0], instance.exports.i31_internalize(12345));
-//assertEquals([11, 0], instance.exports.i31_internalize(createHeapNumber(5.5)));
+assertEquals(12345, instance.exports.i31_externalize(12345));
+assertEquals([12345, 0], instance.exports.i31_internalize(12345));
+assertEquals([11, 0], instance.exports.i31_internalize(createHeapNumber(5.5)));

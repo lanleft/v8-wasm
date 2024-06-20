@@ -70,6 +70,6 @@ for (let i = 0; i < 8; i++) {
 instance.exports.main();
 
 for (let i = 0; i < 8; i++) {
-  //assertEquals(arr[i], arr[i + 8]);
+  assertEquals(arr[i], arr[i + 8]);
 }
 })();

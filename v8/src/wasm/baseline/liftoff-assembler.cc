@@ -10,6 +10,7 @@
 #include "src/base/platform/memory.h"
 #include "src/codegen/assembler-inl.h"
 #include "src/codegen/macro-assembler-inl.h"
+#include "src/compiler/linkage.h"
 #include "src/compiler/wasm-compiler.h"
 #include "src/utils/ostreams.h"
 #include "src/wasm/baseline/liftoff-assembler-inl.h"
@@ -352,9 +353,9 @@ int LiftoffAssembler::OolSpillCount() const {
 namespace {
 
 AssemblerOptions DefaultLiftoffOptions() {
-  AssemblerOptions options = AssemblerOptions{};
-  options.is_wasm = true;
-  return options;
+  return AssemblerOptions{
+      .is_wasm = true,
+  };
 }
 
 }  // namespace
@@ -434,12 +435,13 @@ void LiftoffAssembler::DropExceptionValueAtOffset(int offset) {
        slot != end; ++slot) {
     *slot = *(slot + 1);
     stack_offset = NextSpillOffset(slot->kind(), stack_offset);
-    // Padding could allow us to exit early.
-    if (slot->offset() == stack_offset) break;
-    if (slot->is_stack()) {
-      MoveStackValue(stack_offset, slot->offset(), slot->kind());
+    // Padding could cause some spill offsets to remain the same.
+    if (slot->offset() != stack_offset) {
+      if (slot->is_stack()) {
+        MoveStackValue(stack_offset, slot->offset(), slot->kind());
+      }
+      slot->set_offset(stack_offset);
     }
-    slot->set_offset(stack_offset);
   }
   cache_state_.stack_state.pop_back();
 }
@@ -891,6 +893,15 @@ void LiftoffAssembler::PrepareCall(const ValueKindSig* sig,
   }
 }
 
+namespace {
+constexpr LiftoffRegList AllReturnRegs() {
+  LiftoffRegList result;
+  for (Register r : kGpReturnRegisters) result.set(r);
+  for (DoubleRegister r : kFpReturnRegisters) result.set(r);
+  return result;
+}
+}  // namespace
+
 void LiftoffAssembler::FinishCall(const ValueKindSig* sig,
                                   compiler::CallDescriptor* call_descriptor) {
   int call_desc_return_idx = 0;
@@ -903,7 +914,9 @@ void LiftoffAssembler::FinishCall(const ValueKindSig* sig,
     // Initialize to anything, will be set in the loop and used afterwards.
     LiftoffRegister reg_pair[2] = {kGpCacheRegList.GetFirstRegSet(),
                                    kGpCacheRegList.GetFirstRegSet()};
-    LiftoffRegList pinned;
+    // Make sure not to clobber results in registers (which might not be the
+    // first values to be processed) prematurely.
+    LiftoffRegList pinned = AllReturnRegs();
     for (int pair_idx = 0; pair_idx < num_lowered_params; ++pair_idx) {
       LinkageLocation loc =
           call_descriptor->GetReturnLocation(call_desc_return_idx++);

@@ -4,9 +4,8 @@
 
 // Flags: --no-liftoff --no-wasm-lazy-compilation
 // Flags: --turboshaft-wasm --enable-testing-opcode-in-wasm
-// flags: --expose-gc --allow-natives-syntax --trace-turbo --shell --turboshaft-wasm --sandbox-testing --enable-testing-opcode-in-wasm
 
-d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Make sure turboshaft bails out graciously for non-implemented features.
 (function Bailout() {
@@ -28,7 +27,7 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals(42, wasm.i32_arithmetic());
+  assertEquals(42, wasm.i32_arithmetic());
 })();
 
 (function I32Locals() {
@@ -49,7 +48,7 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals((22 + 11) * 22, wasm.i32_locals(10, 20));
+  assertEquals((22 + 11) * 22, wasm.i32_locals(10, 20));
 })();
 
 (function IfThenElse() {
@@ -97,10 +96,10 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals(-200, wasm.if_then_else_32(10, 20, 0));
-  ////assertEquals(300, wasm.if_then_else_32(10, 20, 1));
-  ////assertEquals(-200n, wasm.if_then_else_64(10n, 20n, 0));
-  ////assertEquals(300n, wasm.if_then_else_64(10n, 20n, 1));
+  assertEquals(-200, wasm.if_then_else_32(10, 20, 0));
+  assertEquals(300, wasm.if_then_else_32(10, 20, 1));
+  assertEquals(-200n, wasm.if_then_else_64(10n, 20n, 0));
+  assertEquals(300n, wasm.if_then_else_64(10n, 20n, 1));
 })();
 
 (function OneArmedIf() {
@@ -122,8 +121,8 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals(10, wasm.one_armed_if(10, 0));
-  ////assertEquals(11, wasm.one_armed_if(10, -1));
+  assertEquals(10, wasm.one_armed_if(10, 0));
+  assertEquals(11, wasm.one_armed_if(10, -1));
 })();
 
 (function BlockAndBr() {
@@ -156,8 +155,8 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals((10 + 20) + (10 * 20), wasm.block_and_br(10, 20, 0));
-  ////assertEquals((10 + 20) + 10, wasm.block_and_br(10, 20, 1));
+  assertEquals((10 + 20) + (10 * 20), wasm.block_and_br(10, 20, 0));
+  assertEquals((10 + 20) + 10, wasm.block_and_br(10, 20, 1));
 })();
 
 (function Loop() {
@@ -198,14 +197,14 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals(1, wasm.factorial(1));
-  ////assertEquals(24, wasm.factorial(4));
-  ////assertEquals(720, wasm.factorial(6));
+  assertEquals(1, wasm.factorial(1));
+  assertEquals(24, wasm.factorial(4));
+  assertEquals(720, wasm.factorial(6));
 
-  ////assertEquals(1, wasm.factorial_with_br_if_return(0));
-  ////assertEquals(1, wasm.factorial_with_br_if_return(1));
-  ////assertEquals(24, wasm.factorial_with_br_if_return(4));
-  ////assertEquals(720, wasm.factorial_with_br_if_return(6));
+  assertEquals(1, wasm.factorial_with_br_if_return(0));
+  assertEquals(1, wasm.factorial_with_br_if_return(1));
+  assertEquals(24, wasm.factorial_with_br_if_return(4));
+  assertEquals(720, wasm.factorial_with_br_if_return(6));
 })();
 
 (function Multireturn() {
@@ -219,7 +218,7 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals([1, 0], wasm.swap(0, 1));
+  assertEquals([1, 0], wasm.swap(0, 1));
 })();
 
 (function BrTable() {
@@ -243,9 +242,9 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
 
   let wasm = builder.instantiate().exports;
 
-  ////assertEquals(0, wasm.br_table(0));
-  ////assertEquals(-1, wasm.br_table(1));
-  ////assertEquals(23, wasm.br_table(22));
+  assertEquals(0, wasm.br_table(0));
+  assertEquals(-1, wasm.br_table(1));
+  assertEquals(23, wasm.br_table(22));
 })();
 
 (function TestSubZeroFromTruncatedOptimization() {
@@ -262,5 +261,5 @@ d8.file.execute("/home/vult/Desktop/v8/v8/test/mjsunit/wasm/wasm-module-builder.
       kExprI32Sub,
     ]);
   let instance = builder.instantiate();
-  ////assertEquals(123, instance.exports.subZeroFromTruncated(123n));
+  assertEquals(123, instance.exports.subZeroFromTruncated(123n));
 })();

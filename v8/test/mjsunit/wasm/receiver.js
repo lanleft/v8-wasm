@@ -20,23 +20,23 @@ function testCallImport(func, expected, a, b) {
 
   var main = builder.instantiate({mod: {func: func}}).exports.main;
 
-  //assertEquals(expected, main(a, b));
+  assertEquals(expected, main(a, b));
 }
 
 var global = (function() { return this; })();
 
 function sloppyReceiver(a, b) {
-  //assertEquals(global, this);
-  //assertEquals(33.3, a);
-  //assertEquals(44.4, b);
+  assertEquals(global, this);
+  assertEquals(33.3, a);
+  assertEquals(44.4, b);
   return 11;
 }
 
 function strictReceiver(a, b) {
   'use strict';
-  //assertEquals(undefined, this);
-  //assertEquals(55.5, a);
-  //assertEquals(66.6, b);
+  assertEquals(undefined, this);
+  assertEquals(55.5, a);
+  assertEquals(66.6, b);
   return 22;
 }
 

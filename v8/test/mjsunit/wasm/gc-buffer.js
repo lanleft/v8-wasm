@@ -26,9 +26,9 @@ function run(f) {
     print("  instance " + i);
     var instance = new WebAssembly.Instance(module, {"mod": {the_name_of_my_import: f}});
     var g = instance.exports.main;
-    //assertEquals("function", typeof g);
+    assertEquals("function", typeof g);
     for (var j = 0; j < 10; j++) {
-      //assertEquals(f(j), g(j));
+      assertEquals(f(j), g(j));
     }
   }
 }

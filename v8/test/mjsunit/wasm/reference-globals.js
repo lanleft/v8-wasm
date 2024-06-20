@@ -105,7 +105,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertFalse(instance === 0);
 
   // The correct function reference has been passed.
-  //assertEquals(66, instance.exports.test_import(42, 24));
+  assertEquals(66, instance.exports.test_import(42, 24));
 })();
 
 (function TestStructInitExpr() {
@@ -180,12 +180,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var instance = builder.instantiate({});
 
-  //assertEquals(field1_value, instance.exports.field_1());
-  //assertEquals(field2_value, instance.exports.field_2());
-  //assertEquals((field3_value << 24) >> 24, instance.exports.field_3());
-  //assertEquals(0, instance.exports.field_1_default());
-  //assertEquals(null, instance.exports.field_2_default());
-  //assertEquals(0, instance.exports.field_3_default());
+  assertEquals(field1_value, instance.exports.field_1());
+  assertEquals(field2_value, instance.exports.field_2());
+  assertEquals((field3_value << 24) >> 24, instance.exports.field_3());
+  assertEquals(0, instance.exports.field_1_default());
+  assertEquals(null, instance.exports.field_2_default());
+  assertEquals(0, instance.exports.field_3_default());
 })();
 
 (function TestArrayNewFixedExprNumeric() {
@@ -215,8 +215,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var instance = builder.instantiate({});
 
-  //assertEquals(element0_value, instance.exports.get_element(0));
-  //assertEquals(element1_value, instance.exports.get_element(1));
+  assertEquals(element0_value, instance.exports.get_element(0));
+  assertEquals(element1_value, instance.exports.get_element(1));
 })();
 
 (function TestArrayNewFixedExprRef() {
@@ -266,9 +266,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var instance = builder.instantiate({});
 
-  //assertEquals(element0_value, instance.exports.element0());
-  //assertEquals(null, instance.exports.element1());
-  //assertEquals(element2_value, instance.exports.element2());
+  assertEquals(element0_value, instance.exports.element0());
+  assertEquals(null, instance.exports.element1());
+  assertEquals(element2_value, instance.exports.element2());
 })();
 
 (function TestArrayNew() {
@@ -319,9 +319,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let result = BigInt(elem1 + elem2);
 
-  //assertEquals(result, instance.exports.get_elements(0));
-  //assertEquals(result, instance.exports.get_elements(length / 2));
-  //assertEquals(result, instance.exports.get_elements(length - 1));
+  assertEquals(result, instance.exports.get_elements(0));
+  assertEquals(result, instance.exports.get_elements(length / 2));
+  assertEquals(result, instance.exports.get_elements(length - 1));
   assertTraps(kTrapArrayOutOfBounds,
               () => instance.exports.get_elements(length));
 })();
@@ -364,17 +364,17 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(values[0], instance.exports.get_s(0));
-  //assertEquals(values[1], instance.exports.get_s(1));
-  //assertEquals(values[2], instance.exports.get_s(2));
-  //assertEquals(values[3] | 0x80000000, instance.exports.get_s(3));
-  //assertEquals(values[4], instance.exports.get_s(4));
+  assertEquals(values[0], instance.exports.get_s(0));
+  assertEquals(values[1], instance.exports.get_s(1));
+  assertEquals(values[2], instance.exports.get_s(2));
+  assertEquals(values[3] | 0x80000000, instance.exports.get_s(3));
+  assertEquals(values[4], instance.exports.get_s(4));
 
-  //assertEquals(values[0], instance.exports.get_u(0));
-  //assertEquals(values[1], instance.exports.get_u(1));
-  //assertEquals(values[2] & 0x7fffffff, instance.exports.get_u(2));
-  //assertEquals(values[3], instance.exports.get_u(3));
-  //assertEquals(values[4] & 0x7fffffff, instance.exports.get_u(4));
+  assertEquals(values[0], instance.exports.get_u(0));
+  assertEquals(values[1], instance.exports.get_u(1));
+  assertEquals(values[2] & 0x7fffffff, instance.exports.get_u(2));
+  assertEquals(values[3], instance.exports.get_u(3));
+  assertEquals(values[4] & 0x7fffffff, instance.exports.get_u(4));
 })();
 
 (function TestI31RefConstantExprTypeError() {
@@ -450,6 +450,6 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({m: {ext: imported_struct}});
 
   assertSame(instance.exports.exported.value, imported_struct);
-  //assertEquals(42, instance.exports.getter());
+  assertEquals(42, instance.exports.getter());
   assertTraps(kTrapIllegalCast, () => instance.exports.getter_fail());
 })();

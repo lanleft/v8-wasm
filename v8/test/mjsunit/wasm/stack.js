@@ -12,13 +12,13 @@ function stripPath(s) {
 }
 
 function verifyStack(frames, expected) {
-  //assertEquals(expected.length, frames.length, "number of frames mismatch");
+  assertEquals(expected.length, frames.length, "number of frames mismatch");
   expected.forEach(function(exp, i) {
-    //assertEquals(exp[1], frames[i].getFunctionName(),
+    assertEquals(exp[1], frames[i].getFunctionName(),
         "["+i+"].getFunctionName()");
-    //assertEquals(exp[2], frames[i].getLineNumber(), "["+i+"].getLineNumber()");
+    assertEquals(exp[2], frames[i].getLineNumber(), "["+i+"].getLineNumber()");
     if (exp[0])
-      //assertEquals(exp[3], frames[i].getPosition(),
+      assertEquals(exp[3], frames[i].getPosition(),
           "["+i+"].getPosition()");
     assertContains(exp[4], frames[i].getFileName(), "["+i+"].getFileName()");
     var toString;
@@ -74,7 +74,7 @@ var module = builder.instantiate({mod: {func: STACK}});
       '    at stack.js:78:3';                                        // --
 
   module.exports.main();
-  //assertEquals(expected_string, stripPath(stack));
+  assertEquals(expected_string, stripPath(stack));
 })();
 
 // For the remaining tests, collect the Callsite objects instead of just a
@@ -143,7 +143,7 @@ Error.prepareStackTrace = function(error, frames) {
     builder.instantiate().exports.recursion();
     fail("expected wasm exception");
   } catch (e) {
-    //assertEquals("Maximum call stack size exceeded", e.message, "trap reason");
+    assertEquals("Maximum call stack size exceeded", e.message, "trap reason");
     assertTrue(e.stack.length >= 4, "expected at least 4 stack entries");
     verifyStack(e.stack.splice(0, 4), [
         // isWasm     function  line   pos                    file  offset funcIndex
@@ -171,7 +171,7 @@ Error.prepareStackTrace = function(error, frames) {
     builder.instantiate().exports.main();
     fail('expected wasm exception');
   } catch (e) {
-    //assertEquals('unreachable', e.message, 'trap reason');
+    assertEquals('unreachable', e.message, 'trap reason');
     let hexOffset = '0x' + (unreachable_pos + 0x25).toString(16);
     verifyStack(e.stack, [
       // isWasm         function line                     pos                    file     offset funcIndex

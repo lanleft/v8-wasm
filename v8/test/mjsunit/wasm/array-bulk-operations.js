@@ -86,9 +86,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   wasm.array_fill(array_obj, 2, 42, 3);
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 0));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 1));
-  //assertEquals(42, wasm.array_get(array_obj, 2));
-  //assertEquals(42, wasm.array_get(array_obj, 3));
-  //assertEquals(42, wasm.array_get(array_obj, 4));
+  assertEquals(42, wasm.array_get(array_obj, 2));
+  assertEquals(42, wasm.array_get(array_obj, 3));
+  assertEquals(42, wasm.array_get(array_obj, 4));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 5));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 6));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 7));
@@ -99,14 +99,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   wasm.array_fill(array_obj, 4, 54, 2);
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 0));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 1));
-  //assertEquals(42, wasm.array_get(array_obj, 2));
-  //assertEquals(42, wasm.array_get(array_obj, 3));
-  //assertEquals(54, wasm.array_get(array_obj, 4));
-  //assertEquals(54, wasm.array_get(array_obj, 5));
+  assertEquals(42, wasm.array_get(array_obj, 2));
+  assertEquals(42, wasm.array_get(array_obj, 3));
+  assertEquals(54, wasm.array_get(array_obj, 4));
+  assertEquals(54, wasm.array_get(array_obj, 5));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 6));
   assertTraps(kTrapNullDereference, () => wasm.array_get(array_obj, 7));
 
-  //assertEquals(42, wasm.array_fill_i16());
+  assertEquals(42, wasm.array_fill_i16());
 })();
 
 (function TestArrayNewNonNullable() {
@@ -142,7 +142,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let array_obj = wasm.make_array(struct_obj, length);
 
   for (let i = 0; i < length; i++) {
-    //assertEquals(struct_obj, wasm.array_get(array_obj, i));
+    assertEquals(struct_obj, wasm.array_get(array_obj, i));
   }
 })();
 
@@ -196,7 +196,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let array_obj = wasm.make_array(array_length);
 
   for (i = 0; i < array_length; i++) {
-    //assertEquals(0, wasm.array_get(array_obj, i));
+    assertEquals(0, wasm.array_get(array_obj, i));
   }
 
   // Does nothing.
@@ -231,17 +231,17 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   // Load [[1, 2], [3, 4]] at index 5 of array.
   wasm.init_passive(array_obj, 5, 1, 2);
 
-  //assertEquals(0, wasm.array_get(array_obj, 0));
-  //assertEquals(0, wasm.array_get(array_obj, 1));
-  //assertEquals(0, wasm.array_get(array_obj, 2));
-  //assertEquals(0, wasm.array_get(array_obj, 3));
-  //assertEquals(0, wasm.array_get(array_obj, 4));
+  assertEquals(0, wasm.array_get(array_obj, 0));
+  assertEquals(0, wasm.array_get(array_obj, 1));
+  assertEquals(0, wasm.array_get(array_obj, 2));
+  assertEquals(0, wasm.array_get(array_obj, 3));
+  assertEquals(0, wasm.array_get(array_obj, 4));
   // Bytes will be loaded in little-endian order.
-  //assertEquals(0x0201, wasm.array_get(array_obj, 5));
-  //assertEquals(0x0403, wasm.array_get(array_obj, 6));
-  //assertEquals(0, wasm.array_get(array_obj, 7));
-  //assertEquals(0, wasm.array_get(array_obj, 8));
-  //assertEquals(0, wasm.array_get(array_obj, 9));
+  assertEquals(0x0201, wasm.array_get(array_obj, 5));
+  assertEquals(0x0403, wasm.array_get(array_obj, 6));
+  assertEquals(0, wasm.array_get(array_obj, 7));
+  assertEquals(0, wasm.array_get(array_obj, 8));
+  assertEquals(0, wasm.array_get(array_obj, 9));
 
   // Now drop the segment.
   wasm.data_drop();
@@ -362,7 +362,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let array_obj = wasm.make_array(array_length);
 
   for (i = 0; i < array_length; i++) {
-    //assertEquals(null, wasm.array_get(array_obj, i));
+    assertEquals(null, wasm.array_get(array_obj, i));
   }
 
   // Does nothing.
@@ -398,16 +398,16 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   // Load the last three elements of the element segment at index 5.
   wasm.init_passive(array_obj, 5, 1, 3);
 
-  //assertEquals(null, wasm.array_get(array_obj, 0));
-  //assertEquals(null, wasm.array_get(array_obj, 1));
-  //assertEquals(null, wasm.array_get(array_obj, 2));
-  //assertEquals(null, wasm.array_get(array_obj, 3));
-  //assertEquals(null, wasm.array_get(array_obj, 4));
-  //assertEquals(11, wasm.array_get(array_obj, 5)(10));
-  //assertEquals(9, wasm.array_get(array_obj, 6)(10));
-  //assertEquals(11, wasm.array_get(array_obj, 7)(10));
-  //assertEquals(null, wasm.array_get(array_obj, 8));
-  //assertEquals(null, wasm.array_get(array_obj, 9));
+  assertEquals(null, wasm.array_get(array_obj, 0));
+  assertEquals(null, wasm.array_get(array_obj, 1));
+  assertEquals(null, wasm.array_get(array_obj, 2));
+  assertEquals(null, wasm.array_get(array_obj, 3));
+  assertEquals(null, wasm.array_get(array_obj, 4));
+  assertEquals(11, wasm.array_get(array_obj, 5)(10));
+  assertEquals(9, wasm.array_get(array_obj, 6)(10));
+  assertEquals(11, wasm.array_get(array_obj, 7)(10));
+  assertEquals(null, wasm.array_get(array_obj, 8));
+  assertEquals(null, wasm.array_get(array_obj, 9));
 
   // Now drop the segment.
   wasm.elem_drop();
@@ -456,7 +456,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(1234n, instance.exports.main(1234n, 1000, 0));
-  //assertEquals(-2345n, instance.exports.main(-2345n, 2000, 1000));
-  //assertEquals(42n, instance.exports.main(42n, 2000, 1999));
+  assertEquals(1234n, instance.exports.main(1234n, 1000, 0));
+  assertEquals(-2345n, instance.exports.main(-2345n, 2000, 1000));
+  assertEquals(42n, instance.exports.main(42n, 2000, 1999));
 })();

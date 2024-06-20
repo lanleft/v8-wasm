@@ -86,5 +86,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(), [4, 4, 3, 3, 2, 2, 1, 1, 0, 0]);
+  assertEquals(instance.exports.main(), [4, 4, 3, 3, 2, 2, 1, 1, 0, 0]);
 })();

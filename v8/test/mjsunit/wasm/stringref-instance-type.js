@@ -36,8 +36,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       ...GCInstr(kExprStringViewWtf16GetCodeunit),
     ]);
   let instance = builder.instantiate({"a": {gc}});
-  //assertEquals(52, instance.exports.test(ThinString("a", "1234567")));
-  //assertEquals(52, instance.exports.test(ConsString("a", "1234567")));
+  assertEquals(52, instance.exports.test(ThinString("a", "1234567")));
+  assertEquals(52, instance.exports.test(ConsString("a", "1234567")));
 
   function ThinString(a, b) {
     var str = a + b;

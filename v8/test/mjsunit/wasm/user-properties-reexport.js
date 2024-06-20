@@ -18,7 +18,7 @@ d8.file.execute("test/mjsunit/wasm/user-properties-common.js");
     let module = builder.toModule();
     let instance = new WebAssembly.Instance(module, {imp: {func: f}});
     let g = instance.exports.exp;
-    // assertInstanceof(g, Function);
+    assertInstanceof(g, Function);
     printName("before", g);
     testProperties(g);
     printName(" after", g);

@@ -10,7 +10,7 @@ filename = filename.replace(/\//g, '[/\\\\]');
 function checkPreformattedStack(e, expected_lines) {
   print('preformatted stack: ' + e.stack);
   var lines = e.stack.split('\n');
-  //assertEquals(expected_lines.length, lines.length);
+  assertEquals(expected_lines.length, lines.length);
   for (var i = 0; i < lines.length; ++i) {
     assertMatches(expected_lines[i], lines[i], 'line ' + i);
   }
@@ -27,15 +27,15 @@ function printCallsites(stack) {
 }
 
 function checkCallsiteArray(stack, expected) {
-  //assertEquals(expected.length, stack.length, 'stack size');
+  assertEquals(expected.length, stack.length, 'stack size');
   for (var i = 0; i < expected.length; ++i) {
     var cs = stack[i];
     assertMatches('^' + filename + '$', cs.getFileName(), 'file name at ' + i);
-    //assertEquals(expected[i][0], cs.getFunctionName(), 'function name at ' + i);
-    //assertEquals(expected[i][1], cs.getLineNumber(), 'line number at ' + i);
-    //assertEquals(expected[i][2], cs.getColumnNumber(), 'column number at ' + i);
+    assertEquals(expected[i][0], cs.getFunctionName(), 'function name at ' + i);
+    assertEquals(expected[i][1], cs.getLineNumber(), 'line number at ' + i);
+    assertEquals(expected[i][2], cs.getColumnNumber(), 'column number at ' + i);
     assertNotNull(cs.getThis(), 'receiver should be global');
-    //assertEquals(stack[0].getThis(), cs.getThis(), 'receiver should be global');
+    assertEquals(stack[0].getThis(), cs.getThis(), 'receiver should be global');
   }
 }
 
@@ -164,8 +164,8 @@ function generateOverflowWasmFromAsmJs() {
   } catch (ex) {
     e = ex;
   }
-  //assertEquals(68, e.stack[2].getLineNumber());
-  //assertEquals(15, e.stack[2].getColumnNumber());
-  //assertEquals(65, e.stack[2].getEnclosingLineNumber());
-  //assertEquals(3, e.stack[2].getEnclosingColumnNumber());
+  assertEquals(68, e.stack[2].getLineNumber());
+  assertEquals(15, e.stack[2].getColumnNumber());
+  assertEquals(65, e.stack[2].getEnclosingLineNumber());
+  assertEquals(3, e.stack[2].getEnclosingColumnNumber());
 })();

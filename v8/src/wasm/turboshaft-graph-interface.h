@@ -83,6 +83,7 @@ class V8_EXPORT_PRIVATE WasmGraphBuilderBase {
   using Word32 = compiler::turboshaft::Word32;
   using Word64 = compiler::turboshaft::Word64;
   using WordPtr = compiler::turboshaft::WordPtr;
+  using Word = compiler::turboshaft::Word;
   using Any = compiler::turboshaft::Any;
 
   template <typename T>
@@ -101,9 +102,14 @@ class V8_EXPORT_PRIVATE WasmGraphBuilderBase {
   OpIndex GetBuiltinPointerTarget(Builtin builtin);
   V<WordPtr> GetTargetForBuiltinCall(Builtin builtin, StubCallMode stub_mode);
   V<BigInt> BuildChangeInt64ToBigInt(V<Word64> input, StubCallMode stub_mode);
+
   std::pair<V<WordPtr>, V<HeapObject>> BuildImportedFunctionTargetAndRef(
       ConstOrV<Word32> func_index,
       V<WasmTrustedInstanceData> trusted_instance_data);
+
+  std::pair<V<WordPtr>, V<ExposedTrustedObject>> BuildFunctionTargetAndRef(
+      V<WasmInternalFunction> internal_function, uint64_t expected_sig_hash);
+
   RegisterRepresentation RepresentationFor(ValueType type);
   V<WasmTrustedInstanceData> LoadTrustedDataFromInstanceObject(
       V<HeapObject> instance_object);

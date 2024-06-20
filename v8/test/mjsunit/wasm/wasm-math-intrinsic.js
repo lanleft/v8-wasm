@@ -253,4 +253,4 @@ function assertBinop(name, math_func, wasm_func) {
   assertUnop(name, math_func, wasm_func);
 })();
 
-//assertEquals(0, numFailures);
+assertEquals(0, numFailures);

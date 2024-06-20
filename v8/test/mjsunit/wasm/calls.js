@@ -11,18 +11,18 @@ function assertModule(module, memsize) {
   assertFalse(module === undefined);
   assertFalse(module === null);
   assertFalse(module === 0);
-  //assertEquals("object", typeof module);
+  assertEquals("object", typeof module);
 
   // Check the memory is an ArrayBuffer.
   var mem = module.exports.memory;
   assertFalse(mem === undefined);
   assertFalse(mem === null);
   assertFalse(mem === 0);
-  //assertEquals("object", typeof mem);
+  assertEquals("object", typeof mem);
   assertTrue(mem instanceof WebAssembly.Memory);
   var buf = mem.buffer;
   assertTrue(buf instanceof ArrayBuffer);
-  //assertEquals(memsize, buf.byteLength);
+  assertEquals(memsize, buf.byteLength);
   for (var i = 0; i < 4; i++) {
     module.exports.memory = 0;  // should be ignored
     mem.buffer = 0; // should be ignored
@@ -32,13 +32,13 @@ function assertModule(module, memsize) {
 }
 
 function assertFunction(module, func) {
-  //assertEquals("object", typeof module.exports);
+  assertEquals("object", typeof module.exports);
 
   var exp = module.exports[func];
   assertFalse(exp === undefined);
   assertFalse(exp === null);
   assertFalse(exp === 0);
-  //assertEquals("function", typeof exp);
+  assertEquals("function", typeof exp);
   return exp;
 }
 
@@ -61,9 +61,9 @@ function assertFunction(module, func) {
 
   // Check the properties of the sub function.
   var sub = assertFunction(module, "sub");
-  //assertEquals(-55, sub(33, 88));
-  //assertEquals(-55555, sub(33333, 88888));
-  //assertEquals(-5555555, sub(3333333, 8888888));
+  assertEquals(-55, sub(33, 88));
+  assertEquals(-55555, sub(33333, 88888));
+  assertEquals(-5555555, sub(3333333, 8888888));
 })();
 
 
@@ -82,7 +82,7 @@ function assertFunction(module, func) {
   assertModule(module, kPageSize * kPages);
 
   var nop = assertFunction(module, "nop");
-  //assertEquals(undefined, nop());
+  assertEquals(undefined, nop());
 })();
 
 
@@ -104,7 +104,7 @@ function assertFunction(module, func) {
   assertModule(module, kPageSize * kPages);
 
   var flt = assertFunction(module, "flt");
-  //assertEquals(1, flt(-2, -1));
-  //assertEquals(0, flt(7.3, 7.1));
-  //assertEquals(1, flt(7.1, 7.3));
+  assertEquals(1, flt(-2, -1));
+  assertEquals(0, flt(7.3, 7.1));
+  assertEquals(1, flt(7.1, 7.3));
 })();

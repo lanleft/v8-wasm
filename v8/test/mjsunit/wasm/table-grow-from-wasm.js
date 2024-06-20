@@ -44,14 +44,14 @@ function testGrowInternalExternRefTable(table_index) {
   const instance = builder.instantiate();
 
   let size = initial_size;
-  //assertEquals(null, instance.exports.get(size - 2));
+  assertEquals(null, instance.exports.get(size - 2));
 
   function growAndCheck(element, grow_by) {
-    //assertEquals(size, instance.exports.size());
+    assertEquals(size, instance.exports.size());
     assertTraps(kTrapTableOutOfBounds, () => instance.exports.get(size));
-    //assertEquals(size, instance.exports.grow(element, grow_by));
+    assertEquals(size, instance.exports.grow(element, grow_by));
     for (let i = 0; i < grow_by; ++i) {
-      //assertEquals(element, instance.exports.get(size + i));
+      assertEquals(element, instance.exports.get(size + i));
     }
     size += grow_by;
   }
@@ -92,18 +92,18 @@ function testGrowInternalAnyFuncTable(table_index) {
   const instance = builder.instantiate();
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call(size - 2));
   function growAndCheck(element, grow_by) {
-    //assertEquals(size, instance.exports.size());
+    assertEquals(size, instance.exports.size());
     assertTraps(kTrapTableOutOfBounds, () => instance.exports.call(size));
-    //assertEquals(size, instance.exports.grow(dummy_func(element), grow_by));
+    assertEquals(size, instance.exports.grow(dummy_func(element), grow_by));
     for (let i = 0; i < grow_by; ++i) {
-      //assertEquals(element, instance.exports.call(size + i));
+      assertEquals(element, instance.exports.call(size + i));
     }
     size += grow_by;
   }
   growAndCheck(56, 3);
   growAndCheck(12, 4);
 
-  //assertEquals(size, instance.exports.grow(null, 1));
+  assertEquals(size, instance.exports.grow(null, 1));
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call(size));
 }
 
@@ -130,13 +130,13 @@ testGrowInternalAnyFuncTable(9);
   const table = new WebAssembly.Table({element: "externref", initial: size});
 
   const instance = builder.instantiate({imp: {table: table}});
-  //assertEquals(undefined, table.get(size - 2));
+  assertEquals(undefined, table.get(size - 2));
 
   function growAndCheck(element, grow_by) {
-    //assertEquals(size, instance.exports.size());
-    //assertEquals(size, instance.exports.grow(element, grow_by));
+    assertEquals(size, instance.exports.size());
+    assertEquals(size, instance.exports.grow(element, grow_by));
     for (let i = 0; i < grow_by; ++i) {
-      //assertEquals(element, table.get(size + i));
+      assertEquals(element, table.get(size + i));
     }
     size += grow_by;
   }
@@ -215,26 +215,26 @@ testGrowInternalAnyFuncTable(9);
   const func = dummy_func(17);
 
   // First check that growing out-of-bounds is not possible.
-  //assertEquals(-1, instance.exports.grow_imported_ref(ref, invalid_delta));
-  //assertEquals(initial, table_ref.length);
-  //assertEquals(initial, instance.exports.size_imported_ref());
-  //assertEquals(-1, instance.exports.grow_imported_func(func, invalid_delta));
-  //assertEquals(initial, table_func.length);
-  //assertEquals(initial, instance.exports.size_imported_func());
-  //assertEquals(-1, instance.exports.grow_internal_ref(ref, invalid_delta));
-  //assertEquals(initial, instance.exports.size_internal_ref());
-  //assertEquals(-1, instance.exports.grow_internal_func(func, invalid_delta));
-  //assertEquals(initial, instance.exports.size_internal_func());
+  assertEquals(-1, instance.exports.grow_imported_ref(ref, invalid_delta));
+  assertEquals(initial, table_ref.length);
+  assertEquals(initial, instance.exports.size_imported_ref());
+  assertEquals(-1, instance.exports.grow_imported_func(func, invalid_delta));
+  assertEquals(initial, table_func.length);
+  assertEquals(initial, instance.exports.size_imported_func());
+  assertEquals(-1, instance.exports.grow_internal_ref(ref, invalid_delta));
+  assertEquals(initial, instance.exports.size_internal_ref());
+  assertEquals(-1, instance.exports.grow_internal_func(func, invalid_delta));
+  assertEquals(initial, instance.exports.size_internal_func());
 
   // Check that we can grow to the maximum size.
-  //assertEquals(initial, instance.exports.grow_imported_ref(ref, max_delta));
-  //assertEquals(maximum, table_ref.length);
-  //assertEquals(maximum, instance.exports.size_imported_ref());
-  //assertEquals(initial, instance.exports.grow_imported_func(func, max_delta));
-  //assertEquals(maximum, table_func.length);
-  //assertEquals(maximum, instance.exports.size_imported_func());
-  //assertEquals(initial, instance.exports.grow_internal_ref(ref, max_delta));
-  //assertEquals(maximum, instance.exports.size_internal_ref());
-  //assertEquals(initial, instance.exports.grow_internal_func(func, max_delta));
-  //assertEquals(maximum, instance.exports.size_internal_func());
+  assertEquals(initial, instance.exports.grow_imported_ref(ref, max_delta));
+  assertEquals(maximum, table_ref.length);
+  assertEquals(maximum, instance.exports.size_imported_ref());
+  assertEquals(initial, instance.exports.grow_imported_func(func, max_delta));
+  assertEquals(maximum, table_func.length);
+  assertEquals(maximum, instance.exports.size_imported_func());
+  assertEquals(initial, instance.exports.grow_internal_ref(ref, max_delta));
+  assertEquals(maximum, instance.exports.size_internal_ref());
+  assertEquals(initial, instance.exports.grow_internal_func(func, max_delta));
+  assertEquals(maximum, instance.exports.size_internal_func());
 })();

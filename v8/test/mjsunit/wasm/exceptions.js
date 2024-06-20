@@ -24,7 +24,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.throw_if_param_not_zero(0));
+  assertEquals(1, instance.exports.throw_if_param_not_zero(0));
   assertWasmThrows(instance, except, [],
                    () => instance.exports.throw_if_param_not_zero(10));
   assertWasmThrows(instance, except, [],
@@ -67,8 +67,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(23, instance.exports.simple_throw_catch_to_0_1(0));
-  //assertEquals(42, instance.exports.simple_throw_catch_to_0_1(1));
+  assertEquals(23, instance.exports.simple_throw_catch_to_0_1(0));
+  assertEquals(42, instance.exports.simple_throw_catch_to_0_1(1));
 })();
 
 (function TestTrapNotCaught() {
@@ -106,7 +106,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(3, instance.exports.trap_in_callee(7, 2));
+  assertEquals(3, instance.exports.trap_in_callee(7, 2));
   assertTraps(kTrapDivByZero, () => instance.exports.trap_in_callee(1, 0));
 })();
 
@@ -149,7 +149,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   }
   assertSame(exception, caught);
   assertInstanceof(exception, WebAssembly.RuntimeError);
-  //assertEquals(exception.message, kTrapMsgs[kTrapDivByZero]);
+  assertEquals(exception.message, kTrapMsgs[kTrapDivByZero]);
 })();
 
 (function TestManuallyThrownRuntimeErrorCaught() {
@@ -169,7 +169,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   }
   let instance = builder.instantiate({imp: {ort: throw_exc}});
 
-  //assertEquals(11, instance.exports.call_import());
+  assertEquals(11, instance.exports.call_import());
 })();
 
 (function TestExnWithWasmProtoNotCaught() {
@@ -213,7 +213,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     caught = e;
   }
   assertTrue(!!caught, 'should have trapped');
-  //assertEquals(caught, wrapped_exn);
+  assertEquals(caught, wrapped_exn);
   assertInstanceof(caught.__proto__, WebAssembly.Exception);
 })();
 
@@ -274,8 +274,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(3, instance.exports.catch_complex(0));
-  //assertEquals(4, instance.exports.catch_complex(1));
+  assertEquals(3, instance.exports.catch_complex(0));
+  assertEquals(4, instance.exports.catch_complex(1));
   assertWasmThrows(instance, except3, [],
                    () => instance.exports.catch_complex(2));
 })();
@@ -314,8 +314,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(3, instance.exports.catch_complex(0));
-  //assertEquals(4, instance.exports.catch_complex(1));
+  assertEquals(3, instance.exports.catch_complex(0));
+  assertEquals(4, instance.exports.catch_complex(1));
   assertWasmThrows(instance, except3, [],
                    () => instance.exports.catch_complex(2));
 })();
@@ -354,9 +354,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(0, instance.exports.throw_catch_param(0));
-  //assertEquals(1, instance.exports.throw_catch_param(1));
-  //assertEquals(10, instance.exports.throw_catch_param(10));
+  assertEquals(0, instance.exports.throw_catch_param(0));
+  assertEquals(1, instance.exports.throw_catch_param(1));
+  assertEquals(10, instance.exports.throw_catch_param(10));
 })();
 
 // Test the encoding of a thrown exception with an integer exception.
@@ -394,8 +394,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(5.0, instance.exports.throw_catch_param(5.0));
-  //assertEquals(10.5, instance.exports.throw_catch_param(10.5));
+  assertEquals(5.0, instance.exports.throw_catch_param(5.0));
+  assertEquals(10.5, instance.exports.throw_catch_param(10.5));
 })();
 
 // Test the encoding of a thrown exception with a float value.
@@ -443,9 +443,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.throw_catch_param(5));
-  //assertEquals(1, instance.exports.throw_catch_param(0));
-  //assertEquals(1, instance.exports.throw_catch_param(-1));
+  assertEquals(1, instance.exports.throw_catch_param(5));
+  assertEquals(1, instance.exports.throw_catch_param(0));
+  assertEquals(1, instance.exports.throw_catch_param(-1));
 })();
 
 // Test the encoding of a thrown exception with an I64 value.
@@ -489,8 +489,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(5.0, instance.exports.throw_catch_param(5.0));
-  //assertEquals(10.5, instance.exports.throw_catch_param(10.5));
+  assertEquals(5.0, instance.exports.throw_catch_param(5.0));
+  assertEquals(10.5, instance.exports.throw_catch_param(10.5));
 })();
 
 // Test the encoding of a thrown exception with an f64 value.
@@ -800,24 +800,24 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       throw_undefined: throw_undefined
   }});
 
-  //assertEquals(63, instance.exports.same_scope(0));
-  //assertEquals(1024, instance.exports.same_scope(1024));
-  //assertEquals(-3, instance.exports.same_scope(-3));
-  //assertEquals(-1, instance.exports.same_scope_ignore(-1));
-  //assertEquals(1, instance.exports.same_scope_ignore(1));
-  //assertEquals(0x7FFFFFFF, instance.exports.same_scope_ignore(0x7FFFFFFF));
-  //assertEquals(1024, instance.exports.same_scope_ignore(1024));
-  //assertEquals(-1, instance.exports.same_scope_ignore(-1));
-  //assertEquals(293, instance.exports.same_scope_multiple(1));
-  //assertEquals(298, instance.exports.same_scope_multiple(2));
-  //assertEquals(338, instance.exports.same_scope_multiple(3));
-  //assertEquals(146, instance.exports.same_scope_multiple(0));
-  //assertEquals(-10024, instance.exports.from_direct_callee(-10024));
-  //assertEquals(3334333, instance.exports.from_direct_callee(3334333));
-  //assertEquals(-1, instance.exports.from_direct_callee(0xFFFFFFFF));
-  //assertEquals(0x7FFFFFFF, instance.exports.from_direct_callee(0x7FFFFFFF));
-  //assertEquals(10, instance.exports.from_indirect_callee(10, 0));
-  //assertEquals(77, instance.exports.from_indirect_callee(77, 1));
+  assertEquals(63, instance.exports.same_scope(0));
+  assertEquals(1024, instance.exports.same_scope(1024));
+  assertEquals(-3, instance.exports.same_scope(-3));
+  assertEquals(-1, instance.exports.same_scope_ignore(-1));
+  assertEquals(1, instance.exports.same_scope_ignore(1));
+  assertEquals(0x7FFFFFFF, instance.exports.same_scope_ignore(0x7FFFFFFF));
+  assertEquals(1024, instance.exports.same_scope_ignore(1024));
+  assertEquals(-1, instance.exports.same_scope_ignore(-1));
+  assertEquals(293, instance.exports.same_scope_multiple(1));
+  assertEquals(298, instance.exports.same_scope_multiple(2));
+  assertEquals(338, instance.exports.same_scope_multiple(3));
+  assertEquals(146, instance.exports.same_scope_multiple(0));
+  assertEquals(-10024, instance.exports.from_direct_callee(-10024));
+  assertEquals(3334333, instance.exports.from_direct_callee(3334333));
+  assertEquals(-1, instance.exports.from_direct_callee(0xFFFFFFFF));
+  assertEquals(0x7FFFFFFF, instance.exports.from_direct_callee(0x7FFFFFFF));
+  assertEquals(10, instance.exports.from_indirect_callee(10, 0));
+  assertEquals(77, instance.exports.from_indirect_callee(77, 1));
 
   assertThrowsEquals(() => instance.exports.i_from_js(10), 10);
   assertThrowsEquals(() => instance.exports.i_from_js(-10), -10);
@@ -843,7 +843,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(1, instance.exports.test());
+  assertEquals(1, instance.exports.test());
 })();
 
 // Delegate exception handling to outer try/catch block.
@@ -870,8 +870,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(1, instance.exports.test(0));
-  //assertEquals(2, instance.exports.test(1));
+  assertEquals(1, instance.exports.test(0));
+  assertEquals(2, instance.exports.test(1));
 })();
 
 // No catch block matching the exception in the delegate target.
@@ -939,11 +939,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(2, instance.exports.test(1, 0));
+  assertEquals(2, instance.exports.test(1, 0));
   assertThrows(() => instance.exports.test(2, 0), WebAssembly.Exception);
-  //assertEquals(2, instance.exports.test(0, 1));
+  assertEquals(2, instance.exports.test(0, 1));
   assertThrows(() => instance.exports.test(0, 2), WebAssembly.Exception);
-  //assertEquals(1, instance.exports.test(0, 0));
+  assertEquals(1, instance.exports.test(0, 0));
 })();
 
 // Delegate to second enclosing try scope.
@@ -970,7 +970,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(3, instance.exports.test());
+  assertEquals(3, instance.exports.test());
 })();
 
 (function TestDelegateUnreachable() {
@@ -992,7 +992,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(2, instance.exports.test());
+  assertEquals(2, instance.exports.test());
 })();
 
 (function TestDelegateToCaller() {
@@ -1027,7 +1027,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(42, instance.exports.throw_before_unreachable());
+  assertEquals(42, instance.exports.throw_before_unreachable());
 })();
 
 (function TestUnreachableInCatchAll() {
@@ -1067,7 +1067,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     ]).exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(42, instance.exports.throw_with_local());
+  assertEquals(42, instance.exports.throw_with_local());
 })();
 
 (function TestCatchlessTry() {
@@ -1108,7 +1108,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
       ]).exportFunc();
   instance = builder.instantiate();
-  //assertEquals(2, instance.exports.test());
+  assertEquals(2, instance.exports.test());
 })();
 
 // Delegate to a regular block with no outer try (delegate to caller).

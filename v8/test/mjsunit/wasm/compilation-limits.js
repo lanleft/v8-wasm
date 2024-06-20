@@ -19,7 +19,7 @@ let buffer = (() => {
 
 let ok_module = new WebAssembly.Module(buffer);
 assertTrue(ok_module instanceof WebAssembly.Module);
-//assertEquals(42, new WebAssembly.Instance(ok_module).exports.f());
+assertEquals(42, new WebAssembly.Instance(ok_module).exports.f());
 
 failWithMessage = msg => %AbortJS(msg);
 
@@ -29,7 +29,7 @@ async function SuccessfulTest() {
   %SetWasmInstantiateControls();
   let m = new WebAssembly.Module(buffer);
   let i = new WebAssembly.Instance(m);
-  //assertEquals(i.exports.f(), 42);
+  assertEquals(i.exports.f(), 42);
 }
 
 async function FailSyncCompile() {

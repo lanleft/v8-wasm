@@ -23,7 +23,7 @@ function run(f) {
     var instance = new WebAssembly.Instance(module, {m: {f: f}});
     var g = instance.exports.main;
     for (var j = 0; j < 10; j++) {
-      //assertEquals(f(j), g(j));
+      assertEquals(f(j), g(j));
     }
   }
 }

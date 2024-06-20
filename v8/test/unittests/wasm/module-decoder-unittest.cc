@@ -1488,6 +1488,7 @@ TEST_F(WasmModuleVerifyTest, DataSegmentEndOverflow) {
   EXPECT_FAILURE(data);
 }
 
+// TODO(evih): Use enum values instead of numbers.
 TEST_F(WasmModuleVerifyTest, OneIndirectFunction) {
   static const uint8_t data[] = {
       // sig#0 ---------------------------------------------------------------
@@ -3144,6 +3145,36 @@ TEST_F(WasmModuleVerifyTest, ActiveElementSegmentWithElements) {
       ONE_EMPTY_BODY};
   EXPECT_VERIFIES(data);
   EXPECT_OFF_END_FAILURE(data, arraysize(data) - 5);
+}
+
+TEST_F(WasmModuleVerifyTest, Table64ActiveElementSegmentWithElements) {
+  WASM_FEATURE_SCOPE(memory64);
+  for (bool enable_table64 : {false, true}) {
+    for (bool use_table64 : {false, true}) {
+      uint8_t const_opcode = use_table64 ? kExprI64Const : kExprI32Const;
+      const uint8_t data[] = {
+          // sig#0 -------------------------------------------------------
+          TYPE_SECTION_ONE_SIG_VOID_VOID,
+          // funcs -------------------------------------------------------
+          ONE_EMPTY_FUNCTION(SIG_INDEX(0)),
+          // table declaration -------------------------------------------
+          SECTION(Table, ENTRY_COUNT(1), kFuncRefCode,
+                  enable_table64 ? kMemory64WithMaximum : kWithMaximum, 20, 28),
+          // element segments --------------------------------------------
+          SECTION(Element, ENTRY_COUNT(1), ACTIVE_WITH_ELEMENTS, TABLE_INDEX0,
+                  const_opcode, 0, kExprEnd, kFuncRefCode, U32V_1(3),
+                  REF_FUNC_ELEMENT(0), REF_FUNC_ELEMENT(0), REF_NULL_ELEMENT),
+          // code --------------------------------------------------------
+          ONE_EMPTY_BODY};
+      if (enable_table64 == use_table64) {
+        EXPECT_VERIFIES(data);
+      } else if (enable_table64) {
+        EXPECT_FAILURE_WITH_MSG(data, "expected i64, got i32");
+      } else {
+        EXPECT_FAILURE_WITH_MSG(data, "expected i32, got i64");
+      }
+    };
+  }
 }
 
 TEST_F(WasmModuleVerifyTest, PassiveElementSegment) {

@@ -25,8 +25,8 @@ function assertInvalid(fn, message) {
 
   let instance = builder.instantiate()
 
-  //assertEquals('foo', instance.exports.passthrough('foo'));
-  //assertEquals(null, instance.exports.passthrough(null));
+  assertEquals('foo', instance.exports.passthrough('foo'));
+  assertEquals(null, instance.exports.passthrough(null));
 
   assertThrows(()=>instance.exports.passthrough(3),
                TypeError, "type incompatibility when transforming from/to JS");
@@ -74,7 +74,7 @@ function assertInvalid(fn, message) {
   let instance = builder.instantiate(
       { env: { transformer: x=>x.toUpperCase() } });
 
-  //assertEquals('FOO', instance.exports.transform('foo'));
+  assertEquals('FOO', instance.exports.transform('foo'));
 })();
 
 (function TestViewsUnsupported() {
@@ -136,14 +136,14 @@ function assertInvalid(fn, message) {
 
   let instance = builder.instantiate()
 
-  //assertEquals(null, instance.exports.get_stringref());
+  assertEquals(null, instance.exports.get_stringref());
   instance.exports.set_stringref('foo');
-  //assertEquals('foo', instance.exports.get_stringref());
+  assertEquals('foo', instance.exports.get_stringref());
 
-  //assertEquals('foo', instance.exports.w.value);
+  assertEquals('foo', instance.exports.w.value);
   instance.exports.w.value = 'bar';
-  //assertEquals('bar', instance.exports.w.value);
-  //assertEquals('bar', instance.exports.get_stringref());
+  assertEquals('bar', instance.exports.w.value);
+  assertEquals('bar', instance.exports.get_stringref());
 })();
 
 (function TestImportedGlobals() {
@@ -162,7 +162,7 @@ function assertInvalid(fn, message) {
   // String with default initializer.
   // TODO(12868): Is this the intended behavior?
   let null_str = new WebAssembly.Global({ value: 'stringref' });
-  //assertEquals(null, null_str.value);
+  assertEquals(null, null_str.value);
 
   let kSig_w_v = makeSig([], [kWasmStringRef]);
   let kSig_v_w = makeSig([kWasmStringRef], []);
@@ -184,14 +184,14 @@ function assertInvalid(fn, message) {
                                  null);
   let instance = builder.instantiate({env: {w: w}})
 
-  //assertEquals(null, instance.exports.get_stringref());
+  assertEquals(null, instance.exports.get_stringref());
   instance.exports.set_stringref('foo');
-  //assertEquals('foo', instance.exports.get_stringref());
+  assertEquals('foo', instance.exports.get_stringref());
 
-  //assertEquals('foo', w.value);
+  assertEquals('foo', w.value);
   w.value = 'bar';
-  //assertEquals('bar', w.value);
-  //assertEquals('bar', instance.exports.get_stringref());
+  assertEquals('bar', w.value);
+  assertEquals('bar', instance.exports.get_stringref());
 })();
 
 (function TestDefinedTables() {
@@ -220,14 +220,14 @@ function assertInvalid(fn, message) {
 
   let instance = builder.instantiate()
 
-  //assertEquals(null, instance.exports.get_stringref());
+  assertEquals(null, instance.exports.get_stringref());
   instance.exports.set_stringref('foo');
-  //assertEquals('foo', instance.exports.get_stringref());
+  assertEquals('foo', instance.exports.get_stringref());
 
-  //assertEquals('foo', instance.exports.w.get(0));
+  assertEquals('foo', instance.exports.w.get(0));
   instance.exports.w.set(0, 'bar');
-  //assertEquals('bar', instance.exports.w.get(0));
-  //assertEquals('bar', instance.exports.get_stringref());
+  assertEquals('bar', instance.exports.w.get(0));
+  assertEquals('bar', instance.exports.get_stringref());
 
 })();
 
@@ -271,12 +271,12 @@ function assertInvalid(fn, message) {
                                  null);
   let instance = builder.instantiate({env: {t: t}})
 
-  //assertEquals(null, instance.exports.get_stringref());
+  assertEquals(null, instance.exports.get_stringref());
   instance.exports.set_stringref('foo');
-  //assertEquals('foo', instance.exports.get_stringref());
+  assertEquals('foo', instance.exports.get_stringref());
 
-  //assertEquals('foo', t.get(0));
+  assertEquals('foo', t.get(0));
   t.set(0, 'bar');
-  //assertEquals('bar', t.get(0));
-  //assertEquals('bar', instance.exports.get_stringref());
+  assertEquals('bar', t.get(0));
+  assertEquals('bar', instance.exports.get_stringref());
 })();

@@ -443,6 +443,8 @@ constexpr bool is_numeric(ValueKind kind) {
   }
 }
 
+constexpr bool is_valid(ValueKind kind) { return kind <= kBottom; }
+
 constexpr bool is_reference(ValueKind kind) {
   return kind == kRef || kind == kRefNull || kind == kRtt;
 }
@@ -503,6 +505,11 @@ constexpr const char* name(ValueKind kind) {
   };
 
   return kKindName[kind];
+}
+
+// Output operator, useful for DCHECKS and others.
+inline std::ostream& operator<<(std::ostream& oss, ValueKind kind) {
+  return oss << name(kind);
 }
 
 constexpr MachineType machine_type(ValueKind kind) {

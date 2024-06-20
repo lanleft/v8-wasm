@@ -18,11 +18,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0n, wasm.id(0n));
-  //assertEquals(1n, wasm.id(1n));
-  //assertEquals(-1n, wasm.id(-1n));
-  //assertEquals(0x123456789ABCn, wasm.id(0x123456789ABCn));
-  //assertEquals(-0x123456789ABCn, wasm.id(-0x123456789ABCn));
+  assertEquals(0n, wasm.id(0n));
+  assertEquals(1n, wasm.id(1n));
+  assertEquals(-1n, wasm.id(-1n));
+  assertEquals(0x123456789ABCn, wasm.id(0x123456789ABCn));
+  assertEquals(-0x123456789ABCn, wasm.id(-0x123456789ABCn));
 })();
 
 (function I64Constants() {
@@ -37,7 +37,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals([0n, -12345n, 0x123456789ABCDEFn], wasm.main());
+  assertEquals([0n, -12345n, 0x123456789ABCDEFn], wasm.main());
 })();
 
 (function I64Multiplication() {
@@ -52,12 +52,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0n, wasm.mul(0n, 5n));
-  //assertEquals(0n, wasm.mul(5n, 0n));
-  //assertEquals(5n, wasm.mul(1n, 5n));
-  //assertEquals(-5n, wasm.mul(5n, -1n));
-  //assertEquals(35n, wasm.mul(-5n, -7n));
-  //assertEquals(0xfffffffffn * 0xfn, wasm.mul(0xfffffffffn, 0xfn));
+  assertEquals(0n, wasm.mul(0n, 5n));
+  assertEquals(0n, wasm.mul(5n, 0n));
+  assertEquals(5n, wasm.mul(1n, 5n));
+  assertEquals(-5n, wasm.mul(5n, -1n));
+  assertEquals(35n, wasm.mul(-5n, -7n));
+  assertEquals(0xfffffffffn * 0xfn, wasm.mul(0xfffffffffn, 0xfn));
 })();
 
 (function I64Addition() {
@@ -72,9 +72,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(3n, wasm.add(1n, 2n));
-  //assertEquals(0n, wasm.add(100n, -100n));
-  //assertEquals(0x12345678n + 0xABCDEF1234n,
+  assertEquals(3n, wasm.add(1n, 2n));
+  assertEquals(0n, wasm.add(100n, -100n));
+  assertEquals(0x12345678n + 0xABCDEF1234n,
                wasm.add(0x12345678n, 0xABCDEF1234n));
 })();
 
@@ -90,11 +90,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(-1n, wasm.sub(1n, 2n));
-  //assertEquals(200n, wasm.sub(100n, -100n));
-  //assertEquals(0x12345678n - 0xABCDEF1234n,
+  assertEquals(-1n, wasm.sub(1n, 2n));
+  assertEquals(200n, wasm.sub(100n, -100n));
+  assertEquals(0x12345678n - 0xABCDEF1234n,
                wasm.sub(0x12345678n, 0xABCDEF1234n));
-  //assertEquals(0n, wasm.sub(0x123456789ABCDEFn, 0x123456789ABCDEFn));
+  assertEquals(0n, wasm.sub(0x123456789ABCDEFn, 0x123456789ABCDEFn));
 })();
 
 (function I64BitAnd() {
@@ -109,11 +109,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(
+  assertEquals(
     0b10101010_00000000_11111111_01010101n, wasm.and(
     0b10101010_00000000_11111111_01010101n,
     0b10101010_00000000_11111111_01010101n));
-  //assertEquals(
+  assertEquals(
     0b10101010_00000000_01010101_00000000n, wasm.and(
     0b10101010_00000000_11111111_01010101n,
     0b11111111_11111111_01010101_00000000n));
@@ -131,11 +131,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(
+  assertEquals(
     0b10101010_00000000_11111111_01010101n, wasm.or(
     0b10101010_00000000_11111111_01010101n,
     0b10101010_00000000_11111111_01010101n));
-  //assertEquals(
+  assertEquals(
     0b11111111_11111111_11111111_01010101n, wasm.or(
     0b10101010_00000000_11111111_01010101n,
     0b11111111_11111111_01010101_00000000n));
@@ -153,11 +153,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(
+  assertEquals(
     0b10101010_00000000_11111111_01010101n, wasm.xor(
     0b10101010_00000000_11111111_01010101n,
     0b00000000_00000000_00000000_00000000n));
-  //assertEquals(
+  assertEquals(
     0b11111111_11111111_11111111_01010101n, wasm.xor(
     0b10101010_00000000_11111111_01010101n,
     0b01010101_11111111_00000000_00000000n));
@@ -175,11 +175,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0x123456789n, wasm.shl(0x123456789n, 0n));
-  //assertEquals(0x1234567890000n, wasm.shl(0x123456789n, 16n));
-  //assertEquals(0x3456789000000000n, wasm.shl(0x123456789n, 36n));
-  //assertEquals(31n << 56n, wasm.shl(31n, -8n));
-  //assertEquals(31n << 1n, wasm.shl(31n, 65n));
+  assertEquals(0x123456789n, wasm.shl(0x123456789n, 0n));
+  assertEquals(0x1234567890000n, wasm.shl(0x123456789n, 16n));
+  assertEquals(0x3456789000000000n, wasm.shl(0x123456789n, 36n));
+  assertEquals(31n << 56n, wasm.shl(31n, -8n));
+  assertEquals(31n << 1n, wasm.shl(31n, 65n));
 })();
 
 (function I64BitShrs() {
@@ -194,14 +194,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0x123456789n, wasm.shrs(0x123456789n, 0n));
-  //assertEquals(0x12345n, wasm.shrs(0x123456789n, 16n));
-  //assertEquals(-0x2n, wasm.shrs(-0x123456789n, 32n));
-  //assertEquals(-0x1n, wasm.shrs(-0x123456789n, 33n));
-  //assertEquals(-0x1n, wasm.shrs(-0x123456789n, 40n));
-  //assertEquals(-0x123456789n, wasm.shrs(-0x123456789n, 64n));
-  //assertEquals(31n >> 56n, wasm.shrs(31n, -8n));
-  //assertEquals(31n >> 1n, wasm.shrs(31n, 65n));
+  assertEquals(0x123456789n, wasm.shrs(0x123456789n, 0n));
+  assertEquals(0x12345n, wasm.shrs(0x123456789n, 16n));
+  assertEquals(-0x2n, wasm.shrs(-0x123456789n, 32n));
+  assertEquals(-0x1n, wasm.shrs(-0x123456789n, 33n));
+  assertEquals(-0x1n, wasm.shrs(-0x123456789n, 40n));
+  assertEquals(-0x123456789n, wasm.shrs(-0x123456789n, 64n));
+  assertEquals(31n >> 56n, wasm.shrs(31n, -8n));
+  assertEquals(31n >> 1n, wasm.shrs(31n, 65n));
 })();
 
 (function I64BitShrU() {
@@ -216,13 +216,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0x123456789n, wasm.shru(0x123456789n, 0n));
-  //assertEquals(0x12345n, wasm.shru(0x123456789n, 16n));
-  //assertEquals(0xFFFFFFFEn, wasm.shru(-0x123456789n, 32n));
-  //assertEquals(0xFn, wasm.shru(-0x123456789n, 60n));
-  //assertEquals(-0x123456789n, wasm.shru(-0x123456789n, 64n));
-  //assertEquals(31n >> 56n, wasm.shru(31n, -8n));
-  //assertEquals(31n >> 1n, wasm.shru(31n, 65n));
+  assertEquals(0x123456789n, wasm.shru(0x123456789n, 0n));
+  assertEquals(0x12345n, wasm.shru(0x123456789n, 16n));
+  assertEquals(0xFFFFFFFEn, wasm.shru(-0x123456789n, 32n));
+  assertEquals(0xFn, wasm.shru(-0x123456789n, 60n));
+  assertEquals(-0x123456789n, wasm.shru(-0x123456789n, 64n));
+  assertEquals(31n >> 56n, wasm.shru(31n, -8n));
+  assertEquals(31n >> 1n, wasm.shru(31n, 65n));
 })();
 
 (function I64BitRol() {
@@ -237,14 +237,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0x123456789n, wasm.rol(0x123456789n, 0n));
-  //assertEquals(0x1234567890000n, wasm.rol(0x123456789n, 16n));
-  //assertEquals(0x3456789000000012n, wasm.rol(0x123456789n, 36n));
-  //assertEquals(0x34567890ABCDEF12n, wasm.rol(0xABCDEF1234567890n, 32n));
-  //assertEquals(0x4D5E6F78091A2B3Cn, wasm.rol(0x123456789ABCDEF0n, 31n));
-  //assertEquals(0x3579BDE02468ACF1n, wasm.rol(0x123456789ABCDEF0n, 33n));
-  //assertEquals(31n << 56n, wasm.rol(31n, -8n));
-  //assertEquals(31n << 1n, wasm.rol(31n, 65n));
+  assertEquals(0x123456789n, wasm.rol(0x123456789n, 0n));
+  assertEquals(0x1234567890000n, wasm.rol(0x123456789n, 16n));
+  assertEquals(0x3456789000000012n, wasm.rol(0x123456789n, 36n));
+  assertEquals(0x34567890ABCDEF12n, wasm.rol(0xABCDEF1234567890n, 32n));
+  assertEquals(0x4D5E6F78091A2B3Cn, wasm.rol(0x123456789ABCDEF0n, 31n));
+  assertEquals(0x3579BDE02468ACF1n, wasm.rol(0x123456789ABCDEF0n, 33n));
+  assertEquals(31n << 56n, wasm.rol(31n, -8n));
+  assertEquals(31n << 1n, wasm.rol(31n, 65n));
 })();
 
 (function I64BitRolStaticRhs() {
@@ -275,7 +275,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   for (const [lhs, rhs, expected] of tests) {
     print(`test i64.rol(${lhs}, ${rhs}) == ${expected}`);
-    //assertEquals(expected, wasm[`rol${rhs}`](lhs));
+    assertEquals(expected, wasm[`rol${rhs}`](lhs));
   }
 })();
 
@@ -291,14 +291,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0x123456789n, wasm.ror(0x123456789n, 0n));
-  //assertEquals(0x6789000000012345n, wasm.ror(0x123456789n, 16n));
-  //assertEquals(0x1234567890000000n, wasm.ror(0x123456789n, 36n));
-  //assertEquals(0x34567890ABCDEF12n, wasm.ror(0xABCDEF1234567890n, 32n));
-  //assertEquals(0x3579BDE02468ACF1n, wasm.ror(0x123456789ABCDEF0n, 31n));
-  //assertEquals(0x4D5E6F78091A2B3Cn, wasm.ror(0x123456789ABCDEF0n, 33n));
-  //assertEquals(31n << 8n, wasm.ror(31n, -8n));
-  //assertEquals(31n << 1n, wasm.ror(31n, 127n));
+  assertEquals(0x123456789n, wasm.ror(0x123456789n, 0n));
+  assertEquals(0x6789000000012345n, wasm.ror(0x123456789n, 16n));
+  assertEquals(0x1234567890000000n, wasm.ror(0x123456789n, 36n));
+  assertEquals(0x34567890ABCDEF12n, wasm.ror(0xABCDEF1234567890n, 32n));
+  assertEquals(0x3579BDE02468ACF1n, wasm.ror(0x123456789ABCDEF0n, 31n));
+  assertEquals(0x4D5E6F78091A2B3Cn, wasm.ror(0x123456789ABCDEF0n, 33n));
+  assertEquals(31n << 8n, wasm.ror(31n, -8n));
+  assertEquals(31n << 1n, wasm.ror(31n, 127n));
 })();
 
 (function I64Equals() {
@@ -313,12 +313,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(1, wasm.eq(0n, 0n));
-  //assertEquals(1, wasm.eq(-123n, -123n));
-  //assertEquals(0, wasm.eq(-123n, 123n));
-  //assertEquals(0, wasm.eq(0x12345678_87654321n, 0x87654321_12345678n));
-  //assertEquals(0, wasm.eq(0x12345678_87654321n, 0x1234567A_87654321n));
-  //assertEquals(0, wasm.eq(0x12345678_87654321n, 0x12345678_8765432An));
+  assertEquals(1, wasm.eq(0n, 0n));
+  assertEquals(1, wasm.eq(-123n, -123n));
+  assertEquals(0, wasm.eq(-123n, 123n));
+  assertEquals(0, wasm.eq(0x12345678_87654321n, 0x87654321_12345678n));
+  assertEquals(0, wasm.eq(0x12345678_87654321n, 0x1234567A_87654321n));
+  assertEquals(0, wasm.eq(0x12345678_87654321n, 0x12345678_8765432An));
 })();
 
 (function I64NotEquals() {
@@ -333,12 +333,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0, wasm.ne(0n, 0n));
-  //assertEquals(0, wasm.ne(-123n, -123n));
-  //assertEquals(1, wasm.ne(-123n, 123n));
-  //assertEquals(1, wasm.ne(0x12345678_87654321n, 0x87654321_12345678n));
-  //assertEquals(1, wasm.ne(0x12345678_87654321n, 0x1234567A_87654321n));
-  //assertEquals(1, wasm.ne(0x12345678_87654321n, 0x12345678_8765432An));
+  assertEquals(0, wasm.ne(0n, 0n));
+  assertEquals(0, wasm.ne(-123n, -123n));
+  assertEquals(1, wasm.ne(-123n, 123n));
+  assertEquals(1, wasm.ne(0x12345678_87654321n, 0x87654321_12345678n));
+  assertEquals(1, wasm.ne(0x12345678_87654321n, 0x1234567A_87654321n));
+  assertEquals(1, wasm.ne(0x12345678_87654321n, 0x12345678_8765432An));
 })();
 
 (function I64LessThanSigned() {
@@ -353,13 +353,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0, wasm.lts(0n, 0n));
-  //assertEquals(1, wasm.lts(-123n, 123n));
-  //assertEquals(0, wasm.lts(123n, -123n));
-  //assertEquals(1, wasm.lts(0x12345678_12488421n, 0x12488421_12345678n));
-  //assertEquals(0, wasm.lts(0x12488421_12345678n, 0x12345678_12488421n));
-  //assertEquals(0, wasm.lts(0x12345678_87654321n, 0x12345678_87654320n));
-  //assertEquals(1, wasm.lts(0x12345678_87654321n, 0x12345678_87654322n));
+  assertEquals(0, wasm.lts(0n, 0n));
+  assertEquals(1, wasm.lts(-123n, 123n));
+  assertEquals(0, wasm.lts(123n, -123n));
+  assertEquals(1, wasm.lts(0x12345678_12488421n, 0x12488421_12345678n));
+  assertEquals(0, wasm.lts(0x12488421_12345678n, 0x12345678_12488421n));
+  assertEquals(0, wasm.lts(0x12345678_87654321n, 0x12345678_87654320n));
+  assertEquals(1, wasm.lts(0x12345678_87654321n, 0x12345678_87654322n));
 })();
 
 (function I64LessThanOrEqualSigned() {
@@ -374,13 +374,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(1, wasm.les(0n, 0n));
-  //assertEquals(1, wasm.les(-123n, 123n));
-  //assertEquals(0, wasm.les(123n, -123n));
-  //assertEquals(1, wasm.les(0x12345678_12488421n, 0x12488421_12345678n));
-  //assertEquals(0, wasm.les(0x12488421_12345678n, 0x12345678_12488421n));
-  //assertEquals(0, wasm.les(0x12345678_87654321n, 0x12345678_87654320n));
-  //assertEquals(1, wasm.les(0x12345678_87654321n, 0x12345678_87654322n));
+  assertEquals(1, wasm.les(0n, 0n));
+  assertEquals(1, wasm.les(-123n, 123n));
+  assertEquals(0, wasm.les(123n, -123n));
+  assertEquals(1, wasm.les(0x12345678_12488421n, 0x12488421_12345678n));
+  assertEquals(0, wasm.les(0x12488421_12345678n, 0x12345678_12488421n));
+  assertEquals(0, wasm.les(0x12345678_87654321n, 0x12345678_87654320n));
+  assertEquals(1, wasm.les(0x12345678_87654321n, 0x12345678_87654322n));
 })();
 
 (function I64LessThanUnsigned() {
@@ -395,13 +395,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0, wasm.ltu(0n, 0n));
-  //assertEquals(0, wasm.ltu(-123n, 123n));
-  //assertEquals(1, wasm.ltu(123n, -123n));
-  //assertEquals(1, wasm.ltu(0x12345678_12488421n, 0x12488421_12345678n));
-  //assertEquals(0, wasm.ltu(0x12488421_12345678n, 0x12345678_12488421n));
-  //assertEquals(0, wasm.ltu(0x12345678_87654321n, 0x12345678_87654320n));
-  //assertEquals(1, wasm.ltu(0x12345678_87654321n, 0x12345678_87654322n));
+  assertEquals(0, wasm.ltu(0n, 0n));
+  assertEquals(0, wasm.ltu(-123n, 123n));
+  assertEquals(1, wasm.ltu(123n, -123n));
+  assertEquals(1, wasm.ltu(0x12345678_12488421n, 0x12488421_12345678n));
+  assertEquals(0, wasm.ltu(0x12488421_12345678n, 0x12345678_12488421n));
+  assertEquals(0, wasm.ltu(0x12345678_87654321n, 0x12345678_87654320n));
+  assertEquals(1, wasm.ltu(0x12345678_87654321n, 0x12345678_87654322n));
 })();
 
 (function I64LessThanOrEqualUnsigned() {
@@ -416,13 +416,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(1, wasm.leu(0n, 0n));
-  //assertEquals(0, wasm.leu(-123n, 123n));
-  //assertEquals(1, wasm.leu(123n, -123n));
-  //assertEquals(1, wasm.leu(0x12345678_12488421n, 0x12488421_12345678n));
-  //assertEquals(0, wasm.leu(0x12488421_12345678n, 0x12345678_12488421n));
-  //assertEquals(0, wasm.leu(0x12345678_87654321n, 0x12345678_87654320n));
-  //assertEquals(1, wasm.leu(0x12345678_87654321n, 0x12345678_87654322n));
+  assertEquals(1, wasm.leu(0n, 0n));
+  assertEquals(0, wasm.leu(-123n, 123n));
+  assertEquals(1, wasm.leu(123n, -123n));
+  assertEquals(1, wasm.leu(0x12345678_12488421n, 0x12488421_12345678n));
+  assertEquals(0, wasm.leu(0x12488421_12345678n, 0x12345678_12488421n));
+  assertEquals(0, wasm.leu(0x12345678_87654321n, 0x12345678_87654320n));
+  assertEquals(1, wasm.leu(0x12345678_87654321n, 0x12345678_87654322n));
 })();
 
 (function I64EqualsZero() {
@@ -436,10 +436,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(1, wasm.eqz(0n));
-  //assertEquals(0, wasm.eqz(1n));
-  //assertEquals(0, wasm.eqz(-1n));
-  //assertEquals(0, wasm.eqz(0x100_00000000n));
+  assertEquals(1, wasm.eqz(0n));
+  assertEquals(0, wasm.eqz(1n));
+  assertEquals(0, wasm.eqz(-1n));
+  assertEquals(0, wasm.eqz(0x100_00000000n));
 })();
 
 (function I64Call() {
@@ -457,8 +457,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(123n, wasm.callee(123n));
-  //assertEquals(123n, wasm.call(123n));
+  assertEquals(123n, wasm.callee(123n));
+  assertEquals(123n, wasm.call(123n));
 })();
 
 (function I64CallMultiReturn() {
@@ -497,13 +497,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals([11, 123n, -1n, 22], wasm.callee(11, 123n, -1n, 22));
-  //assertEquals([11, 123n, -1n, 22], wasm.call(123n, -1n));
-  //assertEquals([11, 123n, -1n, 22], wasm.tailCall(123n, -1n));
+  assertEquals([11, 123n, -1n, 22], wasm.callee(11, 123n, -1n, 22));
+  assertEquals([11, 123n, -1n, 22], wasm.call(123n, -1n));
+  assertEquals([11, 123n, -1n, 22], wasm.tailCall(123n, -1n));
 
-  //assertEquals([11, -123n, 123n, 22], wasm.callee(11, -123n, 123n, 22));
-  //assertEquals([11, -123n, 123n, 22], wasm.call(-123n, 123n));
-  //assertEquals([11, -123n, 123n, 22], wasm.tailCall(-123n, 123n));
+  assertEquals([11, -123n, 123n, 22], wasm.callee(11, -123n, 123n, 22));
+  assertEquals([11, -123n, 123n, 22], wasm.call(-123n, 123n));
+  assertEquals([11, -123n, 123n, 22], wasm.tailCall(-123n, 123n));
 })();
 
 (function I64CountLeadingZeros() {
@@ -517,9 +517,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0n, wasm.clz(-1n));
-  //assertEquals(64n, wasm.clz(0n));
-  //assertEquals(47n, wasm.clz(0x1FFFFn));
+  assertEquals(0n, wasm.clz(-1n));
+  assertEquals(64n, wasm.clz(0n));
+  assertEquals(47n, wasm.clz(0x1FFFFn));
 })();
 
 (function I64CountTrailingZeros() {
@@ -533,9 +533,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0n, wasm.ctz(-1n));
-  //assertEquals(64n, wasm.ctz(0n));
-  //assertEquals(17n, wasm.ctz(0xE0000n));
+  assertEquals(0n, wasm.ctz(-1n));
+  assertEquals(64n, wasm.ctz(0n));
+  assertEquals(17n, wasm.ctz(0xE0000n));
 })();
 
 (function I64PopCount() {
@@ -549,9 +549,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(64n, wasm.popcnt(-1n));
-  //assertEquals(0n, wasm.popcnt(0n));
-  //assertEquals(10n, wasm.popcnt(0b10101011111100001n));
+  assertEquals(64n, wasm.popcnt(-1n));
+  assertEquals(0n, wasm.popcnt(0n));
+  assertEquals(10n, wasm.popcnt(0b10101011111100001n));
 })();
 
 (function I64ConvertFromInt32() {
@@ -567,10 +567,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals([0n, 0n], wasm.fromI32(0));
-  //assertEquals([123n, 123n], wasm.fromI32(123));
-  //assertEquals([-1n, 0xFFFFFFFFn], wasm.fromI32(-1));
-  //assertEquals([-2147483648n, 2147483648n], wasm.fromI32(0x80000000));
+  assertEquals([0n, 0n], wasm.fromI32(0));
+  assertEquals([123n, 123n], wasm.fromI32(123));
+  assertEquals([-1n, 0xFFFFFFFFn], wasm.fromI32(-1));
+  assertEquals([-2147483648n, 2147483648n], wasm.fromI32(0x80000000));
 })();
 
 (function I64ConvertFromF64() {
@@ -608,33 +608,33 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0n, wasm.reinterpretF64(0));
-  //assertEquals(4638355772470722560n, wasm.reinterpretF64(123));
-  //assertEquals(-4585016264384053248n, wasm.reinterpretF64(-123));
+  assertEquals(0n, wasm.reinterpretF64(0));
+  assertEquals(4638355772470722560n, wasm.reinterpretF64(123));
+  assertEquals(-4585016264384053248n, wasm.reinterpretF64(-123));
 
-  //assertEquals(0xFF_12345678n, wasm.signedF64(0xFF_12345678));
-  //assertEquals(-0xFF_12345678n, wasm.signedF64(-0xFF_12345678));
+  assertEquals(0xFF_12345678n, wasm.signedF64(0xFF_12345678));
+  assertEquals(-0xFF_12345678n, wasm.signedF64(-0xFF_12345678));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF64(NaN));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF64(Infinity));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF64(-Infinity));
 
-  //assertEquals(0xFF_12345678n, wasm.unsignedF64(0xFF_12345678));
+  assertEquals(0xFF_12345678n, wasm.unsignedF64(0xFF_12345678));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF64(-1));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF64(NaN));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF64(Infinity));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF64(-Infinity));
 
-  //assertEquals(0xFF_12345678n, wasm.signedSatF64(0xFF_12345678));
-  //assertEquals(-0xFF_12345678n, wasm.signedSatF64(-0xFF_12345678));
-  //assertEquals(0n, wasm.signedSatF64(NaN));
-  //assertEquals(9223372036854775807n, wasm.signedSatF64(Infinity));
-  //assertEquals(-9223372036854775808n, wasm.signedSatF64(-Infinity));
+  assertEquals(0xFF_12345678n, wasm.signedSatF64(0xFF_12345678));
+  assertEquals(-0xFF_12345678n, wasm.signedSatF64(-0xFF_12345678));
+  assertEquals(0n, wasm.signedSatF64(NaN));
+  assertEquals(9223372036854775807n, wasm.signedSatF64(Infinity));
+  assertEquals(-9223372036854775808n, wasm.signedSatF64(-Infinity));
 
-  //assertEquals(0xFF_12345678n, wasm.unsignedSatF64(0xFF_12345678));
-  //assertEquals(0n, wasm.unsignedSatF64(-0xFF_12345678));
-  //assertEquals(0n, wasm.unsignedSatF64(NaN));
-  //assertEquals(-1n, wasm.unsignedSatF64(Infinity));
-  //assertEquals(0n, wasm.unsignedSatF64(-Infinity));
+  assertEquals(0xFF_12345678n, wasm.unsignedSatF64(0xFF_12345678));
+  assertEquals(0n, wasm.unsignedSatF64(-0xFF_12345678));
+  assertEquals(0n, wasm.unsignedSatF64(NaN));
+  assertEquals(-1n, wasm.unsignedSatF64(Infinity));
+  assertEquals(0n, wasm.unsignedSatF64(-Infinity));
 })();
 
 (function I64ConvertFromF32() {
@@ -667,27 +667,27 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
   // Loss of precision due to float32.
-  //assertEquals(0xFF_12340000n, wasm.signedF32(0xFF_12345678));
-  //assertEquals(-0xFF_12340000n, wasm.signedF32(-0xFF_12345678));
+  assertEquals(0xFF_12340000n, wasm.signedF32(0xFF_12345678));
+  assertEquals(-0xFF_12340000n, wasm.signedF32(-0xFF_12345678));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF32(NaN));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF32(Infinity));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.signedF32(-Infinity));
 
-  //assertEquals(0xFF_12340000n, wasm.unsignedF32(0xFF_12345678));
+  assertEquals(0xFF_12340000n, wasm.unsignedF32(0xFF_12345678));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF32(-1));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF32(NaN));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF32(Infinity));
   assertTraps(kTrapFloatUnrepresentable, () => wasm.unsignedF32(-Infinity));
 
-  //assertEquals(0xFF_12340000n, wasm.signedSatF32(0xFF_12345678));
-  //assertEquals(-0xFF_12340000n, wasm.signedSatF32(-0xFF_12345678));
-  //assertEquals(0n, wasm.signedSatF32(NaN));
-  //assertEquals(9223372036854775807n, wasm.signedSatF32(Infinity));
-  //assertEquals(-9223372036854775808n, wasm.signedSatF32(-Infinity));
+  assertEquals(0xFF_12340000n, wasm.signedSatF32(0xFF_12345678));
+  assertEquals(-0xFF_12340000n, wasm.signedSatF32(-0xFF_12345678));
+  assertEquals(0n, wasm.signedSatF32(NaN));
+  assertEquals(9223372036854775807n, wasm.signedSatF32(Infinity));
+  assertEquals(-9223372036854775808n, wasm.signedSatF32(-Infinity));
 
-  //assertEquals(0xFF_12340000n, wasm.unsignedSatF32(0xFF_12345678));
-  //assertEquals(0n, wasm.unsignedSatF32(-0xFF_12345678));
-  //assertEquals(0n, wasm.unsignedSatF32(NaN));
-  //assertEquals(-1n, wasm.unsignedSatF32(Infinity));
-  //assertEquals(0n, wasm.unsignedSatF32(-Infinity));
+  assertEquals(0xFF_12340000n, wasm.unsignedSatF32(0xFF_12345678));
+  assertEquals(0n, wasm.unsignedSatF32(-0xFF_12345678));
+  assertEquals(0n, wasm.unsignedSatF32(NaN));
+  assertEquals(-1n, wasm.unsignedSatF32(Infinity));
+  assertEquals(0n, wasm.unsignedSatF32(-Infinity));
 })();

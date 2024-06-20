@@ -17,6 +17,6 @@ function AsmModule() {
   return {main: main};
 }
 
-//assertEquals(43, AsmModule(
+assertEquals(43, AsmModule(
     undefined, undefined, new ArrayBuffer(1024)).main());
 assertTrue(%IsAsmWasmCode(AsmModule));

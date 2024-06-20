@@ -174,12 +174,12 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
               () => instance.exports.refAsNonNullFunction(null));
   assertTraps(kTrapNullDereference,
               () => instance.exports.refAsNonNullAny(null));
-  //assertEquals(42, instance.exports.refAsNonNullAny(42));
+  assertEquals(42, instance.exports.refAsNonNullAny(42));
   assertTraps(kTrapNullDereference,
               () => instance.exports.refAsNonNullI31(null));
-  //assertEquals(42, instance.exports.refAsNonNullI31(42));
+  assertEquals(42, instance.exports.refAsNonNullI31(42));
   assertTraps(kTrapNullDereference,
               () => instance.exports.refAsNonNullExtern(null));
   let object = {};
-  //assertEquals(object, instance.exports.refAsNonNullExtern(object));
+  assertEquals(object, instance.exports.refAsNonNullExtern(object));
 })();

@@ -4,6 +4,7 @@
 
 #include "src/wasm/turboshaft-graph-interface.h"
 
+#include "absl/container/btree_map.h"
 #include "include/v8-fast-api-calls.h"
 #include "src/base/logging.h"
 #include "src/builtins/builtins.h"
@@ -23,6 +24,7 @@
 #include "src/wasm/inlining-tree.h"
 #include "src/wasm/jump-table-assembler.h"
 #include "src/wasm/memory-tracing.h"
+#include "src/wasm/signature-hashing.h"
 #include "src/wasm/wasm-engine.h"
 #include "src/wasm/wasm-linkage.h"
 #include "src/wasm/wasm-objects-inl.h"
@@ -62,7 +64,6 @@ using compiler::turboshaft::OptionalV;
 using compiler::turboshaft::PendingLoopPhiOp;
 using compiler::turboshaft::RegisterRepresentation;
 using compiler::turboshaft::Simd128ConstantOp;
-using compiler::turboshaft::StackCheckOp;
 using compiler::turboshaft::StoreOp;
 using compiler::turboshaft::StringOrNull;
 using compiler::turboshaft::SupportedOperations;
@@ -70,6 +71,7 @@ using compiler::turboshaft::Tuple;
 using compiler::turboshaft::V;
 using compiler::turboshaft::Variable;
 using compiler::turboshaft::WasmArrayNullable;
+using compiler::turboshaft::WasmStackCheckOp;
 using compiler::turboshaft::WasmStringRefNullable;
 using compiler::turboshaft::WasmStructNullable;
 using compiler::turboshaft::WasmTypeAnnotationOp;
@@ -144,7 +146,8 @@ OpIndex WasmGraphBuilderBase::CallRuntime(
           __ graph_zone(), f, fun->nargs, Operator::kNoProperties,
           CallDescriptor::kNoFlags);
   const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-      call_descriptor, compiler::CanThrow::kYes, __ graph_zone());
+      call_descriptor, compiler::CanThrow::kYes,
+      compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
   return __ Call(centry_stub, OpIndex::Invalid(), base::VectorOf(centry_args),
                  ts_call_descriptor);
 }
@@ -176,7 +179,8 @@ V<BigInt> WasmGraphBuilderBase::BuildChangeInt64ToBigInt(
           Operator::kNoProperties,   // properties
           stub_mode);
   const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-      call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+      call_descriptor, compiler::CanThrow::kNo, compiler::LazyDeoptOnThrow::kNo,
+      __ graph_zone());
   if constexpr (Is64()) {
     return V<BigInt>::Cast(__ Call(target, {input}, ts_call_descriptor));
   }
@@ -218,6 +222,35 @@ WasmGraphBuilderBase::BuildImportedFunctionTargetAndRef(
           dispatch_table, dispatch_table_entry_offset,
           LoadOp::Kind::TaggedBase(),
           WasmDispatchTable::kEntriesOffset + WasmDispatchTable::kRefBias, 0));
+  return {target, ref};
+}
+
+std::pair<V<WordPtr>, V<ExposedTrustedObject>>
+WasmGraphBuilderBase::BuildFunctionTargetAndRef(
+    V<WasmInternalFunction> internal_function, uint64_t expected_sig_hash) {
+  V<ExposedTrustedObject> ref =
+      V<ExposedTrustedObject>::Cast(__ LoadProtectedPointerField(
+          internal_function, LoadOp::Kind::TaggedBase().Immutable(),
+          WasmInternalFunction::kProtectedRefOffset));
+
+#if V8_ENABLE_SANDBOX
+  V<Word64> actual_sig_hash =
+      __ Load(internal_function, LoadOp::Kind::TaggedBase(),
+              MemoryRepresentation::Uint64(),
+              WasmInternalFunction::kSignatureHashOffset);
+  IF_NOT (LIKELY(__ Word64Equal(actual_sig_hash, expected_sig_hash))) {
+    auto sig = FixedSizeSignature<MachineType>::Params(MachineType::AnyTagged(),
+                                                       MachineType::Uint64());
+    CallC(&sig, ExternalReference::wasm_signature_check_fail(),
+          {internal_function, __ Word64Constant(expected_sig_hash)});
+    __ Unreachable();
+  }
+#endif
+
+  V<WordPtr> target = __ Load(internal_function, LoadOp::Kind::TaggedBase(),
+                              MemoryRepresentation::UintPtr(),
+                              WasmInternalFunction::kCallTargetOffset);
+
   return {target, ref};
 }
 
@@ -305,7 +338,8 @@ OpIndex WasmGraphBuilderBase::CallC(const MachineSignature* sig,
   const CallDescriptor* call_descriptor =
       compiler::Linkage::GetSimplifiedCDescriptor(__ graph_zone(), sig);
   const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-      call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+      call_descriptor, compiler::CanThrow::kNo, compiler::LazyDeoptOnThrow::kNo,
+      __ graph_zone());
   return __ Call(function, OpIndex::Invalid(), base::VectorOf(args),
                  ts_call_descriptor);
 }
@@ -505,7 +539,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }
 
     if (mode_ == kRegular) {
-      StackCheck(StackCheckOp::Kind::kWasmFunctionHeader);
+      StackCheck(WasmStackCheckOp::Kind::kFunctionEntry);
     }
 
     if (v8_flags.trace_wasm) {
@@ -605,7 +639,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
       }
     }
 
-    StackCheck(StackCheckOp::Kind::kWasmLoop);
+    StackCheck(WasmStackCheckOp::Kind::kLoop);
 
     TSBlock* loop_merge = NewBlockWithPhis(decoder, &block->start_merge);
     block->merge_block = loop_merge;
@@ -657,13 +691,144 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }
   }
 
+  // An analysis to determine whether a br_table should be lowered to a switch
+  // or a series of compare and branch. This can be for small tables or larger
+  // 'sparse' ones, which include many cases but few targets. A sparse table may
+  // look like this: br_table [ 1, 0, 0, 0, 0, 0, 2, 0 ] which can be lowered to
+  // two conditional branches followed by an unconditional one. The advantages
+  // of this are reducing the space required for the table and reducing the
+  // latency.
+  template <typename ValidationTag>
+  class BrTableAnalysis {
+   public:
+    static constexpr int32_t kMaxComparesPerTarget = 2;
+    static constexpr uint32_t kMaxTargets = 3;
+    static constexpr int32_t kMaxTableCount = 20;
+    using CaseVector = base::SmallVector<uint8_t, 8>;
+    using TargetMap = absl::btree_map<uint32_t, CaseVector>;
+
+    bool LowerToBranches(Decoder* decoder, const BranchTableImmediate& imm) {
+      BranchTableIterator<ValidationTag> iterator(decoder, imm);
+      while (iterator.has_next()) {
+        uint32_t i = iterator.cur_index();
+        uint32_t target = iterator.next();
+
+        if (i == imm.table_count) {
+          AddDefault(target);
+        } else if (!TryAddTarget(target, i)) {
+          return false;
+        }
+      }
+      primary_indices_ = other_targets_[primary_target()];
+      other_targets_.erase(primary_target());
+      size_t total_targets = other_targets_.size() + 1;
+      if (default_target() != primary_target() &&
+          !other_targets_.count(default_target())) {
+        total_targets++;
+      }
+      return total_targets <= kMaxTargets;
+    }
+    // The most often occurring target, or the default if there is no other
+    // target with multiple cases.
+    uint32_t primary_target() const { return primary_target_.value(); }
+    // The default target, for when the br_table index is out-of-range.
+    uint32_t default_target() const { return default_target_.value(); }
+    // other_targets doesn't include the primary target, nor the default if it
+    // isn't an in-range target.
+    const TargetMap& other_targets() const { return other_targets_; }
+    // All the indices which target the primary target.
+    const CaseVector& primary_indices() const { return primary_indices_; }
+
+   private:
+    bool TryAddTarget(uint32_t target, uint32_t index) {
+      DCHECK_LT(index, kMaxTableCount);
+      CaseVector& cases = other_targets_[target];
+      if (other_targets_.size() > kMaxTargets) {
+        return false;
+      }
+      if (cases.size() == kMaxComparesPerTarget) {
+        if (primary_target_.has_value() && target != primary_target()) {
+          return false;
+        }
+        primary_target_ = target;
+      }
+      cases.push_back(index);
+      return true;
+    }
+    void AddDefault(uint32_t target) {
+      default_target_ = target;
+      if (!primary_target_.has_value()) {
+        primary_target_ = default_target();
+      }
+    }
+
+    base::Optional<uint32_t> default_target_;
+    base::Optional<uint32_t> primary_target_;
+    CaseVector primary_indices_;
+    TargetMap other_targets_;
+  };
+
   void BrTable(FullDecoder* decoder, const BranchTableImmediate& imm,
                const Value& key) {
+    if (imm.table_count < BrTableAnalysis<ValidationTag>::kMaxTableCount) {
+      BrTableAnalysis<ValidationTag> table_analysis;
+      if (table_analysis.LowerToBranches(decoder, imm)) {
+        auto generate_cond =
+            [this](const Value& key,
+                   const BrTableAnalysis<ValidationTag>::CaseVector& cases)
+            -> OpIndex {
+          switch (cases.size()) {
+            default:
+              static_assert(
+                  BrTableAnalysis<ValidationTag>::kMaxComparesPerTarget <= 2);
+              UNREACHABLE();
+            case 1:
+              return __ Word32Equal(key.op, __ Word32Constant(cases[0]));
+            case 2: {
+              return __ Word32BitwiseOr(__ Word32Equal(key.op, cases[0]),
+                                        __ Word32Equal(key.op, cases[1]));
+            }
+          }
+        };
+        auto insert_cond_branch = [this, &decoder](OpIndex cond,
+                                                   uint32_t depth) {
+          BranchHint hint = GetBranchHint(decoder);
+          if (depth == decoder->control_depth() - 1) {
+            IF ({cond, hint}) {
+              DoReturn(decoder, 0);
+            }
+          } else {
+            Control* target = decoder->control_at(depth);
+            SetupControlFlowEdge(decoder, target->merge_block);
+            TSBlock* non_branching = __ NewBlock();
+            __ Branch({cond, hint}, target->merge_block, non_branching);
+            __ Bind(non_branching);
+          }
+        };
+        // Insert conditional branches to the other targets.
+        for (auto const& [target, cases] : table_analysis.other_targets()) {
+          DCHECK_LE(cases.size(),
+                    BrTableAnalysis<ValidationTag>::kMaxComparesPerTarget);
+          insert_cond_branch(generate_cond(key, cases), target);
+        }
+        // If needed, insert the range check for the primary target.
+        if (table_analysis.primary_target() !=
+            table_analysis.default_target()) {
+          OpIndex lower = __ Word32Equal(__ Int32LessThan(key.op, 0), 0);
+          OpIndex upper =
+              __ Int32LessThan(key.op, __ Word32Constant(imm.table_count));
+          OpIndex cond = __ Word32BitwiseAnd(lower, upper);
+          insert_cond_branch(cond, table_analysis.primary_target());
+        }
+        // Always fallthrough and branch to the default case.
+        BrOrRet(decoder, table_analysis.default_target());
+        return;
+      }
+    }
     compiler::turboshaft::SwitchOp::Case* cases =
-        __ output_graph()
-            .graph_zone()
-            ->AllocateArray<compiler::turboshaft::SwitchOp::Case>(
-                imm.table_count);
+        __ output_graph().graph_zone()
+            -> AllocateArray<compiler::turboshaft::SwitchOp::Case>(
+                             imm.table_count);
     BranchTableIterator<ValidationTag> new_block_iterator(decoder, imm);
     SmallZoneVector<TSBlock*, 16> intermediate_blocks(decoder->zone_);
     TSBlock* default_case = nullptr;
@@ -1624,18 +1789,10 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }
   }
 
-  V<Word32> IsDetached(V<Object> dataview) {
-    // TODO(evih): Make the buffer load immutable.
-    V<Object> buffer = __ LoadField<Object>(
-        dataview, compiler::AccessBuilder::ForJSArrayBufferViewBuffer());
-    V<Word32> bit_field = __ LoadField<Word32>(
-        buffer, compiler::AccessBuilder::ForJSArrayBufferBitField());
-    return __ Word32BitwiseAnd(bit_field, JSArrayBuffer::WasDetachedBit::kMask);
-  }
-
   void DataViewDetachedBufferCheck(FullDecoder* decoder, V<Object> dataview,
                                    DataViewOp op_type) {
-    IF (UNLIKELY(IsDetached(dataview))) {
+    IF (UNLIKELY(
+            __ ArrayBufferIsDetached(V<JSArrayBufferView>::Cast(dataview)))) {
       ThrowDataViewDetachedError(decoder, op_type);
     }
   }
@@ -1903,7 +2060,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         compiler::Linkage::GetSimplifiedCDescriptor(__ graph_zone(),
                                                     builder.Get());
     const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-        call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+        call_descriptor, compiler::CanThrow::kNo,
+        compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
     OpIndex target_address = __ ExternalConstant(ExternalReference::Create(
         env_->fast_api_targets[func_index].load(std::memory_order_relaxed),
         ExternalReference::FAST_C_CALL));
@@ -2397,6 +2555,9 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
 
       if (should_inline(decoder, feedback_slot_,
                         std::numeric_limits<int>::max())) {
+        const WasmTable* table = &decoder->module_->tables[imm.table_imm.index];
+        V<WordPtr> index_wordptr =
+            TableIndexToUintPtrOrOOBTrap(table->is_table64, index.op);
         // We are only interested in the target here for comparison against
         // the inlined call target below.
         // In particular, we don't need a dynamic type or null check: If the
@@ -2405,7 +2566,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         // the inlined code has the right signature.
         constexpr bool kNeedsTypeOrNullCheck = false;
         auto [target, _ref] = BuildIndirectCallTargetAndRef(
-            decoder, index.op, imm, kNeedsTypeOrNullCheck);
+            decoder, index_wordptr, imm, kNeedsTypeOrNullCheck);
 
         size_t return_count = imm.sig->return_count();
         base::Vector<InliningTree*> feedback_cases =
@@ -2481,8 +2642,12 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
 
           bool is_last_feedback_case = (i == feedback_cases.size() - 1);
           if (use_deopt_slowpath && is_last_feedback_case) {
-            // TODO(42204618,335082212): Deopt support for call_indirect.
-            UNIMPLEMENTED();
+            const FunctionSig* sig =
+                decoder->module_->functions[inlined_index].sig;
+            V<FrameState> frame_state =
+                CreateFrameState(decoder, sig, &index, args);
+            DeoptIfNot(decoder, __ WordPtrEqual(target, inlined_target),
+                       frame_state);
           } else {
             TSBlock* inline_block = __ NewBlock();
             BranchHint hint =
@@ -2525,7 +2690,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
           __ Bind(no_inline_block);
           instance_cache_.RestoreFromSnapshot(saved_cache);
           auto [target, ref] =
-              BuildIndirectCallTargetAndRef(decoder, index.op, imm);
+              BuildIndirectCallTargetAndRef(decoder, index_wordptr, imm);
           SmallZoneVector<Value, 4> indirect_returns(return_count,
                                                      decoder->zone_);
           BuildWasmCall(decoder, imm.sig, target, ref, args,
@@ -2553,7 +2718,11 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }    // if inlining_enabled
 
     // Didn't inline.
-    auto [target, ref] = BuildIndirectCallTargetAndRef(decoder, index.op, imm);
+    const WasmTable* table = &decoder->module_->tables[imm.table_imm.index];
+    V<WordPtr> index_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table->is_table64, index.op);
+    auto [target, ref] =
+        BuildIndirectCallTargetAndRef(decoder, index_wordptr, imm);
     BuildWasmCall(decoder, imm.sig, target, ref, args, returns);
   }
 
@@ -2565,6 +2734,9 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
 
       if (should_inline(decoder, feedback_slot_,
                         std::numeric_limits<int>::max())) {
+        const WasmTable* table = &decoder->module_->tables[imm.table_imm.index];
+        V<WordPtr> index_wordptr =
+            TableIndexToUintPtrOrOOBTrap(table->is_table64, index.op);
         // We are only interested in the target here for comparison against
         // the inlined call target below.
         // In particular, we don't need a dynamic type or null check: If the
@@ -2573,7 +2745,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         // the inlined code has the right signature.
         constexpr bool kNeedsTypeOrNullCheck = false;
         auto [target, _ref] = BuildIndirectCallTargetAndRef(
-            decoder, index.op, imm, kNeedsTypeOrNullCheck);
+            decoder, index_wordptr, imm, kNeedsTypeOrNullCheck);
 
         base::Vector<InliningTree*> feedback_cases =
             inlining_decisions_->function_calls()[feedback_slot_];
@@ -2653,7 +2825,11 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }    // if inlining_enabled
 
     // Didn't inline.
-    auto [target, ref] = BuildIndirectCallTargetAndRef(decoder, index.op, imm);
+    const WasmTable* table = &decoder->module_->tables[imm.table_imm.index];
+    V<WordPtr> index_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table->is_table64, index.op);
+    auto [target, ref] =
+        BuildIndirectCallTargetAndRef(decoder, index_wordptr, imm);
     BuildWasmMaybeReturnCall(decoder, imm.sig, target, ref, args);
   }
 
@@ -2661,6 +2837,13 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
                const FunctionSig* sig, const Value args[], Value returns[]) {
     feedback_slot_++;
     if (__ generating_unreachable_operations()) return;
+
+#if V8_ENABLE_SANDBOX
+    uint64_t signature_hash = SignatureHasher::Hash(sig);
+#else
+    uint64_t signature_hash = 0;
+#endif  // V8_ENABLE_SANDBOX
+
     if (inlining_enabled(decoder) &&
         should_inline(decoder, feedback_slot_,
                       std::numeric_limits<int>::max())) {
@@ -2724,7 +2907,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
           V<FrameState> frame_state =
               CreateFrameState(decoder, sig, &func_ref, args);
           DeoptIfNot(decoder, __ TaggedEqual(func_ref.op, inlined_func_ref),
-                     sig, func_ref, args, frame_state);
+                     frame_state);
         } else {
           TSBlock* inline_block = __ NewBlock();
           BranchHint hint =
@@ -2764,8 +2947,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         TSBlock* no_inline_block = case_blocks.back();
         __ Bind(no_inline_block);
         instance_cache_.RestoreFromSnapshot(saved_cache);
-        auto [target, ref] =
-            BuildFunctionReferenceTargetAndRef(func_ref.op, func_ref.type);
+        auto [target, ref] = BuildFunctionReferenceTargetAndRef(
+            func_ref.op, func_ref.type, signature_hash);
         SmallZoneVector<Value, 4> ref_returns(return_count, decoder->zone_);
         BuildWasmCall(decoder, sig, target, ref, args, ref_returns.data());
         for (size_t ret = 0; ret < ref_returns.size(); ret++) {
@@ -2786,8 +2969,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         instance_cache_.set_mutable_field_value(i, phi);
       }
     } else {
-      auto [target, ref] =
-          BuildFunctionReferenceTargetAndRef(func_ref.op, func_ref.type);
+      auto [target, ref] = BuildFunctionReferenceTargetAndRef(
+          func_ref.op, func_ref.type, signature_hash);
       BuildWasmCall(decoder, sig, target, ref, args, returns);
     }
   }
@@ -2795,6 +2978,13 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
   void ReturnCallRef(FullDecoder* decoder, const Value& func_ref,
                      const FunctionSig* sig, const Value args[]) {
     feedback_slot_++;
+
+#if V8_ENABLE_SANDBOX
+    uint64_t signature_hash = SignatureHasher::Hash(sig);
+#else
+    uint64_t signature_hash = 0;
+#endif  // V8_ENABLE_SANDBOX
+
     if (inlining_enabled(decoder) &&
         should_inline(decoder, feedback_slot_,
                       std::numeric_limits<int>::max())) {
@@ -2855,8 +3045,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
       TSBlock* no_inline_block = case_blocks.back();
       __ Bind(no_inline_block);
     }
-    auto [target, ref] =
-        BuildFunctionReferenceTargetAndRef(func_ref.op, func_ref.type);
+    auto [target, ref] = BuildFunctionReferenceTargetAndRef(
+        func_ref.op, func_ref.type, signature_hash);
     BuildWasmMaybeReturnCall(decoder, sig, target, ref, args);
   }
 
@@ -3701,14 +3891,14 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
 
   void MemoryCopy(FullDecoder* decoder, const MemoryCopyImmediate& imm,
                   const Value& dst, const Value& src, const Value& size) {
-    bool is_memory_64 = imm.memory_src.memory->is_memory64;
-    DCHECK_EQ(is_memory_64, imm.memory_dst.memory->is_memory64);
+    const bool dst_is_mem64 = imm.memory_dst.memory->is_memory64;
+    const bool src_is_mem64 = imm.memory_src.memory->is_memory64;
     V<WordPtr> dst_uintptr =
-        MemoryIndexToUintPtrOrOOBTrap(is_memory_64, dst.op);
+        MemoryIndexToUintPtrOrOOBTrap(dst_is_mem64, dst.op);
     V<WordPtr> src_uintptr =
-        MemoryIndexToUintPtrOrOOBTrap(is_memory_64, src.op);
+        MemoryIndexToUintPtrOrOOBTrap(src_is_mem64, src.op);
     V<WordPtr> size_uintptr =
-        MemoryIndexToUintPtrOrOOBTrap(is_memory_64, size.op);
+        MemoryIndexToUintPtrOrOOBTrap(dst_is_mem64 && src_is_mem64, size.op);
     auto sig = FixedSizeSignature<MachineType>::Returns(MachineType::Int32())
                    .Params(MachineType::Pointer(), MachineType::Uint32(),
                            MachineType::Uint32(), MachineType::UintPtr(),
@@ -3755,22 +3945,24 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
   }
 
   void TableGet(FullDecoder* decoder, const Value& index, Value* result,
-                const IndexImmediate& imm) {
-    ValueType element_type = decoder->module_->tables[imm.index].type;
+                const TableIndexImmediate& imm) {
     V<WasmTableObject> table = LoadTable(decoder, imm.index);
     V<Smi> size_smi = __ Load(table, LoadOp::Kind::TaggedBase(),
                               MemoryRepresentation::TaggedSigned(),
                               WasmTableObject::kCurrentLengthOffset);
-    V<Word32> in_bounds = __ Uint32LessThan(index.op, __ UntagSmi(size_smi));
+    V<WordPtr> index_wordptr =
+        TableIndexToUintPtrOrOOBTrap(imm.table->is_table64, index.op);
+    DCHECK_GE(kSmiMaxValue, v8_flags.wasm_max_table_size.value());
+    V<Word32> in_bounds = __ UintPtrLessThan(
+        index_wordptr, __ ChangeUint32ToUintPtr(__ UntagSmi(size_smi)));
     __ TrapIfNot(in_bounds, OpIndex::Invalid(), TrapId::kTrapTableOutOfBounds);
     V<FixedArray> entries = __ Load(table, LoadOp::Kind::TaggedBase(),
                                     MemoryRepresentation::TaggedPointer(),
                                     WasmTableObject::kEntriesOffset);
-    OpIndex entry =
-        __ LoadFixedArrayElement(entries, __ ChangeInt32ToIntPtr(index.op));
+    OpIndex entry = __ LoadFixedArrayElement(entries, index_wordptr);
 
-    if (IsSubtypeOf(element_type, kWasmFuncRef, decoder->module_) ||
-        IsSubtypeOf(element_type, ValueType::RefNull(HeapType::kFuncShared),
+    if (IsSubtypeOf(imm.table->type, kWasmFuncRef, decoder->module_) ||
+        IsSubtypeOf(imm.table->type, ValueType::RefNull(HeapType::kFuncShared),
                     decoder->module_)) {
       // If the entry has map type Tuple2, call WasmFunctionTableGet which will
       // initialize the function table entry.
@@ -3787,12 +3979,11 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
       GOTO(resolved, entry);
 
       BIND(call_runtime);
-      bool extract_shared_data =
-          !shared_ && decoder->module_->tables[imm.index].shared;
+      bool extract_shared_data = !shared_ && imm.table->shared;
       GOTO(resolved,
            CallBuiltinThroughJumptable<
                BuiltinCallDescriptor::WasmFunctionTableGet>(
-               decoder, {__ IntPtrConstant(imm.index), index.op,
+               decoder, {__ IntPtrConstant(imm.index), index_wordptr,
                          __ Word32Constant(extract_shared_data ? 1 : 0)}));
 
       BIND(resolved, resolved_entry);
@@ -3800,82 +3991,120 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     } else {
       result->op = entry;
     }
-    result->op = AnnotateResultIfReference(result->op, element_type);
+    result->op = AnnotateResultIfReference(result->op, imm.table->type);
   }
 
   void TableSet(FullDecoder* decoder, const Value& index, const Value& value,
-                const IndexImmediate& imm) {
-    const WasmTable* table = &decoder->module_->tables[imm.index];
-    bool extract_shared_data = !shared_ && table->shared;
+                const TableIndexImmediate& imm) {
+    bool extract_shared_data = !shared_ && imm.table->shared;
 
-    if (IsSubtypeOf(table->type, kWasmFuncRef, decoder->module_) ||
-        IsSubtypeOf(table->type, ValueType::RefNull(HeapType::kFuncShared),
+    V<WordPtr> index_wordptr =
+        TableIndexToUintPtrOrOOBTrap(imm.table->is_table64, index.op);
+
+    if (IsSubtypeOf(imm.table->type, kWasmFuncRef, decoder->module_) ||
+        IsSubtypeOf(imm.table->type, ValueType::RefNull(HeapType::kFuncShared),
                     decoder->module_)) {
       CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableSetFuncRef>(
-          decoder,
-          {__ IntPtrConstant(imm.index),
-           __ Word32Constant(extract_shared_data ? 1 : 0), index.op, value.op});
+          decoder, {__ IntPtrConstant(imm.index),
+                    __ Word32Constant(extract_shared_data ? 1 : 0),
+                    index_wordptr, value.op});
     } else {
       CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableSet>(
-          decoder,
-          {__ IntPtrConstant(imm.index),
-           __ Word32Constant(extract_shared_data ? 1 : 0), index.op, value.op});
+          decoder, {__ IntPtrConstant(imm.index),
+                    __ Word32Constant(extract_shared_data ? 1 : 0),
+                    index_wordptr, value.op});
     }
   }
 
   void TableInit(FullDecoder* decoder, const TableInitImmediate& imm,
-                 const Value* args) {
-    V<Word32> dst = args[0].op;
-    V<Word32> src = args[1].op;
-    V<Word32> size = args[2].op;
-    bool table_is_shared = decoder->module_->tables[imm.table.index].shared;
-    DCHECK_EQ(
-        table_is_shared,
-        decoder->module_->elem_segments[imm.element_segment.index].shared);
+                 const Value& dst_val, const Value& src_val,
+                 const Value& size_val) {
+    const WasmTable* table = imm.table.table;
+    V<WordPtr> dst_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table->is_table64, dst_val.op);
+    V<Word32> src = src_val.op;
+    V<Word32> size = size_val.op;
+    DCHECK_EQ(table->shared, table->shared);
     CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableInit>(
         decoder, {
-                     dst,
+                     dst_wordptr,
                      src,
                      size,
                      __ NumberConstant(imm.table.index),
                      __ NumberConstant(imm.element_segment.index),
-                     __ NumberConstant((!shared_ && table_is_shared) ? 1 : 0),
+                     __ NumberConstant((!shared_ && table->shared) ? 1 : 0),
                  });
   }
 
   void TableCopy(FullDecoder* decoder, const TableCopyImmediate& imm,
-                 const Value args[]) {
-    V<Word32> dst = args[0].op;
-    V<Word32> src = args[1].op;
-    V<Word32> size = args[2].op;
+                 const Value& dst_val, const Value& src_val,
+                 const Value& size_val) {
+    const WasmTable* table_dst = imm.table_dst.table;
+    const WasmTable* table_src = imm.table_src.table;
+    V<WordPtr> dst_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table_dst->is_table64, dst_val.op);
+    V<WordPtr> src_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table_src->is_table64, src_val.op);
+    // TODO(crbug.com/345274931): Allow copying between table32 and table64, and
+    // take the type of the table that has smaller size.
+    DCHECK_EQ(table_src->is_table64, table_dst->is_table64);
+    V<WordPtr> size_wordptr =
+        TableIndexToUintPtrOrOOBTrap(table_src->is_table64, size_val.op);
     bool table_is_shared = decoder->module_->tables[imm.table_dst.index].shared;
     // TODO(14616): Is this too restrictive?
     DCHECK_EQ(table_is_shared,
               decoder->module_->tables[imm.table_src.index].shared);
     CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableCopy>(
-        decoder, {dst, src, size, __ NumberConstant(imm.table_dst.index),
+        decoder, {dst_wordptr, src_wordptr, size_wordptr,
+                  __ NumberConstant(imm.table_dst.index),
                   __ NumberConstant(imm.table_src.index),
                   __ NumberConstant((!shared_ && table_is_shared) ? 1 : 0)});
   }
 
-  void TableGrow(FullDecoder* decoder, const IndexImmediate& imm,
+  void TableGrow(FullDecoder* decoder, const TableIndexImmediate& imm,
                  const Value& value, const Value& delta, Value* result) {
-    bool extract_shared_data =
-        !shared_ && decoder->module_->tables[imm.index].shared;
-    V<Smi> result_smi =
+    Label<Word32> end(&asm_);
+    V<WordPtr> delta_wordptr;
+
+    // If `delta` is OOB, return -1.
+    if (!imm.table->is_table64) {
+      delta_wordptr = __ ChangeUint32ToUintPtr(delta.op);
+    } else if constexpr (Is64()) {
+      delta_wordptr = delta.op;
+    } else {
+      GOTO_IF(UNLIKELY(__ TruncateWord64ToWord32(
+                  __ Word64ShiftRightLogical(delta.op, 32))),
+              end, __ Word32Constant(-1));
+      delta_wordptr = V<WordPtr>::Cast(__ TruncateWord64ToWord32(delta.op));
+    }
+
+    bool extract_shared_data = !shared_ && imm.table->shared;
+    DCHECK_GE(kSmiMaxValue, v8_flags.wasm_max_table_size.value());
+    V<Word32> call_result = __ UntagSmi(
         CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableGrow>(
-            decoder, {__ NumberConstant(imm.index), delta.op,
-                      __ Word32Constant(extract_shared_data), value.op});
-    result->op = __ UntagSmi(result_smi);
+            decoder, {__ NumberConstant(imm.index), delta_wordptr,
+                      __ Word32Constant(extract_shared_data), value.op}));
+    GOTO(end, call_result);
+
+    BIND(end, result_i32);
+    if (imm.table->is_table64) {
+      result->op = __ ChangeInt32ToInt64(result_i32);
+    } else {
+      result->op = result_i32;
+    }
   }
 
-  void TableFill(FullDecoder* decoder, const IndexImmediate& imm,
+  void TableFill(FullDecoder* decoder, const TableIndexImmediate& imm,
                  const Value& start, const Value& value, const Value& count) {
-    bool extract_shared_data =
-        !shared_ && decoder->module_->tables[imm.index].shared;
+    V<WordPtr> start_wordptr =
+        TableIndexToUintPtrOrOOBTrap(imm.table->is_table64, start.op);
+    V<WordPtr> count_wordptr =
+        TableIndexToUintPtrOrOOBTrap(imm.table->is_table64, count.op);
+    bool extract_shared_data = !shared_ && imm.table->shared;
     CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmTableFill>(
-        decoder, {start.op, count.op, __ Word32Constant(extract_shared_data),
-                  __ NumberConstant(imm.index), value.op});
+        decoder,
+        {start_wordptr, count_wordptr, __ Word32Constant(extract_shared_data),
+         __ NumberConstant(imm.index), value.op});
   }
 
   V<WasmTableObject> LoadTable(FullDecoder* decoder, uint32_t table_index) {
@@ -3887,13 +4116,17 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         __ LoadFixedArrayElement(tables, table_index));
   }
 
-  void TableSize(FullDecoder* decoder, const IndexImmediate& imm,
+  void TableSize(FullDecoder* decoder, const TableIndexImmediate& imm,
                  Value* result) {
     V<WasmTableObject> table = LoadTable(decoder, imm.index);
-    V<Smi> size_smi = __ Load(table, LoadOp::Kind::TaggedBase(),
-                              MemoryRepresentation::TaggedSigned(),
-                              WasmTableObject::kCurrentLengthOffset);
-    result->op = __ UntagSmi(size_smi);
+    V<Word32> size_word32 = __ UntagSmi(__ Load(
+        table, LoadOp::Kind::TaggedBase(), MemoryRepresentation::TaggedSigned(),
+        WasmTableObject::kCurrentLengthOffset));
+    if (imm.table->is_table64) {
+      result->op = __ ChangeUint32ToUint64(size_word32);
+    } else {
+      result->op = size_word32;
+    }
   }
 
   void ElemDrop(FullDecoder* decoder, const IndexImmediate& imm) {
@@ -4349,7 +4582,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
                                        ValueType result_type) {
     // Special case: shortcut a sequence "array from data segment" + "string
     // from wtf8 array" to directly create a string from the segment.
-    V<compiler::turboshaft::Union<String, WasmNull, Null>> call;
+    V<internal::UnionOf<String, WasmNull, Null>> call;
     if (const CallOp* array_new = IsArrayNewSegment(array.op)) {
       // We can only pass 3 untagged parameters to the builtin (on 32-bit
       // platforms). The segment index is easy to tag: if it validated, it must
@@ -5392,14 +5625,16 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
  private:
   V<FrameState> CreateFrameState(FullDecoder* decoder,
                                  const FunctionSig* callee_sig,
-                                 const Value* func_ref, const Value args[]) {
+                                 const Value* func_ref_or_index,
+                                 const Value args[]) {
     compiler::turboshaft::FrameStateData::Builder builder;
     if (parent_frame_state_.valid()) {
       builder.AddParentFrameState(parent_frame_state_.value());
     }
     // The first input is the closure for JS. (The instruction selector will
     // just skip this input as the liftoff frame doesn't have a closure.)
-    builder.AddInput(MachineType::AnyTagged(), __ SmiConstant(0));
+    V<Object> dummy_tagged = __ SmiConstant(0);
+    builder.AddInput(MachineType::AnyTagged(), dummy_tagged);
     // Add the parameters.
     size_t param_count = decoder->sig_->parameter_count();
     for (size_t i = 0; i < param_count; ++i) {
@@ -5407,7 +5642,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     }
     // Add the context. Wasm doesn't have a JS context, so this is another
     // value skipped by the instruction selector.
-    builder.AddInput(MachineType::AnyTagged(), __ SmiConstant(0));
+    builder.AddInput(MachineType::AnyTagged(), dummy_tagged);
 
     // Add the wasm locals.
     for (size_t i = param_count; i < ssa_env_.size(); ++i) {
@@ -5432,11 +5667,12 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         builder.AddInput(arg.type.machine_type(), arg.op);
       }
     }
-    if (func_ref) {
-      builder.AddInput(func_ref->type.machine_type(), func_ref->op);
+    if (func_ref_or_index) {
+      builder.AddInput(func_ref_or_index->type.machine_type(),
+                       func_ref_or_index->op);
     }
-    // The call_ref (callee).
-    const size_t kExtraLocals = func_ref != nullptr ? 1 : 0;
+    // The call_ref (callee) or the table index.
+    const size_t kExtraLocals = func_ref_or_index != nullptr ? 1 : 0;
     size_t wasm_local_count = ssa_env_.size() - param_count;
     size_t local_count = kExtraLocals + decoder->stack_size() +
                          wasm_local_count - callee_sig->return_count();
@@ -5445,19 +5681,25 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     Zone* zone = Asm().data()->shared_zone();
     auto* function_info = zone->New<compiler::FrameStateFunctionInfo>(
         compiler::FrameStateType::kLiftoffFunction,
-        static_cast<int>(param_count), static_cast<int>(local_count),
+        static_cast<uint16_t>(param_count), 0, static_cast<int>(local_count),
         shared_info, GetLiftoffFrameSize(decoder), func_index_);
     auto* frame_state_info = zone->New<compiler::FrameStateInfo>(
         BytecodeOffset(decoder->pc_offset()),
         compiler::OutputFrameStateCombine::Ignore(), function_info);
+
+    // TODO(mliedtke): If there are too many inputs, we cannot create a
+    // FrameState. In this case we probably shouldn't emit a deopt node in the
+    // first place, probably much earlier than thousands of inputs.
+    CHECK_LT(builder.Inputs().size(),
+             std::numeric_limits<decltype(Operation::input_count)>::max());
+
     return __ FrameState(
         builder.Inputs(), builder.inlined(),
         builder.AllocateFrameStateData(*frame_state_info, zone));
   }
 
   void DeoptIfNot(FullDecoder* decoder, OpIndex deopt_condition,
-                  const FunctionSig* callee_sig, const Value& func_ref,
-                  const Value args[], V<FrameState> frame_state) {
+                  V<FrameState> frame_state) {
     CHECK(v8_flags.wasm_deopt);
     __ DeoptimizeIfNot(deopt_condition, frame_state,
                        DeoptimizeReason::kWrongCallTarget,
@@ -6617,20 +6859,20 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         enforce_bounds_check ==
             compiler::EnforceBoundsCheck::kCanOmitBoundsCheck) {
       if (memory->is_memory64) {
-        Label<WordPtr> no_oom(&asm_);
-        V<Word32> cond = __ UintPtrLessThan(
-            converted_index,
-            __ UintPtrConstant(memory->GetMemory64GuardsSize()));
-        GOTO_IF(LIKELY(cond), no_oom, converted_index);
+        if (static_cast<bool>(alignment_check) && align_mask != 0 &&
+            ((offset & align_mask) != 0)) {
+          // The index will be set to max_memory_size, and it is certainly
+          // aligned; if offset is unaligned we need to directly trap because we
+          // might cause a spurious unaligned access and a DCHECK failure if we
+          // are running in the simulator.
+          __ TrapIf(__ Word32Constant(1), OpIndex::Invalid(),
+                    TrapId::kTrapMemOutOfBounds);
+        }
 
-        // This will cause a memory access at memory[max_memory_size + offset],
-        // which is guaranteeed to cause an access to hit the memory guard
-        // region because we checked that offset < max_memory_size.
-        converted_index = __ UintPtrConstant(memory->max_memory_size);
-        GOTO(no_oom, converted_index);
-
-        BIND(no_oom, modified_index);
-        return {modified_index, compiler::BoundsCheckResult::kTrapHandler};
+        V<Word32> cond = __ __ Uint64LessThan(
+            V<Word64>::Cast(converted_index),
+            __ Word64Constant(memory->GetMemory64GuardsSize()));
+        __ TrapIfNot(cond, OpIndex::Invalid(), TrapId::kTrapMemOutOfBounds);
       }
       return {converted_index, compiler::BoundsCheckResult::kTrapHandler};
     }
@@ -6731,9 +6973,9 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
                 __ NoContextConstant());
   }
 
-  void StackCheck(StackCheckOp::Kind kind) {
+  void StackCheck(WasmStackCheckOp::Kind kind) {
     if (V8_UNLIKELY(!v8_flags.wasm_stack_checks)) return;
-    __ StackCheck(kind);
+    __ WasmStackCheck(kind);
   }
 
  private:
@@ -6748,32 +6990,28 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
   // Returns the call target and the ref (WasmTrustedInstanceData or
   // WasmApiFunctionRef) for an indirect call.
   std::pair<V<WordPtr>, V<ExposedTrustedObject>> BuildIndirectCallTargetAndRef(
-      FullDecoder* decoder, OpIndex index, CallIndirectImmediate imm,
+      FullDecoder* decoder, V<WordPtr> index_wordptr, CallIndirectImmediate imm,
       bool needs_type_or_null_check = true) {
     uint32_t table_index = imm.table_imm.index;
-    // Use zero-extension instead of sign-extension; for negative values this
-    // will still fail the bounds check because tables have limited size.
     static_assert(kV8MaxWasmTableSize < size_t{kMaxInt});
-    V<WordPtr> index_intptr = __ ChangeUint32ToUintPtr(index);
-    uint32_t sig_index = imm.sig_imm.index;
+    const WasmTable& table = decoder->module_->tables[table_index];
 
     /* Step 1: Load the indirect function tables for this table. */
     V<WasmDispatchTable> dispatch_table;
-    bool shared = decoder->module_->tables[table_index].shared;
     if (table_index == 0) {
-      dispatch_table = LOAD_PROTECTED_INSTANCE_FIELD(
-          trusted_instance_data(shared), DispatchTable0, WasmDispatchTable);
+      dispatch_table =
+          LOAD_PROTECTED_INSTANCE_FIELD(trusted_instance_data(table.shared),
+                                        DispatchTable0, WasmDispatchTable);
     } else {
       V<ProtectedFixedArray> dispatch_tables =
-          LOAD_IMMUTABLE_PROTECTED_INSTANCE_FIELD(trusted_instance_data(shared),
-                                                  DispatchTables,
-                                                  ProtectedFixedArray);
+          LOAD_IMMUTABLE_PROTECTED_INSTANCE_FIELD(
+              trusted_instance_data(table.shared), DispatchTables,
+              ProtectedFixedArray);
       dispatch_table = V<WasmDispatchTable>::Cast(
           __ LoadProtectedFixedArrayElement(dispatch_tables, table_index));
     }
 
     /* Step 2: Bounds check against the table size. */
-    const WasmTable& table = decoder->module_->tables[table_index];
     V<Word32> table_length;
     bool needs_dynamic_size =
         !table.has_maximum_size || table.maximum_size != table.initial_size;
@@ -6783,11 +7021,13 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     } else {
       table_length = __ Word32Constant(table.initial_size);
     }
-    __ TrapIfNot(__ Uint32LessThan(index, table_length), OpIndex::Invalid(),
-                 TrapId::kTrapTableOutOfBounds);
+    V<Word32> in_bounds = __ UintPtrLessThan(
+        index_wordptr, __ ChangeUint32ToUintPtr(table_length));
+    __ TrapIfNot(in_bounds, OpIndex::Invalid(), TrapId::kTrapTableOutOfBounds);
 
     /* Step 3: Check the canonical real signature against the canonical declared
      * signature. */
+    uint32_t sig_index = imm.sig_imm.index;
     bool needs_type_check =
         needs_type_or_null_check &&
         !EquivalentTypes(table.type.AsNonNull(), ValueType::Ref(sig_index),
@@ -6796,7 +7036,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
         needs_type_or_null_check && table.type.is_nullable();
 
     V<WordPtr> dispatch_table_entry_offset = __ WordPtrAdd(
-        __ WordPtrMul(index_intptr, WasmDispatchTable::kEntrySize),
+        __ WordPtrMul(index_wordptr, WasmDispatchTable::kEntrySize),
         WasmDispatchTable::kEntriesOffset);
 
     if (needs_type_check) {
@@ -6899,7 +7139,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
   // Load the call target and ref (WasmTrustedInstanceData or
   // WasmApiFunctionRef) from a function reference.
   std::pair<V<WordPtr>, V<ExposedTrustedObject>>
-  BuildFunctionReferenceTargetAndRef(V<WasmFuncRef> func_ref, ValueType type) {
+  BuildFunctionReferenceTargetAndRef(V<WasmFuncRef> func_ref, ValueType type,
+                                     uint64_t expected_sig_hash) {
     if (type.is_nullable() &&
         null_check_strategy_ == compiler::NullCheckStrategy::kExplicit) {
       func_ref = V<WasmFuncRef>::Cast(
@@ -6917,16 +7158,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
             func_ref, load_kind, kWasmInternalFunctionIndirectPointerTag,
             WasmFuncRef::kTrustedInternalOffset));
 
-    V<ExposedTrustedObject> ref =
-        V<ExposedTrustedObject>::Cast(__ LoadProtectedPointerField(
-            internal_function, LoadOp::Kind::TaggedBase().Immutable(),
-            WasmInternalFunction::kProtectedRefOffset));
-
-    V<WordPtr> target = __ Load(internal_function, LoadOp::Kind::TaggedBase(),
-                                MemoryRepresentation::UintPtr(),
-                                WasmInternalFunction::kCallTargetOffset);
-
-    return {target, ref};
+    return BuildFunctionTargetAndRef(internal_function, expected_sig_hash);
   }
 
   OpIndex AnnotateResultIfReference(OpIndex result, wasm::ValueType type) {
@@ -6942,7 +7174,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
                          CheckForException::kCatchInThisFrame) {
     const TSCallDescriptor* descriptor = TSCallDescriptor::Create(
         compiler::GetWasmCallDescriptor(__ graph_zone(), sig),
-        compiler::CanThrow::kYes, __ graph_zone());
+        compiler::CanThrow::kYes, compiler::LazyDeoptOnThrow::kNo,
+        __ graph_zone());
 
     SmallZoneVector<OpIndex, 16> arg_indices(sig->parameter_count() + 1,
                                              decoder->zone());
@@ -6975,7 +7208,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     if (mode_ == kRegular || mode_ == kInlinedTailCall) {
       const TSCallDescriptor* descriptor = TSCallDescriptor::Create(
           compiler::GetWasmCallDescriptor(__ graph_zone(), sig),
-          compiler::CanThrow::kYes, __ graph_zone());
+          compiler::CanThrow::kYes, compiler::LazyDeoptOnThrow::kNo,
+          __ graph_zone());
 
       SmallZoneVector<OpIndex, 16> arg_indices(sig->parameter_count() + 1,
                                                decoder->zone_);
@@ -7198,16 +7432,33 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     return __ Load(stack_slot, LoadOp::Kind::RawAligned(), arg_type);
   }
 
-  V<WordPtr> MemoryIndexToUintPtrOrOOBTrap(bool memory_is_64, OpIndex index) {
+  V<WordPtr> MemOrTableIndexToUintPtrOrOOBTrap(bool index_type_is_64bit,
+                                               V<Word> index,
+                                               TrapId trap_reason) {
     // Note: this {ChangeUint32ToUintPtr} doesn't just satisfy the compiler's
     // consistency checks, it's also load-bearing to prevent escaping from a
     // compromised sandbox (where in-sandbox corruption can cause the high
     // word of what's supposed to be an i32 to be non-zero).
-    if (!memory_is_64) return __ ChangeUint32ToUintPtr(index);
-    if (kSystemPointerSize == kInt64Size) return index;
-    __ TrapIf(__ TruncateWord64ToWord32(__ Word64ShiftRightLogical(index, 32)),
-              OpIndex::Invalid(), TrapId::kTrapMemOutOfBounds);
-    return OpIndex(__ TruncateWord64ToWord32(index));
+    if (!index_type_is_64bit) {
+      return __ ChangeUint32ToUintPtr(V<Word32>::Cast(index));
+    }
+    if constexpr (Is64()) {
+      return V<WordPtr>::Cast(index);
+    }
+    __ TrapIf(__ TruncateWord64ToWord32(
+                  __ Word64ShiftRightLogical(V<Word64>::Cast(index), 32)),
+              OpIndex::Invalid(), trap_reason);
+    return V<WordPtr>::Cast(__ TruncateWord64ToWord32(V<Word64>::Cast(index)));
+  }
+
+  V<WordPtr> MemoryIndexToUintPtrOrOOBTrap(bool is_memory64, V<Word> index) {
+    return MemOrTableIndexToUintPtrOrOOBTrap(is_memory64, index,
+                                             TrapId::kTrapMemOutOfBounds);
+  }
+
+  V<WordPtr> TableIndexToUintPtrOrOOBTrap(bool is_table64, V<Word> index) {
+    return MemOrTableIndexToUintPtrOrOOBTrap(is_table64, index,
+                                             TrapId::kTrapTableOutOfBounds);
   }
 
   V<Smi> ChangeUint31ToSmi(V<Word32> value) {
@@ -7618,7 +7869,8 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
                       bool is_tail_call, const Value args[], Value returns[]) {
     DCHECK_IMPLIES(is_tail_call, returns == nullptr);
     const WasmFunction& inlinee = decoder->module_->functions[func_index];
-    DCHECK(InlineTargetIsTypeCompatible(decoder->module_, sig, inlinee.sig));
+    // In a corrupted sandbox, we can't trust the collected feedback.
+    SBXCHECK(InlineTargetIsTypeCompatible(decoder->module_, sig, inlinee.sig));
 
     SmallZoneVector<OpIndex, 16> inlinee_args(
         inlinee.sig->parameter_count() + 1, decoder->zone_);

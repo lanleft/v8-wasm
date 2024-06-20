@@ -175,7 +175,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   let instance = builder.instantiate(kImports, kBuiltins);
 
-  //assertEquals('foo', instance.exports.cast('foo'));
+  assertEquals('foo', instance.exports.cast('foo'));
   assertThrows(
       () => instance.exports.cast(123), WebAssembly.RuntimeError,
       'illegal cast');
@@ -213,12 +213,12 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   let instance = builder.instantiate(kImports, kBuiltins);
 
-  //assertEquals(1, instance.exports.test("foo"));
-  //assertEquals(0, instance.exports.test(123));
-  //assertEquals(0, instance.exports.test(undefined));
-  //assertEquals(0, instance.exports.test(true));
-  //assertEquals(0, instance.exports.test(null));
-  //assertEquals(0, instance.exports.test_null());
+  assertEquals(1, instance.exports.test("foo"));
+  assertEquals(0, instance.exports.test(123));
+  assertEquals(0, instance.exports.test(undefined));
+  assertEquals(0, instance.exports.test(true));
+  assertEquals(0, instance.exports.test(null));
+  assertEquals(0, instance.exports.test_null());
 })();
 
 (function TestIndexOfImportedStrings() {
@@ -235,13 +235,13 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   ]);
   let instance = builder.instantiate(kImports, kBuiltins);
 
-  //assertEquals(2, instance.exports.indexOf('xxfooxx', 'foo', 0));
-  //assertEquals(2, instance.exports.indexOf('xxfooxx', 'foo', -2));
-  //assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 100));
+  assertEquals(2, instance.exports.indexOf('xxfooxx', 'foo', 0));
+  assertEquals(2, instance.exports.indexOf('xxfooxx', 'foo', -2));
+  assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 100));
   // Make sure we don't lose bits when Smi-tagging of the start position.
-  //assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 0x4000_0000));
-  //assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 0x2000_0000));
-  //assertEquals(
+  assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 0x4000_0000));
+  assertEquals(-1, instance.exports.indexOf('xxfooxx', 'foo', 0x2000_0000));
+  assertEquals(
       2,
       instance.exports.indexOf(
           'xxfooxx', 'foo', 0x8000_0000));  // Negative i32.
@@ -272,7 +272,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   ]);
   let instance = builder.instantiate(kImports, kBuiltins);
 
-  //assertEquals(
+  assertEquals(
       'make this lowercase!',
       instance.exports.toLowerCase('MAKE THIS LOWERCASE!'));
 
@@ -299,8 +299,8 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   }
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let [i, str] of interestingStrings.entries()) {
-    //assertEquals(str, instance.exports["string_const" + i]());
-    //assertEquals(str, instance.exports["global" + i].value);
+    assertEquals(str, instance.exports["string_const" + i]());
+    assertEquals(str, instance.exports["global" + i].value);
   }
 })();
 
@@ -324,7 +324,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let str of interestingStrings) {
-    //assertEquals(str.length, instance.exports.string_length(str));
+    assertEquals(str.length, instance.exports.string_length(str));
   }
 
   assertThrows(() => instance.exports.string_length(null),
@@ -365,7 +365,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   for (let head of interestingStrings) {
     for (let tail of interestingStrings) {
-      //assertEquals(head + tail, instance.exports.concat(head, tail));
+      assertEquals(head + tail, instance.exports.concat(head, tail));
     }
   }
 
@@ -420,16 +420,16 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   for (let head of interestingStrings) {
     for (let tail of interestingStrings) {
       let result = (head == tail) | 0;
-      //assertEquals(result, instance.exports.eq(head, tail));
-      //assertEquals(result, instance.exports.eq(head + head, tail + tail));
+      assertEquals(result, instance.exports.eq(head, tail));
+      assertEquals(result, instance.exports.eq(head + head, tail + tail));
     }
-    //assertEquals(0, instance.exports.eq_null_a(head))
-    //assertEquals(0, instance.exports.eq(null, head))
-    //assertEquals(0, instance.exports.eq(head, null))
+    assertEquals(0, instance.exports.eq_null_a(head))
+    assertEquals(0, instance.exports.eq(null, head))
+    assertEquals(0, instance.exports.eq(head, null))
   }
 
-  //assertEquals(1, instance.exports.eq_both_null());
-  //assertEquals(1, instance.exports.eq(null, null));
+  assertEquals(1, instance.exports.eq_both_null());
+  assertEquals(1, instance.exports.eq(null, null));
 })();
 
 (function TestStringViewWtf16() {
@@ -489,26 +489,26 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let str of interestingStrings) {
     for (let i = 0; i < str.length; i++) {
-      //assertEquals(str.charCodeAt(i),
+      assertEquals(str.charCodeAt(i),
                    instance.exports.get_codeunit(str, i));
-      //assertEquals(str.codePointAt(i),
+      assertEquals(str.codePointAt(i),
                    instance.exports.get_codepoint(str, i));
     }
-    //assertEquals(str, instance.exports.slice(str, 0, -1));
+    assertEquals(str, instance.exports.slice(str, 0, -1));
   }
 
-  //assertEquals("", instance.exports.slice("foo", 0, 0));
-  //assertEquals("f", instance.exports.slice("foo", 0, 1));
-  //assertEquals("fo", instance.exports.slice("foo", 0, 2));
-  //assertEquals("foo", instance.exports.slice("foo", 0, 3));
-  //assertEquals("foo", instance.exports.slice("foo", 0, 4));
-  //assertEquals("o", instance.exports.slice("foo", 1, 2));
-  //assertEquals("oo", instance.exports.slice("foo", 1, 3));
-  //assertEquals("oo", instance.exports.slice("foo", 1, 100));
-  //assertEquals("", instance.exports.slice("foo", 1, 0));
-  //assertEquals("", instance.exports.slice("foo", 3, 4));
-  //assertEquals("foo", instance.exports.slice("foo", 0, -1));
-  //assertEquals("", instance.exports.slice("foo", -1, 1));
+  assertEquals("", instance.exports.slice("foo", 0, 0));
+  assertEquals("f", instance.exports.slice("foo", 0, 1));
+  assertEquals("fo", instance.exports.slice("foo", 0, 2));
+  assertEquals("foo", instance.exports.slice("foo", 0, 3));
+  assertEquals("foo", instance.exports.slice("foo", 0, 4));
+  assertEquals("o", instance.exports.slice("foo", 1, 2));
+  assertEquals("oo", instance.exports.slice("foo", 1, 3));
+  assertEquals("oo", instance.exports.slice("foo", 1, 100));
+  assertEquals("", instance.exports.slice("foo", 1, 0));
+  assertEquals("", instance.exports.slice("foo", 3, 4));
+  assertEquals("foo", instance.exports.slice("foo", 0, -1));
+  assertEquals("", instance.exports.slice("foo", -1, 1));
 
   assertThrows(() => instance.exports.get_codeunit(null, 0),
                WebAssembly.RuntimeError, "illegal cast");
@@ -534,24 +534,24 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   const input = prefix + slice + suffix;
   const start = prefix.length;
   const end = start + slice.length;
-  //assertEquals(slice, instance.exports.slice(input, start, end));
+  assertEquals(slice, instance.exports.slice(input, start, end));
 
   // Check that we create one-byte substrings when possible.
   let onebyte = instance.exports.slice("\u1234abcABCDE", 1, 4);
-  //assertEquals("abc", onebyte);
+  assertEquals("abc", onebyte);
   assertTrue(isOneByteString(onebyte));
 
   // Check that the CodeStubAssembler implementation also creates one-byte
   // substrings.
   onebyte = instance.exports.slice("\u1234abcA", 1, 4);
-  //assertEquals("abc", onebyte);
+  assertEquals("abc", onebyte);
   assertTrue(isOneByteString(onebyte));
   // Cover the code path that checks 8 characters at a time.
   onebyte = instance.exports.slice("\u1234abcdefgh\u1234", 1, 9);
-  //assertEquals("abcdefgh", onebyte);  // Exactly 8 characters.
+  assertEquals("abcdefgh", onebyte);  // Exactly 8 characters.
   assertTrue(isOneByteString(onebyte));
   onebyte = instance.exports.slice("\u1234abcdefghij\u1234", 1, 11);
-  //assertEquals("abcdefghij", onebyte);  // Longer than 8.
+  assertEquals("abcdefghij", onebyte);  // Longer than 8.
   assertTrue(isOneByteString(onebyte));
 
   // Check that the runtime code path also creates one-byte substrings.
@@ -591,7 +591,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   for (let lhs of interestingStrings) {
     for (let rhs of interestingStrings) {
       const expected = lhs < rhs ? -1 : lhs > rhs ? 1 : 0;
-      //assertEquals(expected, instance.exports.compare(lhs, rhs));
+      assertEquals(expected, instance.exports.compare(lhs, rhs));
     }
   }
 
@@ -653,7 +653,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let char of "Az1#\n\ucccc\ud800\udc00") {
-    //assertEquals(char, instance.exports.asString(char.codePointAt(0)));
+    assertEquals(char, instance.exports.asString(char.codePointAt(0)));
   }
   for (let codePoint of [0x110000, 0xFFFFFFFF, -1]) {
     assertThrows(() => instance.exports.asString(codePoint),
@@ -674,7 +674,7 @@ let kBuiltins = { builtins: ["js-string", "text-decoder", "text-encoder"] };
   let instance = builder.instantiate(kImports, kBuiltins);
   let inputs = "Az1#\n\ucccc\ud800\udc00";
   for (let i = 0; i < inputs.length; i++) {
-    //assertEquals(inputs.charAt(i),
+    assertEquals(inputs.charAt(i),
                  instance.exports.asString(inputs.charCodeAt(i)));
   }
 })();
@@ -799,22 +799,22 @@ function makeWtf8TestDataSegment() {
       // second byte and continues with the next, which also can't start
       // a sequence.  The result is that one isolated surrogate is replaced
       // by three U+FFFD codepoints.
-      //assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
+      assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
                    instance.exports.new_utf8(start, end));
     } else {
-      //assertEquals(str, instance.exports.new_utf8(start, end));
+      assertEquals(str, instance.exports.new_utf8(start, end));
     }
   }
   for (let [str, {offset, length, replaced}] of Object.entries(data.invalid)) {
     let start = offset;
     let end = offset + length;
-    //assertEquals(replaced, instance.exports.new_utf8(start, end));
+    assertEquals(replaced, instance.exports.new_utf8(start, end));
   }
 
-  //assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
-  //assertEquals("", instance.exports.bounds_check("ascii".length,
+  assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
+  assertEquals("", instance.exports.bounds_check("ascii".length,
                                                  "ascii".length));
-  //assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
+  assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
                                                   "ascii".length));
   assertThrows(() => instance.exports.bounds_check(0, 100),
                WebAssembly.RuntimeError, "array element access out of bounds");
@@ -908,13 +908,13 @@ function makeWtf16TestDataSegment(strings) {
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
     let start = offset / 2;
     let end = start + length;
-    //assertEquals(str, instance.exports.new_wtf16(start, end));
+    assertEquals(str, instance.exports.new_wtf16(start, end));
   }
 
-  //assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
-  //assertEquals("", instance.exports.bounds_check("ascii".length,
+  assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
+  assertEquals("", instance.exports.bounds_check("ascii".length,
                                                  "ascii".length));
-  //assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
+  assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
                                                   "ascii".length));
   assertThrows(() => instance.exports.bounds_check(0, 100),
                WebAssembly.RuntimeError, "array element access out of bounds");
@@ -977,8 +977,8 @@ function makeWtf16TestDataSegment(strings) {
 
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let str of interestingStrings) {
-    //assertEquals(str, instance.exports.encode(str, str.length, 0));
-    //assertEquals(str, instance.exports.encode(str, str.length + 20, 10));
+    assertEquals(str, instance.exports.encode(str, str.length, 0));
+    assertEquals(str, instance.exports.encode(str, str.length + 20, 10));
   }
 
   assertThrows(() => instance.exports.encode(null, 0, 0),
@@ -1016,7 +1016,7 @@ function makeWtf16TestDataSegment(strings) {
   let instance = builder.instantiate(kImports, kBuiltins);
   for (let str of interestingStrings) {
     let wtf8 = encodeWtf8(str);
-    //assertEquals(wtf8.length, instance.exports.string_measure_utf8(str));
+    assertEquals(wtf8.length, instance.exports.string_measure_utf8(str));
   }
 
   assertThrows(() => instance.exports.string_measure_utf8_null(),
@@ -1078,11 +1078,11 @@ function makeWtf16TestDataSegment(strings) {
 
   for (let str of interestingStrings) {
     let replaced = ReplaceIsolatedSurrogates(str);
-    if (!HasIsolatedSurrogate(str)) //assertEquals(str, replaced);
+    if (!HasIsolatedSurrogate(str)) assertEquals(str, replaced);
     let wtf8 = encodeWtf8(replaced);
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_utf8(str, wtf8.length, 0));
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_utf8(str, wtf8.length + 20, 10));
   }
 
@@ -1129,11 +1129,11 @@ function makeWtf16TestDataSegment(strings) {
 
   for (let str of interestingStrings) {
     let replaced = ReplaceIsolatedSurrogates(str);
-    if (!HasIsolatedSurrogate(str)) //assertEquals(str, replaced);
+    if (!HasIsolatedSurrogate(str)) assertEquals(str, replaced);
     let wtf8 = encodeWtf8(replaced);
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_utf8(str, wtf8.length, 0));
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_utf8(str, wtf8.length + 20, 10));
   }
 

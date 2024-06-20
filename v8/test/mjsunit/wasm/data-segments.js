@@ -22,7 +22,7 @@ function SimpleDataSegmentTest(offset) {
   for (var i = offset - 20; i < offset + 20; i += 4) {
     if (i < 0) continue;
     var expected = (i == offset) ? 151587081 : 0;
-    //assertEquals(expected, instance.exports.load(i));
+    assertEquals(expected, instance.exports.load(i));
   }
 }
 
@@ -53,7 +53,7 @@ function GlobalImportedInitTest(pad) {
     for (var i = offset - 20; i < offset + 20; i += 4) {
       if (i < 0) continue;
       var expected = i == offset ? 84215045 : 0;
-      //assertEquals(expected, instance.exports.load(i));
+      assertEquals(expected, instance.exports.load(i));
     }
   }
 }

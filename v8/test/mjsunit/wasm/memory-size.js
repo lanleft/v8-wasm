@@ -17,7 +17,7 @@ var kSpecMaxWasmMemoryPages = 65536;  // 4 GiB
          .addBody([kExprMemorySize, kMemoryZero])
          .exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0, module.exports.memory_size());
+  assertEquals(0, module.exports.memory_size());
 })();
 
 (function testMemorySizeNonZero() {
@@ -29,7 +29,7 @@ var kSpecMaxWasmMemoryPages = 65536;  // 4 GiB
          .addBody([kExprMemorySize, kMemoryZero])
          .exportFunc();
   var module = builder.instantiate();
-  //assertEquals(size, module.exports.memory_size());
+  assertEquals(size, module.exports.memory_size());
 })();
 
 (function testMemorySizeSpecMaxOk() {
@@ -40,7 +40,7 @@ var kSpecMaxWasmMemoryPages = 65536;  // 4 GiB
          .addBody([kExprMemorySize, kMemoryZero])
          .exportFunc();
   var module = builder.instantiate();
-  //assertEquals(1, module.exports.memory_size());
+  assertEquals(1, module.exports.memory_size());
 })();
 
 (function testMemorySizeV8MaxPlus1Throws() {
@@ -62,7 +62,7 @@ var kSpecMaxWasmMemoryPages = 65536;  // 4 GiB
          .addBody([kExprMemorySize, kMemoryZero])
     .exportFunc();
   var module = builder.instantiate();
-  //assertEquals(1, module.exports.memory_size());
+  assertEquals(1, module.exports.memory_size());
 })();
 
 (function testMemoryInitialMaxPlus1Throws() {

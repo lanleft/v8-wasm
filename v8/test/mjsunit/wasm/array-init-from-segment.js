@@ -72,8 +72,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let init_and_get_active = instance.exports.init_and_get_active;
   // Initializing from a passive segment works. The third element is null, so
   // we get a null dereference.
-  //assertEquals(elems[0], init_and_get(0, 3, 0));
-  //assertEquals(elems[1], init_and_get(0, 3, 1));
+  assertEquals(elems[0], init_and_get(0, 3, 0));
+  assertEquals(elems[1], init_and_get(0, 3, 1));
   assertTraps(kTrapNullDereference, () => init_and_get(0, 3, 2));
   // The array has the correct length.
   assertTraps(kTrapArrayOutOfBounds, () => init_and_get(0, 3, 3));
@@ -86,7 +86,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertTraps(kTrapElementSegmentOutOfBounds,
               () => init_and_get(0x80000000, 0, 0));
   // Respective segment elements should be pointer-identical.
-  //assertEquals(1, instance.exports.identical(3, 0));
+  assertEquals(1, instance.exports.identical(3, 0));
   // Now drop the segment.
   instance.exports.drop();
   // A 0-length array should still be created...
@@ -163,8 +163,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let table_get = instance.exports.table_get;
   // Initializing from a passive segment works. The third element is null, so
   // we get a null dereference.
-  //assertEquals(elems[0], table_get(0, 0));
-  //assertEquals(elems[1], table_get(0, 1));
+  assertEquals(elems[0], table_get(0, 0));
+  assertEquals(elems[1], table_get(0, 1));
   assertTraps(kTrapNullDereference, () => table_get(0, 2));
   // The array has the correct length.
   assertTraps(kTrapArrayOutOfBounds, () => table_get(0, 3));
@@ -175,8 +175,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   instance.exports.init();
   // Nothing should change: a constant expression should not observe the dropped
   // segments.
-  //assertEquals(elems[0], table_get(0, 0));
-  //assertEquals(elems[1], table_get(0, 1));
+  assertEquals(elems[0], table_get(0, 0));
+  assertEquals(elems[1], table_get(0, 1));
   assertTraps(kTrapNullDereference, () => table_get(0, 2));
   assertTraps(kTrapArrayOutOfBounds, () => table_get(0, 3));
 })();
@@ -399,13 +399,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate();
 
   // TODO(14034): Reenable when we have constant array.new_elem.
-  // //assertEquals(element_0, instance.exports.global_get(0));
-  // //assertEquals(element_1, instance.exports.global_get(1));
+  // assertEquals(element_0, instance.exports.global_get(0));
+  // assertEquals(element_1, instance.exports.global_get(1));
 
   let init = instance.exports.init_from_data;
 
-  //assertEquals(element_0, init(1, 2, 0));
-  //assertEquals(element_1, init(1, 2, 1));
+  assertEquals(element_0, init(1, 2, 0));
+  assertEquals(element_1, init(1, 2, 1));
 
   assertTraps(kTrapArrayTooLarge, () => init(1, 1000000000, 0));
   assertTraps(kTrapDataSegmentOutOfBounds, () => init(2, 2, 0));

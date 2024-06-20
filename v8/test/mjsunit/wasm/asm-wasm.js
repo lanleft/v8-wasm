@@ -13,7 +13,7 @@ function assertValidAsm(func) {
 
 function assertWasm(expected, func, ffi) {
   print("Testing " + func.name + "...");
-  //assertEquals(
+  assertEquals(
       expected, func(stdlib, ffi, new ArrayBuffer(kMinHeapSize)).caller());
   assertValidAsm(func);
 }
@@ -660,7 +660,7 @@ var module_decl = eval('(' + TestNamedFunctions.toString() + ')');
 var module = module_decl(stdlib);
 assertValidAsm(module_decl);
 module.init();
-//assertEquals(77.5, module.add());
+assertEquals(77.5, module.add());
 })();
 
 
@@ -681,7 +681,7 @@ function TestGlobalsWithInit() {
 var module_decl = eval('(' + TestGlobalsWithInit.toString() + ')');
 var module = module_decl(stdlib);
 assertValidAsm(module_decl);
-//assertEquals(77.5, module.add());
+assertEquals(77.5, module.add());
 })();
 
 function TestForLoop() {
@@ -831,7 +831,7 @@ var module_decl = eval(
   '(' + TestExportNameDifferentFromFunctionName.toString() + ')');
 var module = module_decl(stdlib);
 assertValidAsm(module_decl);
-//assertEquals(55, module.alt_caller());
+assertEquals(55, module.alt_caller());
 })();
 
 
@@ -929,12 +929,12 @@ function TestFunctionTable(stdlib, foreign, buffer) {
 
 print("TestFunctionTable...");
 var module = TestFunctionTable(stdlib);
-//assertEquals(55, module.caller(0, 0, 33, 22));
-//assertEquals(11, module.caller(0, 1, 33, 22));
-//assertEquals(9, module.caller(0, 2, 54, 45));
-//assertEquals(99, module.caller(0, 3, 54, 45));
-//assertEquals(23, module.caller(0, 4, 12, 11));
-//assertEquals(31, module.caller(1, 0, 30, 11));
+assertEquals(55, module.caller(0, 0, 33, 22));
+assertEquals(11, module.caller(0, 1, 33, 22));
+assertEquals(9, module.caller(0, 2, 54, 45));
+assertEquals(99, module.caller(0, 3, 54, 45));
+assertEquals(23, module.caller(0, 4, 12, 11));
+assertEquals(31, module.caller(1, 0, 30, 11));
 })();
 
 
@@ -960,8 +960,8 @@ var module = TestFunctionTable(stdlib);
   var module_decl = eval('(' + CommaModule.toString() + ')');
   var m = module_decl(stdlib);
   assertValidAsm(module_decl);
-  //assertEquals(123, m.ifunc(456.7, 123));
-  //assertEquals(123.4, m.dfunc(456, 123.4));
+  assertEquals(123, m.ifunc(456.7, 123));
+  assertEquals(123.4, m.dfunc(456, 123.4));
 })();
 
 
@@ -1160,7 +1160,7 @@ assertWasm(-34359738370.75, TestNegativeDouble);
   }
 
   var m = Module(stdlib);
-  //assertEquals(42, m.Ñæ());
+  assertEquals(42, m.Ñæ());
   assertValidAsm(Module);
 })();
 */
@@ -1218,9 +1218,9 @@ assertWasm(1321347704, TestOutOfBoundsConversion);
   var decl = eval('(' + asmModule.toString() + ')');
   var wasm = decl(stdlib);
   assertValidAsm(decl);
-  //assertEquals(0xffffffff, wasm.u0xffffffff());
-  //assertEquals(0x80000000, wasm.u0x80000000());
-  //assertEquals(0x87654321, wasm.u0x87654321());
+  assertEquals(0xffffffff, wasm.u0xffffffff());
+  assertEquals(0x80000000, wasm.u0x80000000());
+  assertEquals(0x87654321, wasm.u0x87654321());
 })();
 
 
@@ -1283,7 +1283,7 @@ function TestSingleFunctionModule() {
   return add;
 }
 
-//assertEquals(7, TestSingleFunctionModule()(3, 4));
+assertEquals(7, TestSingleFunctionModule()(3, 4));
 
 
 function TestNotZero() {
@@ -1394,8 +1394,8 @@ assertWasm(3.25, TestFloatGlobals);
     return {bar: foo, baz: foo};
   }
   var m = asmModule();
-  //assertEquals(42, m.bar());
-  //assertEquals(42, m.baz());
+  assertEquals(42, m.bar());
+  assertEquals(42, m.baz());
 })();
 
 (function TestGenerator() {

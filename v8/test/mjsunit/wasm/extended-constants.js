@@ -30,7 +30,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({m : {g0: global_obj0, g1: global_obj1}});
 
-  //assertEquals(value0 + (value1 * (value0 - 1)), instance.exports.global.value);
+  assertEquals(value0 + (value1 * (value0 - 1)), instance.exports.global.value);
 })();
 
 (function ExtendedConstantsTestI64() {
@@ -59,6 +59,6 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({m : {g0: global_obj0, g1: global_obj1}});
 
-  //assertEquals(value0 + (value1 * (value0 - 1n)),
+  assertEquals(value0 + (value1 * (value0 - 1n)),
                instance.exports.global.value);
 })();

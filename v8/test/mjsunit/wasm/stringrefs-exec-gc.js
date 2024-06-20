@@ -153,7 +153,7 @@ function makeWtf8TestDataSegment() {
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
     let start = offset;
     let end = offset + length;
-    //assertEquals(str, instance.exports.new_wtf8(start, end));
+    assertEquals(str, instance.exports.new_wtf8(start, end));
     if (HasIsolatedSurrogate(str)) {
       assertThrows(() => instance.exports.new_utf8(start, end),
                    WebAssembly.RuntimeError, "invalid UTF-8 string");
@@ -166,12 +166,12 @@ function makeWtf8TestDataSegment() {
       // replaces the second byte and continues with the next, which
       // also can't start a sequence.  The result is that one isolated
       // surrogate is replaced by three U+FFFD codepoints.
-      //assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
+      assertEquals(ReplaceIsolatedSurrogates(str, '\ufffd\ufffd\ufffd'),
                    instance.exports.new_utf8_sloppy(start, end));
     } else {
-      //assertEquals(str, instance.exports.new_utf8(start, end));
-      //assertEquals(str, instance.exports.new_utf8_sloppy(start, end));
-      //assertEquals(str, instance.exports.new_utf8_try(start, end));
+      assertEquals(str, instance.exports.new_utf8(start, end));
+      assertEquals(str, instance.exports.new_utf8_sloppy(start, end));
+      assertEquals(str, instance.exports.new_utf8_try(start, end));
     }
   }
   for (let [str, {offset, length}] of Object.entries(data.invalid)) {
@@ -184,10 +184,10 @@ function makeWtf8TestDataSegment() {
     assertNull(instance.exports.new_utf8_try(start, end));
   }
 
-  //assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
-  //assertEquals("", instance.exports.bounds_check("ascii".length,
+  assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
+  assertEquals("", instance.exports.bounds_check("ascii".length,
                                                  "ascii".length));
-  //assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
+  assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
                                                   "ascii".length));
   assertThrows(() => instance.exports.bounds_check(0, 100),
                WebAssembly.RuntimeError, "array element access out of bounds");
@@ -228,12 +228,12 @@ function makeWtf8TestDataSegment() {
 
   let instance = builder.instantiate();
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
-    //assertEquals(
+    assertEquals(
         +HasIsolatedSurrogate(str),
         instance.exports.is_null_new_utf8_try(offset, offset+length));
   }
   for (let [str, {offset, length}] of Object.entries(data.invalid)) {
-    //assertEquals(1, instance.exports.is_null_new_utf8_try(offset, offset+length));
+    assertEquals(1, instance.exports.is_null_new_utf8_try(offset, offset+length));
   }
 })();
 
@@ -319,13 +319,13 @@ function makeWtf16TestDataSegment(strings) {
   for (let [str, {offset, length}] of Object.entries(data.valid)) {
     let start = offset / 2;
     let end = start + length;
-    //assertEquals(str, instance.exports.new_wtf16(start, end));
+    assertEquals(str, instance.exports.new_wtf16(start, end));
   }
 
-  //assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
-  //assertEquals("", instance.exports.bounds_check("ascii".length,
+  assertEquals("ascii", instance.exports.bounds_check(0, "ascii".length));
+  assertEquals("", instance.exports.bounds_check("ascii".length,
                                                  "ascii".length));
-  //assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
+  assertEquals("i", instance.exports.bounds_check("ascii".length - 1,
                                                   "ascii".length));
   assertThrows(() => instance.exports.bounds_check(0, 100),
                WebAssembly.RuntimeError, "array element access out of bounds");
@@ -398,8 +398,8 @@ function makeWtf16TestDataSegment(strings) {
   let instance = builder.instantiate();
   for (let str of interestingStrings) {
     let wtf8 = encodeWtf8(str);
-    //assertEquals(str, instance.exports.encode_wtf8(str, wtf8.length, 0));
-    //assertEquals(str, instance.exports.encode_wtf8(str, wtf8.length + 20,
+    assertEquals(str, instance.exports.encode_wtf8(str, wtf8.length, 0));
+    assertEquals(str, instance.exports.encode_wtf8(str, wtf8.length + 20,
                                                    10));
   }
 
@@ -410,8 +410,8 @@ function makeWtf16TestDataSegment(strings) {
           WebAssembly.RuntimeError,
           "Failed to encode string as UTF-8: contains unpaired surrogate");
     } else {
-      //assertEquals(str, instance.exports.encode_utf8(str, wtf8.length, 0));
-      //assertEquals(str,
+      assertEquals(str, instance.exports.encode_utf8(str, wtf8.length, 0));
+      assertEquals(str,
                    instance.exports.encode_wtf8(str, wtf8.length + 20, 10));
     }
   }
@@ -419,11 +419,11 @@ function makeWtf16TestDataSegment(strings) {
   for (let str of interestingStrings) {
     let offset = 42;
     let replaced = ReplaceIsolatedSurrogates(str);
-    if (!HasIsolatedSurrogate(str)) //assertEquals(str, replaced);
+    if (!HasIsolatedSurrogate(str)) assertEquals(str, replaced);
     let wtf8 = encodeWtf8(replaced);
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_replace(str, wtf8.length, 0));
-    //assertEquals(replaced,
+    assertEquals(replaced,
                  instance.exports.encode_replace(str, wtf8.length + 20, 10));
   }
 
@@ -500,8 +500,8 @@ function makeWtf16TestDataSegment(strings) {
 
   let instance = builder.instantiate();
   for (let str of interestingStrings) {
-    //assertEquals(str, instance.exports.encode(str, str.length, 0));
-    //assertEquals(str, instance.exports.encode(str, str.length + 20, 10));
+    assertEquals(str, instance.exports.encode(str, str.length, 0));
+    assertEquals(str, instance.exports.encode(str, str.length + 20, 10));
   }
 
   assertThrows(() => instance.exports.encode_null_array(),

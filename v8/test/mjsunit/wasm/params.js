@@ -7,7 +7,7 @@
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 function runSelect2(select, which, a, b) {
-  //assertEquals(which == 0 ? a : b, select(a, b));
+  assertEquals(which == 0 ? a : b, select(a, b));
 }
 
 function testSelect2(type) {
@@ -64,9 +64,9 @@ function runSelect10(select, which, a, b) {
   ];
 
   for (var i = 0; i < 10; i++) {
-     if (which == i) //assertEquals(a, result[i]);
-     else if (which == i+1) //assertEquals(b, result[i]);
-     else //assertEquals(x, result[i]);
+     if (which == i) assertEquals(a, result[i]);
+     else if (which == i+1) assertEquals(b, result[i]);
+     else assertEquals(x, result[i]);
   }
 }
 
@@ -84,7 +84,7 @@ function testSelect10(t) {
 
     var select = builder.instantiate().exports.select;
 
-    //assertEquals("function", typeof select);
+    assertEquals("function", typeof select);
     runSelect10(select, which, 99, 97);
     runSelect10(select, which, -99, -97);
 

@@ -43,9 +43,9 @@ function generateBuilder() {
       .exportFunc();
   var instance = builder.instantiate();
   // Avoid the if branch (not growing memory).
-  //assertEquals(initialMemoryPages, instance.exports.main(0));
+  assertEquals(initialMemoryPages, instance.exports.main(0));
   // Enter the if branch (growing memory).
-  //assertEquals(initialMemoryPages + deltaPages, instance.exports.main(1));
+  assertEquals(initialMemoryPages + deltaPages, instance.exports.main(1));
 })();
 
 // This test verifies that the effects of growing memory in an if branch are
@@ -75,12 +75,12 @@ function generateBuilder() {
   var instance = builder.instantiate();
   // Initialize the memory location with oldValue.
   instance.exports.store(index, oldValue);
-  //assertEquals(oldValue, instance.exports.load(index));
+  assertEquals(oldValue, instance.exports.load(index));
   // Verify that the else branch (not growing) is reachable.
-  //assertEquals(initialMemoryPages, instance.exports.main(0));
-  //assertEquals(newValue, instance.exports.load(index));
+  assertEquals(initialMemoryPages, instance.exports.main(0));
+  assertEquals(newValue, instance.exports.load(index));
   // Enter the if branch (growing memory).
-  //assertEquals(initialMemoryPages + deltaPages, instance.exports.main(1));
+  assertEquals(initialMemoryPages + deltaPages, instance.exports.main(1));
 })();
 
 // This test verifies that the effects of growing memory in an else branch
@@ -110,12 +110,12 @@ function generateBuilder() {
   var instance = builder.instantiate();
   // Initialize the memory location with oldValue.
   instance.exports.store(index, oldValue);
-  //assertEquals(oldValue, instance.exports.load(index));
+  assertEquals(oldValue, instance.exports.load(index));
   // Verify that the if branch (not growing) is reachable.
-  //assertEquals(initialMemoryPages, instance.exports.main(1));
-  //assertEquals(newValue, instance.exports.load(index));
+  assertEquals(initialMemoryPages, instance.exports.main(1));
+  assertEquals(newValue, instance.exports.load(index));
   // Enter the else branch (growing memory).
-  //assertEquals(initialMemoryPages + deltaPages, instance.exports.main(0));
+  assertEquals(initialMemoryPages + deltaPages, instance.exports.main(0));
 })();
 
 // This test verifies that the effects of growing memory in an if/else
@@ -142,11 +142,11 @@ function generateBuilder() {
       .exportFunc();
   var instance = builder.instantiate();
   // Enter the if branch (growing memory by 1 page).
-  //assertEquals(initialMemoryPages + deltaPagesIf, instance.exports.main(1));
+  assertEquals(initialMemoryPages + deltaPagesIf, instance.exports.main(1));
   // Create a new instance for the testing the else branch.
   var instance = builder.instantiate();
   // Enter the else branch (growing memory by 2 pages).
-  //assertEquals(initialMemoryPages + deltaPagesElse, instance.exports.main(0));
+  assertEquals(initialMemoryPages + deltaPagesElse, instance.exports.main(0));
 })();
 
 // This test verifies that the effects of growing memory in an if branch are
@@ -178,7 +178,7 @@ function generateBuilder() {
   // the kExprI32LoadMem instruction at the end of main.
   assertTraps(kTrapMemOutOfBounds, () => instance.exports.main(0, index));
   // Enter the if branch (growing memory).
-  //assertEquals(value, instance.exports.main(1, index));
+  assertEquals(value, instance.exports.main(1, index));
 })();
 
 // This test verifies that the effects of growing memory in an if branch are
@@ -213,7 +213,7 @@ function generateBuilder() {
   // the kExprI32StoreMem instruction in the if branch.
   assertTraps(kTrapMemOutOfBounds, () => instance.exports.main(0, index));
   // Enter the if branch (growing memory).
-  //assertEquals(value, instance.exports.main(1, index));
+  assertEquals(value, instance.exports.main(1, index));
 })();
 
 // This test verifies that the effects of growing memory in an else branch are
@@ -248,7 +248,7 @@ function generateBuilder() {
   // the kExprI32StoreMem instruction in the else branch.
   assertTraps(kTrapMemOutOfBounds, () => instance.exports.main(1, index));
   // Enter the else branch (growing memory).
-  //assertEquals(value, instance.exports.main(0, index));
+  assertEquals(value, instance.exports.main(0, index));
 })();
 
 // This test verifies that the effects of growing memory in an if/else branch
@@ -285,7 +285,7 @@ function generateBuilder() {
       .exportFunc();
   var instance = builder.instantiate();
   // Enter the if branch (growing memory by 1 page).
-  //assertEquals(valueIf, instance.exports.main(1, index));
+  assertEquals(valueIf, instance.exports.main(1, index));
   // Enter the else branch (growing memory by 2 pages).
-  //assertEquals(valueElse, instance.exports.main(0, index));
+  assertEquals(valueElse, instance.exports.main(0, index));
 })();

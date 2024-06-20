@@ -26,6 +26,6 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let worker = new Worker(workerCode, {type: 'function'});
   worker.postMessage(module);
-  //assertEquals(42, worker.getMessage());
+  assertEquals(42, worker.getMessage());
   worker.terminate();
 })();

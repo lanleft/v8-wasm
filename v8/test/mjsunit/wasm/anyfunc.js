@@ -144,7 +144,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main());
+  assertEquals(null, main());
 })();
 
 (function testAssignNullToAnyFuncLocal() {
@@ -156,7 +156,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main(main));
+  assertEquals(null, main(main));
 })();
 
 (function testImplicitReturnNullAsAnyFunc() {
@@ -168,7 +168,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main());
+  assertEquals(null, main());
 })();
 
 (function testExplicitReturnNullAsAnyFunc() {
@@ -180,7 +180,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main());
+  assertEquals(null, main());
 })();
 
 (function testRefFuncOutOfBounds() {
@@ -204,7 +204,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
       .exportFunc();
 
   const instance = builder.instantiate();
-  //assertEquals(expected, instance.exports.main()());
+  assertEquals(expected, instance.exports.main()());
 })();
 
 (function testRefFuncPreservesIdentity() {

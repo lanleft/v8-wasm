@@ -17,7 +17,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate();
 
   const table_function2 = instance.exports.table.get(offset + 1);
-  //assertEquals(22, table_function2());
+  assertEquals(22, table_function2());
 })();
 
 (function testTableGetExportedFunction() {
@@ -34,7 +34,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate();
 
   const table_function2 = instance.exports.table.get(offset + 1);
-  //assertEquals(22, table_function2());
+  assertEquals(22, table_function2());
 })();
 
 (function testTableGetOverlappingSegments() {
@@ -52,7 +52,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate();
 
   const table_function1 = instance.exports.table.get(offset + 1);
-  //assertEquals(11, table_function1());
+  assertEquals(11, table_function1());
 })();
 
 (function testTableGetUniqueWrapperExportedFunction() {
@@ -68,7 +68,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(undefined, instance.exports.f1.tag);
+  assertEquals(undefined, instance.exports.f1.tag);
   const my_tag = { hello: 15 };
   instance.exports.f1.tag = my_tag;
 
@@ -89,7 +89,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(undefined, instance.exports.table.get(offset).tag);
+  assertEquals(undefined, instance.exports.table.get(offset).tag);
   const my_tag = { hello: 15 };
   instance.exports.table.get(offset).tag = my_tag;
 
@@ -108,7 +108,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
                                   [f1.index, f1.index, f1.index]);
 
   const instance = builder.instantiate();
-  //assertEquals(null, instance.exports.table.get(offset - 1));
+  assertEquals(null, instance.exports.table.get(offset - 1));
 })();
 
 (function testTableGetOOB() {
@@ -138,5 +138,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
                                   [f1.index, import1]);
 
   const instance = builder.instantiate({q: {fun: () => 33}});
-  //assertEquals(33, instance.exports.table.get(offset + 1)());
+  assertEquals(33, instance.exports.table.get(offset + 1)());
 })();

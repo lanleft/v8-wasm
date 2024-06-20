@@ -52,7 +52,7 @@ while (true) {
   const instance = builder.instantiate();
   let expected = 17;
   for (let i = num_functions - 1; i > 0; i = Math.floor(i / 10)) ++expected;
-  //assertEquals(expected, instance.exports.f(17));
+  assertEquals(expected, instance.exports.f(17));
   const num_code_spaces = %WasmNumCodeSpaces(instance);
   print(`--> ${num_code_spaces} code spaces.`);
   if (num_code_spaces >= 4) break;

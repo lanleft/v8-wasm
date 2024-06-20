@@ -38,7 +38,7 @@ function genModule(memory) {
     .exportFunc();
   var module = builder.instantiate({"": {memory:memory}});
   assertTrue(module.exports.memory instanceof WebAssembly.Memory);
-  if (memory != null) //assertEquals(memory.buffer, module.exports.memory.buffer);
+  if (memory != null) assertEquals(memory.buffer, module.exports.memory.buffer);
   return module;
 }
 
@@ -47,22 +47,22 @@ function testPokeMemory() {
   var module = genModule(new WebAssembly.Memory({initial: 1}));
   var buffer = module.exports.memory.buffer;
   var main = module.exports.main;
-  //assertEquals(kMemSize, buffer.byteLength);
+  assertEquals(kMemSize, buffer.byteLength);
 
   var array = new Int8Array(buffer);
-  //assertEquals(kMemSize, array.length);
+  assertEquals(kMemSize, array.length);
 
   assertTrue(array.every((e => e === 0)));
 
   for (var i = 0; i < 10; i++) {
-    //assertEquals(0, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize - 4));
 
     array[kMemSize/2 + i] = 1;
-    //assertEquals(0, main(kMemSize/2 - 4));
-    //assertEquals(-1, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize/2 - 4));
+    assertEquals(-1, main(kMemSize - 4));
 
     array[kMemSize/2 + i] = 0;
-    //assertEquals(0, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize - 4));
   }
 }
 
@@ -76,7 +76,7 @@ function testSurvivalAcrossGc() {
   var checker = genAndGetMain(new WebAssembly.Memory({initial: 1}));
   for (var i = 0; i < 3; i++) {
     print("gc run ", i);
-    //assertEquals(0, checker(kMemSize - 4));
+    assertEquals(0, checker(kMemSize - 4));
     gc();
   }
 }
@@ -92,22 +92,22 @@ function testPokeOuterMemory() {
   var buffer = new WebAssembly.Memory({initial: kMemSize / kPageSize});
   var module = genModule(buffer);
   var main = module.exports.main;
-  //assertEquals(kMemSize, buffer.buffer.byteLength);
+  assertEquals(kMemSize, buffer.buffer.byteLength);
 
   var array = new Int8Array(buffer.buffer);
-  //assertEquals(kMemSize, array.length);
+  assertEquals(kMemSize, array.length);
 
   assertTrue(array.every((e => e === 0)));
 
   for (var i = 0; i < 10; i++) {
-    //assertEquals(0, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize - 4));
 
     array[kMemSize/2 + i] = 1;
-    //assertEquals(0, main(kMemSize/2 - 4));
-    //assertEquals(-1, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize/2 - 4));
+    assertEquals(-1, main(kMemSize - 4));
 
     array[kMemSize/2 + i] = 0;
-    //assertEquals(0, main(kMemSize - 4));
+    assertEquals(0, main(kMemSize - 4));
   }
 }
 
@@ -118,7 +118,7 @@ function testOuterMemorySurvivalAcrossGc() {
   var checker = genAndGetMain(buffer);
   for (var i = 0; i < 3; i++) {
     print("gc run ", i);
-    //assertEquals(0, checker(kMemSize - 4));
+    assertEquals(0, checker(kMemSize - 4));
     gc();
   }
 }
@@ -149,8 +149,8 @@ function testOOBThrows() {
   let read = offset => module.exports.geti(0, offset);
   let write = offset =>  module.exports.geti(offset, 0);
 
-  //assertEquals(0, read(65532));
-  //assertEquals(0, write(65532));
+  assertEquals(0, read(65532));
+  assertEquals(0, write(65532));
 
   // Note that this test might be run concurrently in multiple Isolates, which
   // makes an exact comparison of the expected trap count unreliable. But is is

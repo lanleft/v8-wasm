@@ -32,7 +32,7 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(5, wasm.caller());
+  assertEquals(5, wasm.caller());
 })();
 
 (function TestSwitch() {
@@ -62,7 +62,7 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(23, wasm.caller());
+  assertEquals(23, wasm.caller());
 })();
 
 (function TestSwitchFallthrough() {
@@ -86,7 +86,7 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(42, wasm.caller());
+  assertEquals(42, wasm.caller());
 })();
 
 (function TestNestedSwitch() {
@@ -114,7 +114,7 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(43, wasm.caller());
+  assertEquals(43, wasm.caller());
 })();
 
 (function TestSwitchWithDefaultOnly() {
@@ -133,8 +133,8 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(-10, wasm.main(2));
-  //assertEquals(-10, wasm.main(54));
+  assertEquals(-10, wasm.main(2));
+  assertEquals(-10, wasm.main(54));
 })();
 
 (function TestEmptySwitch() {
@@ -152,7 +152,7 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(73, wasm.main(7));
+  assertEquals(73, wasm.main(7));
 })();
 
 (function TestSwitchWithBrTable() {
@@ -177,13 +177,13 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(25, wasm.main(12));
-  //assertEquals(23, wasm.main(14));
-  //assertEquals(29, wasm.main(15));
-  //assertEquals(16, wasm.main(16));
-  //assertEquals(17, wasm.main(18));
-  //assertEquals(34, wasm.main(19));
-  //assertEquals(-1, wasm.main(-1));
+  assertEquals(25, wasm.main(12));
+  assertEquals(23, wasm.main(14));
+  assertEquals(29, wasm.main(15));
+  assertEquals(16, wasm.main(16));
+  assertEquals(17, wasm.main(18));
+  assertEquals(34, wasm.main(19));
+  assertEquals(-1, wasm.main(-1));
 })();
 
 (function TestSwitchWithBalancedTree() {
@@ -206,12 +206,12 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(-4, wasm.main(-4));
-  //assertEquals(11, wasm.main(1));
-  //assertEquals(52, wasm.main(5));
-  //assertEquals(63, wasm.main(6));
-  //assertEquals(19, wasm.main(9));
-  //assertEquals(0, wasm.main(11));
+  assertEquals(-4, wasm.main(-4));
+  assertEquals(11, wasm.main(1));
+  assertEquals(52, wasm.main(5));
+  assertEquals(63, wasm.main(6));
+  assertEquals(19, wasm.main(9));
+  assertEquals(0, wasm.main(11));
 })();
 
 (function TestSwitchHybrid() {
@@ -240,17 +240,17 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(-4, wasm.main(1));
-  //assertEquals(23, wasm.main(2));
-  //assertEquals(32, wasm.main(3));
-  //assertEquals(14, wasm.main(4));
-  //assertEquals(17, wasm.main(7));
-  //assertEquals(10, wasm.main(10));
-  //assertEquals(121, wasm.main(11));
-  //assertEquals(112, wasm.main(12));
-  //assertEquals(31, wasm.main(13));
-  //assertEquals(16, wasm.main(16));
-  //assertEquals(-1, wasm.main(20));
+  assertEquals(-4, wasm.main(1));
+  assertEquals(23, wasm.main(2));
+  assertEquals(32, wasm.main(3));
+  assertEquals(14, wasm.main(4));
+  assertEquals(17, wasm.main(7));
+  assertEquals(10, wasm.main(10));
+  assertEquals(121, wasm.main(11));
+  assertEquals(112, wasm.main(12));
+  assertEquals(31, wasm.main(13));
+  assertEquals(16, wasm.main(16));
+  assertEquals(-1, wasm.main(20));
 })();
 
 (function TestSwitchFallthroughWithBrTable() {
@@ -288,9 +288,9 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(12, wasm.main(2));
-  //assertEquals(10, wasm.main(10));
-  //assertEquals(54, wasm.main(3));
+  assertEquals(12, wasm.main(2));
+  assertEquals(10, wasm.main(10));
+  assertEquals(54, wasm.main(3));
 })();
 
 (function TestSwitchFallthroughHybrid() {
@@ -350,10 +350,10 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(7, wasm.main(4));
-  //assertEquals(16, wasm.main(10));
-  //assertEquals(-1, wasm.main(19));
-  //assertEquals(-1, wasm.main(23));
+  assertEquals(7, wasm.main(4));
+  assertEquals(16, wasm.main(10));
+  assertEquals(-1, wasm.main(19));
+  assertEquals(-1, wasm.main(23));
 })();
 
 (function TestSwitchHybridWithNoDefault() {
@@ -392,9 +392,9 @@ function assertValidAsm(func) {
   }
   var wasm = asmModule();
   assertValidAsm(asmModule);
-  //assertEquals(2, wasm.main(2));
-  //assertEquals(7, wasm.main(7));
-  //assertEquals(19, wasm.main(-1));
+  assertEquals(2, wasm.main(2));
+  assertEquals(7, wasm.main(7));
+  assertEquals(19, wasm.main(-1));
 })();
 
 (function TestLargeSwitch() {
@@ -424,43 +424,43 @@ function assertValidAsm(func) {
   }
   var wasm = LargeSwitchGenerator(0, 513, 1, handle_case);
   for (var i = 0; i <= 513; i++) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-1));
 
   wasm = LargeSwitchGenerator(0, 1024, 3, handle_case);
   for (var i = 0; i <= 1024; i = i + 3) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-1));
 
   wasm = LargeSwitchGenerator(-2147483648, -2147483000, 1, handle_case);
   for (var i = -2147483648; i <= -2147483000; i++) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
-  //assertEquals(-1, wasm.main(214748647));
+  assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(214748647));
 
   wasm = LargeSwitchGenerator(-2147483648, -2147483000, 3, handle_case);
   for (var i = -2147483648; i <= -2147483000; i = i + 3) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
-  //assertEquals(-1, wasm.main(214748647));
+  assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(214748647));
 
   wasm = LargeSwitchGenerator(2147483000, 2147483647, 1, handle_case);
   for (var i = 2147483000; i <= 2147483647; i++) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
-  //assertEquals(-1, wasm.main(-214748647));
+  assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-214748647));
 
   wasm = LargeSwitchGenerator(2147483000, 2147483647, 4, handle_case);
   for (var i = 2147483000; i <= 2147483647; i = i + 4) {
-    //assertEquals(i, wasm.main(i));
+    assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
-  //assertEquals(-1, wasm.main(-214748647));
+  assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-214748647));
 
   handle_case = function(k) {
     if (k != 7) return "return ".concat(k, ";");
@@ -468,10 +468,10 @@ function assertValidAsm(func) {
   }
   wasm = LargeSwitchGenerator(0, 1499, 7, handle_case);
   for (var i = 0; i <= 1499; i = i + 7) {
-    if (i == 7) //assertEquals(-2, wasm.main(i));
-    else //assertEquals(i, wasm.main(i));
+    if (i == 7) assertEquals(-2, wasm.main(i));
+    else assertEquals(i, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-1));
 
   handle_case = function(k) {
     if (k != 56) return "break;";
@@ -479,8 +479,8 @@ function assertValidAsm(func) {
   }
   wasm = LargeSwitchGenerator(0, 638, 2, handle_case);
   for (var i = 0; i <= 638; i = i + 2) {
-    if (i == 56) //assertEquals(23, wasm.main(i));
-    else //assertEquals(-2, wasm.main(i));
+    if (i == 56) assertEquals(23, wasm.main(i));
+    else assertEquals(-2, wasm.main(i));
   }
-  //assertEquals(-1, wasm.main(-1));
+  assertEquals(-1, wasm.main(-1));
 })();

@@ -44,13 +44,13 @@ const inputs = [
   var select1 = makeSelect(kWasmI32, 1, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select1(val));
+    assertEquals(C(val), select1(val));
 
     // under args
-    //assertEquals(C(undefined), select1());
+    assertEquals(C(undefined), select1());
     // over args
-    //assertEquals(C(val), select1(val, WRONG1));
-    //assertEquals(C(val), select1(val, WRONG1, WRONG2));
+    assertEquals(C(val), select1(val, WRONG1));
+    assertEquals(C(val), select1(val, WRONG1, WRONG2));
   }
 })();
 
@@ -60,29 +60,29 @@ const inputs = [
   var select = makeSelect(kWasmI32, 2, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(val), select(val, WRONG1));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("i32 2(1)...");
   var select = makeSelect(kWasmI32, 2, 1);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val, WRONG2));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 })();
 
@@ -92,42 +92,42 @@ const inputs = [
   var select = makeSelect(kWasmI32, 3, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
+    assertEquals(C(val), select(val, WRONG1));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("i32 3(1)...");
   var select = makeSelect(kWasmI32, 3, 1);
 
   for (val of inputs) {
-    //assertEquals(val | 0, select(WRONG1, val, WRONG2));
+    assertEquals(val | 0, select(WRONG1, val, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(val), select(WRONG1, val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 
   print("i32 3(2)...");
   var select = makeSelect(kWasmI32, 3, 2);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, WRONG2, val));
+    assertEquals(C(val), select(WRONG1, WRONG2, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(undefined), select(WRONG1, WRONG2));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(undefined), select(WRONG1, WRONG2));
     // over args
-    //assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
+    assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
   }
 })();
 
@@ -137,13 +137,13 @@ const inputs = [
   var select1 = makeSelect(kWasmF32, 1, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select1(val));
+    assertEquals(C(val), select1(val));
 
     // under args
-    //assertEquals(C(undefined), select1());
+    assertEquals(C(undefined), select1());
     // over args
-    //assertEquals(C(val), select1(val, WRONG1));
-    //assertEquals(C(val), select1(val, WRONG1, WRONG2));
+    assertEquals(C(val), select1(val, WRONG1));
+    assertEquals(C(val), select1(val, WRONG1, WRONG2));
   }
 })();
 
@@ -153,29 +153,29 @@ const inputs = [
   var select = makeSelect(kWasmF32, 2, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(val), select(val, WRONG1));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("f32 2(1)...");
   var select = makeSelect(kWasmF32, 2, 1);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val, WRONG2));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 })();
 
@@ -185,42 +185,42 @@ const inputs = [
   var select = makeSelect(kWasmF32, 3, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
+    assertEquals(C(val), select(val, WRONG1));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("f32 3(1)...");
   var select = makeSelect(kWasmF32, 3, 1);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, val, WRONG2));
+    assertEquals(C(val), select(WRONG1, val, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(val), select(WRONG1, val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 
   print("f32 3(2)...");
   var select = makeSelect(kWasmF32, 3, 2);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, WRONG2, val));
+    assertEquals(C(val), select(WRONG1, WRONG2, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(undefined), select(WRONG1, WRONG2));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(undefined), select(WRONG1, WRONG2));
     // over args
-    //assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
+    assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
   }
 })();
 
@@ -231,13 +231,13 @@ const inputs = [
   var select1 = makeSelect(kWasmF64, 1, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select1(val));
+    assertEquals(C(val), select1(val));
 
     // under args
-    //assertEquals(C(undefined), select1());
+    assertEquals(C(undefined), select1());
     // over args
-    //assertEquals(C(val), select1(val, WRONG1));
-    //assertEquals(C(val), select1(val, WRONG1, WRONG2));
+    assertEquals(C(val), select1(val, WRONG1));
+    assertEquals(C(val), select1(val, WRONG1, WRONG2));
   }
 })();
 
@@ -247,29 +247,29 @@ const inputs = [
   var select = makeSelect(kWasmF64, 2, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(val), select(val, WRONG1));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("f64 2(1)...");
   var select = makeSelect(kWasmF64, 2, 1);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2));
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(val), select(WRONG1, val, WRONG2));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 })();
 
@@ -279,41 +279,41 @@ const inputs = [
   var select = makeSelect(kWasmF64, 3, 0);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(val, WRONG1, WRONG2));
+    assertEquals(C(val), select(val, WRONG1, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(val), select(val));
-    //assertEquals(C(val), select(val, WRONG1));
+    assertEquals(C(undefined), select());
+    assertEquals(C(val), select(val));
+    assertEquals(C(val), select(val, WRONG1));
     // over args
-    //assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
+    assertEquals(C(val), select(val, WRONG1, WRONG2, WRONG3));
   }
 
   print("f64 3(1)...");
   var select = makeSelect(kWasmF64, 3, 1);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, val, WRONG2));
+    assertEquals(C(val), select(WRONG1, val, WRONG2));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(val), select(WRONG1, val));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(val), select(WRONG1, val));
     // over args
-    //assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
+    assertEquals(C(val), select(WRONG1, val, WRONG2, WRONG3));
   }
 
   print("f64 3(2)...");
   var select = makeSelect(kWasmF64, 3, 2);
 
   for (val of inputs) {
-    //assertEquals(C(val), select(WRONG1, WRONG2, val));
+    assertEquals(C(val), select(WRONG1, WRONG2, val));
 
     // under args
-    //assertEquals(C(undefined), select());
-    //assertEquals(C(undefined), select(0xDEDFACE));
-    //assertEquals(C(undefined), select(WRONG1, WRONG2));
+    assertEquals(C(undefined), select());
+    assertEquals(C(undefined), select(0xDEDFACE));
+    assertEquals(C(undefined), select(WRONG1, WRONG2));
     // over args
-    //assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
+    assertEquals(C(val), select(WRONG1, WRONG2, val, WRONG3));
   }
 })();

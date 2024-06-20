@@ -40,6 +40,6 @@ const serialized_module = serializeModule();
   const module = %DeserializeWasmModule(serialized_module, wire_bytes);
 
   const instance = new WebAssembly.Instance(module, {foo: {bar: () => 1}});
-  //assertEquals(0, instance.exports.f0());
-  //assertEquals(1, instance.exports.f1());
+  assertEquals(0, instance.exports.f0());
+  assertEquals(1, instance.exports.f1());
 })();

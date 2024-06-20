@@ -83,5 +83,5 @@ function testOptimized(run, fctToOptimize) {
     return result;
   };
 
-  testOptimized(() => //assertEquals(42+43+44, sumArray(myUserArray)), sumArray);
+  testOptimized(() => assertEquals(42+43+44, sumArray(myUserArray)), sumArray);
 })();

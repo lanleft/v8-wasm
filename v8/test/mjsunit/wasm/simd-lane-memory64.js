@@ -68,7 +68,7 @@ for (let i = 0; i < 4; ++i) {
     const offset = 4n * i;
     instance.exports[`load_lane_${i}`](SRC_OFFSET + offset);
     instance.exports[`store_lane_${i}`](DST_OFFSET + offset);
-    //assertEquals(expected_values, Array.from(dst_view.values()));
+    assertEquals(expected_values, Array.from(dst_view.values()));
   }
 })();
 
@@ -89,6 +89,6 @@ for (let i = 0; i < 4; ++i) {
     const offset = 4n * i;
     instance.exports[`Load_Lane_${i}`](offset);
     instance.exports[`Store_Lane_${i}`](offset);
-    //assertEquals(expected_values, Array.from(dst_view.values()));
+    assertEquals(expected_values, Array.from(dst_view.values()));
   }
 })();

@@ -37,8 +37,8 @@ const kLength = 8 * 1024 * 1024 * 1024;
   let big_array = new Int8Array(kLength);
   let big_dataview = new DataView(big_array.buffer);
 
-  //assertEquals(kLength, big_dataview.byteLength);
-  //assertEquals(kLength, instance.exports.byteLength(big_dataview));
+  assertEquals(kLength, big_dataview.byteLength);
+  assertEquals(kLength, instance.exports.byteLength(big_dataview));
 })();
 
 (function TestByteLengthLargeAllocLengthTrackingDataViewGSAB() {
@@ -48,5 +48,5 @@ const kLength = 8 * 1024 * 1024 * 1024;
   let buffer = new SharedArrayBuffer(kLength, {maxByteLength: 2 * kLength});
   let big_dataview = new DataView(buffer);
 
-  //assertEquals(kLength, instance.exports.byteLength(big_dataview));
+  assertEquals(kLength, instance.exports.byteLength(big_dataview));
 })();

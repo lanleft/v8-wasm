@@ -19,8 +19,8 @@ function createExport(fun) {
   function fun() { return 7 }
   let exported = createExport(fun);
   assertNotSame(exported, fun);
-  //assertEquals(7, exported());
-  //assertEquals(7, fun());
+  assertEquals(7, exported());
+  assertEquals(7, fun());
 })();
 
 // Test that re-exporting and existing {WebAssembly.Function} that represents
@@ -32,7 +32,7 @@ function createExport(fun) {
   let fun = builder.instantiate().exports.fun;
   let exported = createExport(fun);
   assertSame(exported, fun);
-  //assertEquals(9, fun());
+  assertEquals(9, fun());
 })();
 
 // Test that re-exporting and existing {WebAssembly.Function} that represents
@@ -42,5 +42,5 @@ function createExport(fun) {
   let fun = createExport(() => 11)
   let exported = createExport(fun);
   assertSame(exported, fun);
-  //assertEquals(11, fun());
+  assertEquals(11, fun());
 })();

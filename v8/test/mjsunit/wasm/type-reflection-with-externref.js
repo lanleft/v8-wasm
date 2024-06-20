@@ -10,43 +10,43 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   print(arguments.callee.name);
   let table = new WebAssembly.Table({initial: 1, element: "externref"});
   let type = table.type();
-  //assertEquals(1, type.minimum);
-  //assertEquals("externref", type.element);
-  //assertEquals(2, Object.getOwnPropertyNames(type).length);
+  assertEquals(1, type.minimum);
+  assertEquals("externref", type.element);
+  assertEquals(2, Object.getOwnPropertyNames(type).length);
 
   table = new WebAssembly.Table({initial: 2, maximum: 15, element: "externref"});
   type = table.type();
-  //assertEquals(2, type.minimum);
-  //assertEquals(15, type.maximum);
-  //assertEquals("externref", type.element);
-  //assertEquals(3, Object.getOwnPropertyNames(type).length);
+  assertEquals(2, type.minimum);
+  assertEquals(15, type.maximum);
+  assertEquals("externref", type.element);
+  assertEquals(3, Object.getOwnPropertyNames(type).length);
 })();
 
 (function TestGlobalType() {
   print(arguments.callee.name);
   let global = new WebAssembly.Global({value: "externref", mutable: true});
   let type = global.type();
-  //assertEquals("externref", type.value);
-  //assertEquals(true, type.mutable);
-  //assertEquals(2, Object.getOwnPropertyNames(type).length);
+  assertEquals("externref", type.value);
+  assertEquals(true, type.mutable);
+  assertEquals(2, Object.getOwnPropertyNames(type).length);
 
   global = new WebAssembly.Global({value: "externref"});
   type = global.type();
-  //assertEquals("externref", type.value);
-  //assertEquals(false, type.mutable);
-  //assertEquals(2, Object.getOwnPropertyNames(type).length);
+  assertEquals("externref", type.value);
+  assertEquals(false, type.mutable);
+  assertEquals(2, Object.getOwnPropertyNames(type).length);
 
   global = new WebAssembly.Global({value: "funcref"});
   type = global.type();
-  //assertEquals("funcref", type.value);
-  //assertEquals(false, type.mutable);
-  //assertEquals(2, Object.getOwnPropertyNames(type).length);
+  assertEquals("funcref", type.value);
+  assertEquals(false, type.mutable);
+  assertEquals(2, Object.getOwnPropertyNames(type).length);
 
   global = new WebAssembly.Global({value: "anyfunc"});
   type = global.type();
-  //assertEquals("funcref", type.value);
-  //assertEquals(false, type.mutable);
-  //assertEquals(2, Object.getOwnPropertyNames(type).length);
+  assertEquals("funcref", type.value);
+  assertEquals(false, type.mutable);
+  assertEquals(2, Object.getOwnPropertyNames(type).length);
 })();
 
 (function TestFunctionGlobalGetAndSet() {
@@ -69,17 +69,17 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate();
 
   // Test getting and setting "funcref" global via WebAssembly.
-  //assertEquals(null, instance.exports.get_global());
+  assertEquals(null, instance.exports.get_global());
   instance.exports.set_global(fun1);
-  //assertEquals(fun1, instance.exports.get_global());
+  assertEquals(fun1, instance.exports.get_global());
 
   // Test getting and setting "funcref" global via JavaScript.
-  //assertEquals(fun1, instance.exports.f.value);
+  assertEquals(fun1, instance.exports.f.value);
   instance.exports.f.value = fun2;
-  //assertEquals(fun2, instance.exports.f.value);
+  assertEquals(fun2, instance.exports.f.value);
 
   // Test the full round-trip of an "funcref" global.
-  //assertEquals(fun2, instance.exports.get_global());
+  assertEquals(fun2, instance.exports.get_global());
 })();
 
 (function TestFunctionMultiTableSetAndCall() {
@@ -109,10 +109,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let instance = builder.instantiate({ m: { table: table }});
 
   // Test table #0 first.
-  //assertEquals(v1, instance.exports.call0(0));
+  assertEquals(v1, instance.exports.call0(0));
   assertSame(f1, table.get(0));
   table.set(1, f2);
-  //assertEquals(v2, instance.exports.call0(1));
+  assertEquals(v2, instance.exports.call0(1));
   assertSame(f2, table.get(1));
   table.set(1, f3);
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call0(1));
@@ -121,10 +121,10 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   // Test table #1 next.
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call1(0));
   instance.exports.tbl.set(0, f1);
-  //assertEquals(v1, instance.exports.call1(0));
+  assertEquals(v1, instance.exports.call1(0));
   assertSame(f1, instance.exports.tbl.get(0));
   instance.exports.tbl.set(0, f2);
-  //assertEquals(v2, instance.exports.call1(0));
+  assertEquals(v2, instance.exports.call1(0));
   assertSame(f2, instance.exports.tbl.get(0));
   instance.exports.tbl.set(0, f3);
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call1(0));

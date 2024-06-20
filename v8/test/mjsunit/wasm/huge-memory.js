@@ -29,7 +29,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const geti = module.exports.geti;
 
   print("In bounds");
-  //assertEquals(0, geti(2500, 1 << 20));
+  assertEquals(0, geti(2500, 1 << 20));
   print("Out of bounds");
   assertTraps(kTrapMemOutOfBounds, () => geti(3500, 1 << 20));
 })();
@@ -52,7 +52,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const geti = module.exports.geti;
 
   print("In bounds");
-  //assertEquals(0, geti());
+  assertEquals(0, geti());
 })();
 
 (function testHugeMemoryConstOutOfBounds() {

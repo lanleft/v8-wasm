@@ -55,8 +55,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(instance.exports.main(1), 42 * (42 + 10));
-  //assertEquals(instance.exports.main(0), (22 + 22) * (22 + 10));
+  assertEquals(instance.exports.main(1), 42 * (42 + 10));
+  assertEquals(instance.exports.main(0), (22 + 22) * (22 + 10));
 })();
 
 (function LoadEliminationtConstantKnownTest() {
@@ -117,9 +117,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(init_value_1 + replaced_value + replaced_value,
+  assertEquals(init_value_1 + replaced_value + replaced_value,
                instance.exports.main_non_aliasing());
-  //assertEquals(init_value_1 + replaced_value + param_1_value,
+  assertEquals(init_value_1 + replaced_value + param_1_value,
                instance.exports.main_aliasing());
 })();
 
@@ -167,7 +167,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(replacing_value_1 + replacing_value_2, instance.exports.main());
+  assertEquals(replacing_value_1 + replacing_value_2, instance.exports.main());
 })();
 
 (function LoadEliminationtFreshUnknownTest() {
@@ -242,10 +242,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(4 * (33 - (3 + 1)), instance.exports.main(0));
-  //assertEquals(4 * (33 - (3 + 2)), instance.exports.main(1));
-  //assertEquals(4 * (33 - (3 + 3)), instance.exports.main(2));
-  //assertEquals(4 * (33 - (33 + 4)), instance.exports.main(3));
+  assertEquals(4 * (33 - (3 + 1)), instance.exports.main(0));
+  assertEquals(4 * (33 - (3 + 2)), instance.exports.main(1));
+  assertEquals(4 * (33 - (3 + 3)), instance.exports.main(2));
+  assertEquals(4 * (33 - (33 + 4)), instance.exports.main(3));
 })();
 
 (function LoadEliminationtAllBetsAreOffTest() {
@@ -313,7 +313,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(value_0 + value_1, instance.exports.main());
+  assertEquals(value_0 + value_1, instance.exports.main());
 })();
 
 (function WasmLoadEliminationArrayLength() {
@@ -335,7 +335,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
               kExprI32Mul])
     .exportFunc();
   let instance = builder.instantiate();
-  //assertEquals(10 * 11,
+  assertEquals(10 * 11,
                instance.exports.tester(instance.exports.producer(10)));
 })();
 
@@ -380,7 +380,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(42, instance.exports.main(42));
+  assertEquals(42, instance.exports.main(42));
 })();
 
 (function EscapeAnalysisWithInterveningEffect() {
@@ -405,7 +405,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(42, instance.exports.main(42));
+  assertEquals(42, instance.exports.main(42));
 })();
 
 (function AllocationFolding() {
@@ -435,7 +435,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(10, instance.exports.main(10));
+  assertEquals(10, instance.exports.main(10));
 })();
 
 (function PathBasedTypedOptimization() {
@@ -543,7 +543,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   // main calls 'callee(null)'
   // -> (ref.is_null (ref.cast struct_b (ref.cast struct_super (local.get 0))))
   //    returns true.
-  //assertEquals(1, instance.exports.main(0));
+  assertEquals(1, instance.exports.main(0));
   // main calls 'callee(struct.new struct_a)'
   // -> (ref.cast struct_b) traps.
   assertTraps(kTrapIllegalCast, () => instance.exports.main(1));
@@ -578,7 +578,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     ]).exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(1, instance.exports.main());
+  assertEquals(1, instance.exports.main());
 })();
 
 (function AssertNullAfterCastIncompatibleTypes() {
@@ -715,7 +715,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   let wasmArray = wasm.createArray(10);
-  //assertEquals(10, wasm.get(wasmArray, 0));
+  assertEquals(10, wasm.get(wasmArray, 0));
 })();
 
 (function RedundantIsNull() {
@@ -738,7 +738,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = instance.exports;
 
   assertTraps(kTrapIllegalCast, () => wasm.checkIsNullAfterNonNullCast(null));
-  //assertEquals(0, wasm.checkIsNullAfterNonNullCast("not null"));
+  assertEquals(0, wasm.checkIsNullAfterNonNullCast("not null"));
 })();
 
 (function RefTestUnrelated() {
@@ -774,9 +774,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(1, wasm.refTestUnrelatedNull(null));
+  assertEquals(1, wasm.refTestUnrelatedNull(null));
   assertTraps(kTrapIllegalCast, () => wasm.refTestUnrelatedNull("not null"));
-  //assertEquals(0, wasm.refTestUnrelated(null));
+  assertEquals(0, wasm.refTestUnrelated(null));
   assertTraps(kTrapIllegalCast, () => wasm.refTestUnrelated("not null"));
 })();
 
@@ -801,7 +801,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(0, wasm.refFuncIsNull());
+  assertEquals(0, wasm.refFuncIsNull());
 })();
 
 
@@ -829,7 +829,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals([1, 1, 0], wasm.arrayNewRefTest());
+  assertEquals([1, 1, 0], wasm.arrayNewRefTest());
 })();
 
 (function TypePropagationPhi() {
@@ -861,8 +861,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(0, wasm.typePhi(0));
-  //assertEquals(0, wasm.typePhi(1));
+  assertEquals(0, wasm.typePhi(0));
+  assertEquals(0, wasm.typePhi(1));
 })();
 
 (function TypePropagationLoopPhiOptimizable() {
@@ -905,9 +905,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(1, wasm.loopPhiOptimizable(1));
-  //assertEquals(2, wasm.loopPhiOptimizable(2));
-  //assertEquals(20, wasm.loopPhiOptimizable(20));
+  assertEquals(1, wasm.loopPhiOptimizable(1));
+  assertEquals(2, wasm.loopPhiOptimizable(2));
+  assertEquals(20, wasm.loopPhiOptimizable(20));
 })();
 
 (function TypePropagationLoopPhiCheckRequired() {
@@ -950,9 +950,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(1, wasm.loopPhiCheckRequired(1));
-  //assertEquals(1, wasm.loopPhiCheckRequired(2));
-  //assertEquals(1, wasm.loopPhiCheckRequired(20));
+  assertEquals(1, wasm.loopPhiCheckRequired(1));
+  assertEquals(1, wasm.loopPhiCheckRequired(2));
+  assertEquals(1, wasm.loopPhiCheckRequired(20));
 })();
 
 (function TypePropagationLoopPhiCheckRequiredUnrelated() {
@@ -998,9 +998,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({});
   let wasm = instance.exports;
 
-  //assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(1));
-  //assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(2));
-  //assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(20));
+  assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(1));
+  assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(2));
+  assertEquals(1, wasm.loopPhiCheckRequiredUnrelated(20));
 })();
 
 (function TypePropagationCallRef() {

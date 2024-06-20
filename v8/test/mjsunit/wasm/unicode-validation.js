@@ -52,7 +52,7 @@ function checkImportsAndExports(imported_module_name, imported_function_name,
     .exportAs(exported_function_name);
 
   // Consistency check: does javascript agree with our shouldThrow annotation?
-  //assertEquals(shouldThrow,
+  assertEquals(shouldThrow,
       !isValidUtf8(imported_module_name) ||
           !isValidUtf8(imported_function_name) ||
           !isValidUtf8(exported_function_name),
@@ -81,7 +81,7 @@ function checkImportsAndExports(imported_module_name, imported_function_name,
     assertTrue(err instanceof Error, "exception should be an Error");
     assertContains("UTF-8", err.toString());
   }
-  //assertEquals(shouldThrow, hasThrown,
+  assertEquals(shouldThrow, hasThrown,
       "Should throw validation error on invalid names");
 }
 

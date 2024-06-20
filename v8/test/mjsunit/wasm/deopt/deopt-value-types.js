@@ -4,7 +4,7 @@
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
 // Flags: --experimental-wasm-inlining --liftoff
-// Flags: --turboshaft-wasm-instruction-selection-staged
+// Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
 // Test for different types of stack, local and literal values.
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
@@ -77,12 +77,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = builder.instantiate().exports;
   let expected = 32 + 64 + 3.2 + 6.4 + 31 + 1 + 127 + 129;
   let delta = 1e-4;
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   %WasmTierUpFunction(wasm.literals);
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   assertTrue(%IsTurboFanFunction(wasm.literals));
   // Deopt happened, the result should still be the same.
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
   assertFalse(%IsTurboFanFunction(wasm.literals));
 })();
 
@@ -151,12 +151,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let wasm = builder.instantiate().exports;
   let expected = 32 + 64 + 3.2 + 6.4 + 31 + 1 + 127 + 129;
   let delta = 1e-4;
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   %WasmTierUpFunction(wasm.literals);
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   assertTrue(%IsTurboFanFunction(wasm.literals));
   // Deopt happened, the result should still be the same.
-  //assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
+  assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
   assertFalse(%IsTurboFanFunction(wasm.literals));
 })();
 
@@ -223,11 +223,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
   let delta = 1e-4;
-  //assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
+  assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
   %WasmTierUpFunction(wasm.locals);
-  //assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
+  assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
   assertTrue(%IsTurboFanFunction(wasm.locals));
   // Deopt happened, the result should still be the same.
-  //assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop2), delta);
+  assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop2), delta);
   assertFalse(%IsTurboFanFunction(wasm.locals));
 })();

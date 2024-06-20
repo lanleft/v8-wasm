@@ -68,22 +68,22 @@ function addMemoryCopyFunction(builder, mem_dst_index, mem_src_index) {
 function testTwoMemories(instance, mem0_size, mem1_size) {
   const {load0, load1, store0, store1} = instance.exports;
 
-  //assertEquals(0, load0(0));
-  //assertEquals(0, load1(0));
+  assertEquals(0, load0(0));
+  assertEquals(0, load1(0));
 
   store0(47, 0);
-  //assertEquals(47, load0(0));
-  //assertEquals(0, load1(0));
+  assertEquals(47, load0(0));
+  assertEquals(0, load1(0));
 
   store1(11, 0);
-  //assertEquals(47, load0(0));
-  //assertEquals(11, load1(0));
+  assertEquals(47, load0(0));
+  assertEquals(11, load1(0));
 
   store1(22, 1);
-  //assertEquals(47, load0(0));
-  //assertEquals(22, load1(1));
+  assertEquals(47, load0(0));
+  assertEquals(22, load1(1));
   // The 22 is in the second byte when loading from 0.
-  //assertEquals(22 * 256 + 11, load1(0));
+  assertEquals(22 * 256 + 11, load1(0));
 
   const mem0_bytes = mem0_size * kPageSize;
   load0(mem0_bytes - 4);  // should not trap.
@@ -105,9 +105,9 @@ function assertMemoryEquals(expected, memory) {
   assertInstanceof(expected, Uint8Array);
   const buf = new Uint8Array(memory.buffer);
   // For better output, check the first 50 bytes separately first.
-  //assertEquals(expected.slice(0, 50), buf.slice(0, 50));
+  assertEquals(expected.slice(0, 50), buf.slice(0, 50));
   // Now also check the full memory content.
-  //assertEquals(expected, buf);
+  assertEquals(expected, buf);
 }
 
 (function testBasicMultiMemory() {
@@ -147,10 +147,10 @@ function assertMemoryEquals(expected, memory) {
       continue;
     }
     const instance = builder.instantiate();
-    //assertEquals(0, instance.exports.load(7));
+    assertEquals(0, instance.exports.load(7));
     instance.exports.store(7, 11);
-    //assertEquals(11, instance.exports.load(7));
-    //assertEquals(0, instance.exports.load(11));
+    assertEquals(11, instance.exports.load(7));
+    assertEquals(0, instance.exports.load(11));
 
     const expected_memory = new Uint8Array(kPageSize);
     expected_memory[7] = 11;
@@ -198,16 +198,16 @@ function assertMemoryEquals(expected, memory) {
   const instance = builder.instantiate();
   const mem0 = new Uint8Array(instance.exports.mem0.buffer);
   const mem1 = new Uint8Array(instance.exports.mem1.buffer);
-  //assertEquals(0, mem0[11]);
-  //assertEquals(0, mem1[11]);
+  assertEquals(0, mem0[11]);
+  assertEquals(0, mem1[11]);
 
   instance.exports.store0(47, 11);
-  //assertEquals(47, mem0[11]);
-  //assertEquals(0, mem1[11]);
+  assertEquals(47, mem0[11]);
+  assertEquals(0, mem1[11]);
 
   instance.exports.store1(49, 11);
-  //assertEquals(47, mem0[11]);
-  //assertEquals(49, mem1[11]);
+  assertEquals(47, mem0[11]);
+  assertEquals(49, mem1[11]);
 })();
 
 (function testMultiMemoryDataSegments() {
@@ -424,17 +424,17 @@ function assertMemoryEquals(expected, memory) {
   builder.exportMemoryAs('mem1', mem1_idx);
   const instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.grow0(2));
-  //assertEquals(3, instance.exports.grow0(1));
-  //assertEquals(4, instance.exports.size0());
-  //assertEquals(-1, instance.exports.grow0(1));
-  //assertEquals(4, instance.exports.size0());
+  assertEquals(1, instance.exports.grow0(2));
+  assertEquals(3, instance.exports.grow0(1));
+  assertEquals(4, instance.exports.size0());
+  assertEquals(-1, instance.exports.grow0(1));
+  assertEquals(4, instance.exports.size0());
 
-  //assertEquals(1, instance.exports.grow1(2));
-  //assertEquals(3, instance.exports.grow1(2));
-  //assertEquals(5, instance.exports.size1());
-  //assertEquals(-1, instance.exports.grow1(1));
-  //assertEquals(5, instance.exports.size1());
+  assertEquals(1, instance.exports.grow1(2));
+  assertEquals(3, instance.exports.grow1(2));
+  assertEquals(5, instance.exports.size1());
+  assertEquals(-1, instance.exports.grow1(1));
+  assertEquals(5, instance.exports.size1());
 })();
 
 (function testGrowDecodesMemoryIndexAsU32() {
@@ -458,9 +458,9 @@ function assertMemoryEquals(expected, memory) {
     }
     const instance = builder.instantiate();
 
-    //assertEquals(1, instance.exports.grow(2));
-    //assertEquals(-1, instance.exports.grow(2));
-    //assertEquals(3, instance.exports.grow(1));
+    assertEquals(1, instance.exports.grow(2));
+    assertEquals(-1, instance.exports.grow(2));
+    assertEquals(3, instance.exports.grow(1));
   }
 })();
 
@@ -511,7 +511,7 @@ function assertMemoryEquals(expected, memory) {
         expected += buf.getInt32(inputs[i], true);
       }
       expected >>= 0;  // Truncate to 32 bit.
-      //assertEquals(expected, instance.exports[`load${func_idx}`](...inputs));
+      assertEquals(expected, instance.exports[`load${func_idx}`](...inputs));
     }
   }
 })();
@@ -559,29 +559,29 @@ function assertMemoryEquals(expected, memory) {
   const offset0 = 16;
   const value0 = 13;
   store0(offset0, value0);
-  //assertEquals(value0, load0(offset0));
-  //assertEquals(0, load1(offset0));
+  assertEquals(value0, load0(offset0));
+  assertEquals(0, load1(offset0));
 
   const offset1 = 24;
   const value1 = 11;
   store1(offset1, value1);
-  //assertEquals(value1, load1(offset1));
-  //assertEquals(0, load0(offset1));
+  assertEquals(value1, load1(offset1));
+  assertEquals(0, load0(offset1));
 
-  //assertEquals(value0, cmpxchg0(offset0, -1, -1));
-  //assertEquals(value0, cmpxchg0(offset0, value0, value1));
-  //assertEquals(value1, load0(offset0));
+  assertEquals(value0, cmpxchg0(offset0, -1, -1));
+  assertEquals(value0, cmpxchg0(offset0, value0, value1));
+  assertEquals(value1, load0(offset0));
 
-  //assertEquals(value1, cmpxchg1(offset1, -1, -1));
-  //assertEquals(value1, cmpxchg1(offset1, value1, value0));
-  //assertEquals(value0, load1(offset1));
+  assertEquals(value1, cmpxchg1(offset1, -1, -1));
+  assertEquals(value1, cmpxchg1(offset1, value1, value0));
+  assertEquals(value0, load1(offset1));
 
-  //assertEquals(0, load0(offset1));
-  //assertEquals(0, load1(offset0));
+  assertEquals(0, load0(offset1));
+  assertEquals(0, load1(offset0));
 
   // Test traps.
-  //assertEquals(0, load0(kPageSize - 4));
-  //assertEquals(0, load1(2 * kPageSize - 4));
+  assertEquals(0, load0(kPageSize - 4));
+  assertEquals(0, load1(2 * kPageSize - 4));
   assertTraps(kTrapMemOutOfBounds, () => load0(kPageSize));
   assertTraps(kTrapMemOutOfBounds, () => load1(2 * kPageSize));
 })();

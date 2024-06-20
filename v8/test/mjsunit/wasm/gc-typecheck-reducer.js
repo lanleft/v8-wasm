@@ -41,5 +41,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
     0,  // ref.test <struct> (null)
     1   // ref.test null <struct> (null)
   ]
-  //assertEquals(expected, instance.exports.main());
+  assertEquals(expected, instance.exports.main());
 })();

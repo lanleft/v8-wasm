@@ -87,32 +87,32 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   assertTrue(!!instance);
 
   print("--locally defined func--");
-  //assertEquals(13, instance.exports.test_local());
+  assertEquals(13, instance.exports.test_local());
   print("--locally defined exported func--")
-  //assertEquals(5, instance.exports.main(instance.exports.sub, 12, 7));
+  assertEquals(5, instance.exports.main(instance.exports.sub, 12, 7));
 
   print("--imported js func--");
-  //assertEquals(57, instance.exports.test_js_import());
+  assertEquals(57, instance.exports.test_js_import());
   print("--imported and reexported js func--")
-  //assertEquals(19, instance.exports.main(
+  assertEquals(19, instance.exports.main(
     instance.exports.reexported_js_function, 12, 7));
 
   print("--imported function from another module--");
-  //assertEquals(57, instance.exports.test_wasm_import());
+  assertEquals(57, instance.exports.test_wasm_import());
   print("--not imported function defined in another module--");
-  //assertEquals(19, instance.exports.main(
+  assertEquals(19, instance.exports.main(
     exporting_instance.exports.addition, 12, 7));
 
   print("--imported WebAssembly.Function--")
-  //assertEquals(21, instance.exports.test_js_api_import());
+  assertEquals(21, instance.exports.test_js_api_import());
   print("--not imported WebAssembly.Function--")
-  //assertEquals(-5, instance.exports.main(
+  assertEquals(-5, instance.exports.main(
     new WebAssembly.Function(
       {parameters:['i32', 'i32'], results: ['i32']},
       function(a, b) { return a - b; }),
     10, 15));
   print("--not imported WebAssembly.Function, arity mismatch--")
-  //assertEquals(100, instance.exports.main(
+  assertEquals(100, instance.exports.main(
     new WebAssembly.Function(
       {parameters:['i32', 'i32'], results: ['i32']},
       function(a) { return a * a; }),
@@ -134,7 +134,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   var fun = new WebAssembly.Function(
       { parameters: ['i32'], results: ['i32'] }, (a) => undefined);
   // {undefined} is converted to 0.
-  //assertEquals(0, instance.exports.main(fun, 1000));
+  assertEquals(0, instance.exports.main(fun, 1000));
 })();
 
 (function TestImportedFunctionSubtyping() {

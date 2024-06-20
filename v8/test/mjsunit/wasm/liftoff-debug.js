@@ -41,5 +41,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   const instance = builder.instantiate(
       {q: {triggerStackCheck: () => %ScheduleGCInStackCheck()}});
 
-  //assertEquals(kValue, instance.exports.main());
+  assertEquals(kValue, instance.exports.main());
 })();

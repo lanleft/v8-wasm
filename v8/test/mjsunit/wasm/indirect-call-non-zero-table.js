@@ -75,24 +75,24 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(v1, instance.exports.call1(0));
-  //assertEquals(v2, instance.exports.call1(1));
-  //assertEquals(v3, instance.exports.call1(2));
+  assertEquals(v1, instance.exports.call1(0));
+  assertEquals(v2, instance.exports.call1(1));
+  assertEquals(v3, instance.exports.call1(2));
   assertTraps(kTrapTableOutOfBounds, () => instance.exports.call1(3));
-  //assertEquals(v1, instance.exports.return_call1(0));
-  //assertEquals(v2, instance.exports.return_call1(1));
-  //assertEquals(v3, instance.exports.return_call1(2));
+  assertEquals(v1, instance.exports.return_call1(0));
+  assertEquals(v2, instance.exports.return_call1(1));
+  assertEquals(v3, instance.exports.return_call1(2));
   assertTraps(kTrapTableOutOfBounds, () => instance.exports.return_call1(3));
 
   // Try to call through the uninitialized table entry.
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.call2(0));
-  //assertEquals(v4, instance.exports.call2(3));
-  //assertEquals(v5, instance.exports.call2(4));
+  assertEquals(v4, instance.exports.call2(3));
+  assertEquals(v5, instance.exports.call2(4));
   assertTraps(kTrapFuncSigMismatch,
     () => instance.exports.call_invalid_sig(4));
   assertTraps(kTrapFuncSigMismatch, () => instance.exports.return_call2(0));
-  //assertEquals(v4, instance.exports.return_call2(3));
-  //assertEquals(v5, instance.exports.return_call2(4));
+  assertEquals(v4, instance.exports.return_call2(3));
+  assertEquals(v5, instance.exports.return_call2(4));
   assertTraps(kTrapFuncSigMismatch,
     () => instance.exports.return_call_invalid_sig(4));
 })();
@@ -145,10 +145,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     }
   });
 
-  //assertEquals(base1 + 12, instance1.exports.call(base1));
-  //assertEquals(base2 + 12, instance1.exports.call(base2));
-  //assertEquals(base1 + 12, instance2.exports.call(base1));
-  //assertEquals(base2 + 12, instance2.exports.call(base2));
+  assertEquals(base1 + 12, instance1.exports.call(base1));
+  assertEquals(base2 + 12, instance1.exports.call(base2));
+  assertEquals(base1 + 12, instance2.exports.call(base1));
+  assertEquals(base2 + 12, instance2.exports.call(base2));
 })();
 
 function js_div(a, b) { return (a / b) | 0; }
@@ -198,5 +198,5 @@ function js_div(a, b) { return (a / b) | 0; }
     }
   });
 
-  //assertEquals(13, instance.exports.main(4, 0));
+  assertEquals(13, instance.exports.main(4, 0));
 })();

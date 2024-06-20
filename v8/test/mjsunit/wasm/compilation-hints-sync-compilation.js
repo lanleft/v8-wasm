@@ -51,7 +51,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierDefault,
                              kCompilationHintTierDefault)
          .exportFunc();
-  //assertEquals(42, builder.instantiate().exports.id(42));
+  assertEquals(42, builder.instantiate().exports.id(42));
 })();
 
 (function testCompileLazyBaselineEagerTopTierModule() {
@@ -63,5 +63,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierDefault,
                              kCompilationHintTierDefault)
          .exportFunc();
-  //assertEquals(42, builder.instantiate().exports.id(42));
+  assertEquals(42, builder.instantiate().exports.id(42));
 })();

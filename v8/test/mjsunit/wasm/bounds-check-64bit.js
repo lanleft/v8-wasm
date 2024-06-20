@@ -25,7 +25,7 @@ for (i = 0; i < 64; i++) {
   // shifts to calculate the address because JS shifts work on 32-bit integers.
   print(`address=${address}`);
   if (address < kPageSize) {
-    //assertEquals(0, module.exports.load(start, i));
+    assertEquals(0, module.exports.load(start, i));
   } else {
     assertTraps(kTrapMemOutOfBounds, _ => { module.exports.load(start, i);});
   }

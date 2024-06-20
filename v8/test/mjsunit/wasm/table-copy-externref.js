@@ -32,7 +32,7 @@ function resetTable() {
 
 function assertTable(values) {
   for (let i = 0; i < kTableSize; ++i) {
-    //assertEquals(table.get(i), values[i]);
+    assertEquals(table.get(i), values[i]);
   }
 }
 

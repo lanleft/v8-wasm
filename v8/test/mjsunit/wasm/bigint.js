@@ -16,8 +16,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = builder.instantiate();
 
-  //assertEquals(typeof module.exports.fn(), "bigint");
-  //assertEquals(module.exports.fn(), 3n);
+  assertEquals(typeof module.exports.fn(), "bigint");
+  assertEquals(module.exports.fn(), 3n);
 })();
 
 (function TestJSBigIntToWasmI64Global() {
@@ -40,8 +40,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     }
   });
 
-  //assertEquals(module.exports.a.value, 1n);
-  //assertEquals(module.exports.b.value, - (2n ** 63n));
+  assertEquals(module.exports.a.value, 1n);
+  assertEquals(module.exports.b.value, - (2n ** 63n));
 })();
 
 (function TestJSBigIntGlobalImportInvalidType() {
@@ -75,7 +75,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     }
   });
 
-  //assertEquals(module.exports.a.value, 1n);
+  assertEquals(module.exports.a.value, 1n);
 })();
 
 (function TestJSBigIntToWasmI64Identity() {
@@ -91,11 +91,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = builder.instantiate();
   let f = module.exports.f;
 
-  //assertEquals(f(0n), 0n);
-  //assertEquals(f(123n), 123n);
-  //assertEquals(f(-123n), -123n);
+  assertEquals(f(0n), 0n);
+  assertEquals(f(123n), 123n);
+  assertEquals(f(-123n), -123n);
 
-  //assertEquals(f("5"), 5n);
+  assertEquals(f("5"), 5n);
 
   assertThrows(() => f(5), TypeError);
 })();
@@ -113,11 +113,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = builder.instantiate();
   let f = module.exports.f;
 
-  //assertEquals(f(1n, 0n), 0n);
-  //assertEquals(f(1n, 123n), 123n);
-  //assertEquals(f(1n, -123n), -123n);
+  assertEquals(f(1n, 0n), 0n);
+  assertEquals(f(1n, 123n), 123n);
+  assertEquals(f(1n, -123n), -123n);
 
-  //assertEquals(f(1n, "5"), 5n);
+  assertEquals(f(1n, "5"), 5n);
 
   assertThrows(() => f(1n, 5), TypeError);
 })();
@@ -126,13 +126,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let argument = { "value": "i64", "mutable": true };
   let global = new WebAssembly.Global(argument);
 
-  //assertEquals(global.value, 0n); // initial value
+  assertEquals(global.value, 0n); // initial value
 
   global.value = 123n;
-  //assertEquals(global.valueOf(), 123n);
+  assertEquals(global.valueOf(), 123n);
 
   global.value = 2n ** 63n;
-  //assertEquals(global.valueOf(), - (2n ** 63n));
+  assertEquals(global.valueOf(), - (2n ** 63n));
 })();
 
 (function TestI64GlobalValueOf() {
@@ -144,7 +144,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       return 123n;
     }
   });
-  //assertEquals(global.value, 123n);
+  assertEquals(global.value, 123n);
 
   // as string
   let global2 = new WebAssembly.Global(argument, {
@@ -152,7 +152,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       return "321";
     }
   });
-  //assertEquals(global2.value, 321n);
+  assertEquals(global2.value, 321n);
 })();
 
 (function TestInvalidValtypeGlobalErrorMessage() {

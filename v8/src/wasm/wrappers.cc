@@ -51,7 +51,8 @@ const TSCallDescriptor* GetBuiltinCallDescriptor(Builtin name, Zone* zone,
       CallDescriptor::kNoFlags,                       // flags
       compiler::Operator::kNoProperties,              // properties
       stub_mode);                                     // stub call mode
-  return TSCallDescriptor::Create(call_desc, compiler::CanThrow::kNo, zone);
+  return TSCallDescriptor::Create(call_desc, compiler::CanThrow::kNo,
+                                  compiler::LazyDeoptOnThrow::kNo, zone);
 }
 }  // namespace
 
@@ -136,7 +137,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
                             : CallDescriptor::kNoFlags,
         Operator::kNoProperties, stub_mode_);
     const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-        call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+        call_descriptor, compiler::CanThrow::kNo,
+        compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
     V<WordPtr> call_target = GetTargetForBuiltinCall(name);
     return __ Call(call_target, frame_state, base::VectorOf({args...}),
                    ts_call_descriptor);
@@ -149,7 +151,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
         __ graph_zone(), Descriptor(), 0, CallDescriptor::kNoFlags,
         Operator::kNoProperties, stub_mode_);
     const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-        call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+        call_descriptor, compiler::CanThrow::kNo,
+        compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
     V<WordPtr> call_target = GetTargetForBuiltinCall(name);
     return __ Call(call_target, {args...}, ts_call_descriptor);
   }
@@ -339,7 +342,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
                                 base::SmallVector<OpIndex, 1>& returns) {
     const TSCallDescriptor* descriptor = TSCallDescriptor::Create(
         compiler::GetWasmCallDescriptor(__ graph_zone(), sig),
-        compiler::CanThrow::kYes, __ graph_zone());
+        compiler::CanThrow::kYes, compiler::LazyDeoptOnThrow::kNo,
+        __ graph_zone());
 
     args[0] = implicit_first_arg;
     OpIndex call = __ Call(callee, OpIndex::Invalid(), base::VectorOf(args),
@@ -355,10 +359,10 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
     }
   }
 
-  OpIndex BuildCallAndReturn(bool is_import, V<Context> js_context,
-                             V<HeapObject> function_data,
+  OpIndex BuildCallAndReturn(V<Context> js_context, V<HeapObject> function_data,
                              base::SmallVector<OpIndex, 16> args,
-                             bool do_conversion, bool set_in_wasm_flag) {
+                             bool do_conversion, bool set_in_wasm_flag,
+                             uint64_t expected_sig_hash) {
     const int rets_count = static_cast<int>(sig_->return_count());
     base::SmallVector<OpIndex, 1> rets(rets_count);
 
@@ -370,33 +374,13 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
         modify_thread_in_wasm_flag_builder.emplace(this, Asm());
       }
 
-      V<WasmTrustedInstanceData> instance_data =
-          V<WasmTrustedInstanceData>::Cast(__ LoadProtectedPointerField(
+      V<WasmInternalFunction> internal =
+          V<WasmInternalFunction>::Cast(__ LoadProtectedPointerField(
               function_data, LoadOp::Kind::TaggedBase().Immutable(),
-              WasmExportedFunctionData::kProtectedInstanceDataOffset));
-
-      if (is_import) {
-        // Call to an imported function.
-        // Load function index from {WasmExportedFunctionData}.
-        V<Word32> function_index = BuildChangeSmiToInt32(
-            LoadExportedFunctionIndexAsSmi(function_data));
-        auto [target, ref] =
-            BuildImportedFunctionTargetAndRef(function_index, instance_data);
-        BuildCallWasmFromWrapper(__ phase_zone(), sig_, target, ref, args,
-                                 rets);
-      } else {
-        // Call to a wasm function defined in this module.
-        // The (cached) call target is the jump table slot for that function.
-        V<WasmInternalFunction> internal =
-            V<WasmInternalFunction>::Cast(__ LoadProtectedPointerField(
-                function_data, LoadOp::Kind::TaggedBase().Immutable(),
-                WasmExportedFunctionData::kProtectedInternalOffset));
-        V<WordPtr> callee = __ Load(internal, LoadOp::Kind::TaggedBase(),
-                                    MemoryRepresentation::UintPtr(),
-                                    WasmInternalFunction::kCallTargetOffset);
-        BuildCallWasmFromWrapper(__ phase_zone(), sig_, callee, instance_data,
-                                 args, rets);
-      }
+              WasmExportedFunctionData::kProtectedInternalOffset));
+      auto [target, ref] =
+          BuildFunctionTargetAndRef(internal, expected_sig_hash);
+      BuildCallWasmFromWrapper(__ phase_zone(), sig_, target, ref, args, rets);
     }
 
     V<Object> jsval;
@@ -425,7 +409,7 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
   }
 
   void BuildJSToWasmWrapper(
-      bool is_import, bool do_conversion = true,
+      bool do_conversion = true,
       compiler::turboshaft::OptionalOpIndex frame_state =
           compiler::turboshaft::OptionalOpIndex::Nullopt(),
       bool set_in_wasm_flag = true) {
@@ -447,8 +431,10 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
 #if V8_ENABLE_SANDBOX
     static constexpr int kOffset =
         SharedFunctionInfo::kTrustedFunctionDataOffset;
+    uint64_t signature_hash = SignatureHasher::Hash(sig_);
 #else
     static constexpr int kOffset = SharedFunctionInfo::kFunctionDataOffset;
+    uint64_t signature_hash = 0;
 #endif
     V<WasmFunctionData> function_data =
         V<WasmFunctionData>::Cast(__ LoadTrustedPointerField(
@@ -498,8 +484,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
         OpIndex wasm_param = FromJSFast(params[i + 1], sig_->GetParam(i));
         args[i + 1] = wasm_param;
       }
-      jsval = BuildCallAndReturn(is_import, js_context, function_data, args,
-                                 do_conversion, set_in_wasm_flag);
+      jsval = BuildCallAndReturn(js_context, function_data, args, do_conversion,
+                                 set_in_wasm_flag, signature_hash);
       GOTO(done, jsval);
       __ Bind(slow_path);
     }
@@ -524,8 +510,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
       }
     }
 
-    jsval = BuildCallAndReturn(is_import, js_context, function_data, args,
-                               do_conversion, set_in_wasm_flag);
+    jsval = BuildCallAndReturn(js_context, function_data, args, do_conversion,
+                               set_in_wasm_flag, signature_hash);
     // If both the default and a fast transformation paths are present,
     // get the return value based on the path used.
     if (include_fast_path) {
@@ -599,7 +585,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
         auto call_descriptor = compiler::Linkage::GetJSCallDescriptor(
             __ graph_zone(), false, pushed_count + 1, CallDescriptor::kNoFlags);
         const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-            call_descriptor, compiler::CanThrow::kYes, __ graph_zone());
+            call_descriptor, compiler::CanThrow::kYes,
+            compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
 
         // Determine receiver at runtime.
         args[0] =
@@ -629,7 +616,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
             CallDescriptor::kNoFlags, Operator::kNoProperties,
             StubCallMode::kCallBuiltinPointer);
         const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-            call_descriptor, compiler::CanThrow::kYes, __ graph_zone());
+            call_descriptor, compiler::CanThrow::kYes,
+            compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
 
         // The native_context is sufficient here, because all kind of callables
         // which depend on the context provide their own context. The context
@@ -668,7 +656,7 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
       }
     }
     BuildModifyThreadInWasmFlag(__ phase_zone(), true);
-    IF_NOT (__ WordPtrEqual(old_sp, __ IntPtrConstant(0))) {
+    IF_NOT (LIKELY(__ WordPtrEqual(old_sp, __ IntPtrConstant(0)))) {
       BuildSwitchBackFromCentralStack(old_sp, callable_node);
     }
     if (sig_->return_count() <= 1) {
@@ -757,7 +745,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
           CallDescriptor::kNoFlags, Operator::kNoProperties,
           StubCallMode::kCallWasmRuntimeStub);
       const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-          call_descriptor, compiler::CanThrow::kYes, __ graph_zone());
+          call_descriptor, compiler::CanThrow::kYes,
+          compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
       OpIndex call_target = __ RelocatableWasmBuiltinCallTarget(
           Builtin::kWasmRethrowExplicitContext);
       V<Context> context =
@@ -935,7 +924,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
     CallDescriptor* call_descriptor =
         GetBigIntToI64CallDescriptor(frame_state.valid());
     const TSCallDescriptor* ts_call_descriptor = TSCallDescriptor::Create(
-        call_descriptor, compiler::CanThrow::kNo, __ graph_zone());
+        call_descriptor, compiler::CanThrow::kNo,
+        compiler::LazyDeoptOnThrow::kNo, __ graph_zone());
     return frame_state.valid()
                ? __ Call(target, frame_state.value(),
                          base::VectorOf({input, context}), ts_call_descriptor)
@@ -975,17 +965,19 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
             // Make sure ValueType fits in a Smi.
             static_assert(wasm::ValueType::kLastUsedBit + 1 <= kSmiValueSize);
 
+            uint32_t canonical_index = kInvalidCanonicalIndex;
             if (type.has_index()) {
               DCHECK_NOT_NULL(module);
-              uint32_t canonical_index =
+              canonical_index =
                   module->isorecursive_canonical_type_ids[type.ref_index()];
-              type = wasm::ValueType::RefMaybeNull(canonical_index,
-                                                   type.nullability());
+              DCHECK_LE(canonical_index, kSmiMaxValue);
             }
 
             std::initializer_list<const OpIndex> inputs = {
-                input, __ IntPtrConstant(
-                           IntToSmi(static_cast<int>(type.raw_bit_field())))};
+                input,
+                __ IntPtrConstant(
+                    IntToSmi(static_cast<int>(type.raw_bit_field()))),
+                __ IntPtrConstant(IntToSmi(static_cast<int>(canonical_index)))};
             return CallRuntime(__ phase_zone(), Runtime::kWasmJSToWasmObject,
                                inputs, context);
           }
@@ -1171,7 +1163,12 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
         isolate_root, LoadOp::Kind::RawAligned(), MemoryRepresentation::Uint8(),
         IsolateData::is_on_central_stack_flag_offset());
     ScopedVar<WordPtr> old_sp_var(this, __ IntPtrConstant(0));
-    IF_NOT (is_on_central_stack_flag) {
+    // The stack switch performs a C call which causes some spills that would
+    // not be needed otherwise. Add a branch hint such that we don't spill if we
+    // are already on the central stack.
+    // TODO(thibaudm): Look into ways to optimize the switching case as well.
+    // Can we avoid the C call? Can we avoid spilling callee-saved registers?
+    IF_NOT (LIKELY(is_on_central_stack_flag)) {
       OpIndex old_sp = BuildSwitchToTheCentralStack(receiver);
       old_sp_var = old_sp;
     }
@@ -1356,11 +1353,11 @@ void BuildWasmWrapper(compiler::turboshaft::PipelineData* data,
   WasmWrapperTSGraphBuilder builder(&zone, assembler, module, sig,
                                     wrapper_info.stub_mode);
   if (wrapper_info.code_kind == CodeKind::JS_TO_WASM_FUNCTION) {
-    builder.BuildJSToWasmWrapper(wrapper_info.is_import);
+    builder.BuildJSToWasmWrapper();
   } else if (wrapper_info.code_kind == CodeKind::WASM_TO_JS_FUNCTION) {
-    builder.BuildWasmToJSWrapper(wrapper_info.wasm_js_info.import_kind,
-                                 wrapper_info.wasm_js_info.expected_arity,
-                                 wrapper_info.wasm_js_info.suspend, module);
+    builder.BuildWasmToJSWrapper(wrapper_info.import_kind,
+                                 wrapper_info.expected_arity,
+                                 wrapper_info.suspend, module);
   } else if (wrapper_info.code_kind == CodeKind::WASM_TO_CAPI_FUNCTION) {
     builder.BuildCapiCallWrapper(module);
   } else {

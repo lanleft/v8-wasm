@@ -197,18 +197,18 @@ var funcs = [
     RunAsmJsTest(WrapInAsmModule(func), function (module) {
       if (func.length == 1) {
         for (a of inputs) {
-          //assertEquals(func(a), module.main(a));
-          //assertEquals(func(a / 11), module.main(a / 11));
-          //assertEquals(func(a / 430.9), module.main(a / 430.9));
-          //assertEquals(func(a / -31.1), module.main(a / -31.1));
+          assertEquals(func(a), module.main(a));
+          assertEquals(func(a / 11), module.main(a / 11));
+          assertEquals(func(a / 430.9), module.main(a / 430.9));
+          assertEquals(func(a / -31.1), module.main(a / -31.1));
         }
       } else {
         for (a of inputs) {
           for (b of inputs) {
-            //assertEquals(func(a, b), module.main(a, b));
-            //assertEquals(func(a / 11,  b), module.main(a / 11, b));
-            //assertEquals(func(a, b / 420.9), module.main(a, b / 420.9));
-            //assertEquals(func(a / -31.1, b), module.main(a / -31.1, b));
+            assertEquals(func(a, b), module.main(a, b));
+            assertEquals(func(a / 11,  b), module.main(a / 11, b));
+            assertEquals(func(a, b / 420.9), module.main(a, b / 420.9));
+            assertEquals(func(a / -31.1, b), module.main(a / -31.1, b));
           }
         }
       }

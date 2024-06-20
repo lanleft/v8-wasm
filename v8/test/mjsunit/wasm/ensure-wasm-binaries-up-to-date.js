@@ -32,5 +32,5 @@
   var mod = new WebAssembly.Module(buff);
   var inst = new WebAssembly.Instance(mod);
   var inc = inst.exports.increment;
-  //assertEquals(3, inc(2));
+  assertEquals(3, inc(2));
 }())

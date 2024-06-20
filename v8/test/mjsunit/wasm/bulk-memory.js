@@ -189,15 +189,15 @@ function getMemoryFill(mem) {
   builder.addActiveDataSegment(0, wasmI32Const(kPageSize - 1), [42, 42]);
   builder.addActiveDataSegment(0, [kExprI32Const, 0], [111, 111]);
 
-  //assertEquals(0, view[kPageSize - 1]);
+  assertEquals(0, view[kPageSize - 1]);
 
   // Instantiation fails, memory remains unmodified.
   assertThrows(
       () => builder.instantiate({m: {memory}}), WebAssembly.RuntimeError);
 
-  //assertEquals(0, view[kPageSize - 1]);
+  assertEquals(0, view[kPageSize - 1]);
   // The second segment is not initialized.
-  //assertEquals(0, view[0]);
+  assertEquals(0, view[0]);
 })();
 
 (function TestLazyDataAndElementSegments() {
@@ -224,7 +224,7 @@ function getMemoryFill(mem) {
       () => builder.instantiate({m: {memory, table}}),
       WebAssembly.RuntimeError);
 
-  //assertEquals(0, view[0]);
+  assertEquals(0, view[0]);
 })();
 
 (function TestPassiveDataSegmentNoMemory() {
@@ -251,7 +251,7 @@ function getMemoryFill(mem) {
   print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   builder.addFunction('main', kSig_v_v).addBody([kNumericPrefix, 0x90, 0x0f]);
-  //assertEquals(false, WebAssembly.validate(builder.toBuffer()));
+  assertEquals(false, WebAssembly.validate(builder.toBuffer()));
   assertThrows(
       () => builder.toModule(), WebAssembly.CompileError,
       /invalid numeric opcode: 0xfc790/);

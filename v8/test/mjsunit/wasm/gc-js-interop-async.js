@@ -14,7 +14,7 @@ for (const wasm_obj of [struct, array]) {
   repeated(() => assertThrowsAsync(Promise.allSettled(wasm_obj), TypeError));
   repeated(
       () => Promise.allSettled([wasm_obj])
-                .then((info) => //assertEquals('fulfilled', info[0].status)));
+                .then((info) => assertEquals('fulfilled', info[0].status)));
   repeated(() => assertThrowsAsync(Promise.any(wasm_obj), TypeError));
   repeated(() => Promise.any([wasm_obj]));
   repeated(() => assertThrowsAsync(Promise.race(wasm_obj), TypeError));
@@ -38,23 +38,23 @@ for (const wasm_obj of [struct, array]) {
   repeated(
       () => (new Promise((resolve) => resolve({})))
                 .then(wasm_obj)  // The value itself doesn't have any impact.
-                .then((v) => //assertEquals({}, v), () => assertUnreachable()));
+                .then((v) => assertEquals({}, v), () => assertUnreachable()));
   // If the `catch` argument isn't a callback, it will be replaced with a
   // thrower function (x) => { throw x; }.
   repeated(
       () => (new Promise((resolve, reject) => reject({})))
                 .then(() => null)
                 .catch(wasm_obj)  // The value itself doesn't have any impact.
-                .then(() => assertUnreachable(), (v) => //assertEquals({}, v)));
+                .then(() => assertUnreachable(), (v) => assertEquals({}, v)));
   // `finally(wasm_obj)` behaves just like `then(wasm_obj, wasm_obj)`
   repeated(
       () => (new Promise((resolve, reject) => resolve({})))
                 .finally(wasm_obj)
-                .then((v) => //assertEquals({}, v), () => assertUnreachable()));
+                .then((v) => assertEquals({}, v), () => assertUnreachable()));
   repeated(
       () => (new Promise((resolve, reject) => reject({})))
                 .finally(wasm_obj)
-                .then(() => assertUnreachable(), (v) => //assertEquals({}, v)));
+                .then(() => assertUnreachable(), (v) => assertEquals({}, v)));
 
   // Ensure no statement re-assigned wasm_obj by accident.
   assertTrue(wasm_obj == struct || wasm_obj == array);

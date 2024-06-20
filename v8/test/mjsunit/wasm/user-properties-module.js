@@ -42,7 +42,7 @@ d8.file.execute("test/mjsunit/wasm/user-properties-common.js");
       assertInstanceof(g, Function);
       testProperties(g);
       for (let j = 10; j < 15; j++) {
-        //assertEquals(f(j), g(j));
+        assertEquals(f(j), g(j));
       }
       verifyHeap();
       // The Wasm-internal fields of {g} are only inspected when {g} is

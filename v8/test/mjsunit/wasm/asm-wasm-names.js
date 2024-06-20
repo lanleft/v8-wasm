@@ -11,9 +11,9 @@ function Module(stdlib, foreign, buffer) {
 }
 
 var func = Module({}, {}, new ArrayBuffer(65536)).bar;
-//assertEquals("Module", Module.name);
-//assertEquals("foo", func.name);
-//assertEquals("function foo() {}", func.toString());
+assertEquals("Module", Module.name);
+assertEquals("foo", func.name);
+assertEquals("function foo() {}", func.toString());
 
 function imp() {}
 function Module2(stdlib, imports) {
@@ -24,5 +24,5 @@ function Module2(stdlib, imports) {
 }
 
 var bar = Module2({}, {imp: imp}).bar;
-//assertEquals("bar", bar.name);
-//assertEquals("function bar() {}", bar.toString());
+assertEquals("bar", bar.name);
+assertEquals("function bar() {}", bar.toString());

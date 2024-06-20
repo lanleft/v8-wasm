@@ -79,8 +79,8 @@ let bad_a16 = instance.exports.bad_i16_array();
 let good_a8 = instance.exports.good_i8_array();
 let bad_a8 = instance.exports.bad_i8_array();
 
-//assertEquals("abc", instance.exports.use_i16_array(good_a16, 0, length));
-//assertEquals("abc", instance.exports.use_i8_array(good_a8, 0, length));
+assertEquals("abc", instance.exports.use_i16_array(good_a16, 0, length));
+assertEquals("abc", instance.exports.use_i8_array(good_a8, 0, length));
 
 assertThrows(() => instance.exports.use_i16_array(bad_a16, 0, length),
              TypeError);

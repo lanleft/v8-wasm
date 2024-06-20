@@ -470,19 +470,6 @@ struct ImmF64Immediate {
   }
 };
 
-struct MemoryIndexImmediate {
-  uint32_t index = 0;
-  const WasmMemory* memory = nullptr;
-  uint32_t length;
-
-  template <typename ValidationTag>
-  MemoryIndexImmediate(Decoder* decoder, const uint8_t* pc,
-                       ValidationTag = {}) {
-    std::tie(index, length) =
-        decoder->read_u32v<ValidationTag>(pc, "memory index");
-  }
-};
-
 struct BrOnCastFlags {
   enum Values {
     SRC_IS_NULL = 1,
@@ -531,6 +518,24 @@ struct IndexImmediate {
                  ValidationTag = {}) {
     std::tie(index, length) = decoder->read_u32v<ValidationTag>(pc, name);
   }
+};
+
+struct MemoryIndexImmediate : public IndexImmediate {
+  const WasmMemory* memory = nullptr;
+
+  template <typename ValidationTag>
+  MemoryIndexImmediate(Decoder* decoder, const uint8_t* pc,
+                       ValidationTag validate = {})
+      : IndexImmediate(decoder, pc, "memory index", validate) {}
+};
+
+struct TableIndexImmediate : public IndexImmediate {
+  const WasmTable* table = nullptr;
+
+  template <typename ValidationTag>
+  TableIndexImmediate(Decoder* decoder, const uint8_t* pc,
+                      ValidationTag validate = {})
+      : IndexImmediate(decoder, pc, "table index", validate) {}
 };
 
 struct TagIndexImmediate : public IndexImmediate {
@@ -691,7 +696,7 @@ struct FieldImmediate {
 
 struct CallIndirectImmediate {
   IndexImmediate sig_imm;
-  IndexImmediate table_imm;
+  TableIndexImmediate table_imm;
   uint32_t length;
   const FunctionSig* sig = nullptr;
 
@@ -699,7 +704,7 @@ struct CallIndirectImmediate {
   CallIndirectImmediate(Decoder* decoder, const uint8_t* pc,
                         ValidationTag validate = {})
       : sig_imm(decoder, pc, "singature index", validate),
-        table_imm(decoder, pc + sig_imm.length, "table index", validate),
+        table_imm(decoder, pc + sig_imm.length, validate),
         length(sig_imm.length + table_imm.length) {}
 };
 
@@ -935,27 +940,27 @@ struct MemoryCopyImmediate {
 
 struct TableInitImmediate {
   IndexImmediate element_segment;
-  IndexImmediate table;
+  TableIndexImmediate table;
   uint32_t length;
 
   template <typename ValidationTag>
   TableInitImmediate(Decoder* decoder, const uint8_t* pc,
                      ValidationTag validate = {})
       : element_segment(decoder, pc, "element segment index", validate),
-        table(decoder, pc + element_segment.length, "table index", validate),
+        table(decoder, pc + element_segment.length, validate),
         length(element_segment.length + table.length) {}
 };
 
 struct TableCopyImmediate {
-  IndexImmediate table_dst;
-  IndexImmediate table_src;
+  TableIndexImmediate table_dst;
+  TableIndexImmediate table_src;
   uint32_t length;
 
   template <typename ValidationTag>
   TableCopyImmediate(Decoder* decoder, const uint8_t* pc,
                      ValidationTag validate = {})
-      : table_dst(decoder, pc, "table index", validate),
-        table_src(decoder, pc + table_dst.length, "table index", validate),
+      : table_dst(decoder, pc, validate),
+        table_src(decoder, pc + table_dst.length, validate),
         length(table_src.length + table_dst.length) {}
 };
 
@@ -1158,8 +1163,6 @@ struct ControlBase : public PcForErrors<ValidationTag::full_validation> {
   F(RefI31, const Value& input, Value* result)                                 \
   F(StringConst, const StringConstImmediate& imm, Value* result)
 
-// TODO(manoskouk): Refactor table.init, table.copy to have individual named
-// args.
 #define INTERFACE_NON_CONSTANT_FUNCTIONS(F) /*       force 80 columns       */ \
   /* Control: */                                                               \
   F(Block, Control* block)                                                     \
@@ -1240,9 +1243,11 @@ struct ControlBase : public PcForErrors<ValidationTag::full_validation> {
     const Value& src, const Value& size)                                       \
   F(MemoryFill, const MemoryIndexImmediate& imm, const Value& dst,             \
     const Value& value, const Value& size)                                     \
-  F(TableInit, const TableInitImmediate& imm, const Value args[])              \
+  F(TableInit, const TableInitImmediate& imm, const Value& dst,                \
+    const Value& src, const Value& size)                                       \
   F(ElemDrop, const IndexImmediate& imm)                                       \
-  F(TableCopy, const TableCopyImmediate& imm, const Value args[])              \
+  F(TableCopy, const TableCopyImmediate& imm, const Value& dst,                \
+    const Value& src, const Value& size)                                       \
   F(TableGrow, const IndexImmediate& imm, const Value& value,                  \
     const Value& delta, Value* result)                                         \
   F(TableSize, const IndexImmediate& imm, Value* result)                       \
@@ -1759,9 +1764,7 @@ class WasmDecoder : public Decoder {
 
   bool Validate(const uint8_t* pc, CallIndirectImmediate& imm) {
     if (!ValidateSignature(pc, imm.sig_imm)) return false;
-    if (!ValidateTable(pc + imm.sig_imm.length, imm.table_imm)) {
-      return false;
-    }
+    if (!Validate(pc + imm.sig_imm.length, imm.table_imm)) return false;
     ValueType table_type = module_->tables[imm.table_imm.index].type;
     if (!VALIDATE(IsSubtypeOf(table_type, kWasmFuncRef, module_) ||
                   IsSubtypeOf(table_type,
@@ -1914,9 +1917,10 @@ class WasmDecoder : public Decoder {
                         imm.offset);
       return false;
     }
-    V8_ASSUME(imm.mem_index < num_memories);
 
+    V8_ASSUME(imm.mem_index < num_memories);
     imm.memory = this->module_->memories.data() + imm.mem_index;
+
     return true;
   }
 
@@ -1932,7 +1936,7 @@ class WasmDecoder : public Decoder {
 
   bool Validate(const uint8_t* pc, TableInitImmediate& imm) {
     if (!ValidateElementSegment(pc, imm.element_segment)) return false;
-    if (!ValidateTable(pc + imm.element_segment.length, imm.table)) {
+    if (!Validate(pc + imm.element_segment.length, imm.table)) {
       return false;
     }
     ValueType elem_type =
@@ -1947,8 +1951,8 @@ class WasmDecoder : public Decoder {
   }
 
   bool Validate(const uint8_t* pc, TableCopyImmediate& imm) {
-    if (!ValidateTable(pc, imm.table_src)) return false;
-    if (!ValidateTable(pc + imm.table_src.length, imm.table_dst)) return false;
+    if (!Validate(pc, imm.table_src)) return false;
+    if (!Validate(pc + imm.table_src.length, imm.table_dst)) return false;
     size_t num_tables = module_->tables.size();
     V8_ASSUME(imm.table_src.index < num_tables);
     V8_ASSUME(imm.table_dst.index < num_tables);
@@ -1970,27 +1974,31 @@ class WasmDecoder : public Decoder {
     return true;
   }
 
-  // The following Validate* functions all validate an IndexImmediate, albeit
-  // differently according to context.
-  bool ValidateTable(const uint8_t* pc, IndexImmediate& imm) {
+  bool Validate(const uint8_t* pc, TableIndexImmediate& imm) {
     if (imm.index > 0 || imm.length > 1) {
       this->detected_->Add(kFeature_reftypes);
     }
     size_t num_tables = module_->tables.size();
     if (!VALIDATE(imm.index < num_tables)) {
-      DecodeError(pc, "invalid table index: %u", imm.index);
+      DecodeError(pc, "table index %u exceeds number of tables (%zu)",
+                  imm.index, num_tables);
       return false;
     }
-    V8_ASSUME(imm.index < num_tables);
     if (!VALIDATE(!is_shared_ || module_->tables[imm.index].shared)) {
       DecodeError(pc,
                   "cannot reference non-shared table %u from shared function",
                   imm.index);
       return false;
     }
+
+    V8_ASSUME(imm.index < num_tables);
+    imm.table = this->module_->tables.data() + imm.index;
+
     return true;
   }
 
+  // The following Validate* functions all validate an `IndexImmediate`, albeit
+  // differently according to context.
   bool ValidateElementSegment(const uint8_t* pc, IndexImmediate& imm) {
     size_t num_elem_segments = module_->elem_segments.size();
     if (!VALIDATE(imm.index < num_elem_segments)) {
@@ -2187,7 +2195,7 @@ class WasmDecoder : public Decoder {
       }
       case kExprTableGet:
       case kExprTableSet: {
-        IndexImmediate imm(decoder, pc + 1, "table index", validate);
+        TableIndexImmediate imm(decoder, pc + 1, validate);
         (ios.TableIndex(imm), ...);
         return 1 + imm.length;
       }
@@ -2304,7 +2312,7 @@ class WasmDecoder : public Decoder {
           case kExprTableGrow:
           case kExprTableSize:
           case kExprTableFill: {
-            IndexImmediate imm(decoder, pc + length, "table index", validate);
+            TableIndexImmediate imm(decoder, pc + length, validate);
             (ios.TableIndex(imm), ...);
             return length + imm.length;
           }
@@ -2964,6 +2972,10 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
   void MarkMightThrow() {
     if (!current_code_reachable_and_ok_ || current_catch() == -1) return;
     control_at(control_depth_of_current_catch())->might_throw = true;
+  }
+
+  V8_INLINE ValueType TableIndexType(const WasmTable* table) {
+    return table->is_table64 ? kWasmI64 : kWasmI32;
   }
 
   V8_INLINE ValueType MemoryIndexType(const WasmMemory* memory) {
@@ -3865,19 +3877,20 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
 
   DECODE(TableGet) {
     this->detected_->Add(kFeature_reftypes);
-    IndexImmediate imm(this, this->pc_ + 1, "table index", validate);
-    if (!this->ValidateTable(this->pc_ + 1, imm)) return 0;
-    Value index = Pop(kWasmI32);
-    Value* result = Push(this->module_->tables[imm.index].type);
+    TableIndexImmediate imm(this, this->pc_ + 1, validate);
+    if (!this->Validate(this->pc_ + 1, imm)) return 0;
+    Value index = Pop(TableIndexType(imm.table));
+    Value* result = Push(imm.table->type);
     CALL_INTERFACE_IF_OK_AND_REACHABLE(TableGet, index, result, imm);
     return 1 + imm.length;
   }
 
   DECODE(TableSet) {
     this->detected_->Add(kFeature_reftypes);
-    IndexImmediate imm(this, this->pc_ + 1, "table index", validate);
-    if (!this->ValidateTable(this->pc_ + 1, imm)) return 0;
-    auto [index, value] = Pop(kWasmI32, this->module_->tables[imm.index].type);
+    TableIndexImmediate imm(this, this->pc_ + 1, validate);
+    if (!this->Validate(this->pc_ + 1, imm)) return 0;
+    ValueType table_index_type = TableIndexType(imm.table);
+    auto [index, value] = Pop(table_index_type, imm.table->type);
     CALL_INTERFACE_IF_OK_AND_REACHABLE(TableSet, index, value, imm);
     return 1 + imm.length;
   }
@@ -3920,7 +3933,8 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
   DECODE(CallIndirect) {
     CallIndirectImmediate imm(this, this->pc_ + 1, validate);
     if (!this->Validate(this->pc_ + 1, imm)) return 0;
-    Value index = Pop(kWasmI32);
+    const WasmTable* table = &this->module_->tables[imm.table_imm.index];
+    Value index = Pop(TableIndexType(table));
     PoppedArgVector args = PopArgs(imm.sig);
     Value* returns = PushReturns(imm.sig);
     CALL_INTERFACE_IF_OK_AND_REACHABLE(CallIndirect, index, imm, args.data(),
@@ -3958,7 +3972,8 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
                         "tail call return types mismatch");
       return 0;
     }
-    Value index = Pop(kWasmI32);
+    const WasmTable* table = &this->module_->tables[imm.table_imm.index];
+    Value index = Pop(TableIndexType(table));
     PoppedArgVector args = PopArgs(imm.sig);
     CALL_INTERFACE_IF_OK_AND_REACHABLE(ReturnCallIndirect, index, imm,
                                        args.data());
@@ -5946,18 +5961,12 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
       case kExprMemoryCopy: {
         MemoryCopyImmediate imm(this, this->pc_ + opcode_length, validate);
         if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
-        ValueType mem_type = MemoryIndexType(imm.memory_src.memory);
-        if (mem_type != MemoryIndexType(imm.memory_dst.memory)) {
-          // Disallow copying between a 32-bit and a 64-bit memory, because it's
-          // not clear what type to expect for the number of bytes.
-          // TODO(14258): Check if the spec says anything about copying between
-          // memories of different type.
-          this->DecodeError(this->pc_,
-                            "copying between memories of different type");
-          return 0;
-        }
+        ValueType dst_type = MemoryIndexType(imm.memory_dst.memory);
+        ValueType src_type = MemoryIndexType(imm.memory_src.memory);
+        // size_type = min(dst_type, src_type), where kI32 < kI64.
+        ValueType size_type = dst_type == kWasmI32 ? kWasmI32 : src_type;
 
-        auto [dst, src, size] = Pop(mem_type, mem_type, mem_type);
+        auto [dst, src, size] = Pop(dst_type, src_type, size_type);
         CALL_INTERFACE_IF_OK_AND_REACHABLE(MemoryCopy, imm, dst, src, size);
         return opcode_length + imm.length;
       }
@@ -5972,8 +5981,10 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
       case kExprTableInit: {
         TableInitImmediate imm(this, this->pc_ + opcode_length, validate);
         if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
-        PoppedArgVector args = PopArgs(sig);
-        CALL_INTERFACE_IF_OK_AND_REACHABLE(TableInit, imm, args.data());
+        const WasmTable* table = &this->module_->tables[imm.table.index];
+        ValueType table_index_type = TableIndexType(table);
+        auto [dst, src, size] = Pop(table_index_type, kWasmI32, kWasmI32);
+        CALL_INTERFACE_IF_OK_AND_REACHABLE(TableInit, imm, dst, src, size);
         return opcode_length + imm.length;
       }
       case kExprElemDrop: {
@@ -5988,35 +5999,42 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
       case kExprTableCopy: {
         TableCopyImmediate imm(this, this->pc_ + opcode_length, validate);
         if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
-        PoppedArgVector args = PopArgs(sig);
-        CALL_INTERFACE_IF_OK_AND_REACHABLE(TableCopy, imm, args.data());
+        ValueType table_type_dst = TableIndexType(imm.table_dst.table);
+        if (table_type_dst != TableIndexType(imm.table_src.table)) {
+          // TODO(crbug.com/345274931): Allow copying between a 32-bit
+          // and a 64-bit table https://github.com/WebAssembly/memory64/pull/58.
+          this->DecodeError(this->pc_,
+                            "copying between tables of different type");
+        }
+        auto [dst, src, size] =
+            Pop(table_type_dst, table_type_dst, table_type_dst);
+        CALL_INTERFACE_IF_OK_AND_REACHABLE(TableCopy, imm, dst, src, size);
         return opcode_length + imm.length;
       }
       case kExprTableGrow: {
-        IndexImmediate imm(this, this->pc_ + opcode_length, "table index",
-                           validate);
-        if (!this->ValidateTable(this->pc_ + opcode_length, imm)) return 0;
-        auto [value, delta] =
-            Pop(this->module_->tables[imm.index].type, kWasmI32);
-        Value* result = Push(kWasmI32);
+        TableIndexImmediate imm(this, this->pc_ + opcode_length, validate);
+        if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
+        ValueType table_index_type = TableIndexType(imm.table);
+        auto [value, delta] = Pop(imm.table->type, table_index_type);
+        Value* result = Push(table_index_type);
         CALL_INTERFACE_IF_OK_AND_REACHABLE(TableGrow, imm, value, delta,
                                            result);
         return opcode_length + imm.length;
       }
       case kExprTableSize: {
-        IndexImmediate imm(this, this->pc_ + opcode_length, "table index",
-                           validate);
-        if (!this->ValidateTable(this->pc_ + opcode_length, imm)) return 0;
-        Value* result = Push(kWasmI32);
+        TableIndexImmediate imm(this, this->pc_ + opcode_length, validate);
+        if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
+        Value* result = Push(TableIndexType(imm.table));
         CALL_INTERFACE_IF_OK_AND_REACHABLE(TableSize, imm, result);
         return opcode_length + imm.length;
       }
       case kExprTableFill: {
-        IndexImmediate imm(this, this->pc_ + opcode_length, "table index",
-                           validate);
-        if (!this->ValidateTable(this->pc_ + opcode_length, imm)) return 0;
+        TableIndexImmediate imm(this, this->pc_ + opcode_length, validate);
+        if (!this->Validate(this->pc_ + opcode_length, imm)) return 0;
+        ValueType table_index_type = TableIndexType(imm.table);
         auto [start, value, count] =
-            Pop(kWasmI32, this->module_->tables[imm.index].type, kWasmI32);
+            Pop(table_index_type, this->module_->tables[imm.index].type,
+                table_index_type);
         CALL_INTERFACE_IF_OK_AND_REACHABLE(TableFill, imm, start, value, count);
         return opcode_length + imm.length;
       }

@@ -36,8 +36,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
                                          [f1, f2]);
     const instance_for_import = builder_for_import.instantiate();
     const table1 = instance_for_import.exports.table;
-    //assertEquals(value1, table1.get(offset1)());
-    //assertEquals(value2, table1.get(offset1 + 1)());
+    assertEquals(value1, table1.get(offset1)());
+    assertEquals(value2, table1.get(offset1 + 1)());
     return instance_for_import;
   })();
 
@@ -69,14 +69,14 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const table3 = instance.exports.table3;
   const table4 = instance.exports.table4;
   // table1 == table2
-  //assertEquals(value1, table2.get(offset1)());
-  //assertEquals(value3, table2.get(offset2)());
-  //assertEquals(value4, table2.get(offset2 + 1)());
+  assertEquals(value1, table2.get(offset1)());
+  assertEquals(value3, table2.get(offset2)());
+  assertEquals(value4, table2.get(offset2 + 1)());
 
-  //assertEquals(value5, table3.get(offset3)());
-  //assertEquals(value4, table3.get(offset3 + 1)());
+  assertEquals(value5, table3.get(offset3)());
+  assertEquals(value4, table3.get(offset3 + 1)());
 
-  //assertEquals(value3, table4.get(offset4)());
-  //assertEquals(value4, table4.get(offset4 + 1)());
-  //assertEquals(value3, table4.get(offset4 + 2)());
+  assertEquals(value3, table4.get(offset4)());
+  assertEquals(value4, table4.get(offset4 + 1)());
+  assertEquals(value3, table4.get(offset4 + 2)());
 })();

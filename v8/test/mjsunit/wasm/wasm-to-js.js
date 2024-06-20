@@ -188,18 +188,18 @@ function GenerateValueArray(params) {
 }
 
 function assertValueArray(original, transformed) {
-  //assertEquals(transformed.length, original.length);
+  assertEquals(transformed.length, original.length);
   for (let i = 0; i < transformed.length; ++i) {
     const arg = transformed[i];
     if (typeof arg === 'bigint') {
       // For values of type I64.
-      //assertEquals(BigInt(original[i]), arg);
+      assertEquals(BigInt(original[i]), arg);
     } else if (typeof arg === 'number') {
       // For values of type I32, F32, and F64.
-      //assertEquals(Number(original[i]), arg);
+      assertEquals(Number(original[i]), arg);
     } else {
       // For values of type externref.
-      //assertEquals(original[i], arg);
+      assertEquals(original[i], arg);
     }
   }
 }

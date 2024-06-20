@@ -43,13 +43,13 @@ function testOptimized(fct) {
   testOptimized(fct);
   // Replacing the wasm function will cause a deopt.
   wasmFct = instance.exports.i32Mul;
-  //assertEquals(15, fct());
+  assertEquals(15, fct());
   assertUnoptimized(fct);
 
   // Running it again multiple times will optimize the function again.
   testOptimized(fct);
   // Switching back to the previous wasm function will not cause a deopt.
   wasmFct = instance.exports.i32Add;
-  //assertEquals(8, fct());
+  assertEquals(8, fct());
   assertOptimized(fct);
 })();

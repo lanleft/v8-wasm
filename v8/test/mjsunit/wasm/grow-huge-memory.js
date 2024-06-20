@@ -16,7 +16,7 @@ function GetMemoryPages(memory) {
 (function TestGrowFromJS() {
   let mem = new WebAssembly.Memory({initial: 200});
   mem.grow(40000);
-  //assertEquals(40200, GetMemoryPages(mem));
+  assertEquals(40200, GetMemoryPages(mem));
 })();
 
 (function TestGrowFromWasm() {
@@ -31,6 +31,6 @@ function GetMemoryPages(memory) {
       kExprMemorySize, kMemoryZero   // Get the memory size.
       ]).exportFunc();
   let instance = builder.instantiate();
-  //assertEquals(40200, instance.exports.grow());
-  //assertEquals(40200, GetMemoryPages(instance.exports.memory));
+  assertEquals(40200, instance.exports.grow());
+  assertEquals(40200, GetMemoryPages(instance.exports.memory));
 })();

@@ -5,7 +5,7 @@
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
 // Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged
-// Flags: --wasm-inlining-ignore-call-counts
+// Flags: --wasm-inlining-ignore-call-counts --no-jit-fuzzing
 
 d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
@@ -65,22 +65,22 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let expectedSum = values.reduce((a, b) => a + b) * 4 * 2;
   let expectedDiff = values.reduce((a, b) => a - b) * 4 * 2;
   let expectedMax = (paramCount - 1) * 4 * 2;
-  //assertEquals(expectedSum, -expectedDiff);
+  assertEquals(expectedSum, -expectedDiff);
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(expectedSum, wasm.main(0, wasm.add));
+  assertEquals(expectedSum, wasm.main(0, wasm.add));
   %WasmTierUpFunction(wasm.deopting);
-  //assertEquals(expectedSum, wasm.main(0, wasm.add));
+  assertEquals(expectedSum, wasm.main(0, wasm.add));
   assertTrue(%IsTurboFanFunction(wasm.deopting));
-  //assertEquals(expectedDiff, wasm.main(0, wasm.sub));
+  assertEquals(expectedDiff, wasm.main(0, wasm.sub));
   assertFalse(%IsTurboFanFunction(wasm.deopting));
 
   // Repeat the test but this time with an additional layer of inlining.
   %WasmTierUpFunction(wasm.main);
-  //assertEquals(expectedSum, wasm.main(0, wasm.add));
-  //assertEquals(expectedDiff, wasm.main(0, wasm.sub));
+  assertEquals(expectedSum, wasm.main(0, wasm.add));
+  assertEquals(expectedDiff, wasm.main(0, wasm.sub));
   assertTrue(%IsTurboFanFunction(wasm.main));
-  //assertEquals(expectedMax, wasm.main(0, wasm.max));
+  assertEquals(expectedMax, wasm.main(0, wasm.max));
 
   function generateCalleeBody(binop) {
     let result = [kExprLocalGet, 0];

@@ -12,7 +12,7 @@ function assertValidAsm(func) {
 
 function assertWasm(expected, func, ffi) {
   print("Testing " + func.name + "...");
-  //assertEquals(
+  assertEquals(
       expected, func(stdlib, ffi, new ArrayBuffer(1024)).caller());
   assertValidAsm(func);
 }
@@ -57,7 +57,7 @@ function TestForeignFunctions() {
   var module = AsmModule({Math: Math}, foreign, null);
   assertValidAsm(AsmModule);
 
-  //assertEquals(103, module.caller(23, 103));
+  assertEquals(103, module.caller(23, 103));
 }
 
 print("TestForeignFunctions...");
@@ -98,7 +98,7 @@ function TestForeignFunctionMultipleUse() {
   var module = module_decl(stdlib, foreign, null);
   assertValidAsm(module_decl);
 
-  //assertEquals(89, module.caller(83, 83.25));
+  assertEquals(89, module.caller(83, 83.25));
 }
 
 print("TestForeignFunctionMultipleUse...");
@@ -137,10 +137,10 @@ function TestForeignVariables() {
     var module_decl = eval('(' + AsmModule.toString() + ')');
     var module = module_decl(stdlib, env);
     assertValidAsm(module_decl);
-    //assertEquals(i1, module.geti1());
-    //assertEquals(f1, module.getf1());
-    //assertEquals(i2, module.geti2());
-    //assertEquals(f2, module.getf2());
+    assertEquals(i1, module.geti1());
+    assertEquals(f1, module.getf1());
+    assertEquals(i2, module.geti2());
+    assertEquals(f2, module.getf2());
   }
 
   // Check normal operation.

@@ -290,4 +290,4 @@ function assertBinop(name, math_func, asm_func) {
   }
 })();
 
-//assertEquals(0, numFailures);
+assertEquals(0, numFailures);

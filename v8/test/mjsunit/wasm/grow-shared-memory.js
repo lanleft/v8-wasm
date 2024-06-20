@@ -27,9 +27,9 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
 (function TestGrowSharedMemoryWithoutPostMessage() {
   print(arguments.callee.name);
   let memory = new WebAssembly.Memory({initial: 1, maximum: 5, shared: true});
-  //assertEquals(memory.buffer.byteLength, kPageSize);
-  //assertEquals(1, memory.grow(1));
-  //assertEquals(memory.buffer.byteLength, 2 * kPageSize);
+  assertEquals(memory.buffer.byteLength, kPageSize);
+  assertEquals(1, memory.grow(1));
+  assertEquals(memory.buffer.byteLength, 2 * kPageSize);
 })();
 
 (function TestPostMessageWithGrow() {
@@ -49,10 +49,10 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
 
   let memory = new WebAssembly.Memory({initial: 1, maximum: 5, shared: true});
   let obj = {memory: memory, expected_size: 2 * kPageSize};
-  //assertEquals(obj.memory.buffer.byteLength, kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, kPageSize);
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(obj.memory.buffer.byteLength, 2 * kPageSize);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(obj.memory.buffer.byteLength, 2 * kPageSize);
   worker.terminate();
 })();
 
@@ -79,14 +79,14 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
   let memory = new WebAssembly.Memory({initial: 1, maximum: 5, shared: true});
   let expected_pages = 1;
   for (let worker of workers) {
-    //assertEquals(memory.buffer.byteLength, expected_pages++ * kPageSize);
+    assertEquals(memory.buffer.byteLength, expected_pages++ * kPageSize);
     let obj = {memory: memory, expected_size: expected_pages * kPageSize};
     worker.postMessage(obj);
-    //assertEquals("OK", worker.getMessage());
-    //assertEquals(memory.buffer.byteLength, expected_pages * kPageSize);
+    assertEquals("OK", worker.getMessage());
+    assertEquals(memory.buffer.byteLength, expected_pages * kPageSize);
     worker.terminate();
   }
-  //assertEquals(memory.buffer.byteLength, expected_pages * kPageSize);
+  assertEquals(memory.buffer.byteLength, expected_pages * kPageSize);
 })();
 
 // PostMessage of Multiple memories and grow
@@ -115,10 +115,10 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
                   new WebAssembly.Memory({initial: 4, maximum: 12, shared: true})];
   let obj = {memories: memories};
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(2 * kPageSize, memories[0].buffer.byteLength);
-  //assertEquals(4 * kPageSize, memories[1].buffer.byteLength);
-  //assertEquals(6 * kPageSize, memories[2].buffer.byteLength);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(2 * kPageSize, memories[0].buffer.byteLength);
+  assertEquals(4 * kPageSize, memories[1].buffer.byteLength);
+  assertEquals(6 * kPageSize, memories[2].buffer.byteLength);
   worker.terminate();
 })();
 
@@ -152,11 +152,11 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
     .exportFunc();
   var module = new WebAssembly.Module(builder.toBuffer());
   let obj = {memory: memory, module: module};
-  //assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
+  assertEquals("OK", worker.getMessage());
   worker.terminate();
-  //assertEquals(obj.memory.buffer.byteLength, 20 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 20 * kPageSize);
 })();
 
 (function TestConsecutiveJSAndWasmSharedGrow() {
@@ -188,10 +188,10 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
     .exportFunc();
   var module = new WebAssembly.Module(builder.toBuffer());
   let obj = {memory: memory, module: module};
-  //assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(obj.memory.buffer.byteLength, 20 * kPageSize);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(obj.memory.buffer.byteLength, 20 * kPageSize);
 })();
 
 (function TestConsecutiveWasmSharedGrow() {
@@ -227,13 +227,13 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
     .exportFunc();
   var module = new WebAssembly.Module(builder.toBuffer());
   let obj = {memory: memory, module: module};
-  //assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(obj.memory.buffer.byteLength, 19 * kPageSize);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(obj.memory.buffer.byteLength, 19 * kPageSize);
   let instance = new WebAssembly.Instance(module, {m: {memory: memory}});
-  //assertEquals(21, instance.exports.grow_twice(2));
-  //assertEquals(obj.memory.buffer.byteLength, 23 * kPageSize);
+  assertEquals(21, instance.exports.grow_twice(2));
+  assertEquals(obj.memory.buffer.byteLength, 23 * kPageSize);
 })();
 
 (function TestConsecutiveSharedGrowAndMemorySize() {
@@ -275,15 +275,15 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
     .exportFunc();
   var module = new WebAssembly.Module(builder.toBuffer());
   let obj = {memory: memory, module: module};
-  //assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(memory.buffer.byteLength, 19 * kPageSize);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(memory.buffer.byteLength, 19 * kPageSize);
   let instance = new WebAssembly.Instance(module, {m: {memory: memory}});
-  //assertEquals(23, instance.exports.grow_and_size(2));
-  //assertEquals(obj.memory.buffer.byteLength, 23 * kPageSize);
-  //assertEquals(23, memory.grow(2));
-  //assertEquals(25, instance.exports.memory_size());
+  assertEquals(23, instance.exports.grow_and_size(2));
+  assertEquals(obj.memory.buffer.byteLength, 23 * kPageSize);
+  assertEquals(23, memory.grow(2));
+  assertEquals(25, instance.exports.memory_size());
 })();
 
 // Only spot checking here because currently the underlying buffer doesn't move.
@@ -340,8 +340,8 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
   instance.exports.atomic_store(0, 0xACED);
   instance.exports.atomic_store(5 * kPageSize - 4, 0xACED);
   // Verify that these were stored.
-  //assertEquals(0xACED, instance.exports.atomic_load(0));
-  //assertEquals(0xACED, instance.exports.atomic_load(5 * kPageSize - 4));
+  assertEquals(0xACED, instance.exports.atomic_load(0));
+  assertEquals(0xACED, instance.exports.atomic_load(5 * kPageSize - 4));
   // Verify bounds.
   // If an underlying platform uses traps for a bounds check,
   // kTrapUnalignedAccess will be thrown before kTrapMemOutOfBounds.
@@ -349,13 +349,13 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
   assertTrapsOneOf([kTrapMemOutOfBounds, kTrapUnalignedAccess],
       () => instance.exports.atomic_load(5 * kPageSize - 3));
   let obj = {memory: memory, module: module};
-  //assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
+  assertEquals(obj.memory.buffer.byteLength, 5 * kPageSize);
   // PostMessage
   worker.postMessage(obj);
-  //assertEquals("OK", worker.getMessage());
-  //assertEquals(memory.buffer.byteLength, 17 * kPageSize);
-  //assertEquals(17, instance.exports.grow(2));
-  //assertEquals(obj.memory.buffer.byteLength, 19 * kPageSize);
+  assertEquals("OK", worker.getMessage());
+  assertEquals(memory.buffer.byteLength, 17 * kPageSize);
+  assertEquals(17, instance.exports.grow(2));
+  assertEquals(obj.memory.buffer.byteLength, 19 * kPageSize);
   // Validate previous writes, and check bounds.
   assertTrue(0xACED === instance.exports.atomic_load(0));
   assertTrue(0xACED === instance.exports.atomic_load(5 * kPageSize - 4));
@@ -363,8 +363,8 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
   assertTrue(0xACED === instance.exports.atomic_load(17 * kPageSize - 4));
   assertTrapsOneOf([kTrapMemOutOfBounds, kTrapUnalignedAccess],
       () => instance.exports.atomic_load(19 * kPageSize - 3));
-  //assertEquals(19, memory.grow(6));
-  //assertEquals(obj.memory.buffer.byteLength, 25 * kPageSize);
+  assertEquals(19, memory.grow(6));
+  assertEquals(obj.memory.buffer.byteLength, 25 * kPageSize);
   assertTrapsOneOf([kTrapMemOutOfBounds, kTrapUnalignedAccess],
       () => instance.exports.atomic_load(25 * kPageSize - 3));
 })();
@@ -373,14 +373,14 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
   const memory = new WebAssembly.Memory({
     "initial": 1, "maximum": 2, "shared": true });
   assertInstanceof(memory.buffer, SharedArrayBuffer);
-  //assertEquals(memory.grow(1), 1);
+  assertEquals(memory.grow(1), 1);
   assertInstanceof(memory.buffer, SharedArrayBuffer);
 })();
 
 (function TestSharedMemoryGrowByZero() {
   const memory = new WebAssembly.Memory({
     "initial": 1, "maximum": 2, "shared": true });
-  //assertEquals(memory.grow(0), 1);
+  assertEquals(memory.grow(0), 1);
 })();
 
 // Tests that a function receives the update of a shared memory's size if a
@@ -452,5 +452,5 @@ let workerHelpers = assertTrue.toString() + assertIsWasmSharedMemory.toString();
 
   memory.grow(final_size - initial_size);
 
-  //assertEquals(final_size, worker.getMessage());
+  assertEquals(final_size, worker.getMessage());
 })();

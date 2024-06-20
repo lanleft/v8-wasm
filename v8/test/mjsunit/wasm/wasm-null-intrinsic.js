@@ -14,4 +14,4 @@ const instance = builder.instantiate({});
 // JS can't directly do anything with %WasmNull as it does not support handling
 // wasm null values (accessing most properties excluding the map will crash).
 // So we internalize it in wasm and check for null.
-//assertEquals(1, instance.exports.isNull(%WasmNull()));
+assertEquals(1, instance.exports.isNull(%WasmNull()));

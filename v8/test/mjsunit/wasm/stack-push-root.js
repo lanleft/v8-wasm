@@ -30,4 +30,4 @@ builder.addFunction('main', kSig_r_v).exportFunc().addBody([
 ]);
 
 let instance = builder.instantiate();
-//assertEquals(null, instance.exports.main());
+assertEquals(null, instance.exports.main());

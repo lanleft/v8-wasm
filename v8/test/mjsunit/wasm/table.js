@@ -18,7 +18,7 @@ function assertTableIsValid(table, length) {
   assertSame(WebAssembly.Table, table.constructor);
   assertTrue(table instanceof Object);
   assertTrue(table instanceof WebAssembly.Table);
-  //assertEquals(length, table.length);
+  assertEquals(length, table.length);
 }
 
 (function TestConstructor() {
@@ -56,20 +56,20 @@ function assertTableIsValid(table, length) {
   let table;
   table = new WebAssembly.Table({element: "anyfunc", initial: 1});
   assertTableIsValid(table, 1);
-  //assertEquals(null, table.get(0));
-  //assertEquals(undefined, table[0]);
+  assertEquals(null, table.get(0));
+  assertEquals(undefined, table[0]);
 
   table = new WebAssembly.Table({element: "anyfunc", initial: "2"});
   assertTableIsValid(table, 2);
-  //assertEquals(null, table.get(0));
-  //assertEquals(null, table.get(1));
-  //assertEquals(undefined, table[0]);
-  //assertEquals(undefined, table[1]);
+  assertEquals(null, table.get(0));
+  assertEquals(null, table.get(1));
+  assertEquals(undefined, table[0]);
+  assertEquals(undefined, table[1]);
 
   table = new WebAssembly.Table({element: "anyfunc", initial: {valueOf() { return "1" }}});
   assertTableIsValid(table, 1);
-  //assertEquals(null, table.get(0));
-  //assertEquals(undefined, table[0]);
+  assertEquals(null, table.get(0));
+  assertEquals(undefined, table[0]);
 
   table = new WebAssembly.Table({element: "anyfunc", initial: 0, maximum: 10});
   assertTableIsValid(table, 0);
@@ -129,7 +129,7 @@ function assertTableIsValid(table, length) {
 (function TestLength() {
   for (let i = 0; i < 10; ++i) {
     let table = new WebAssembly.Table({element: "anyfunc", initial: i});
-    //assertEquals(i, table.length);
+    assertEquals(i, table.length);
   }
 
   assertThrows(() => WebAssembly.Table.prototype.length.call([]), TypeError);
@@ -139,11 +139,11 @@ function assertTableIsValid(table, length) {
   let table = new WebAssembly.Table({element: "anyfunc", initial: 10});
 
   for (let i = 0; i < table.length; ++i) {
-    //assertEquals(null, table.get(i));
-    //assertEquals(null, table.get(String(i)));
+    assertEquals(null, table.get(i));
+    assertEquals(null, table.get(String(i)));
   }
   for (let key of [0.4, "", []]) {
-    //assertEquals(null, table.get(key));
+    assertEquals(null, table.get(key));
   }
   for (let key of [-1, NaN, {}, () => {}]) {
     assertThrows(() => table.get(key), TypeError);
@@ -282,7 +282,7 @@ function assertTableIsValid(table, length) {
 
   table = new WebAssembly.Table({element: "anyfunc", initial: 0});
   table.grow({valueOf: () => {table.grow(2); return 1;}});
-  //assertEquals(3, table.length);
+  assertEquals(3, table.length);
 })();
 
 (function TestGrowWithInit() {
@@ -296,6 +296,6 @@ function assertTableIsValid(table, length) {
   let table = new WebAssembly.Table({element: "anyfunc", initial: 1});
   table.grow(5, getDummy(24));
   for (let i = 1; i <= 5; ++i) {
-    //assertEquals(24, table.get(i)());
+    assertEquals(24, table.get(i)());
   }
 })();

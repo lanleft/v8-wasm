@@ -17,5 +17,5 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierBaseline)
          .exportFunc();
   let instance = builder.instantiate({mod: {pow: Math.pow}});
-  //assertEquals(27, instance.exports.upow(3))
+  assertEquals(27, instance.exports.upow(3))
 })();

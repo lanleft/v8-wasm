@@ -23,12 +23,12 @@ let instance = (() => {
 let obj = instance.exports.createStruct(123);
 // The struct is opaque and doesn't have any observable properties.
 assertFalse(obj instanceof Object);
-//assertEquals([], Object.getOwnPropertyNames(obj));
+assertEquals([], Object.getOwnPropertyNames(obj));
 // It can be passed as externref without any observable change.
 let passObj = instance.exports.passObj;
 let obj2 = passObj(obj);
 assertFalse(obj2 instanceof Object);
-//assertEquals([], Object.getOwnPropertyNames(obj2));
+assertEquals([], Object.getOwnPropertyNames(obj2));
 assertSame(obj, obj2);
 // A JavaScript object can be passed as externref.
 let jsObject = {"hello": "world"};

@@ -45,11 +45,11 @@ function FOREIGN_SUB(a, b) {
 }
 
 function check_FOREIGN_SUB(r, a, b) {
-    //assertEquals(a - b | 0, r);
+    assertEquals(a - b | 0, r);
     assertTrue(was_called);
-//    //assertEquals(global, params[0]);  // sloppy mode
-    //assertEquals(a, params[1]);
-    //assertEquals(b, params[2]);
+//    assertEquals(global, params[0]);  // sloppy mode
+    assertEquals(a, params[1]);
+    assertEquals(b, params[2]);
     was_called = false;
 }
 
@@ -121,13 +121,13 @@ testCallFFI(bind_sub, check_FOREIGN_SUB);
   // The result of the call to Object.prototype.toString should be
   // [object Undefined]. However, we cannot test for this result because wasm
   // cannot return objects but converts them to float64 in this test.
-  //assertEquals(NaN, main());
+  assertEquals(NaN, main());
 })();
 
 print("Callable JSObject");
 function callable_target(a, b) { return a - b; }
 let callable_obj = %GetCallable("callable_target");
-testCallFFI(callable_obj, function check(r, a, b) {//assertEquals(a - b, r);});
+testCallFFI(callable_obj, function check(r, a, b) {assertEquals(a - b, r);});
 
 function FOREIGN_ABCD(a, b, c, d) {
 //  print("FOREIGN_ABCD(" + a + ", " + b + ", " + c + ", " + d + ")");
@@ -141,13 +141,13 @@ function FOREIGN_ABCD(a, b, c, d) {
 }
 
 function check_FOREIGN_ABCD(r, a, b) {
-    //assertEquals((a * b * 6) | 0, r);
+    assertEquals((a * b * 6) | 0, r);
     assertTrue(was_called);
-//    //assertEquals(global, params[0]);  // sloppy mode.
-    //assertEquals(a, params[1]);
-    //assertEquals(b, params[2]);
-    //assertEquals(undefined, params[3]);
-    //assertEquals(undefined, params[4]);
+//    assertEquals(global, params[0]);  // sloppy mode.
+    assertEquals(a, params[1]);
+    assertEquals(b, params[2]);
+    assertEquals(undefined, params[3]);
+    assertEquals(undefined, params[4]);
     was_called = false;
 }
 
@@ -204,11 +204,11 @@ function FOREIGN_ARGUMENTS4(a, b, c, d) {
 }
 
 function check_FOREIGN_ARGUMENTS(r, a, b) {
-  //assertEquals((a * b * 7) | 0, r);
+  assertEquals((a * b * 7) | 0, r);
   assertTrue(was_called);
-  //assertEquals(2, length);
-  //assertEquals(a, params[0]);
-  //assertEquals(b, params[1]);
+  assertEquals(2, length);
+  assertEquals(a, params[0]);
+  assertEquals(b, params[1]);
   was_called = false;
 }
 
@@ -228,7 +228,7 @@ function returnValue(val) {
 
 
 function checkReturn(expected) {
-  return function(r, a, b) { //assertEquals(expected, r); }
+  return function(r, a, b) { assertEquals(expected, r); }
 }
 
 // Check that returning weird values doesn't crash
@@ -275,8 +275,8 @@ function testCallBinopVoid(type, func, check) {
   for (var i = 0; i < 100000; i += 10003.1) {
     var a = 22.5 + i, b = 10.5 + i;
     var r = main(a, b);
-    //assertEquals(33, r);
-    //assertEquals(2, passed_length);
+    assertEquals(33, r);
+    assertEquals(2, passed_length);
     var expected_a, expected_b;
     switch (type) {
       case kWasmI32: {
@@ -296,10 +296,10 @@ function testCallBinopVoid(type, func, check) {
       }
     }
 
-    //assertEquals(expected_a, args_a);
-    //assertEquals(expected_b, args_b);
-    //assertEquals(expected_a, passed_a);
-    //assertEquals(expected_b, passed_b);
+    assertEquals(expected_a, args_a);
+    assertEquals(expected_b, args_b);
+    assertEquals(expected_a, passed_a);
+    assertEquals(expected_b, passed_b);
   }
 }
 
@@ -381,9 +381,9 @@ testCallBinopVoid(kWasmF64);
   var func = () => new Foo();
   var main = builder.instantiate({"": {func: func}}).exports.main;
   main();
-  //assertEquals(1, num_valueOf);
+  assertEquals(1, num_valueOf);
   main();
-  //assertEquals(2, num_valueOf);
+  assertEquals(2, num_valueOf);
 })();
 
 (function ToNumberNotCalledOnVoidImport() {
@@ -400,7 +400,7 @@ testCallBinopVoid(kWasmF64);
   var main = builder.instantiate({"": {func: func}}).exports.main;
   main();
   main();
-  //assertEquals(0, num_valueOf);
+  assertEquals(0, num_valueOf);
 })();
 
 (function ImportWithCustomGetter() {

@@ -16,12 +16,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate();
 
   let obj = {'hello' : 'world'};
-  //assertEquals(obj, instance.exports.main(obj));
-  //assertEquals(1234, instance.exports.main(1234));
-  //assertEquals(123.4, instance.exports.main(123.4));
-  //assertEquals(undefined, instance.exports.main(undefined));
-  //assertEquals(null, instance.exports.main(null));
-  //assertEquals(print, instance.exports.main(print));
+  assertEquals(obj, instance.exports.main(obj));
+  assertEquals(1234, instance.exports.main(1234));
+  assertEquals(123.4, instance.exports.main(123.4));
+  assertEquals(undefined, instance.exports.main(undefined));
+  assertEquals(null, instance.exports.main(null));
+  assertEquals(print, instance.exports.main(print));
 })();
 
 (function testPassExternRefToImportedFunction() {
@@ -35,7 +35,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
   function checkFunction(value) {
-    //assertEquals('world', value.hello);
+    assertEquals('world', value.hello);
   }
 
   const instance = builder.instantiate({q: {func: checkFunction}});
@@ -70,7 +70,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
   function checkFunction(value) {
-    //assertEquals('world', value.hello);
+    assertEquals('world', value.hello);
   }
 
   const instance = builder.instantiate({q: {func: checkFunction, gc: gc}});
@@ -94,7 +94,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
   function checkFunction(value) {
-    //assertEquals('world', value.hello);
+    assertEquals('world', value.hello);
   }
 
   const instance = builder.instantiate({q: {func: checkFunction, gc: gc}});
@@ -123,7 +123,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
         .exportFunc();
 
     function checkFunction(value) {
-      //assertEquals(index, value.hello);
+      assertEquals(index, value.hello);
     }
 
     const instance = builder.instantiate({q: {func: checkFunction, gc: gc}});
@@ -157,7 +157,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   };
 
   const result = instance.exports.main(triggerGCParam, {hello: 'world'}, triggerGCParam);
-  //assertEquals('world', result.hello);
+  assertEquals('world', result.hello);
 })();
 
 (function testExternRefNull() {
@@ -169,7 +169,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(null, instance.exports.main());
+  assertEquals(null, instance.exports.main());
 })();
 
 (function testExternRefIsNull() {
@@ -181,13 +181,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(0, instance.exports.main({'hello' : 'world'}));
-  //assertEquals(0, instance.exports.main(1234));
-  //assertEquals(0, instance.exports.main(0));
-  //assertEquals(0, instance.exports.main(123.4));
-  //assertEquals(0, instance.exports.main(undefined));
-  //assertEquals(1, instance.exports.main(null));
-  //assertEquals(0, instance.exports.main(print));
+  assertEquals(0, instance.exports.main({'hello' : 'world'}));
+  assertEquals(0, instance.exports.main(1234));
+  assertEquals(0, instance.exports.main(0));
+  assertEquals(0, instance.exports.main(123.4));
+  assertEquals(0, instance.exports.main(undefined));
+  assertEquals(1, instance.exports.main(null));
+  assertEquals(0, instance.exports.main(print));
 })();
 
 (function testExternRefNullIsNull() {
@@ -200,7 +200,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   const instance = builder.instantiate();
 
-  //assertEquals(1, instance.exports.main());
+  assertEquals(1, instance.exports.main());
 })();
 
 (function testExternRefLocalDefaultValue() {
@@ -215,7 +215,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
     const instance = builder.instantiate();
 
-    //assertEquals(null, instance.exports.main());
+    assertEquals(null, instance.exports.main());
   }
 })();
 
@@ -228,7 +228,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main());
+  assertEquals(null, main());
 })();
 
 (function testExplicitReturnNullAsExternRef() {
@@ -240,7 +240,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       .exportFunc();
 
   const main = builder.instantiate().exports.main;
-  //assertEquals(null, main());
+  assertEquals(null, main());
 })();
 
 (function testGCInStackCheck() {
@@ -281,7 +281,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate({
     q: {
       triggerGC: () => %ScheduleGCInStackCheck(),
-      func: (ref) => //assertEquals(ref.hello, 4)
+      func: (ref) => assertEquals(ref.hello, 4)
     }
   });
 
@@ -326,7 +326,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   const instance = builder.instantiate({
     q: {
       triggerGC: () => %ScheduleGCInStackCheck(),
-      func: (ref) => //assertEquals(ref.hello, 4)
+      func: (ref) => assertEquals(ref.hello, 4)
     }
   });
 
@@ -359,5 +359,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let instance = builder.instantiate({
     q: { gc: () => gc() }
   });
-  //assertEquals(instance.exports.main(null), [null, null, null, null]);
+  assertEquals(instance.exports.main(null), [null, null, null, null]);
 })();

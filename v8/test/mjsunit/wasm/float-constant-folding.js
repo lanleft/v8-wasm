@@ -15,7 +15,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF32Sub, kExprI32ReinterpretF32, ]).exportFunc();
   var module = builder.instantiate();
   // F32Sub0(signalling_NaN)
-  //assertEquals(0x7fe00000, module.exports.F32Sub0(0x7fa00000));
+  assertEquals(0x7fe00000, module.exports.F32Sub0(0x7fa00000));
 })();
 
 (function() {
@@ -27,7 +27,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprI32ReinterpretF32, ]).exportFunc();
   var module = builder.instantiate();
   // F32Sub0(signalling_NaN)
-  //assertEquals(0x7fe00000, module.exports.F32Sub0(0x7fa00000));
+  assertEquals(0x7fe00000, module.exports.F32Sub0(0x7fa00000));
 })();
 
 (function() {
@@ -37,7 +37,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       [ kExprF32Const, 0x00, 0x00, 0xa0, 0x7f, kExprF32Const, 0x12, 0x34, 0x56,
           0x78, kExprF32Sub, kExprI32ReinterpretF32, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7fe00000, module.exports.F32NaNSubX());
+  assertEquals(0x7fe00000, module.exports.F32NaNSubX());
 })();
 
 (function() {
@@ -47,7 +47,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       [ kExprF32Const, 0x12, 0x34, 0x56, 0x78, kExprF32Const, 0x00, 0x00, 0xa0,
           0x7f, kExprF32Sub, kExprI32ReinterpretF32, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7fe00000, module.exports.F32XSubNaN());
+  assertEquals(0x7fe00000, module.exports.F32XSubNaN());
 })();
 
 (function() {
@@ -59,7 +59,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Add, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F32XAddNaN());
+  assertEquals(0x7ffa0000, module.exports.F32XAddNaN());
 })();
 
 (function() {
@@ -72,7 +72,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Sub, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Sub0());
+  assertEquals(0x7ffa0000, module.exports.F64Sub0());
 })();
 
 (function() {
@@ -84,7 +84,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           0x00, kExprF64ReinterpretI64, kExprF64Sub, kExprI64ReinterpretF64,
           kExprI64Const, 32, kExprI64ShrU, kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Sub0());
+  assertEquals(0x7ffa0000, module.exports.F64Sub0());
 })();
 
 (function() {
@@ -96,7 +96,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Sub, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64NaNSubX());
+  assertEquals(0x7ffa0000, module.exports.F64NaNSubX());
 })();
 
 (function() {
@@ -108,7 +108,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Sub, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64XSubNaN());
+  assertEquals(0x7ffa0000, module.exports.F64XSubNaN());
 })();
 
 (function() {
@@ -120,7 +120,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           0x00, 0x00, 0xf0, 0x3f, kExprF64Mul, kExprI64ReinterpretF64,
           kExprI64Const, 32, kExprI64ShrU, kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Mul1());
+  assertEquals(0x7ffa0000, module.exports.F64Mul1());
 })();
 
 (function() {
@@ -132,7 +132,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Mul, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64XMulNaN());
+  assertEquals(0x7ffa0000, module.exports.F64XMulNaN());
 })();
 
 (function() {
@@ -144,7 +144,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           0x00, 0x00, 0xf0, 0x3f, kExprF64Div, kExprI64ReinterpretF64,
           kExprI64Const, 32, kExprI64ShrU, kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Div1());
+  assertEquals(0x7ffa0000, module.exports.F64Div1());
 })();
 
 (function() {
@@ -156,7 +156,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           0x00, 0x00, 0xf0, 0xbf, kExprF64Div, kExprI64ReinterpretF64,
           kExprI64Const, 32, kExprI64ShrU, kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Div1());
+  assertEquals(0x7ffa0000, module.exports.F64Div1());
 })();
 
 (function() {
@@ -175,7 +175,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
             ])
             .exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64Div1());
+  assertEquals(0x7ffa0000, module.exports.F64Div1());
 })();
 
 (function() {
@@ -187,7 +187,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Div, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64XDivNaN());
+  assertEquals(0x7ffa0000, module.exports.F64XDivNaN());
 })();
 
 (function() {
@@ -199,7 +199,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprF64Div, kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64NaNDivX());
+  assertEquals(0x7ffa0000, module.exports.F64NaNDivX());
 })();
 
 (function() {
@@ -209,7 +209,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       [ kExprF64Const, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf2, 0x7f,
           kExprF32ConvertF64, kExprI32ReinterpretF32, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7fd00000, module.exports.F32ConvertF64X());
+  assertEquals(0x7fd00000, module.exports.F32ConvertF64X());
 })();
 
 (function() {
@@ -220,7 +220,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffc0000, module.exports.F64ConvertF32X());
+  assertEquals(0x7ffc0000, module.exports.F64ConvertF32X());
 })();
 
 (function() {
@@ -232,5 +232,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
           kExprI64ReinterpretF64, kExprI64Const, 32, kExprI64ShrU,
           kExprI32ConvertI64, ]).exportFunc();
   var module = builder.instantiate();
-  //assertEquals(0x7ffa0000, module.exports.F64toF32toF64());
+  assertEquals(0x7ffa0000, module.exports.F64toF32toF64());
 })();

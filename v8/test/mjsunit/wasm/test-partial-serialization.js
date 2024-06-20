@@ -24,7 +24,7 @@ function create_builder() {
 function check(instance) {
   for (let i = 0; i < num_functions; ++i) {
     const expect_turbofan = i == 0 || i == 2;
-    //assertEquals(
+    assertEquals(
         expect_turbofan, %IsTurboFanFunction(instance.exports['f' + i]),
         'function ' + i);
   }

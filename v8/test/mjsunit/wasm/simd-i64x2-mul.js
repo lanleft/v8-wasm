@@ -36,4 +36,4 @@ builder.addFunction(undefined, sig)
 builder.addExport('main', 0);
 const module = builder.instantiate();
 // Should be 2 * 4, the buggy codegen will give 2 * 2 instead.
-//assertEquals(8n, module.exports.main());
+assertEquals(8n, module.exports.main());

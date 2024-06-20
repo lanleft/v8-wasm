@@ -42,11 +42,11 @@ function FOREIGN_SUB(a, b) {
 }
 
 function check_FOREIGN_SUB(r, a, b) {
-    //assertEquals(a - b | 0, r);
+    assertEquals(a - b | 0, r);
     assertTrue(was_called);
-    //assertEquals(global, params[0]);  // sloppy mode
-    //assertEquals(a, params[1]);
-    //assertEquals(b, params[2]);
+    assertEquals(global, params[0]);  // sloppy mode
+    assertEquals(a, params[1]);
+    assertEquals(b, params[2]);
     was_called = false;
 }
 
@@ -65,13 +65,13 @@ function FOREIGN_ABCD(a, b, c, d) {
 }
 
 function check_FOREIGN_ABCD(r, a, b) {
-    //assertEquals((a * b * 6) | 0, r);
+    assertEquals((a * b * 6) | 0, r);
     assertTrue(was_called);
-    //assertEquals(global, params[0]);  // sloppy mode.
-    //assertEquals(a, params[1]);
-    //assertEquals(b, params[2]);
-    //assertEquals(undefined, params[3]);
-    //assertEquals(undefined, params[4]);
+    assertEquals(global, params[0]);  // sloppy mode.
+    assertEquals(a, params[1]);
+    assertEquals(b, params[2]);
+    assertEquals(undefined, params[3]);
+    assertEquals(undefined, params[4]);
     was_called = false;
 }
 
@@ -128,11 +128,11 @@ function FOREIGN_ARGUMENTS4(a, b, c, d) {
 }
 
 function check_FOREIGN_ARGUMENTS(r, a, b) {
-  //assertEquals((a * b * 7) | 0, r);
+  assertEquals((a * b * 7) | 0, r);
   assertTrue(was_called);
-  //assertEquals(2, length);
-  //assertEquals(a, params[0]);
-  //assertEquals(b, params[1]);
+  assertEquals(2, length);
+  assertEquals(a, params[0]);
+  assertEquals(b, params[1]);
   was_called = false;
 }
 
@@ -152,7 +152,7 @@ function returnValue(val) {
 
 
 function checkReturn(expected) {
-  return function(r, a, b) { //assertEquals(expected, r); }
+  return function(r, a, b) { assertEquals(expected, r); }
 }
 
 // Check that returning weird values doesn't crash
@@ -200,8 +200,8 @@ function testCallBinopVoid(type, func, check) {
   for (var i = 0; i < 100000; i += 10003.1) {
     var a = 22.5 + i, b = 10.5 + i;
     var r = main(a, b);
-    //assertEquals(39, r);
-    //assertEquals(2, passed_length);
+    assertEquals(39, r);
+    assertEquals(2, passed_length);
     var expected_a, expected_b;
     switch (type) {
       case kWasmI32: {
@@ -221,10 +221,10 @@ function testCallBinopVoid(type, func, check) {
       }
     }
 
-    //assertEquals(expected_a, args_a);
-    //assertEquals(expected_b, args_b);
-    //assertEquals(expected_a, passed_a);
-    //assertEquals(expected_b, passed_b);
+    assertEquals(expected_a, args_a);
+    assertEquals(expected_b, args_b);
+    assertEquals(expected_a, passed_a);
+    assertEquals(expected_b, passed_b);
   }
 }
 
@@ -274,7 +274,7 @@ function testCallImport2(foo, bar, expected) {
     .exportFunc();
 
   var main = builder.instantiate({q: {foo: foo}, t: {bar: bar}}).exports.main;
-  //assertEquals(expected, main());
+  assertEquals(expected, main());
 }
 
 testCallImport2(function() { return 33; }, function () { return 44; }, 77);
@@ -290,7 +290,7 @@ function testImportName(name) {
     .exportFunc();
 
   let main = builder.instantiate({M: {[name]: () => 42}}).exports.main;
-  //assertEquals(42, main());
+  assertEquals(42, main());
 }
 
 testImportName('bla');
@@ -321,10 +321,10 @@ testImportName('');
   const instance2 = new WebAssembly.Instance(module, {q: {imp: _ => 21}});
   const instance3 = new WebAssembly.Instance(module, {q: {imp: _ => 27}});
 
-  //assertEquals(11, instance0.exports.exp());
-  //assertEquals(17, instance1.exports.exp());
-  //assertEquals(21, instance2.exports.exp());
-  //assertEquals(27, instance3.exports.exp());
+  assertEquals(11, instance0.exports.exp());
+  assertEquals(17, instance1.exports.exp());
+  assertEquals(21, instance2.exports.exp());
+  assertEquals(27, instance3.exports.exp());
 })();
 
 (function testImportedStartFunctionOnDifferentInstances() {
@@ -349,15 +349,15 @@ testImportName('');
 
   const module = builder.toModule();
 
-  //assertEquals(0, global);
+  assertEquals(0, global);
   new WebAssembly.Instance(module, {q: {imp: exp.f11}});
-  //assertEquals(11, global);
+  assertEquals(11, global);
   new WebAssembly.Instance(module, {q: {imp: exp.f17}});
-  //assertEquals(17, global);
+  assertEquals(17, global);
   new WebAssembly.Instance(module, {q: {imp: _ => set_global(21)}});
-  //assertEquals(21, global);
+  assertEquals(21, global);
   new WebAssembly.Instance(module, {q: {imp: _ => set_global(27)}});
-  //assertEquals(27, global);
+  assertEquals(27, global);
 })();
 
 (function testImportedStartFunctionUsesRightInstance() {
@@ -380,9 +380,9 @@ testImportName('');
   builder.addStart(imp_index);
   const module = builder.toModule();
 
-  //assertEquals(0, new Uint8Array(exp.mem.buffer)[0], 'memory initially 0');
+  assertEquals(0, new Uint8Array(exp.mem.buffer)[0], 'memory initially 0');
   new WebAssembly.Instance(module, {q: {imp: exp.f}});
-  //assertEquals(11, new Uint8Array(exp.mem.buffer)[0], 'memory changed to 11');
+  assertEquals(11, new Uint8Array(exp.mem.buffer)[0], 'memory changed to 11');
 })();
 
 (function testImportWrapperWorksWithStrictAndSloppy() {
@@ -394,21 +394,21 @@ testImportName('');
   function jsStrictMatch(x) {
     "use strict";
 
-    //assertEquals(undefined, this);
+    assertEquals(undefined, this);
     return x - 4;
   }
 
   function jsSloppyMismatch(x, y) {
     assertSame(globalThis, this);
-    //assertEquals(undefined, y);
+    assertEquals(undefined, y);
     return x - 4;
   }
 
   function jsStrictMismatch(x, y) {
     "use strict";
 
-    //assertEquals(undefined, this);
-    //assertEquals(undefined, y);
+    assertEquals(undefined, this);
+    assertEquals(undefined, y);
     return x - 4;
   }
 
@@ -426,17 +426,17 @@ testImportName('');
 
   print("Running matching sloppy function");
   const instanceSloppyMatch = new WebAssembly.Instance(module, {imports: {jsFun: jsSloppyMatch}});
-  //assertEquals(42, instanceSloppyMatch.exports.wasmFun(23));
+  assertEquals(42, instanceSloppyMatch.exports.wasmFun(23));
 
   print("Running matching strict function");
   const instanceStrictMatch = new WebAssembly.Instance(module, {imports: {jsFun: jsStrictMatch}});
-  //assertEquals(42, instanceStrictMatch.exports.wasmFun(23));
+  assertEquals(42, instanceStrictMatch.exports.wasmFun(23));
 
   print("Running mismatching sloppy function");
   const instanceSloppyMismatch = new WebAssembly.Instance(module, {imports: {jsFun: jsSloppyMismatch}});
-  //assertEquals(42, instanceSloppyMismatch.exports.wasmFun(23));
+  assertEquals(42, instanceSloppyMismatch.exports.wasmFun(23));
 
   print("Running mismatching strict function");
   const instanceStrictMismatch = new WebAssembly.Instance(module, {imports: {jsFun: jsStrictMismatch}});
-  //assertEquals(42, instanceStrictMismatch.exports.wasmFun(23));
+  assertEquals(42, instanceStrictMismatch.exports.wasmFun(23));
 })();

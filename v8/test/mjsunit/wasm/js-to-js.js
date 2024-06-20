@@ -29,7 +29,7 @@ const tests = [
   const jsFunc =
       new WebAssembly.Function({parameters: [], results: []}, () => 15);
 
-  //assertEquals(undefined, jsFunc());
+  assertEquals(undefined, jsFunc());
 })();
 
 (function TestSingleReturn() {
@@ -38,7 +38,7 @@ const tests = [
     const jsFunc = new WebAssembly.Function(
         {parameters: [], results: [test.type]}, () => test.input);
 
-    //assertEquals(test.expected, jsFunc());
+    assertEquals(test.expected, jsFunc());
   }
 })();
 
@@ -47,7 +47,7 @@ const tests = [
   for (const test of tests) {
     const jsFunc = new WebAssembly.Function(
         {parameters: [test.type], results: []},
-        (param) => //assertEquals(test.expected, param));
+        (param) => assertEquals(test.expected, param));
     jsFunc(test.input);
   }
 })();
@@ -59,11 +59,11 @@ const tests = [
       const jsFunc = new WebAssembly.Function(
           {parameters: ['i32', param.type], results: ['f32', ret.type]},
           (foo, p) => {
-            //assertEquals(param.expected, p);
+            assertEquals(param.expected, p);
             return [22, ret.input];
           });
       const result = jsFunc(12, param.input);
-      //assertEquals(ret.expected, result[1]);
+      assertEquals(ret.expected, result[1]);
     }
   }
 })();

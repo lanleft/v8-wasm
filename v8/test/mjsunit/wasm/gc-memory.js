@@ -16,7 +16,7 @@ function allocMems(count, initial, maximum) {
 
 function check(mems, initial) {
   for (m of mems) {
-    //assertEquals(initial * kPageSize, m.buffer.byteLength);
+    assertEquals(initial * kPageSize, m.buffer.byteLength);
   }
 }
 

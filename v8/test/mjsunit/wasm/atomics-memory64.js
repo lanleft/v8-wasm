@@ -101,18 +101,18 @@ function TestAtomicI32Wait(pages, offset) {
 
   let memory = CreateBigSharedWasmMemory64(pages);
 
-  //assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, offset, 0, 42, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, offset, 0, 0, 0));
-  //assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, 0, offset, 42, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, 0, offset, 0, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, offset, 0, 42, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, offset, 0, 0, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, 0, offset, 42, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, 0, offset, 0, 0));
 
   let i32a = new Int32Array(memory.buffer);
   i32a[offset / 4] = 1;
 
-  //assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, offset, 0, 0, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, offset, 0, 1, 0));
-  //assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, 0, offset, 0, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, 0, offset, 1, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, offset, 0, 0, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, offset, 0, 1, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI32AtomicWait(memory, 0, offset, 0, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI32AtomicWait(memory, 0, offset, 1, 0));
 }
 
 function TestAtomicI64Wait(pages, offset) {
@@ -120,19 +120,19 @@ function TestAtomicI64Wait(pages, offset) {
   print(arguments.callee.name);
 
   let memory = CreateBigSharedWasmMemory64(pages);
-  //assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, offset, 0, 42, 0, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, offset, 0, 0, 0, 0));
-  //assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, 0, offset, 42, 0, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, 0, offset, 0, 0, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, offset, 0, 42, 0, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, offset, 0, 0, 0, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, 0, offset, 42, 0, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, 0, offset, 0, 0, 0));
 
   let i32a = new Int32Array(memory.buffer);
   i32a[offset / 4] = 1;
   i32a[(offset / 4) + 1] = 2;
 
-  //assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, offset, 0, 2, 1, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, offset, 0, 1, 2, 0));
-  //assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, 0, offset, 2, 1, -1));
-  //assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, 0, offset, 1, 2, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, offset, 0, 2, 1, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, offset, 0, 1, 2, 0));
+  assertEquals(kAtomicWaitNotEqual, WasmI64AtomicWait(memory, 0, offset, 2, 1, -1));
+  assertEquals(kAtomicWaitTimedOut, WasmI64AtomicWait(memory, 0, offset, 1, 2, 0));
 }
 
 //// WORKER ONLY TESTS
@@ -220,29 +220,29 @@ function TestWasmAtomicsInWorkers(OFFSET, INDEX, PAGES) {
     if (num >= numWorkers) {
       // If numWorkers or more is passed to wake, numWorkers workers should be
       // woken.
-      //assertEquals(numWorkers, Atomics.notify(i32a, indexJs, num));
+      assertEquals(numWorkers, Atomics.notify(i32a, indexJs, num));
     } else {
       // If num < numWorkers is passed to wake, num workers should be woken.
       // Then the remaining workers are woken for the next part.
-      //assertEquals(num, Atomics.notify(i32a, indexJs, num));
-      //assertEquals(numWorkers-num, Atomics.notify(i32a, indexJs, numWorkers));
+      assertEquals(num, Atomics.notify(i32a, indexJs, num));
+      assertEquals(numWorkers-num, Atomics.notify(i32a, indexJs, numWorkers));
     }
     for (let id = 0; id < numWorkers; id++) {
-      //assertEquals(msg, workers[id].getMessage());
+      assertEquals(msg, workers[id].getMessage());
     }
   };
 
   let wasmWakeCheck = function(offset, index, num, workers, msg) {
     waitForAllWorkers(offset + index);
     if (num >= numWorkers) {
-      //assertEquals(numWorkers, WasmAtomicNotify(memory, offset, index, num));
+      assertEquals(numWorkers, WasmAtomicNotify(memory, offset, index, num));
     } else {
-      //assertEquals(num, WasmAtomicNotify(memory, offset, index, num));
-      //assertEquals(numWorkers-num,
+      assertEquals(num, WasmAtomicNotify(memory, offset, index, num));
+      assertEquals(numWorkers-num,
                    WasmAtomicNotify(memory, offset, index, numWorkers));
     }
     for (let id = 0; id < numWorkers; id++) {
-      //assertEquals(msg, workers[id].getMessage());
+      assertEquals(msg, workers[id].getMessage());
     }
   };
 

@@ -96,11 +96,11 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
   for (let [sourceType, targetType, testName, isDowncast] of tests) {
     print(testName);
-    //assertEquals(0, wasm['testNull' + testName]());
+    assertEquals(0, wasm['testNull' + testName]());
     assertTraps(kTrapIllegalCast, wasm['castNull' + testName]);
     if (isDowncast) {
-      //assertEquals(0, wasm['branchNull' + testName]());
-      //assertEquals(0, wasm['branchFailNull' + testName]());
+      assertEquals(0, wasm['branchNull' + testName]());
+      assertEquals(0, wasm['branchFailNull' + testName]());
     }
   }
 })();
@@ -135,15 +135,15 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let jsFct = new WebAssembly.Function(
       {parameters:['i32', 'i32'], results: ['i32']},
       function mul(a, b) { return a * b; });
-  //assertEquals([0, 0, 0, 0], wasm.testFromFuncRef(null));
-  //assertEquals([1, 0, 0, 0], wasm.testFromFuncRef(jsFct));
-  //assertEquals([1, 0, 1, 0], wasm.testFromFuncRef(wasm.fctSuper));
-  //assertEquals([1, 0, 1, 1], wasm.testFromFuncRef(wasm.fctSub));
+  assertEquals([0, 0, 0, 0], wasm.testFromFuncRef(null));
+  assertEquals([1, 0, 0, 0], wasm.testFromFuncRef(jsFct));
+  assertEquals([1, 0, 1, 0], wasm.testFromFuncRef(wasm.fctSuper));
+  assertEquals([1, 0, 1, 1], wasm.testFromFuncRef(wasm.fctSub));
 
-  //assertEquals([1, 1, 1, 1], wasm.testNullFromFuncRef(null));
-  //assertEquals([1, 0, 0, 0], wasm.testNullFromFuncRef(jsFct));
-  //assertEquals([1, 0, 1, 0], wasm.testNullFromFuncRef(wasm.fctSuper));
-  //assertEquals([1, 0, 1, 1], wasm.testNullFromFuncRef(wasm.fctSub));
+  assertEquals([1, 1, 1, 1], wasm.testNullFromFuncRef(null));
+  assertEquals([1, 0, 0, 0], wasm.testNullFromFuncRef(jsFct));
+  assertEquals([1, 0, 1, 0], wasm.testNullFromFuncRef(wasm.fctSuper));
+  assertEquals([1, 0, 1, 1], wasm.testNullFromFuncRef(wasm.fctSub));
 })();
 
 (function RefCastFuncRef() {
@@ -308,88 +308,88 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let jsFct = new WebAssembly.Function(
       {parameters:['i32', 'i32'], results: ['i32']},
       function mul(a, b) { return a * b; });
-  //assertEquals(0, wasm.brOnCast_funcref(null));
-  //assertEquals(0, wasm.brOnCast_nullfuncref(null));
-  //assertEquals(0, wasm.brOnCast_super(null));
-  //assertEquals(0, wasm.brOnCast_sub(null));
+  assertEquals(0, wasm.brOnCast_funcref(null));
+  assertEquals(0, wasm.brOnCast_nullfuncref(null));
+  assertEquals(0, wasm.brOnCast_super(null));
+  assertEquals(0, wasm.brOnCast_sub(null));
 
-  //assertEquals(1, wasm.brOnCast_funcref(jsFct));
-  //assertEquals(0, wasm.brOnCast_nullfuncref(jsFct));
-  //assertEquals(0, wasm.brOnCast_super(jsFct));
-  //assertEquals(0, wasm.brOnCast_sub(jsFct));
+  assertEquals(1, wasm.brOnCast_funcref(jsFct));
+  assertEquals(0, wasm.brOnCast_nullfuncref(jsFct));
+  assertEquals(0, wasm.brOnCast_super(jsFct));
+  assertEquals(0, wasm.brOnCast_sub(jsFct));
 
-  //assertEquals(1, wasm.brOnCast_funcref(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCast_nullfuncref(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCast_super(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCast_sub(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCast_funcref(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCast_nullfuncref(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCast_super(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCast_sub(wasm.fctSuper));
 
-  //assertEquals(1, wasm.brOnCast_funcref(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCast_nullfuncref(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCast_super(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCast_sub(wasm.fctSub));
+  assertEquals(1, wasm.brOnCast_funcref(wasm.fctSub));
+  assertEquals(0, wasm.brOnCast_nullfuncref(wasm.fctSub));
+  assertEquals(1, wasm.brOnCast_super(wasm.fctSub));
+  assertEquals(1, wasm.brOnCast_sub(wasm.fctSub));
 
   // br_on_cast null
-  //assertEquals(1, wasm.brOnCastNull_funcref(null));
-  //assertEquals(1, wasm.brOnCastNull_nullfuncref(null));
-  //assertEquals(1, wasm.brOnCastNull_super(null));
-  //assertEquals(1, wasm.brOnCastNull_sub(null));
+  assertEquals(1, wasm.brOnCastNull_funcref(null));
+  assertEquals(1, wasm.brOnCastNull_nullfuncref(null));
+  assertEquals(1, wasm.brOnCastNull_super(null));
+  assertEquals(1, wasm.brOnCastNull_sub(null));
 
-  //assertEquals(1, wasm.brOnCastNull_funcref(jsFct));
-  //assertEquals(0, wasm.brOnCastNull_nullfuncref(jsFct));
-  //assertEquals(0, wasm.brOnCastNull_super(jsFct));
-  //assertEquals(0, wasm.brOnCastNull_sub(jsFct));
+  assertEquals(1, wasm.brOnCastNull_funcref(jsFct));
+  assertEquals(0, wasm.brOnCastNull_nullfuncref(jsFct));
+  assertEquals(0, wasm.brOnCastNull_super(jsFct));
+  assertEquals(0, wasm.brOnCastNull_sub(jsFct));
 
-  //assertEquals(1, wasm.brOnCastNull_funcref(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCastNull_nullfuncref(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCastNull_super(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCastNull_sub(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastNull_funcref(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastNull_nullfuncref(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastNull_super(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastNull_sub(wasm.fctSuper));
 
-  //assertEquals(1, wasm.brOnCastNull_funcref(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCastNull_nullfuncref(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCastNull_super(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCastNull_sub(wasm.fctSub));
+  assertEquals(1, wasm.brOnCastNull_funcref(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastNull_nullfuncref(wasm.fctSub));
+  assertEquals(1, wasm.brOnCastNull_super(wasm.fctSub));
+  assertEquals(1, wasm.brOnCastNull_sub(wasm.fctSub));
 
   // br_on_cast_fail
-  //assertEquals(1, wasm.brOnCastFail_funcref(null));
-  //assertEquals(1, wasm.brOnCastFail_nullfuncref(null));
-  //assertEquals(1, wasm.brOnCastFail_super(null));
-  //assertEquals(1, wasm.brOnCastFail_sub(null));
+  assertEquals(1, wasm.brOnCastFail_funcref(null));
+  assertEquals(1, wasm.brOnCastFail_nullfuncref(null));
+  assertEquals(1, wasm.brOnCastFail_super(null));
+  assertEquals(1, wasm.brOnCastFail_sub(null));
 
-  //assertEquals(0, wasm.brOnCastFail_funcref(jsFct));
-  //assertEquals(1, wasm.brOnCastFail_nullfuncref(jsFct));
-  //assertEquals(1, wasm.brOnCastFail_super(jsFct));
-  //assertEquals(1, wasm.brOnCastFail_sub(jsFct));
+  assertEquals(0, wasm.brOnCastFail_funcref(jsFct));
+  assertEquals(1, wasm.brOnCastFail_nullfuncref(jsFct));
+  assertEquals(1, wasm.brOnCastFail_super(jsFct));
+  assertEquals(1, wasm.brOnCastFail_sub(jsFct));
 
-  //assertEquals(0, wasm.brOnCastFail_funcref(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCastFail_nullfuncref(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCastFail_super(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCastFail_sub(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastFail_funcref(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastFail_nullfuncref(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastFail_super(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastFail_sub(wasm.fctSuper));
 
-  //assertEquals(0, wasm.brOnCastFail_funcref(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCastFail_nullfuncref(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCastFail_super(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCastFail_sub(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFail_funcref(wasm.fctSub));
+  assertEquals(1, wasm.brOnCastFail_nullfuncref(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFail_super(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFail_sub(wasm.fctSub));
 
   // br_on_cast_fail null
-  //assertEquals(0, wasm.brOnCastFailNull_funcref(null));
-  //assertEquals(0, wasm.brOnCastFailNull_nullfuncref(null));
-  //assertEquals(0, wasm.brOnCastFailNull_super(null));
-  //assertEquals(0, wasm.brOnCastFailNull_sub(null));
+  assertEquals(0, wasm.brOnCastFailNull_funcref(null));
+  assertEquals(0, wasm.brOnCastFailNull_nullfuncref(null));
+  assertEquals(0, wasm.brOnCastFailNull_super(null));
+  assertEquals(0, wasm.brOnCastFailNull_sub(null));
 
-  //assertEquals(0, wasm.brOnCastFailNull_funcref(jsFct));
-  //assertEquals(1, wasm.brOnCastFailNull_nullfuncref(jsFct));
-  //assertEquals(1, wasm.brOnCastFailNull_super(jsFct));
-  //assertEquals(1, wasm.brOnCastFailNull_sub(jsFct));
+  assertEquals(0, wasm.brOnCastFailNull_funcref(jsFct));
+  assertEquals(1, wasm.brOnCastFailNull_nullfuncref(jsFct));
+  assertEquals(1, wasm.brOnCastFailNull_super(jsFct));
+  assertEquals(1, wasm.brOnCastFailNull_sub(jsFct));
 
-  //assertEquals(0, wasm.brOnCastFailNull_funcref(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCastFailNull_nullfuncref(wasm.fctSuper));
-  //assertEquals(0, wasm.brOnCastFailNull_super(wasm.fctSuper));
-  //assertEquals(1, wasm.brOnCastFailNull_sub(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastFailNull_funcref(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastFailNull_nullfuncref(wasm.fctSuper));
+  assertEquals(0, wasm.brOnCastFailNull_super(wasm.fctSuper));
+  assertEquals(1, wasm.brOnCastFailNull_sub(wasm.fctSuper));
 
-  //assertEquals(0, wasm.brOnCastFailNull_funcref(wasm.fctSub));
-  //assertEquals(1, wasm.brOnCastFailNull_nullfuncref(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCastFailNull_super(wasm.fctSub));
-  //assertEquals(0, wasm.brOnCastFailNull_sub(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFailNull_funcref(wasm.fctSub));
+  assertEquals(1, wasm.brOnCastFailNull_nullfuncref(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFailNull_super(wasm.fctSub));
+  assertEquals(0, wasm.brOnCastFailNull_sub(wasm.fctSub));
 })();
 
 (function RefTestExternRef() {
@@ -412,17 +412,17 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
   let instance = builder.instantiate();
   let wasm = instance.exports;
-  //assertEquals([0, 0], wasm.testExternRef(null));
-  //assertEquals([1, 0], wasm.testExternRef(undefined));
-  //assertEquals([1, 0], wasm.testExternRef(1));
-  //assertEquals([1, 0], wasm.testExternRef({}));
-  //assertEquals([1, 0], wasm.testExternRef(wasm.testExternRef));
+  assertEquals([0, 0], wasm.testExternRef(null));
+  assertEquals([1, 0], wasm.testExternRef(undefined));
+  assertEquals([1, 0], wasm.testExternRef(1));
+  assertEquals([1, 0], wasm.testExternRef({}));
+  assertEquals([1, 0], wasm.testExternRef(wasm.testExternRef));
 
-  //assertEquals([1, 1], wasm.testNullExternRef(null));
-  //assertEquals([1, 0], wasm.testNullExternRef(undefined));
-  //assertEquals([1, 0], wasm.testNullExternRef(1));
-  //assertEquals([1, 0], wasm.testNullExternRef({}));
-  //assertEquals([1, 0], wasm.testNullExternRef(wasm.testExternRef));
+  assertEquals([1, 1], wasm.testNullExternRef(null));
+  assertEquals([1, 0], wasm.testNullExternRef(undefined));
+  assertEquals([1, 0], wasm.testNullExternRef(1));
+  assertEquals([1, 0], wasm.testNullExternRef({}));
+  assertEquals([1, 0], wasm.testNullExternRef(wasm.testExternRef));
 })();
 
 (function RefCastExternRef() {
@@ -450,8 +450,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let wasm = instance.exports;
 
   assertTraps(kTrapIllegalCast, () => wasm.castToExternRef(null));
-  //assertEquals(undefined, wasm.castToExternRef(undefined));
-  //assertEquals(1, wasm.castToExternRef(1));
+  assertEquals(undefined, wasm.castToExternRef(undefined));
+  assertEquals(1, wasm.castToExternRef(1));
   let obj = {};
   assertSame(obj, wasm.castToExternRef(obj));
   assertSame(wasm.castToExternRef, wasm.castToExternRef(wasm.castToExternRef));
@@ -464,8 +464,8 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
               () => wasm.castToNullExternRef(wasm.castToExternRef));
 
   assertSame(null, wasm.castNullToExternRef(null));
-  //assertEquals(undefined, wasm.castNullToExternRef(undefined));
-  //assertEquals(1, wasm.castNullToExternRef(1));
+  assertEquals(undefined, wasm.castNullToExternRef(undefined));
+  assertEquals(1, wasm.castNullToExternRef(1));
   assertSame(obj, wasm.castNullToExternRef(obj));
   assertSame(wasm.castToExternRef,
              wasm.castNullToExternRef(wasm.castToExternRef));
@@ -610,53 +610,53 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
   let wasm = instance.exports;
   let obj = {};
 
-  //assertEquals(0, wasm.castToExternRef(null));
-  //assertEquals(1, wasm.castToExternRef(undefined));
-  //assertEquals(1, wasm.castToExternRef(1));
-  //assertEquals(1, wasm.castToExternRef(obj));
-  //assertEquals(1, wasm.castToExternRef(wasm.castToExternRef));
+  assertEquals(0, wasm.castToExternRef(null));
+  assertEquals(1, wasm.castToExternRef(undefined));
+  assertEquals(1, wasm.castToExternRef(1));
+  assertEquals(1, wasm.castToExternRef(obj));
+  assertEquals(1, wasm.castToExternRef(wasm.castToExternRef));
 
-  //assertEquals(0, wasm.castToNullExternRef(null));
-  //assertEquals(0, wasm.castToNullExternRef(undefined));
-  //assertEquals(0, wasm.castToNullExternRef(1));
-  //assertEquals(0, wasm.castToNullExternRef(obj));
-  //assertEquals(0, wasm.castToNullExternRef(wasm.castToExternRef));
+  assertEquals(0, wasm.castToNullExternRef(null));
+  assertEquals(0, wasm.castToNullExternRef(undefined));
+  assertEquals(0, wasm.castToNullExternRef(1));
+  assertEquals(0, wasm.castToNullExternRef(obj));
+  assertEquals(0, wasm.castToNullExternRef(wasm.castToExternRef));
 
-  //assertEquals(1, wasm.castNullToExternRef(null));
-  //assertEquals(1, wasm.castNullToExternRef(undefined));
-  //assertEquals(1, wasm.castNullToExternRef(1));
-  //assertEquals(1, wasm.castNullToExternRef(obj));
-  //assertEquals(1, wasm.castNullToExternRef(wasm.castToExternRef));
+  assertEquals(1, wasm.castNullToExternRef(null));
+  assertEquals(1, wasm.castNullToExternRef(undefined));
+  assertEquals(1, wasm.castNullToExternRef(1));
+  assertEquals(1, wasm.castNullToExternRef(obj));
+  assertEquals(1, wasm.castNullToExternRef(wasm.castToExternRef));
 
-  //assertEquals(1, wasm.castNullToNullExternRef(null));
-  //assertEquals(0, wasm.castNullToNullExternRef(undefined));
-  //assertEquals(0, wasm.castNullToNullExternRef(1));
-  //assertEquals(0, wasm.castNullToNullExternRef(obj));
-  //assertEquals(0, wasm.castNullToNullExternRef(wasm.castToExternRef));
+  assertEquals(1, wasm.castNullToNullExternRef(null));
+  assertEquals(0, wasm.castNullToNullExternRef(undefined));
+  assertEquals(0, wasm.castNullToNullExternRef(1));
+  assertEquals(0, wasm.castNullToNullExternRef(obj));
+  assertEquals(0, wasm.castNullToNullExternRef(wasm.castToExternRef));
 
-  //assertEquals(1, wasm.castFailToExternRef(null));
-  //assertEquals(0, wasm.castFailToExternRef(undefined));
-  //assertEquals(0, wasm.castFailToExternRef(1));
-  //assertEquals(0, wasm.castFailToExternRef(obj));
-  //assertEquals(0, wasm.castFailToExternRef(wasm.castToExternRef));
+  assertEquals(1, wasm.castFailToExternRef(null));
+  assertEquals(0, wasm.castFailToExternRef(undefined));
+  assertEquals(0, wasm.castFailToExternRef(1));
+  assertEquals(0, wasm.castFailToExternRef(obj));
+  assertEquals(0, wasm.castFailToExternRef(wasm.castToExternRef));
 
-  //assertEquals(1, wasm.castFailToNullExternRef(null));
-  //assertEquals(1, wasm.castFailToNullExternRef(undefined));
-  //assertEquals(1, wasm.castFailToNullExternRef(1));
-  //assertEquals(1, wasm.castFailToNullExternRef(obj));
-  //assertEquals(1, wasm.castFailToNullExternRef(wasm.castToExternRef));
+  assertEquals(1, wasm.castFailToNullExternRef(null));
+  assertEquals(1, wasm.castFailToNullExternRef(undefined));
+  assertEquals(1, wasm.castFailToNullExternRef(1));
+  assertEquals(1, wasm.castFailToNullExternRef(obj));
+  assertEquals(1, wasm.castFailToNullExternRef(wasm.castToExternRef));
 
-  //assertEquals(0, wasm.castFailNullToExternRef(null));
-  //assertEquals(0, wasm.castFailNullToExternRef(undefined));
-  //assertEquals(0, wasm.castFailNullToExternRef(1));
-  //assertEquals(0, wasm.castFailNullToExternRef(obj));
-  //assertEquals(0, wasm.castFailNullToExternRef(wasm.castToExternRef));
+  assertEquals(0, wasm.castFailNullToExternRef(null));
+  assertEquals(0, wasm.castFailNullToExternRef(undefined));
+  assertEquals(0, wasm.castFailNullToExternRef(1));
+  assertEquals(0, wasm.castFailNullToExternRef(obj));
+  assertEquals(0, wasm.castFailNullToExternRef(wasm.castToExternRef));
 
-  //assertEquals(0, wasm.castFailNullToNullExternRef(null));
-  //assertEquals(1, wasm.castFailNullToNullExternRef(undefined));
-  //assertEquals(1, wasm.castFailNullToNullExternRef(1));
-  //assertEquals(1, wasm.castFailNullToNullExternRef(obj));
-  //assertEquals(1, wasm.castFailNullToNullExternRef(wasm.castToExternRef));
+  assertEquals(0, wasm.castFailNullToNullExternRef(null));
+  assertEquals(1, wasm.castFailNullToNullExternRef(undefined));
+  assertEquals(1, wasm.castFailNullToNullExternRef(1));
+  assertEquals(1, wasm.castFailNullToNullExternRef(obj));
+  assertEquals(1, wasm.castFailNullToNullExternRef(wasm.castToExternRef));
 })();
 
 (function RefTestAnyRefHierarchy() {
@@ -911,23 +911,23 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
         print(`Test ref.test: ${test.source}(${value}) -> ${target}`);
         let create_value = wasm[`create_${test.source}_${value}`];
         let res = wasm[`test_${test.source}_to_${target}`](create_value);
-        //assertEquals(validValues.includes(value) ? 1 : 0, res);
+        assertEquals(validValues.includes(value) ? 1 : 0, res);
         print(`Test ref.test null: ${test.source}(${value}) -> ${target}`);
         res = wasm[`test_null_${test.source}_to_${target}`](create_value);
-        //assertEquals(
+        assertEquals(
             (validValues.includes(value) || value == "nullref") ? 1 : 0, res);
 
         print(`Test ref.cast: ${test.source}(${value}) -> ${target}`);
         let cast = wasm[`cast_${test.source}_to_${target}`];
         if (validValues.includes(value)) {
-          //assertEquals(0, cast(create_value));
+          assertEquals(0, cast(create_value));
         } else {
           assertTraps(kTrapIllegalCast, () => cast(create_value));
         }
         let castNull = wasm[`cast_null_${test.source}_to_${target}`];
         if (validValues.includes(value) || value == "nullref") {
           let expected = value == "nullref" ? 1 : 0;
-          //assertEquals(expected, castNull(create_value));
+          assertEquals(expected, castNull(create_value));
         } else {
           assertTraps(kTrapIllegalCast, () => castNull(create_value));
         }
@@ -939,18 +939,18 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
         print(`Test br_on_cast: ${test.source}(${value}) -> ${target}`);
         res = wasm[`brOnCast_${test.source}_to_${target}`](create_value);
-        //assertEquals(validValues.includes(value) ? 1 : 0, res);
+        assertEquals(validValues.includes(value) ? 1 : 0, res);
         print(`Test br_on_cast null: ${test.source}(${value}) -> ${target}`);
         res = wasm[`brOnCastNull_${test.source}_to_${target}`](create_value);
-        //assertEquals(
+        assertEquals(
             validValues.includes(value) || value == "nullref" ? 1 : 0, res);
 
         print(`Test br_on_cast_fail: ${test.source}(${value}) -> ${target}`);
         res = wasm[`brOnCastFail_${test.source}_to_${target}`](create_value);
-        //assertEquals(!validValues.includes(value) || value == "nullref" ? 1 : 0, res);
+        assertEquals(!validValues.includes(value) || value == "nullref" ? 1 : 0, res);
         print(`Test br_on_cast_fail null: ${test.source}(${value}) -> ${target}`);
         res = wasm[`brOnCastFailNull_${test.source}_to_${target}`](create_value);
-        //assertEquals(!validValues.includes(value) && value != "nullref" ? 1 : 0, res);
+        assertEquals(!validValues.includes(value) && value != "nullref" ? 1 : 0, res);
       }
     }
   }

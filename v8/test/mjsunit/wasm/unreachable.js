@@ -17,9 +17,9 @@ var main = (function () {
 
 var exception = "";
 try {
-    //assertEquals(0, main());
+    assertEquals(0, main());
 } catch(e) {
     print("correctly caught: " + e);
     exception = e;
 }
-//assertEquals("unreachable", exception.message);
+assertEquals("unreachable", exception.message);

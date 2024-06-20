@@ -22,7 +22,7 @@ function assertVerifies(sig, body) {
   assertFalse(module === undefined);
   assertFalse(module === null);
   assertFalse(module === 0);
-  //assertEquals("object", typeof module);
+  assertEquals("object", typeof module);
   return module;
 }
 
@@ -81,7 +81,7 @@ assertThrows(() => {instantiate(kSig_i_v, [kExprI32Const, 0]);});
   var module = builder.instantiate();
   var memory = module.exports.memory.buffer;
   var view = new Int8Array(memory);
-  //assertEquals(55, view[0]);
+  assertEquals(55, view[0]);
 })();
 
 (function testRun2() {
@@ -99,7 +99,7 @@ assertThrows(() => {instantiate(kSig_i_v, [kExprI32Const, 0]);});
   var module = builder.instantiate();
   var memory = module.exports.memory.buffer;
   var view = new Int8Array(memory);
-  //assertEquals(77, view[0]);
+  assertEquals(77, view[0]);
 })();
 
 (function testStartFFI() {

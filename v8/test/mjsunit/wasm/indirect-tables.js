@@ -62,7 +62,7 @@ function js_div(a, b) { return (a / b) | 0; }
     main = instance.exports.main;
     let table = instance.exports.table;
     assertTrue(table instanceof WebAssembly.Table);
-    //assertEquals(10, table.length);
+    assertEquals(10, table.length);
     for (let j = 0; j < i; j++) {
       assertSame(null, table.get(j));
     }
@@ -73,16 +73,16 @@ function js_div(a, b) { return (a / b) | 0; }
     print("  mul=" + mul);
     print("  add=" + add);
     print("  sub=" + sub);
-    //assertEquals("function", typeof mul);
-    //assertEquals("function", typeof add);
-    //assertEquals("function", typeof sub);
-    //assertEquals(2, mul.length);
-    //assertEquals(2, add.length);
-    //assertEquals(2, sub.length);
-    //assertEquals(String(f.add.index), add.name);
+    assertEquals("function", typeof mul);
+    assertEquals("function", typeof add);
+    assertEquals("function", typeof sub);
+    assertEquals(2, mul.length);
+    assertEquals(2, add.length);
+    assertEquals(2, sub.length);
+    assertEquals(String(f.add.index), add.name);
 
     let exp_div = table.get(i+3);
-    //assertEquals("function", typeof exp_div);
+    assertEquals("function", typeof exp_div);
     print("  js_div=" + exp_div);
     // Should have a new, wrapped version of the import.
     assertFalse(js_div == exp_div);
@@ -92,10 +92,10 @@ function js_div(a, b) { return (a / b) | 0; }
       assertSame(null, table.get(j));
     }
 
-    //assertEquals(-33, mul(-11, 3));
-    //assertEquals(4444444, add(3333333, 1111111));
-    //assertEquals(-9999, sub(1, 10000));
-    //assertEquals(-44, exp_div(-88.1, 2));
+    assertEquals(-33, mul(-11, 3));
+    assertEquals(4444444, add(3333333, 1111111));
+    assertEquals(-9999, sub(1, 10000));
+    assertEquals(-44, exp_div(-88.1, 2));
   }
 })();
 
@@ -133,7 +133,7 @@ function js_div(a, b) { return (a / b) | 0; }
     print(" base = " + i);
     let i1 = new WebAssembly.Instance(m1, {q: {base: i, js_div: js_div}});
     let table = i1.exports.table;
-    //assertEquals(10, table.length);
+    assertEquals(10, table.length);
     let i2 = new WebAssembly.Instance(m2, {r: {table: table}});
     let main = i2.exports.main;
 
@@ -143,24 +143,24 @@ function js_div(a, b) { return (a / b) | 0; }
     }
 
     // mul
-    //assertEquals("function", typeof table.get(i+0));
-    //assertEquals(0, main(0, i+0));
-    //assertEquals(66, main(2, i+0));
+    assertEquals("function", typeof table.get(i+0));
+    assertEquals(0, main(0, i+0));
+    assertEquals(66, main(2, i+0));
 
     // add
-    //assertEquals("function", typeof table.get(i+1));
-    //assertEquals(33, main(0, i+1));
-    //assertEquals(38, main(5, i+1));
+    assertEquals("function", typeof table.get(i+1));
+    assertEquals(33, main(0, i+1));
+    assertEquals(38, main(5, i+1));
 
     // sub
-    //assertEquals("function", typeof table.get(i+2));
-    //assertEquals(32, main(1, i+2));
-    //assertEquals(28, main(5, i+2));
+    assertEquals("function", typeof table.get(i+2));
+    assertEquals(32, main(1, i+2));
+    assertEquals(28, main(5, i+2));
 
     // div
-    //assertEquals("function", typeof table.get(i+3));
-    //assertEquals(8, main(4, i+3));
-    //assertEquals(3, main(11, i+3));
+    assertEquals("function", typeof table.get(i+3));
+    assertEquals(8, main(4, i+3));
+    assertEquals(3, main(11, i+3));
 
     for (var j = i + 4; j < (kTableSize + 5); j++) {
       assertThrows(x => main(0, j));
@@ -197,7 +197,7 @@ function js_div(a, b) { return (a / b) | 0; }
     let table = new WebAssembly.Table({element: "anyfunc",
                                        initial: kTableSize,
                                        maximum: kTableSize});
-    //assertEquals(10, table.length);
+    assertEquals(10, table.length);
     let i2 = new WebAssembly.Instance(m2, {q: {base: i, table: table,
                                                js_div: js_div}});
     let main = i2.exports.main;
@@ -208,24 +208,24 @@ function js_div(a, b) { return (a / b) | 0; }
     }
 
     // mul
-    //assertEquals("function", typeof table.get(i+0));
-    //assertEquals(0, main(0, i+0));
-    //assertEquals(110, main(2, i+0));
+    assertEquals("function", typeof table.get(i+0));
+    assertEquals(0, main(0, i+0));
+    assertEquals(110, main(2, i+0));
 
     // add
-    //assertEquals("function", typeof table.get(i+1));
-    //assertEquals(55, main(0, i+1));
-    //assertEquals(60, main(5, i+1));
+    assertEquals("function", typeof table.get(i+1));
+    assertEquals(55, main(0, i+1));
+    assertEquals(60, main(5, i+1));
 
     // sub
-    //assertEquals("function", typeof table.get(i+2));
-    //assertEquals(54, main(1, i+2));
-    //assertEquals(50, main(5, i+2));
+    assertEquals("function", typeof table.get(i+2));
+    assertEquals(54, main(1, i+2));
+    assertEquals(50, main(5, i+2));
 
     // div
-    //assertEquals("function", typeof table.get(i+3));
-    //assertEquals(13, main(4, i+3));
-    //assertEquals(5, main(11, i+3));
+    assertEquals("function", typeof table.get(i+3));
+    assertEquals(13, main(4, i+3));
+    assertEquals(5, main(11, i+3));
 
     for (var j = i + 4; j < (kTableSize + 5); j++) {
       assertThrows(x => main(0, j));
@@ -270,9 +270,9 @@ function js_div(a, b) { return (a / b) | 0; }
         assertSame(null, func);
         assertTraps(kTrapFuncSigMismatch, () => instance.exports.main(j));
       } else {
-        //assertEquals("function", typeof func);
-        //assertEquals(j, func());
-        //assertEquals(j, instance.exports.main(j));
+        assertEquals("function", typeof func);
+        assertEquals(j, func());
+        assertEquals(j, instance.exports.main(j));
       }
     }
   }
@@ -325,11 +325,11 @@ function js_div(a, b) { return (a / b) | 0; }
   var i1 = new WebAssembly.Instance(m1);
   var i2 = new WebAssembly.Instance(m2, {z: {table: i1.exports.table}});
 
-  //assertEquals(11, i1.exports.main(0));
-  //assertEquals(11, i2.exports.main(0));
+  assertEquals(11, i1.exports.main(0));
+  assertEquals(11, i2.exports.main(0));
 
-  //assertEquals(22, i1.exports.main(1));
-  //assertEquals(22, i2.exports.main(1));
+  assertEquals(22, i1.exports.main(1));
+  assertEquals(22, i2.exports.main(1));
 
   assertTraps(kTrapFuncSigMismatch, () => i1.exports.main(2));
   assertTraps(kTrapFuncSigMismatch, () => i2.exports.main(2));
@@ -380,14 +380,14 @@ function js_div(a, b) { return (a / b) | 0; }
   let instance = new WebAssembly.Instance(module, {x: {base: 1, table: table}});
 
   for(var i = kInitSize; i < kMaxSize; i+=5) {
-    //assertEquals(i, table.length);
+    assertEquals(i, table.length);
     for (var j = 0; j < i; j++) table.set(j, null);
-    for (var j = 0; j < i; j++) //assertEquals(null, table.get(j));
+    for (var j = 0; j < i; j++) assertEquals(null, table.get(j));
     assertThrows(() => table.set(i, null), RangeError);
     assertThrows(() => table.get(i), RangeError);
-    //assertEquals(i, table.grow(5));
+    assertEquals(i, table.grow(5));
   }
-  //assertEquals(30, table.length);
+  assertEquals(30, table.length);
   assertThrows(() => table.grow(1), RangeError);
   assertThrows(() => table.set(kMaxSize, null), RangeError);
   assertThrows(() => table.get(kMaxSize), RangeError);
@@ -423,19 +423,19 @@ function js_div(a, b) { return (a / b) | 0; }
 
   for (var j = 0; j < 10; j++) {
     let func = table.get(j);
-    //assertEquals("function", typeof func);
-    //assertEquals(j, func());
-    //assertEquals(j, instances[j].exports.main(j));
+    assertEquals("function", typeof func);
+    assertEquals(j, func());
+    assertEquals(j, instances[j].exports.main(j));
   }
 
-  //assertEquals(10, table.grow(10));
+  assertEquals(10, table.grow(10));
 
   // Verify that grow does not alter function behaviors
   for (var j = 0; j < 10; j++) {
     let func = table.get(j);
-    //assertEquals("function", typeof func);
-    //assertEquals(j, func());
-    //assertEquals(j, instances[j].exports.main(j));
+    assertEquals("function", typeof func);
+    assertEquals(j, func());
+    assertEquals(j, instances[j].exports.main(j));
   }
 
   let new_builder = new WasmModuleBuilder();
@@ -448,7 +448,7 @@ function js_div(a, b) { return (a / b) | 0; }
   for (var j = 10; j < 20; j++) {
     table.set(j, new_func);
     let func = table.get(j);
-    //assertEquals("function", typeof func);
+    assertEquals("function", typeof func);
     assertSame(new_func, table.get(j));
   }
   assertThrows(() => table.grow(11), RangeError);
@@ -483,7 +483,7 @@ function js_div(a, b) { return (a / b) | 0; }
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module, {x: {base: 1, table: table}});
   for (var i = 0; i < kInitSize; ++i) table.set(i, null);
-  for (var i = 0; i < kInitSize; ++i) //assertEquals(null, table.get(i));
+  for (var i = 0; i < kInitSize; ++i) assertEquals(null, table.get(i));
   assertThrows(() => table.set(kInitSize, null), RangeError);
 })();
 
@@ -509,11 +509,11 @@ function js_div(a, b) { return (a / b) | 0; }
       module2, {x: {base: 1, table: table}});
 
   for (var i = 0; i < kInitSize; ++i) table.set(i, null);
-  for (var i = 0; i < kInitSize; ++i) //assertEquals(null, table.get(i));
+  for (var i = 0; i < kInitSize; ++i) assertEquals(null, table.get(i));
   assertThrows(() => table.set(kInitSize, null), RangeError);
-  //assertEquals(kInitSize, table.grow(5));
+  assertEquals(kInitSize, table.grow(5));
   for (var i = 0; i < 2*kInitSize; ++i) table.set(i, null);
-  for (var i = 0; i < 2*kInitSize; ++i) //assertEquals(null, table.get(i));
+  for (var i = 0; i < 2*kInitSize; ++i) assertEquals(null, table.get(i));
   assertThrows(() => table.set(2*kInitSize, null), RangeError);
   // Try to grow past imported maximum
   assertThrows(() => table.grow(21), RangeError);
@@ -549,7 +549,7 @@ function js_div(a, b) { return (a / b) | 0; }
     let instance = builder.instantiate();
 
     let table = instance.exports.table;
-    //assertEquals(kTableSize, table.length);
+    assertEquals(kTableSize, table.length);
 
     for (let i = 0; i < num_segments; ++i) {
       let exp = i < 1 || i > 2 ? null : mul;
@@ -558,8 +558,8 @@ function js_div(a, b) { return (a / b) | 0; }
       if (!exp) {
         assertSame(null, table.get(i));
       } else {
-        //assertEquals("function", typeof table.get(i));
-    //assertEquals(exp(6, 3), table.get(i)(6, 3));
+        assertEquals("function", typeof table.get(i));
+    assertEquals(exp(6, 3), table.get(i)(6, 3));
       }
     }
   }
@@ -638,7 +638,7 @@ function js_div(a, b) { return (a / b) | 0; }
     }
   });
 
-  //assertEquals(instance1.exports.main(0), 1000);
+  assertEquals(instance1.exports.main(0), 1000);
 })();
 
 
@@ -696,7 +696,7 @@ function js_div(a, b) { return (a / b) | 0; }
   function test(variant, expectation) {
     var instance = setup();
     forceGc();
-    //assertEquals(expectation, instance.exports.main(variant));
+    assertEquals(expectation, instance.exports.main(variant));
   }
 
   // 0 indirectly calls the wasm function that calls the import,
@@ -742,8 +742,8 @@ function js_div(a, b) { return (a / b) | 0; }
     let j = i + 1;
 
     assertThrows(() => {instance.exports.main(j, i-1)});
-    //assertEquals((33/j)|0, instance.exports.main(j, i+0));
-    //assertEquals((33*j)|0, instance.exports.main(j, i+1));
+    assertEquals((33/j)|0, instance.exports.main(j, i+0));
+    assertEquals((33*j)|0, instance.exports.main(j, i+1));
     assertThrows(() => {instance.exports.main(j, i+2)});
   }
 
@@ -791,8 +791,8 @@ function js_div(a, b) { return (a / b) | 0; }
       module, {q: {base: i, js_div: js_div, wasm_mul: wasm_mul, table: table}});
     let j = i + 1;
 
-    //assertEquals((44/j)|0, instance.exports.main(j, i+0));
-    //assertEquals((44*j)|0, instance.exports.main(j, i+1));
+    assertEquals((44/j)|0, instance.exports.main(j, i+0));
+    assertEquals((44*j)|0, instance.exports.main(j, i+1));
     assertThrows(() => {instance.exports.main(j, i+2)});
   }
 })();
@@ -829,10 +829,10 @@ function js_div(a, b) { return (a / b) | 0; }
     return builder.instantiate({q: {f2: i1.exports.f2, f1: i1.exports.f1}});
   })();
 
-  //assertEquals(2, i2.exports.main(0));
-  //assertEquals(1, i2.exports.main(1));
-  //assertEquals(1, i2.exports.main(2));
-  //assertEquals(2, i2.exports.main(3));
+  assertEquals(2, i2.exports.main(0));
+  assertEquals(1, i2.exports.main(1));
+  assertEquals(1, i2.exports.main(2));
+  assertEquals(2, i2.exports.main(3));
 })();
 
 (function IndirectCallsToImportedFunctions() {
@@ -895,10 +895,10 @@ function js_div(a, b) { return (a / b) | 0; }
     return instance.exports.main;
   })();
 
-  //assertEquals(100, main(0));
-  //assertEquals(200, main(1));
-  //assertEquals(300, main(2));
-  //assertEquals(400, main(3));
+  assertEquals(100, main(0));
+  assertEquals(200, main(1));
+  assertEquals(300, main(2));
+  assertEquals(400, main(3));
 })();
 
 (function TestNonImportedGlobalInElementSegment() {

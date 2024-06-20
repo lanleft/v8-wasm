@@ -50,8 +50,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(23, instance.exports.throw_catch_null(0));
-  //assertEquals(42, instance.exports.throw_catch_null(1));
+  assertEquals(23, instance.exports.throw_catch_null(0));
+  assertEquals(42, instance.exports.throw_catch_null(1));
 })();
 
 // Test the encoding of a thrown exception with a reference type value.
@@ -94,8 +94,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   let instance = builder.instantiate();
   let o = new Object();
 
-  //assertEquals(o, instance.exports.throw_catch_param(o));
-  //assertEquals(1, instance.exports.throw_catch_param(1));
-  //assertEquals(2.3, instance.exports.throw_catch_param(2.3));
-  //assertEquals("str", instance.exports.throw_catch_param("str"));
+  assertEquals(o, instance.exports.throw_catch_param(o));
+  assertEquals(1, instance.exports.throw_catch_param(1));
+  assertEquals(2.3, instance.exports.throw_catch_param(2.3));
+  assertEquals("str", instance.exports.throw_catch_param("str"));
 })();

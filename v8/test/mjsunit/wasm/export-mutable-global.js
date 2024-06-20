@@ -18,9 +18,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   for (let [type, name, value, bytes] of globals) {
     let obj = instance.exports[name];
-    //assertEquals("object", typeof obj, name);
+    assertEquals("object", typeof obj, name);
     assertTrue(obj instanceof WebAssembly.Global, name);
-    //assertEquals(value || 0, obj.value, name);
+    assertEquals(value || 0, obj.value, name);
     assertThrows(() => obj.value = 0);
   }
 })();
@@ -62,15 +62,15 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   for (let [type, name, value, bytes] of globals) {
     let obj = instance.exports[name];
 
-    //assertEquals(value || 0, obj.value, name);
+    assertEquals(value || 0, obj.value, name);
 
     // Changing the exported global should change the instance's global.
     obj.value = 1001;
-    //assertEquals(1001, instance.exports['get ' + name](), name);
+    assertEquals(1001, instance.exports['get ' + name](), name);
 
     // Changing the instance's global should change the exported global.
     instance.exports['set ' + name](112358);
-    //assertEquals(112358, obj.value, name);
+    assertEquals(112358, obj.value, name);
   }
 })();
 
@@ -86,5 +86,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   g1.value = 123;
 
-  //assertEquals(g1.value, g2.value);
+  assertEquals(g1.value, g2.value);
 })();

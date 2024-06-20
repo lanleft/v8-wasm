@@ -104,7 +104,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var instance = builder.instantiate({m : { f: function () {} }});
 
-  //assertEquals(85, instance.exports.main(42));
+  assertEquals(85, instance.exports.main(42));
 })();
 
 (function FunctionTypeCheckThroughEffect() {
@@ -132,5 +132,5 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var instance = builder.instantiate({m : { f: function () {} }});
 
-  //assertEquals(1, instance.exports.main(instance.exports.input));
+  assertEquals(1, instance.exports.main(instance.exports.input));
 })();

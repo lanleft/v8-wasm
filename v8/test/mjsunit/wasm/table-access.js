@@ -124,10 +124,10 @@ const dummy_func = exports.set_table_func1;
 
   const instance = builder.instantiate();
 
-  //assertEquals(value1, instance.exports.get_t1(offset1)());
-  //assertEquals(value2, instance.exports.get_t1(offset1 + 1)());
-  //assertEquals(value3, instance.exports.get_t2(offset2)());
-  //assertEquals(value1, instance.exports.get_t2(offset2 + 1)());
+  assertEquals(value1, instance.exports.get_t1(offset1)());
+  assertEquals(value2, instance.exports.get_t1(offset1 + 1)());
+  assertEquals(value3, instance.exports.get_t2(offset2)());
+  assertEquals(value1, instance.exports.get_t2(offset2 + 1)());
 })();
 
 (function testRefFuncInTableIsCallable() {
@@ -153,5 +153,5 @@ const dummy_func = exports.set_table_func1;
       .exportFunc();
 
   const instance = builder.instantiate();
-  //assertEquals(expected, instance.exports.main());
+  assertEquals(expected, instance.exports.main());
 })();

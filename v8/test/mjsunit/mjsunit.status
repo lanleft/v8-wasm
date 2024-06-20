@@ -32,6 +32,7 @@
   'modules-skip*': [SKIP],
   'harmony/modules-skip*': [SKIP],
   'harmony/shadowrealm-skip*': [SKIP],
+  'harmony/async-module-ordinal-reset/skip*': [SKIP],
   'regress/modules-skip*': [SKIP],
   'wasm/exceptions-utils': [SKIP],
   'wasm/gc-js-interop-helpers': [SKIP],
@@ -462,6 +463,9 @@
   'turboshaft/maglev-frontend/has-in-prototype-chain-wasm': [SKIP],
 
   'sandbox/regress/regress-334120897': [SKIP],
+  'sandbox/wasm-inlining-sigcheck': [SKIP],
+  'sandbox/wasm-signature-verification': [SKIP],
+  'sandbox/wasm-table-sigcheck': [SKIP],
 
   # Tests tracing when generating wasm in TurboFan.
   'tools/compiler-trace-flags-wasm': [SKIP],
@@ -924,7 +928,7 @@
   'regress/regress-779407': [SKIP],
 
   # MIPS64 port doesn't support maglev yet.
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 }],  # 'arch == mips64el or arch == mips64'
 
 ##############################################################################
@@ -935,7 +939,7 @@
   'wasm/float-constant-folding': [SKIP],
 
   # Loong64 port doesn't support maglev yet.
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 }],  # 'arch == loong64'
 
 ##############################################################################
@@ -981,7 +985,7 @@
   'd8/d8-performance-now': [PASS, ['mode == debug', SKIP]],
 
   # Disabling Turboshaft's from-Maglev graph building until support maglev
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 }],  # 'arch == riscv64 or arch == riscv32'
 
 ['variant == stress and (arch == riscv64 or arch == riscv32)', {
@@ -1094,6 +1098,8 @@
 
   # The tests assert that something is not optimized after deopting. As wasm
   # code objects are shared, multiple isolates interfere with these test cases.
+  # TODO(42204618): Figure out how to create multi-isolate wasm-deopt test
+  # coverage.
   'wasm/deopt/*': [SKIP],
 
   # The test explicitly deserializes a wasm module and expects the resulting
@@ -1343,7 +1349,7 @@
 ['pointer_compression and not pointer_compression_shared_cage', {
 
   # The test requires shared heap but it is not shared in the multi cage mode.
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 
 }],  # pointer_compression and not pointer_compression_shared_cage'
 
@@ -1377,6 +1383,10 @@
 
   # Limited wasm code space
   'wasm/max-wasm-functions': [SKIP],
+
+  # kInitialMaxFastElementArray is different on ppc which
+  # leads to not deopting where we should.
+  'turboshaft/maglev-frontend/new-array': [SKIP]
 }],  # 'arch == ppc64'
 
 ##############################################################################
@@ -1716,6 +1726,9 @@
 
 ##############################################################################
 ['no_simd_hardware == True', {
+  'wasm/deopt/deopt-many-params-many-locals-s128': [SKIP],
+  'wasm/deopt/deopt-non-inlined-target': [SKIP],
+  'wasm/deopt/deopt-value-types': [SKIP],
   'wasm/exceptions-simd': [SKIP],
   'wasm/generate-random-module': [SKIP],
   'wasm/js-to-js': [SKIP],
@@ -1766,6 +1779,10 @@
   'regress/wasm/regress-326894018': [SKIP],
   'regress/wasm/regress-329032153': [SKIP],
   'regress/wasm/regress-337870524': [SKIP],
+  'regress/wasm/regress-341875188': [SKIP],
+  'regress/wasm/regress-344484969': [SKIP],
+  'regress/wasm/regress-341947685': [SKIP],
+  'regress/wasm/regress-343748812': [SKIP],
   'regress/wasm/regress-crbug-1338980': [SKIP],
   'regress/wasm/regress-crbug-1355070': [SKIP],
   'regress/wasm/regress-crbug-1356718': [SKIP],
@@ -1800,7 +1817,7 @@
   # Flaky under this variant, skipping per https://crbug.com/v8/14560#c2
   'turboshaft/turboshaft-frontend-test': [SKIP],
   # Flaky under this variant, skipping per https://crbug.com/v8/14630#c3
-  'turboshaft/turboshaft-maglev-frontend': [SKIP]
+  'turboshaft/maglev-frontend/*': [SKIP]
 }],  # variant == stress_concurrent_inlining
 
 ##############################################################################
@@ -1841,7 +1858,7 @@
 
   # TODO(v8:14581): Re-enable this test once TransitionElementsKindOrCheckMap is
   # supported by the Maglev->Turboshaft graph builder.
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 }], # single_generation
 
 ################################################################################
@@ -1990,7 +2007,7 @@
 }],  # arch != x64 or gc_fuzzer or deopt_fuzzer or interrupt_fuzzer
 
 ##############################################################################
-['((arch != x64 and arch != arm64 and arch != ia32 and arch != arm) or (simulator_run and conservative_stack_scanning))', {
+['((arch != x64 and arch != arm64 and arch != ia32 and arch != arm and arch != riscv64) or (simulator_run and conservative_stack_scanning))', {
   # Stack switching is only supported on x64/arm64/ia32/arm.
   'wasm/stack-switching': [SKIP],
   'wasm/stack-switching-new-api': [SKIP],
@@ -2052,7 +2069,7 @@
   'regress/regress-trap-allocation-memento': [FAIL],
 
   # TODO(v8:14581): Re-enable this once turboshaft frontend is done.
-  'turboshaft/turboshaft-maglev-frontend': [SKIP],
+  'turboshaft/maglev-frontend/*': [SKIP],
 }], # variant == google3_nociu or variant == google3_icu
 
 # Specific failures for no_icu builds

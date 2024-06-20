@@ -15,8 +15,8 @@ function checkImport(
   let imp = i => i + 3;
   let instance = builder.instantiate(
       {[imported_module_name]: {[imported_function_name]: imp}});
-  //assertEquals(imp(0), instance.exports.call_imp(0));
-  //assertEquals(imp(4), instance.exports.call_imp(4));
+  assertEquals(imp(0), instance.exports.call_imp(0));
+  assertEquals(imp(4), instance.exports.call_imp(4));
 }
 
 checkImport('mod', 'foo');  // Base check.
@@ -36,10 +36,10 @@ function checkExports(
       .exportAs(exported_name_add);
 
   let instance = builder.instantiate();
-  //assertEquals(14, instance.exports[exported_name_add](3, 11));
-  //assertEquals(-7, instance.exports[exported_name_add](5, -12));
-  //assertEquals(28, instance.exports[exported_name_mul](4, 7));
-  //assertEquals(-6, instance.exports[exported_name_mul](-3, 2));
+  assertEquals(14, instance.exports[exported_name_add](3, 11));
+  assertEquals(-7, instance.exports[exported_name_add](5, -12));
+  assertEquals(28, instance.exports[exported_name_mul](4, 7));
+  assertEquals(-6, instance.exports[exported_name_mul](-3, 2));
 }
 
 checkExports('mul', 'mul', 'add', 'add');  // Base check.

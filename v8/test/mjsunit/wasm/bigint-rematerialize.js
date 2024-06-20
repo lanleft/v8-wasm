@@ -29,15 +29,15 @@ function f(x) {
 }
 
 %PrepareFunctionForOptimization(f);
-//assertEquals(0n, f(1n));
-//assertEquals(1n, f(2n));
+assertEquals(0n, f(1n));
+assertEquals(1n, f(2n));
 %OptimizeFunctionOnNextCall(f);
-//assertEquals(0n, f(1n));
+assertEquals(0n, f(1n));
 assertOptimized(f);
 // After optimization, the result of the js wasm call is stored in word64 and
 // passed to StateValues without conversion. Rematerialization will happen
 // in deoptimizer.
-//assertEquals(-1n, f(0));
+assertEquals(-1n, f(0));
 if (%Is64Bit()) {
   assertUnoptimized(f);
 }

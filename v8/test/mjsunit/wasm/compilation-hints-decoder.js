@@ -45,7 +45,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                    kExprLocalGet, 0,
                    kExprCallFunction, 0])
   let instance = builder.instantiate({mod: {pow: Math.pow}});
-  //assertEquals(27, instance.exports.upow(3))
+  assertEquals(27, instance.exports.upow(3))
 })();
 
 (function testDecodeCompilationHintsSectionUpgrade() {
@@ -69,7 +69,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierOptimized)
          .exportFunc();
   let instance = builder.instantiate({mod: {pow: Math.pow}});
-  //assertEquals(27, instance.exports.upow(3))
+  assertEquals(27, instance.exports.upow(3))
 })();
 
 (function testDecodeCompilationHintsSectionNoImport() {
@@ -84,7 +84,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierOptimized)
          .exportFunc();
   let instance = builder.instantiate();
-  //assertEquals(9, instance.exports.sq(3))
+  assertEquals(9, instance.exports.sq(3))
 })();
 
 (function testDecodeCompilationHintsSectionNoExport() {
@@ -112,7 +112,7 @@ d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
                              kCompilationHintTierDefault)
          .exportFunc();
   let instance = builder.instantiate();
-  //assertEquals(9, instance.exports.sq(3))
+  assertEquals(9, instance.exports.sq(3))
 })();
 
 (function testDecodeCompilationHintsLazyBaselineEagerTopTier() {

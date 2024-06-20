@@ -9,7 +9,7 @@ let type_names = ["i32", "f32", "f64"];
 let type_const = [wasmI32Const, wasmF32Const, wasmF64Const];
 
 function f(values, shift, num_const_params, ...args) {
-  //assertEquals(
+  assertEquals(
       values.length + num_const_params, args.length, 'number of arguments');
   const expected = idx =>
       idx < values.length ? values[(idx + shift) % values.length] : idx;
@@ -17,7 +17,7 @@ function f(values, shift, num_const_params, ...args) {
       'expected [' + args.map((_, i) => expected(i)).join(', ') + '], got [' +
       args.join(', ') + ']';
   args.forEach((arg_val, idx) => {
-    //assertEquals(expected(idx), arg_val, 'arg #' + idx + ', ' + msg);
+    assertEquals(expected(idx), arg_val, 'arg #' + idx + ', ' + msg);
   });
 }
 

@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 // Flags: --validate-asm --allow-natives-syntax
-// flags: r --expose-gc --allow-natives-syntax --sandbox-testing --validate-asm --shell
 
 var stdlib = this;
 
 function assertValidAsm(func) {
-  //assertTrue(%IsAsmWasmCode(func));
+  assertTrue(%IsAsmWasmCode(func));
 }
 
 (function TestStdlibConstants() {
@@ -47,9 +46,9 @@ function assertValidAsm(func) {
   }
 
   var m = Module(stdlib);
-  //assertValidAsm(Module);
-  ////assertEquals(1, m.caller());
-  //assertTrue(isNaN(m.nanCheck()));
+  assertValidAsm(Module);
+  assertEquals(1, m.caller());
+  assertTrue(isNaN(m.nanCheck()));
 })();
 
 
@@ -103,7 +102,7 @@ var stdlib_math_members = [
     var code = Module.toString().replace('NaN', member);
     var decl = eval('(' + code + ')');
     decl(stdlib);
-    //assertFalse(%IsAsmWasmCode(decl));
+    assertFalse(%IsAsmWasmCode(decl));
   }
   for (var i = 0; i < stdlib_math_members.length; ++i) {
     var member = stdlib_math_members[i];
@@ -113,7 +112,7 @@ var stdlib_math_members = [
     var code = Module.toString().replace('NaN', 'Math.' + member);
     var decl = eval('(' + code + ')');
     decl(stdlib);
-    //assertFalse(%IsAsmWasmCode(decl));
+    assertFalse(%IsAsmWasmCode(decl));
   }
 })();
 
@@ -129,16 +128,16 @@ var stdlib_math_members = [
     var code = Module.toString().replace('NaN', member);
     var decl = eval('(' + code + ')');
     decl({});
-    //assertFalse(%IsAsmWasmCode(decl));
+    assertFalse(%IsAsmWasmCode(decl));
   }
   for (var i = 0; i < stdlib_math_members.length; ++i) {
     var member = stdlib_math_members[i];
     var code = Module.toString().replace('NaN', 'Math.' + member);
     var decl = eval('(' + code + ')');
-    // assertThrows(function() {
-    //   decl({});
-    //   //assertFalse(%IsAsmWasmCode(decl));
-    // });
+    assertThrows(function() {
+      decl({});
+      assertFalse(%IsAsmWasmCode(decl));
+    });
   }
 })();
 
@@ -219,8 +218,8 @@ var stdlib_math_members = [
   }
 
   var m = Module(stdlib);
-  //assertValidAsm(Module);
-  ////assertEquals(1, m.caller());
+  assertValidAsm(Module);
+  assertEquals(1, m.caller());
 })();
 
 
@@ -258,65 +257,6 @@ var stdlib_math_members = [
     var floor = stdlib.Math.floor;
     var sqrt = stdlib.Math.sqrt;
     var abs = stdlib.Math.abs;
-    %DebugPrint(abs);
-    /*
-  DebugPrint: 0x117500285815: [Function] in OldSpace
- - map: 0x117500281f15 <Map[28](HOLEY_ELEMENTS)> [FastProperties]
- - prototype: 0x117500281dc9 <JSFunction (sfi = 0x1175001474d1)>
- - elements: 0x117500000725 <FixedArray[0]> [HOLEY_ELEMENTS]
- - function prototype: <no-prototype-slot>
- - shared_info: 0x11750027a00d <SharedFunctionInfo abs>
- - name: 0x11750024dfdd <String[3]: #abs>
- - builtin: MathAbs
- - formal_parameter_count: 1
- - kind: NormalFunction
- - context: 0x117500281729 <NativeContext[295]>
- - code: 0x117500261a89 <Code BUILTIN MathAbs>
- - properties: 0x117500000725 <FixedArray[0]>
- - All own properties (excluding elements): {
-    0x117500000d99: [String] in ReadOnlySpace: #length: 0x117500271bbd <AccessorInfo name= 0x117500000d99 <String[6]: #length>, data= 0x117500000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
-    0x117500000dc5: [String] in ReadOnlySpace: #name: 0x117500271ba5 <AccessorInfo name= 0x117500000dc5 <String[4]: #name>, data= 0x117500000069 <undefined>> (const accessor descriptor, attrs: [__C]), location: descriptor
- }
-
-pwndbg> job 0x117500261a89
-0x117500261a89: [Code] in ReadOnlySpace
- - instruction_stream: 0
- - instruction_start: 0x7fff7faccd00
-// =========================================
-pwndbg> vmmap 0x7fff7faccd00
-LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
-             Start                End Perm     Size Offset File
-    0x7fff60000000     0x7fff7f480000 rwxp 1f480000      0 [anon_7fff60000]
-►   0x7fff7f480000     0x7fff7fff3000 r-xp   b73000 195d000 /home/vult/Desktop/v8/v8/out/debug/libv8.so +0x64cd00
-    0x7fff7fff3000     0x7fff80000000 rwxp     d000      0 [anon_7fff7fff3]
-/// ===================================================
-pwndbg> vmmap
-LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
-             Start                End Perm     Size Offset File
-     0x33cd650a000      0x33cd650b000 r--p     1000      0 [anon_33cd650a]
-    0x116d00000000     0x117500000000 ---p 800000000      0 [anon_116d00000]
-    0x117500000000     0x117500010000 r--p    10000      0 [anon_117500000]
-    0x117500010000     0x117500020000 ---p    10000      0 [anon_117500010]
-    0x117500020000     0x117500040000 r--p    20000      0 [anon_117500020]
-    0x117500040000     0x117500149000 rw-p   109000      0 [anon_117500040]
-    0x117500149000     0x117500180000 ---p    37000      0 [anon_117500149]
-    0x117500180000     0x11750027e000 r--p    fe000      0 [anon_117500180]
-    0x11750027e000     0x117500280000 ---p     2000      0 [anon_11750027e]
-    0x117500280000     0x117500300000 rw-p    80000      0 [anon_117500280]
-    0x117500300000     0x117600000000 ---p ffd00000      0 [anon_117500300]
-    0x117600000000     0x117600100000 rw-p   100000      0 [anon_117600000]
-    0x117600100000     0x127d00000000 ---p 106fff00000      0 [anon_117600100]
-    0x292300000000     0x292300001000 rw-p     1000      0 [anon_292300000]
-    0x292300001000     0x292300040000 ---p    3f000      0 [anon_292300001]
-    0x292300040000     0x292300100000 rw-p    c0000      0 [anon_292300040]
-    0x292300100000     0x292340000000 ---p 3ff00000      0 [anon_292300100]
-    0x351716609000     0x35171660d000 rwxp     4000      0 [anon_351716609]
-    0x555555554000     0x55555558e000 r--p    3a000      0 /home/vult/Desktop/v8/v8/out/debug/d8
-    0x55555558e000     0x5555555db000 r-xp    4d000  39000 /home/vult/Desktop/v8/v8/out/debug/d8
-
-
-    */
-
     var fround = stdlib.Math.fround;
     var fround2 = stdlib.Math.fround;
 
@@ -423,7 +363,7 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
     };
   }
   var m = Module(stdlib);
-  //assertValidAsm(Module);
+  assertValidAsm(Module);
   var values = {
     i32: [
       0, 1, -1, 123, 456, -123, -456,
@@ -507,11 +447,11 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
           if (compare === undefined) {
             compare = plainEqual;
           }
-          //assertTrue(typeof(compare) === 'function');
+          assertTrue(typeof(compare) === 'function');
           if (!compare(expected, actual)) {
             print(expected + ' !== ' + actual + ' for ' + name +
                   ' with input ' + val0 + ' ' + val1);
-            //assertTrue(false);
+            assertTrue(false);
           }
         }
       }

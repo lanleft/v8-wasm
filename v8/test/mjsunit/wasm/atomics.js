@@ -155,8 +155,8 @@ function Test32Op(operation, func) {
     let expected = 0x9cedf00d;
     let value = 0x11111111;
     i32[i] = expected;
-    //assertEquals(expected, func(i * kMemtypeSize32, value) >>> 0);
-    //assertEquals(operation(expected, value) >>> 0, i32[i]);
+    assertEquals(expected, func(i * kMemtypeSize32, value) >>> 0);
+    assertEquals(operation(expected, value) >>> 0, i32[i]);
   }
   VerifyBoundsCheck(func, kMemtypeSize32);
 }
@@ -167,8 +167,8 @@ function Test16Op(operation, func) {
     let expected = 0xd00d;
     let value = 0x1111;
     i16[i] = expected;
-    //assertEquals(expected, func(i * kMemtypeSize16, value));
-    //assertEquals(operation(expected, value), i16[i]);
+    assertEquals(expected, func(i * kMemtypeSize16, value));
+    assertEquals(operation(expected, value), i16[i]);
   }
   VerifyBoundsCheck(func, kMemtypeSize16);
 }
@@ -179,8 +179,8 @@ function Test8Op(operation, func) {
     let expected = 0xbe;
     let value = 0x12;
     i8[i] = expected;
-    //assertEquals(expected, func(i * kMemtypeSize8, value));
-    //assertEquals(operation(expected, value), i8[i]);
+    assertEquals(expected, func(i * kMemtypeSize8, value));
+    assertEquals(operation(expected, value), i8[i]);
   }
   VerifyBoundsCheck(func, kMemtypeSize8, 10);
 }
@@ -191,8 +191,8 @@ function Test64Op(operation, func) {
     let expected = 987659876543210n;
     let value = 111111111111111n;
     i64[i] = expected;
-    //assertEquals(expected, func(i * kMemtypeSize64, value));
-    //assertEquals(operation(expected, value), i64[i]);
+    assertEquals(expected, func(i * kMemtypeSize64, value));
+    assertEquals(operation(expected, value), i64[i]);
   }
   VerifyBoundsCheck64(func, kMemtypeSize64);
 }
@@ -203,8 +203,8 @@ function Test32Op64(operation, func) {
     let expected = 123456;
     let value = 111111n;
     i32[i] = expected;
-    //assertEquals(expected, Number(func(i * kMemtypeSize32, value)));
-    //assertEquals(operation(expected, Number(value)), i32[i]);
+    assertEquals(expected, Number(func(i * kMemtypeSize32, value)));
+    assertEquals(operation(expected, Number(value)), i32[i]);
   }
   VerifyBoundsCheck64(func, kMemtypeSize32);
 }
@@ -215,8 +215,8 @@ function Test16Op64(operation, func) {
     let expected = 0xd00d;
     let value = 0x1111n;
     i16[i] = expected;
-    //assertEquals(expected, Number(func(i * kMemtypeSize16, value)));
-    //assertEquals(operation(expected, Number(value)), i16[i]);
+    assertEquals(expected, Number(func(i * kMemtypeSize16, value)));
+    assertEquals(operation(expected, Number(value)), i16[i]);
   }
   VerifyBoundsCheck64(func, kMemtypeSize16);
 }
@@ -227,8 +227,8 @@ function Test8Op64(operation, func) {
     let expected = 0xbe;
     let value = 0x12n;
     i8[i] = expected;
-    //assertEquals(expected, Number(func(i * kMemtypeSize8, value)));
-    //assertEquals(operation(expected, Number(value)), i8[i]);
+    assertEquals(expected, Number(func(i * kMemtypeSize8, value)));
+    assertEquals(operation(expected, Number(value)), i8[i]);
   }
   VerifyBoundsCheck64(func, kMemtypeSize8, 10);
 }
@@ -493,8 +493,8 @@ function TestCmpExchange(func, buffer, params, size, offset = 0) {
         buffer[i + (offset / size)] = params[j];
         let loaded = func(i * size, params[k], params[j]) >>> 0;
         let expected = (params[k] == loaded) ? params[j] : loaded;
-        //assertEquals(loaded, params[j]);
-        //assertEquals(expected, buffer[i + (offset / size)]);
+        assertEquals(loaded, params[j]);
+        assertEquals(expected, buffer[i + (offset / size)]);
       }
     }
   }
@@ -534,7 +534,7 @@ function TestCmpExchange(func, buffer, params, size, offset = 0) {
 function TestLoad(func, buffer, value, size) {
   for (let i = 0; i < buffer.length; i = inc(i)) {
     buffer[i] = value;
-    //assertEquals(value, func(i * size) >>> 0);
+    assertEquals(value, func(i * size) >>> 0);
   }
   VerifyBoundsCheck(func, size);
 }
@@ -566,7 +566,7 @@ function TestLoad(func, buffer, value, size) {
 function TestStore(func, buffer, value, size) {
   for (let i = 0; i < buffer.length; i = inc(i)) {
     func(i * size, value)
-    //assertEquals(value, buffer[i]);
+    assertEquals(value, buffer[i]);
   }
   VerifyBoundsCheck(func, size);
 }
@@ -622,7 +622,7 @@ function TestStore(func, buffer, value, size) {
   let instance = (new WebAssembly.Instance(module,
         {m: {imported_mem: memory}}));
   let buf = memory.buffer;
-  //assertEquals(20, instance.exports.loadStore());
+  assertEquals(20, instance.exports.loadStore());
   assertTraps(kTrapMemOutOfBounds, instance.exports.storeOob);
 })();
 
@@ -650,7 +650,7 @@ function TestStore(func, buffer, value, size) {
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = (new WebAssembly.Instance(module,
         {m: {imported_mem: memory}}));
-  //assertEquals(20, instance.exports.main());
+  assertEquals(20, instance.exports.main());
 })();
 
 (function TestUnalignedAtomicAccesses() {
@@ -707,7 +707,7 @@ function CmpExchgLoop(opcode, alignment) {
   builder.addFunction('main', kSig_v_v).addBody([
     kAtomicPrefix, 0x90, 0x0f
   ]);
-  //assertEquals(false, WebAssembly.validate(builder.toBuffer()));
+  assertEquals(false, WebAssembly.validate(builder.toBuffer()));
   assertThrows(
       () => builder.toModule(), WebAssembly.CompileError,
       /invalid atomic opcode: 0xfe790/);

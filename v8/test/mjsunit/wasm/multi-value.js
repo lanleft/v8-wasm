@@ -20,7 +20,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(1, 4), 5);
 })();
 
 (function MultiBlockParamTest() {
@@ -39,7 +39,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(1, 4), 5);
 })();
 
 (function MultiBlockBrTest() {
@@ -60,7 +60,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(1, 4), 5);
 })();
 
 (function MultiBlockUnreachableTest() {
@@ -82,7 +82,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 2), 1);
+  assertEquals(instance.exports.main(1, 2), 1);
 })();
 
 (function MultiBlockUnreachableTypeErrorTest() {
@@ -124,7 +124,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(1, 4), 5);
 })();
 
 (function MultiLoopParamTest() {
@@ -143,7 +143,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(1, 4), 5);
 })();
 
 (function MultiLoopBrTest() {
@@ -175,24 +175,24 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(0, instance.exports.main(0, 1));
-  //assertEquals(16, instance.exports.main(1, 1));
-  //assertEquals(4, instance.exports.main(3, 1));
-  //assertEquals(4, instance.exports.main(4, 1));
-  //assertEquals(0, instance.exports.main(0, 2));
-  //assertEquals(16, instance.exports.main(1, 2));
-  //assertEquals(8, instance.exports.main(3, 2));
-  //assertEquals(8, instance.exports.main(4, 2));
-  //assertEquals(0, instance.exports.main(0, 3));
-  //assertEquals(8, instance.exports.main(1, 3));
-  //assertEquals(12, instance.exports.main(3, 3));
-  //assertEquals(12, instance.exports.main(4, 3));
-  //assertEquals(0, instance.exports.main(0, 4));
-  //assertEquals(8, instance.exports.main(1, 4));
-  //assertEquals(16, instance.exports.main(3, 4));
-  //assertEquals(16, instance.exports.main(4, 4));
-  //assertEquals(3, instance.exports.main(100, 3));
-  //assertEquals(6, instance.exports.main(3, 100));
+  assertEquals(0, instance.exports.main(0, 1));
+  assertEquals(16, instance.exports.main(1, 1));
+  assertEquals(4, instance.exports.main(3, 1));
+  assertEquals(4, instance.exports.main(4, 1));
+  assertEquals(0, instance.exports.main(0, 2));
+  assertEquals(16, instance.exports.main(1, 2));
+  assertEquals(8, instance.exports.main(3, 2));
+  assertEquals(8, instance.exports.main(4, 2));
+  assertEquals(0, instance.exports.main(0, 3));
+  assertEquals(8, instance.exports.main(1, 3));
+  assertEquals(12, instance.exports.main(3, 3));
+  assertEquals(12, instance.exports.main(4, 3));
+  assertEquals(0, instance.exports.main(0, 4));
+  assertEquals(8, instance.exports.main(1, 4));
+  assertEquals(16, instance.exports.main(3, 4));
+  assertEquals(16, instance.exports.main(4, 4));
+  assertEquals(3, instance.exports.main(100, 3));
+  assertEquals(6, instance.exports.main(3, 100));
 })();
 
 
@@ -217,8 +217,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(8, 3), 5);
-  //assertEquals(instance.exports.main(0, 3), 3);
+  assertEquals(instance.exports.main(8, 3), 5);
+  assertEquals(instance.exports.main(0, 3), 3);
 })();
 
 (function MultiIfParamTest() {
@@ -240,8 +240,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1, 4), 5);
-  //assertEquals(instance.exports.main(0, 4), -4);
+  assertEquals(instance.exports.main(1, 4), 5);
+  assertEquals(instance.exports.main(0, 4), -4);
 })();
 
 (function MultiIfBrTest() {
@@ -267,8 +267,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(8, 3), 5);
-  //assertEquals(instance.exports.main(0, 3), 3);
+  assertEquals(instance.exports.main(8, 3), 5);
+  assertEquals(instance.exports.main(0, 3), 3);
 })();
 
 (function MultiIfParamOneArmedTest() {
@@ -288,8 +288,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(0), 0);
-  //assertEquals(instance.exports.main(1), 6);
+  assertEquals(instance.exports.main(0), 0);
+  assertEquals(instance.exports.main(1), 6);
 })();
 
 (function MultiIfOneArmedNoTypeCheckTest() {
@@ -334,13 +334,13 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(0, 0), 0);
-  //assertEquals(instance.exports.main(1, 0), 1);
-  //assertEquals(instance.exports.main(2, 0), 2);
-  //assertEquals(instance.exports.main(0, 1), -1);
-  //assertEquals(instance.exports.main(0, 2), -4);
-  //assertEquals(instance.exports.main(3, 4), -1);
-  //assertEquals(instance.exports.main(4, 3), 7);
+  assertEquals(instance.exports.main(0, 0), 0);
+  assertEquals(instance.exports.main(1, 0), 1);
+  assertEquals(instance.exports.main(2, 0), 2);
+  assertEquals(instance.exports.main(0, 1), -1);
+  assertEquals(instance.exports.main(0, 2), -4);
+  assertEquals(instance.exports.main(3, 4), -1);
+  assertEquals(instance.exports.main(4, 3), 7);
 })();
 
 (function MultiReturnTest() {
@@ -365,10 +365,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(0), 0);
-  //assertEquals(instance.exports.main(1), 2);
-  //assertEquals(instance.exports.main(2), 8);
-  //assertEquals(instance.exports.main(10), 200);
+  assertEquals(instance.exports.main(0), 0);
+  assertEquals(instance.exports.main(1), 2);
+  assertEquals(instance.exports.main(2), 8);
+  assertEquals(instance.exports.main(10), 200);
 })();
 
 (function MultiBrReturnTest() {
@@ -393,10 +393,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(0), 0);
-  //assertEquals(instance.exports.main(1), 2);
-  //assertEquals(instance.exports.main(2), 8);
-  //assertEquals(instance.exports.main(10), 200);
+  assertEquals(instance.exports.main(0), 0);
+  assertEquals(instance.exports.main(1), 2);
+  assertEquals(instance.exports.main(2), 8);
+  assertEquals(instance.exports.main(10), 200);
 })();
 
 (function MultiBrTableTest() {
@@ -412,7 +412,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(instance.exports.main(), [1, 2]);
+  assertEquals(instance.exports.main(), [1, 2]);
 })();
 
 (function MultiUnreachablePolymorphicTest() {
@@ -479,10 +479,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.swap(0, 1.5), [1.5, 0]);
-  //assertEquals(instance.exports.swap(2, 3.75), [3.75, 2]);
-  //assertEquals(instance.exports.addsubmul(4), [8, 0, 16]);
-  //assertEquals(instance.exports.addsubmul(5), [10, 0, 25]);
+  assertEquals(instance.exports.swap(0, 1.5), [1.5, 0]);
+  assertEquals(instance.exports.swap(2, 3.75), [3.75, 2]);
+  assertEquals(instance.exports.addsubmul(4), [8, 0, 16]);
+  assertEquals(instance.exports.addsubmul(5), [10, 0, 25]);
 })();
 
 (function MultiJSToWasmReturnTest() {
@@ -537,11 +537,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = new WebAssembly.Module(builder.toBuffer());
 
   var instance = new WebAssembly.Instance(module, { 'imports' : { 'f' : swap } });
-  //assertEquals(instance.exports.main(1, 2), [2, 1]);
+  assertEquals(instance.exports.main(1, 2), [2, 1]);
   instance = new WebAssembly.Instance(module, { 'imports' : { 'f' : swap_proxy } });
-  //assertEquals(instance.exports.main(1, 2), [2, 1]);
+  assertEquals(instance.exports.main(1, 2), [2, 1]);
   instance = new WebAssembly.Instance(module, { 'imports' : { 'f' : generator } });
-  //assertEquals(instance.exports.main(1, 2), [1, 2]);
+  assertEquals(instance.exports.main(1, 2), [1, 2]);
 
   instance = new WebAssembly.Instance(module, { 'imports' : { 'f' : drop_first } });
   assertThrows(() => instance.exports.main(1, 2), TypeError, "multi-return length mismatch");

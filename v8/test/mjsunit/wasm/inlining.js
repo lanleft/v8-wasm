@@ -23,7 +23,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(14, instance.exports.main(10));
+  assertEquals(14, instance.exports.main(10));
 })();
 
 (function MultiReturnTest() {
@@ -40,7 +40,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(9 * 11, instance.exports.main(10));
+  assertEquals(9 * 11, instance.exports.main(10));
 })();
 
 (function VoidReturnTest() {
@@ -58,7 +58,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(10, instance.exports.main(10));
+  assertEquals(10, instance.exports.main(10));
 })();
 
 (function NoReturnTest() {
@@ -81,7 +81,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(43, instance.exports.main(10));
+  assertEquals(43, instance.exports.main(10));
 })();
 
 (function LoopInLoopTest() {
@@ -124,7 +124,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(33, instance.exports.main(4));
+  assertEquals(33, instance.exports.main(4));
 })();
 
 (function InfiniteLoopTest() {
@@ -164,7 +164,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(23, instance.exports.main(10));
+  assertEquals(23, instance.exports.main(10));
 })();
 
 (function MultipleCallAndReturnSitesTest() {
@@ -188,7 +188,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(-81, instance.exports.main(10));
+  assertEquals(-81, instance.exports.main(10));
 })();
 
 (function TailCallInCallerTest() {
@@ -215,8 +215,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(31, instance.exports.main(10));
-  //assertEquals(-12, instance.exports.main(-10));
+  assertEquals(31, instance.exports.main(10));
+  assertEquals(-12, instance.exports.main(-10));
 })();
 
 (function HandledInHandledTest() {
@@ -242,7 +242,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(10, instance.exports.main(10, 20));
+  assertEquals(10, instance.exports.main(10, 20));
 })();
 
 (function HandledInUnhandledTest() {
@@ -264,7 +264,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(10, instance.exports.main(10, 20));
+  assertEquals(10, instance.exports.main(10, 20));
 })();
 
 (function UnhandledInUnhandledTest() {
@@ -314,7 +314,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(20, instance.exports.main(10, 20));
+  assertEquals(20, instance.exports.main(10, 20));
 })();
 
 // Inlining should behave correctly when there are no throwing nodes in the
@@ -343,7 +343,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(11, instance.exports.main(10, 20));
+  assertEquals(11, instance.exports.main(10, 20));
 })();
 
 // Things get more complex if we also need to reload the memory context.
@@ -376,7 +376,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(25, instance.exports.main(10));
+  assertEquals(25, instance.exports.main(10));
 })();
 
 (function TailCallInCatchBlock() {
@@ -427,7 +427,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
 
-  //assertEquals(42, instance.exports.main(10));
+  assertEquals(42, instance.exports.main(10));
 })();
 
 (function CallInTailCallInCatchBlock() {
@@ -480,7 +480,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(25, instance.exports.main(10));
+  assertEquals(25, instance.exports.main(10));
 })();
 
 (function ThrowInLoopTest() {
@@ -519,8 +519,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportAs("main");
 
   let instance = builder.instantiate();
-  //assertEquals(25, instance.exports.main(10));
-  //assertEquals(-20, instance.exports.main(-10));
+  assertEquals(25, instance.exports.main(10));
+  assertEquals(-20, instance.exports.main(-10));
 })();
 
 (function InlineSubtypeSignatureTest() {
@@ -561,7 +561,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(11, instance.exports.main(10));
+  assertEquals(11, instance.exports.main(10));
 })();
 
 (function Int64Lowering() {
@@ -581,7 +581,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(BigInt(21), instance.exports.main(BigInt(10), 11));
+  assertEquals(BigInt(21), instance.exports.main(BigInt(10), 11));
 })();
 
 (function InliningRecursiveTest() {
@@ -602,9 +602,9 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let instance = builder.instantiate({});
-  //assertEquals(1, instance.exports.main(1));
+  assertEquals(1, instance.exports.main(1));
   // {factorial} should not be fully inlined in the trace.
-  //assertEquals(120, instance.exports.main(5));
+  assertEquals(120, instance.exports.main(5));
 })();
 
 // When inlining a function with a tail call into a regular call, the tail call
@@ -688,7 +688,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   TestStackTrace(instance.exports.main);
 
   function TestStackTrace(main) {
-    //assertEquals([7, 0], main(21, 3));
+    assertEquals([7, 0], main(21, 3));
     assertTraps(kTrapDivByZero, () => main(1, 0));
     try {
       main(1, 0);
@@ -726,11 +726,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       let actual = entries[i];
       print(`match = ${actual[0]}`);
       let expected = expected_entries[i];
-      //assertEquals(expected[0], actual[1]);
-      //assertEquals(expected[1], actual[2]);
-      //assertEquals(expected[2], actual[3]);
+      assertEquals(expected[0], actual[1]);
+      assertEquals(expected[1], actual[2]);
+      assertEquals(expected[2], actual[3]);
     }
-    //assertEquals(expected_entries.length, entries.length);
+    assertEquals(expected_entries.length, entries.length);
   }
 })();
 
@@ -789,7 +789,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   TestStackTrace(instance.exports.main);
 
   function TestStackTrace(main) {
-    //assertEquals([7, 0], main(21, 3));
+    assertEquals([7, 0], main(21, 3));
     assertTraps(kTrapDivByZero, () => main(1, 0));
     // Test stack trace for trap.
     try {
@@ -827,11 +827,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       let actual = entries[i];
       print(`match = ${actual[0]}`);
       let expected = expected_entries[i];
-      //assertEquals(expected[0], actual[1]);
-      //assertEquals(expected[1], actual[2]);
-      //assertEquals(expected[2], actual[3]);
+      assertEquals(expected[0], actual[1]);
+      assertEquals(expected[1], actual[2]);
+      assertEquals(expected[2], actual[3]);
     }
-    //assertEquals(expected_entries.length, entries.length);
+    assertEquals(expected_entries.length, entries.length);
   }
 })();
 
@@ -877,7 +877,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   TestStackTrace(instance.exports.main);
 
   function TestStackTrace(main) {
-    //assertEquals([7, 63], main(21, 3));
+    assertEquals([7, 63], main(21, 3));
     try {
       main(1, 0);
       assertUnreachable();
@@ -899,11 +899,11 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       let actual = entries[i];
       print(`match = ${actual[0]}`);
       let expected = expected_entries[i];
-      //assertEquals(expected[0], actual[1]);
-      //assertEquals(expected[1], actual[2]);
-      //assertEquals(expected[2], actual[3]);
+      assertEquals(expected[0], actual[1]);
+      assertEquals(expected[1], actual[2]);
+      assertEquals(expected[2], actual[3]);
     }
-    //assertEquals(expected_entries.length, entries.length);
+    assertEquals(expected_entries.length, entries.length);
   }
 })();
 
@@ -959,7 +959,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   TestStackTrace(instance.exports.main);
 
   function TestStackTrace(main) {
-    //assertEquals(7, main(21, 3));
+    assertEquals(7, main(21, 3));
     try {
       main(1, 0);
       assertUnreachable();
@@ -983,10 +983,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       let actual = entries[i];
       print(`match = ${actual[0]}`);
       let expected = expected_entries[i];
-      //assertEquals(expected[0], actual[1]);
-      //assertEquals(expected[1], actual[2]);
-      //assertEquals(expected[2], actual[3]);
+      assertEquals(expected[0], actual[1]);
+      assertEquals(expected[1], actual[2]);
+      assertEquals(expected[2], actual[3]);
     }
-    //assertEquals(expected_entries.length, entries.length);
+    assertEquals(expected_entries.length, entries.length);
   }
 })();

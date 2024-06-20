@@ -73,7 +73,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   let module = new WebAssembly.Module(builder.toBuffer());
   let memory = new WebAssembly.Memory({initial: 1, maximum: 1});
   let instance = new WebAssembly.Instance(module, {m: {memory}});
-  //assertEquals(0, instance.exports.main(0, 100));
+  assertEquals(0, instance.exports.main(0, 100));
 })();
 
 (function TestWasmI32AtomicWaitTraps() {

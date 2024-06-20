@@ -18,6 +18,6 @@ const load = builder.instantiate().exports.load;
 %WasmTierUpFunction(load);
 // 100 is added as part of the load instruction above
 // Last valid address (64k - 100 - 4)
-//assertEquals(0, load(0x10000 - 100 - 4));
+assertEquals(0, load(0x10000 - 100 - 4));
 // First invalid address (64k - 100)
 assertTraps(kTrapMemOutOfBounds, _ => { load(0x10000 - 100);});

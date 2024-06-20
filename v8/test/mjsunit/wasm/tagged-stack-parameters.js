@@ -51,4 +51,4 @@ var instance = (function () {
   }});
 })();
 
-//assertEquals(42, instance.exports.main());
+assertEquals(42, instance.exports.main());

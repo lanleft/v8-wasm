@@ -25,7 +25,7 @@ let testcases = [
 
   let instance = builder.instantiate();
   testcases.forEach(function(expected, i) {
-    //assertEquals(instance.exports["ex" + i].type(), expected.types);
+    assertEquals(instance.exports["ex" + i].type(), expected.types);
   });
 })();
 
@@ -44,11 +44,11 @@ let testcases = [
 
   let instance = builder.instantiate(imports);
   testcases.forEach(function(expected, i) {
-    //assertEquals(instance.exports["ex" + i].type(), expected.types);
+    assertEquals(instance.exports["ex" + i].type(), expected.types);
   })
 })();
 
 (function TestJSTag() {
   print(arguments.callee.name);
-  //assertEquals(WebAssembly.JSTag.type(), {parameters:['externref']});
+  assertEquals(WebAssembly.JSTag.type(), {parameters:['externref']});
 })();

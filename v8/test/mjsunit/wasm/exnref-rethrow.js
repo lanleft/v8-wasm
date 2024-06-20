@@ -50,7 +50,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
   assertWasmThrows(instance, except, [], () => instance.exports.rethrow0());
   assertWasmThrows(instance, except, [], () => instance.exports.rethrow1(0));
-  //assertEquals(23, instance.exports.rethrow1(1));
+  assertEquals(23, instance.exports.rethrow1(1));
 })();
 
 // Test that an exception being rethrown can be caught by another local catch
@@ -87,8 +87,8 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   ]).exportFunc();
   let instance = builder.instantiate();
 
-  //assertEquals(23, instance.exports.rethrow_recatch(0));
-  //assertEquals(42, instance.exports.rethrow_recatch(1));
+  assertEquals(23, instance.exports.rethrow_recatch(0));
+  assertEquals(42, instance.exports.rethrow_recatch(1));
 })();
 
 // Test that throw-ref traps if the exception is null.

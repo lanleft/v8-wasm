@@ -18,13 +18,13 @@ function testTrapLocations(instance, expected_stack_length) {
       instance.exports.main(value);
       fail('expected wasm exception');
     } catch (e) {
-      //assertEquals(kTrapMsgs[reason], e.message, 'trap reason');
+      assertEquals(kTrapMsgs[reason], e.message, 'trap reason');
       // Check that the trapping function is the one which was called from this
       // function.
       assertTrue(
           e.stack[1].toString().startsWith(function_name), 'stack depth');
-      //assertEquals(1, e.stack[0].getLineNumber(), 'wasmFunctionIndex');
-      //assertEquals(position, e.stack[0].getPosition(), 'position');
+      assertEquals(1, e.stack[0].getLineNumber(), 'wasmFunctionIndex');
+      assertEquals(position, e.stack[0].getPosition(), 'position');
     }
   }
 

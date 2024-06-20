@@ -50,7 +50,7 @@ resetBuffer();
 
 function checkView(view, load, shift) {
   for (var i = 0; i < 300; i++) {
-    //assertEquals(view[i >> shift], load(i));
+    assertEquals(view[i >> shift], load(i));
   }
 }
 
@@ -80,20 +80,20 @@ function LoadAt_i32(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_i32, function(module) {
   var load = module.load;
-  //assertEquals(BASE, load(0));
-  //assertEquals(BASE | 0x30, load(0x30));
-  //assertEquals(BASE | 0x704, load(0x704));
-  //assertEquals(BASE | 0x704, load(0x705));
-  //assertEquals(BASE | 0x704, load(0x706));
-  //assertEquals(BASE | 0x704, load(0x707));
+  assertEquals(BASE, load(0));
+  assertEquals(BASE | 0x30, load(0x30));
+  assertEquals(BASE | 0x704, load(0x704));
+  assertEquals(BASE | 0x704, load(0x705));
+  assertEquals(BASE | 0x704, load(0x706));
+  assertEquals(BASE | 0x704, load(0x707));
 
   var length = buffer.byteLength;
-  //assertEquals(BASE | (length - 4), load(length - 4));
-  //assertEquals(BASE | (length - 4), load(length - 4 + 1));
-  //assertEquals(BASE | (length - 4), load(length - 4 + 2));
-  //assertEquals(BASE | (length - 4), load(length - 4 + 3));
+  assertEquals(BASE | (length - 4), load(length - 4));
+  assertEquals(BASE | (length - 4), load(length - 4 + 1));
+  assertEquals(BASE | (length - 4), load(length - 4 + 2));
+  assertEquals(BASE | (length - 4), load(length - 4 + 3));
 
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Int32Array(buffer), load, 2);
 });
 
@@ -111,25 +111,25 @@ RunAsmJsTest(LoadAt_i16, function(module) {
   var load = module.load;
   var LOWER = (BASE << 16) >> 16;
   var UPPER = BASE >> 16;
-  //assertEquals(LOWER, load(0));
-  //assertEquals(UPPER, load(2));
+  assertEquals(LOWER, load(0));
+  assertEquals(UPPER, load(2));
 
-  //assertEquals(LOWER | 0x30, load(0x30));
-  //assertEquals(UPPER, load(0x32));
+  assertEquals(LOWER | 0x30, load(0x30));
+  assertEquals(UPPER, load(0x32));
 
-  //assertEquals(LOWER | 0x504, load(0x504));
-  //assertEquals(LOWER | 0x504, load(0x505));
+  assertEquals(LOWER | 0x504, load(0x504));
+  assertEquals(LOWER | 0x504, load(0x505));
 
-  //assertEquals(UPPER, load(0x706));
-  //assertEquals(UPPER, load(0x707));
+  assertEquals(UPPER, load(0x706));
+  assertEquals(UPPER, load(0x707));
 
   var length = buffer.byteLength;
-  //assertEquals(LOWER | (length - 4), load(length - 4));
-  //assertEquals(LOWER | (length - 4), load(length - 4 + 1));
-  //assertEquals(UPPER, load(length - 4 + 2));
-  //assertEquals(UPPER, load(length - 4 + 3));
+  assertEquals(LOWER | (length - 4), load(length - 4));
+  assertEquals(LOWER | (length - 4), load(length - 4 + 1));
+  assertEquals(UPPER, load(length - 4 + 2));
+  assertEquals(UPPER, load(length - 4 + 3));
 
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Int16Array(buffer), load, 1);
 });
 
@@ -145,7 +145,7 @@ function LoadAt_u16(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_u16, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Uint16Array(buffer), load, 1);
 });
 
@@ -161,7 +161,7 @@ function LoadAt_i8(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_i8, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Int8Array(buffer), load, 0);
 });
 
@@ -177,7 +177,7 @@ function LoadAt_u8(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_u8, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Uint8Array(buffer), load, 0);
 });
 
@@ -194,7 +194,7 @@ function LoadAt_u32(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_u32, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(0, load(index));
+  for (index of OOB_INDEXES) assertEquals(0, load(index));
   checkView(new Uint32Array(buffer), load, 2);
 });
 
@@ -211,7 +211,7 @@ function LoadAt_f32(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_f32, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(NaN, load(index));
+  for (index of OOB_INDEXES) assertEquals(NaN, load(index));
   checkView(new Float32Array(buffer), load, 2);
 });
 
@@ -227,7 +227,7 @@ function LoadAt_f64(stdlib, foreign, buffer) {
 
 RunAsmJsTest(LoadAt_f64, function(module) {
   var load = module.load;
-  for (index of OOB_INDEXES) //assertEquals(NaN, load(index));
+  for (index of OOB_INDEXES) assertEquals(NaN, load(index));
   checkView(new Float64Array(buffer), load, 3);
 });
 

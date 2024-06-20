@@ -58,7 +58,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     .exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(10 + 5 + 5 + 5 - (10 * 5 * 5 * 5), instance.exports.main(10, 5))
+  assertEquals(10 + 5 + 5 + 5 - (10 * 5 * 5 * 5), instance.exports.main(10, 5))
 })();
 
 // Test the interaction between tail calls and loop unrolling.
@@ -86,7 +86,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
   let module = new WebAssembly.Module(builder.toBuffer());
   let instance = new WebAssembly.Instance(module);
-  //assertEquals(instance.exports.main(1), 1);
+  assertEquals(instance.exports.main(1), 1);
 })();
 
 // Test the interaction between the eh proposal and loop unrolling.
@@ -134,7 +134,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
                    () => instance.exports.rethrow_nested(0));
   assertWasmThrows(instance, except2, [],
                    () => instance.exports.rethrow_nested(1));
-  //assertEquals(23, instance.exports.rethrow_nested(2));
+  assertEquals(23, instance.exports.rethrow_nested(2));
 })();
 
 (function TestThrow() {
@@ -193,7 +193,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     .exportFunc();
 
   let instance = builder.instantiate();
-  //assertEquals(11, instance.exports.throw_catch(0));
+  assertEquals(11, instance.exports.throw_catch(0));
 })();
 
 // Test that loops are unrolled in the presence of builtins.

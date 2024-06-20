@@ -21,13 +21,13 @@ function compileAdd(val) {
   return builder.instantiate();
 }
 
-//assertEquals(0, %WasmCompiledExportWrappersCount());
+assertEquals(0, %WasmCompiledExportWrappersCount());
 let a = compileAdd(1);
 a.exports.fct(1);
-//assertEquals(1, %WasmCompiledExportWrappersCount());
+assertEquals(1, %WasmCompiledExportWrappersCount());
 let b = compileAdd(2);
 b.exports.fct(1);
-//assertEquals(1, %WasmCompiledExportWrappersCount());
+assertEquals(1, %WasmCompiledExportWrappersCount());
 let c = compileAdd(2);
 c.exports.fct(1);
-//assertEquals(1, %WasmCompiledExportWrappersCount());
+assertEquals(1, %WasmCompiledExportWrappersCount());

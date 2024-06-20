@@ -21,10 +21,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var module = builder.instantiate();
 
-  //assertEquals("object", typeof module.exports);
-  //assertEquals("function", typeof module.exports.main);
+  assertEquals("object", typeof module.exports);
+  assertEquals("function", typeof module.exports.main);
 
-  //assertEquals(kReturnValue, module.exports.main());
+  assertEquals(kReturnValue, module.exports.main());
 })();
 
 (function testExportedTwice() {
@@ -44,12 +44,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var module = builder.instantiate();
 
-  //assertEquals("object", typeof module.exports);
-  //assertEquals("function", typeof module.exports.blah);
-  //assertEquals("function", typeof module.exports.foo);
+  assertEquals("object", typeof module.exports);
+  assertEquals("function", typeof module.exports.blah);
+  assertEquals("function", typeof module.exports.foo);
 
-  //assertEquals(kReturnValue, module.exports.foo());
-  //assertEquals(kReturnValue, module.exports.blah());
+  assertEquals(kReturnValue, module.exports.foo());
+  assertEquals(kReturnValue, module.exports.blah());
   assertSame(module.exports.blah, module.exports.foo);
 })();
 
@@ -69,10 +69,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var module = builder.instantiate();
 
-  //assertEquals("object", typeof module.exports);
-  //assertEquals("function", typeof module.exports[""]);
+  assertEquals("object", typeof module.exports);
+  assertEquals("function", typeof module.exports[""]);
 
-  //assertEquals(kReturnValue, module.exports[""]());
+  assertEquals(kReturnValue, module.exports[""]());
 })();
 
 (function testNumericName() {
@@ -91,10 +91,10 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   var module = builder.instantiate();
 
-  //assertEquals("object", typeof module.exports);
-  //assertEquals("function", typeof module.exports["0"]);
+  assertEquals("object", typeof module.exports);
+  assertEquals("function", typeof module.exports["0"]);
 
-  //assertEquals(kReturnValue, module.exports["0"]());
+  assertEquals(kReturnValue, module.exports["0"]());
 })();
 
 (function testExportNameClash() {
@@ -121,12 +121,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate();
   let e = instance.exports;
-  //assertEquals("function", typeof e.a);
-  //assertEquals("function", typeof e.b);
-  //assertEquals("function", typeof e.c);
+  assertEquals("function", typeof e.a);
+  assertEquals("function", typeof e.b);
+  assertEquals("function", typeof e.c);
   assertSame(e.a, e.b);
   assertSame(e.a, e.c);
-  //assertEquals(String(f.index), e.a.name);
+  assertEquals(String(f.index), e.a.name);
 })();
 
 
@@ -142,8 +142,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({m: {a: js}});
   let e = instance.exports;
-  //assertEquals("function", typeof e.f);
-  //assertEquals("function", typeof e.g);
+  assertEquals("function", typeof e.f);
+  assertEquals("function", typeof e.g);
   assertFalse(e.f == js);
   assertFalse(e.g == js);
   assertTrue(e.f == e.g);
@@ -163,8 +163,8 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let instance = builder.instantiate({q: {a: js, b: js}});
   let e = instance.exports;
-  //assertEquals("function", typeof e.f);
-  //assertEquals("function", typeof e.g);
+  assertEquals("function", typeof e.f);
+  assertEquals("function", typeof e.g);
   assertFalse(e.f == js);
   assertFalse(e.g == js);
   assertFalse(e.f == e.g);

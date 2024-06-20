@@ -23,15 +23,15 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
   var module = builder.instantiate({
     a: {
       a(param) {
-        //assertEquals(typeof param, "bigint");
-        //assertEquals(param, 7n);
+        assertEquals(typeof param, "bigint");
+        assertEquals(param, 7n);
         a_was_called = true;
         return 12n;
       },
     }
   });
 
-  //assertEquals(module.exports.fn(), 12n);
+  assertEquals(module.exports.fn(), 12n);
 
   assertTrue(a_was_called);
 })();

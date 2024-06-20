@@ -63,7 +63,7 @@ let instance = (() => {
 })();
 
 // Wasm-exposed null is the same as JS null.
-//assertEquals(instance.exports.struct_null(), null);
+assertEquals(instance.exports.struct_null(), null);
 
 // We can roundtrip a struct as structref.
 instance.exports.struct_id(instance.exports.struct_producer());
@@ -143,7 +143,7 @@ assertThrows(
   'type incompatibility when transforming from/to JS');
 
 // We can roundtrip an extern.
-//assertEquals(null, instance.exports.extern_id(instance.exports.extern_null()));
+assertEquals(null, instance.exports.extern_id(instance.exports.extern_null()));
 
 // We can roundtrip null typed as one of the three null types though wasm.
 for (const nullType of ["none", "nofunc", "noextern"]) {

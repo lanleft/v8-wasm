@@ -74,8 +74,8 @@ let helper = (function () {
 
   let instance = builder.instantiate({m: {get_exnref: helper.exports.get_exnref}});
   let wasm = instance.exports;
-  //assertEquals([0, 0, 1, 0], wasm.testExnRef());
-  //assertEquals([1, 1, 1, 0], wasm.testNullExnRef());
+  assertEquals([0, 0, 1, 0], wasm.testExnRef());
+  assertEquals([1, 1, 1, 0], wasm.testNullExnRef());
 })();
 
 (function RefCastExnRef() {
@@ -273,27 +273,27 @@ let helper = (function () {
   let wasm = instance.exports;
   let exnRef = getExnRef();
 
-  //assertEquals(0, wasm.castToExnRef(null));
-  //assertEquals(1, wasm.castToExnRef(exnRef));
+  assertEquals(0, wasm.castToExnRef(null));
+  assertEquals(1, wasm.castToExnRef(exnRef));
 
-  //assertEquals(0, wasm.castToNullExnRef(null));
-  //assertEquals(0, wasm.castToNullExnRef(exnRef));
+  assertEquals(0, wasm.castToNullExnRef(null));
+  assertEquals(0, wasm.castToNullExnRef(exnRef));
 
-  //assertEquals(1, wasm.castNullToExnRef(null));
-  //assertEquals(1, wasm.castNullToExnRef(exnRef));
+  assertEquals(1, wasm.castNullToExnRef(null));
+  assertEquals(1, wasm.castNullToExnRef(exnRef));
 
-  //assertEquals(1, wasm.castNullToNullExnRef(null));
-  //assertEquals(0, wasm.castNullToNullExnRef(exnRef));
+  assertEquals(1, wasm.castNullToNullExnRef(null));
+  assertEquals(0, wasm.castNullToNullExnRef(exnRef));
 
-  //assertEquals(1, wasm.castFailToExnRef(null));
-  //assertEquals(0, wasm.castFailToExnRef(exnRef));
+  assertEquals(1, wasm.castFailToExnRef(null));
+  assertEquals(0, wasm.castFailToExnRef(exnRef));
 
-  //assertEquals(1, wasm.castFailToNullExnRef(null));
-  //assertEquals(1, wasm.castFailToNullExnRef(exnRef));
+  assertEquals(1, wasm.castFailToNullExnRef(null));
+  assertEquals(1, wasm.castFailToNullExnRef(exnRef));
 
-  //assertEquals(0, wasm.castFailNullToExnRef(null));
-  //assertEquals(0, wasm.castFailNullToExnRef(exnRef));
+  assertEquals(0, wasm.castFailNullToExnRef(null));
+  assertEquals(0, wasm.castFailNullToExnRef(exnRef));
 
-  //assertEquals(0, wasm.castFailNullToNullExnRef(null));
-  //assertEquals(1, wasm.castFailNullToNullExnRef(exnRef));
+  assertEquals(0, wasm.castFailNullToNullExnRef(null));
+  assertEquals(1, wasm.castFailNullToNullExnRef(exnRef));
 })();

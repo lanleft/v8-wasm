@@ -57,7 +57,7 @@ const indexes = (() => {
       } else {
 //        print(`  ${i} = ${f(i)}`);
         a.store(i, f(i));
-        //assertEquals(f(i), a.load(i));
+        assertEquals(f(i), a.load(i));
       }
     }
   }
@@ -70,7 +70,7 @@ const indexes = (() => {
     return;
   }
 
-  //assertEquals(kMaxMemory, memory.buffer.byteLength);
+  assertEquals(kMaxMemory, memory.buffer.byteLength);
 
   for (let offset of indexes) {
     let a = BuildAccessors(kWasmI32, kExprI32LoadMem, kExprI32StoreMem, offset);

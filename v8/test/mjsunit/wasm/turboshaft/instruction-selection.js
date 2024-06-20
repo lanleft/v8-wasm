@@ -16,7 +16,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(42, wasm.id(42));
+  assertEquals(42, wasm.id(42));
 
 })();
 
@@ -93,19 +93,19 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(3 + (4 * 5), wasm.madd(3, 4, 5));
-  //assertEquals((3 * 4) + 5, wasm.madd2(3, 4, 5));
-  //assertEquals(5 + -7, wasm.addConstant(5));
-  //assertEquals(5 + -7, wasm.add(5, -7));
+  assertEquals(3 + (4 * 5), wasm.madd(3, 4, 5));
+  assertEquals((3 * 4) + 5, wasm.madd2(3, 4, 5));
+  assertEquals(5 + -7, wasm.addConstant(5));
+  assertEquals(5 + -7, wasm.add(5, -7));
 
-  //assertEquals(3 - (4 * 5), wasm.msub(3, 4, 5));
-  //assertEquals(5 - -7, wasm.subConstant(5));
-  //assertEquals(5 - -7, wasm.sub(5, -7));
+  assertEquals(3 - (4 * 5), wasm.msub(3, 4, 5));
+  assertEquals(5 - -7, wasm.subConstant(5));
+  assertEquals(5 - -7, wasm.sub(5, -7));
 
-  //assertEquals(42 * 9, wasm.mulConstant(42));
-  //assertEquals(-42 * 4, wasm.mulNegate(42, 4));
-  //assertEquals(42 * -4, wasm.mulNegate2(42, 4));
-  //assertEquals(5 * -7, wasm.mul(5, -7));
+  assertEquals(42 * 9, wasm.mulConstant(42));
+  assertEquals(-42 * 4, wasm.mulNegate(42, 4));
+  assertEquals(42 * -4, wasm.mulNegate2(42, 4));
+  assertEquals(5 * -7, wasm.mul(5, -7));
 })();
 
 (function ArithmeticInt64() {
@@ -181,19 +181,19 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(3n + (4n * 5n), wasm.madd(3n, 4n, 5n));
-  //assertEquals((3n * 4n) + 5n, wasm.madd2(3n, 4n, 5n));
-  //assertEquals(5n + -7n, wasm.addConstant(5n));
-  //assertEquals(5n + -7n, wasm.add(5n, -7n));
+  assertEquals(3n + (4n * 5n), wasm.madd(3n, 4n, 5n));
+  assertEquals((3n * 4n) + 5n, wasm.madd2(3n, 4n, 5n));
+  assertEquals(5n + -7n, wasm.addConstant(5n));
+  assertEquals(5n + -7n, wasm.add(5n, -7n));
 
-  //assertEquals(3n - (4n * 5n), wasm.msub(3n, 4n, 5n));
-  //assertEquals(5n - -7n, wasm.subConstant(5n));
-  //assertEquals(5n - -7n, wasm.sub(5n, -7n));
+  assertEquals(3n - (4n * 5n), wasm.msub(3n, 4n, 5n));
+  assertEquals(5n - -7n, wasm.subConstant(5n));
+  assertEquals(5n - -7n, wasm.sub(5n, -7n));
 
-  //assertEquals(42n * 9n, wasm.mulConstant(42n));
-  //assertEquals(-42n * 4n, wasm.mulNegate(42n, 4n));
-  //assertEquals(42n * -4n, wasm.mulNegate2(42n, 4n));
-  //assertEquals(5n * -7n, wasm.mul(5n, -7n));
+  assertEquals(42n * 9n, wasm.mulConstant(42n));
+  assertEquals(-42n * 4n, wasm.mulNegate(42n, 4n));
+  assertEquals(42n * -4n, wasm.mulNegate2(42n, 4n));
+  assertEquals(5n * -7n, wasm.mul(5n, -7n));
 })();
 
 (function Loads() {
@@ -228,16 +228,16 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(0, wasm.isString({}));
-  //assertEquals(0, wasm.isString(1));
-  //assertEquals(0, wasm.isString(1.5));
-  //assertEquals(0, wasm.isString(-0.0));
-  //assertEquals(0, wasm.isString(null));
-  //assertEquals(1, wasm.isString("test"));
+  assertEquals(0, wasm.isString({}));
+  assertEquals(0, wasm.isString(1));
+  assertEquals(0, wasm.isString(1.5));
+  assertEquals(0, wasm.isString(-0.0));
+  assertEquals(0, wasm.isString(null));
+  assertEquals(1, wasm.isString("test"));
 
-  //assertEquals(1, wasm.factorial(1));
-  //assertEquals(24, wasm.factorial(4));
-  //assertEquals(720, wasm.factorial(6));
+  assertEquals(1, wasm.factorial(1));
+  assertEquals(24, wasm.factorial(4));
+  assertEquals(720, wasm.factorial(6));
 })();
 
 (function LoadsAndStoresArrays() {
@@ -293,7 +293,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
       wasm[`set${name}`](array, i, i * 2);
     }
     for (let i = 0; i < size; ++i) {
-      //assertEquals(i * 2, wasm[`get${name}`](array, i));
+      assertEquals(i * 2, wasm[`get${name}`](array, i));
     }
     assertTraps(kTrapNullDereference, () => wasm[`get${name}`](null, 1, 1));
     assertTraps(kTrapNullDereference, () => wasm[`set${name}`](null, 1));
@@ -338,7 +338,7 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
   let wasm = builder.instantiate().exports;
   let myStruct = wasm.createStruct(1, 2, 3n, null);
-  //assertEquals([1, 2, 3n, null], wasm.get(myStruct));
+  assertEquals([1, 2, 3n, null], wasm.get(myStruct));
   assertTraps(kTrapNullDereference, () => wasm.get(null));
 
 })();
@@ -377,12 +377,12 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(
+  assertEquals(
     0b10101010_00000000_01010101_00000000n, wasm.and(
     0b10101010_00000000_11111111_01010101n,
     0b11111111_11111111_01010101_00000000n));
-  //assertEquals(0b101n, wasm.maskAfterShift(0b1010101010101010n));
-  //assertEquals(0b101n, wasm.shiftAfterMask(0b1010101010101010n));
+  assertEquals(0b101n, wasm.maskAfterShift(0b1010101010101010n));
+  assertEquals(0b101n, wasm.shiftAfterMask(0b1010101010101010n));
 })();
 
 (function SignedExtendRightShiftValue() {
@@ -398,6 +398,6 @@ d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     .exportFunc();
 
   let wasm = builder.instantiate().exports;
-  //assertEquals(42n, wasm.shrsExtend(42 << 11));
-  //assertEquals(-41n, wasm.shrsExtend(-41 << 11));
+  assertEquals(42n, wasm.shrsExtend(42 << 11));
+  assertEquals(-41n, wasm.shrsExtend(-41 << 11));
 })();

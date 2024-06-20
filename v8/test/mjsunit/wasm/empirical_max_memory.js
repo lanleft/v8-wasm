@@ -42,7 +42,7 @@ let kMaxMemory = 2 * k1GiB - kPageSize;
       a.store(i, f(i));
     }
     for (let i = 0; i < max; i += stride) {
-      //assertEquals(f(i), a.load(i));
+      assertEquals(f(i), a.load(i));
     }
   }
 
@@ -54,7 +54,7 @@ let kMaxMemory = 2 * k1GiB - kPageSize;
     return;
   }
 
-  //assertEquals(kMaxMemory, memory.buffer.byteLength);
+  assertEquals(kMaxMemory, memory.buffer.byteLength);
 
   {
     let a = BuildAccessors(kWasmI32, kExprI32LoadMem, kExprI32StoreMem);

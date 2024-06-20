@@ -11,18 +11,18 @@ function assertModule(module, memsize) {
   assertFalse(module === undefined);
   assertFalse(module === null);
   assertFalse(module === 0);
-  //assertEquals("object", typeof module);
+  assertEquals("object", typeof module);
 
   // Check the memory is an ArrayBuffer.
   var mem = module.exports.memory;
   assertFalse(mem === undefined);
   assertFalse(mem === null);
   assertFalse(mem === 0);
-  //assertEquals("object", typeof mem);
+  assertEquals("object", typeof mem);
   assertTrue(mem instanceof WebAssembly.Memory);
   var buf = mem.buffer;
   assertTrue(buf instanceof ArrayBuffer);
-  //assertEquals(memsize, buf.byteLength);
+  assertEquals(memsize, buf.byteLength);
   for (var i = 0; i < 4; i++) {
     module.exports.memory = 0;  // should be ignored
     mem.buffer = 0; // should be ignored
@@ -32,13 +32,13 @@ function assertModule(module, memsize) {
 }
 
 function assertFunction(module, func) {
-  //assertEquals("object", typeof module.exports);
+  assertEquals("object", typeof module.exports);
 
   var exp = module.exports[func];
   assertFalse(exp === undefined);
   assertFalse(exp === null);
   assertFalse(exp === 0);
-  //assertEquals("function", typeof exp);
+  assertEquals("function", typeof exp);
   return exp;
 }
 
@@ -63,7 +63,7 @@ function assertFunction(module, func) {
   // Check the properties of the functions.
   for (i = 0; i < 1000; i++) {
     var sub = assertFunction(module, "sub" + i);
-    //assertEquals(33 - (i % 61), sub(33));
+    assertEquals(33 - (i % 61), sub(33));
   }
 })();
 
@@ -97,8 +97,8 @@ function assertFunction(module, func) {
   // Check the properties of the functions.
   for (i = 0; i < 256; i++) {
     var add = assertFunction(module, "add" + i);
-    //assertEquals(88, add(33, 55));
-    //assertEquals(88888, add(33333, 55555));
-    //assertEquals(8888888, add(3333333, 5555555));
+    assertEquals(88, add(33, 55));
+    assertEquals(88888, add(33333, 55555));
+    assertEquals(8888888, add(3333333, 5555555));
   }
 })();

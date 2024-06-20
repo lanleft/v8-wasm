@@ -13,7 +13,7 @@ function assertValidAsm(func) {
 
 function assertWasm(expected, func, ffi) {
   print("Testing " + func.name + "...");
-  //assertEquals(
+  assertEquals(
       expected, func(stdlib, ffi, new ArrayBuffer(kMinHeapSize)).caller());
   assertValidAsm(func);
 }
@@ -44,8 +44,8 @@ function TestInt32HeapAccessExternal() {
   var module_decl = eval('(' + TestInt32HeapAccess.toString() + ')');
   var module = module_decl(stdlib, null, memory);
   assertValidAsm(module_decl);
-  //assertEquals(7, module.caller());
-  //assertEquals(7, memory_int32[2]);
+  assertEquals(7, module.caller());
+  assertEquals(7, memory_int32[2]);
 }
 
 TestInt32HeapAccessExternal();
@@ -69,8 +69,8 @@ function TestHeapAccessIntTypes() {
     var module_decl = eval('(' + code + ')');
     var module = module_decl(stdlib, null, memory);
     assertValidAsm(module_decl);
-    //assertEquals(7, module.caller());
-    //assertEquals(7, memory_view[2]);
+    assertEquals(7, module.caller());
+    assertEquals(7, memory_view[2]);
     assertValidAsm(module_decl);
   }
 }
@@ -108,8 +108,8 @@ function TestFloatHeapAccessExternal() {
   var module_decl = eval('(' + TestFloatHeapAccess.toString() + ')');
   var module = module_decl(stdlib, null, memory);
   assertValidAsm(module_decl);
-  //assertEquals(1, module.caller());
-  //assertEquals(9.0, memory_float64[1]);
+  assertEquals(1, module.caller());
+  assertEquals(9.0, memory_float64[1]);
 }
 
 TestFloatHeapAccessExternal();
@@ -157,12 +157,12 @@ TestFloatHeapAccessExternal();
   m.storeb(20, 123);
   m.storeb(21, 42);
   m.storeb(22, 77);
-  //assertEquals(123, m.load(20));
-  //assertEquals(42, m.load(21));
-  //assertEquals(77, m.load(22));
-  //assertEquals(123, m.iload(0));
-  //assertEquals(42, m.iload(4));
-  //assertEquals(77, m.iload(8));
+  assertEquals(123, m.load(20));
+  assertEquals(42, m.load(21));
+  assertEquals(77, m.load(22));
+  assertEquals(123, m.iload(0));
+  assertEquals(42, m.iload(4));
+  assertEquals(77, m.iload(8));
 })();
 
 
