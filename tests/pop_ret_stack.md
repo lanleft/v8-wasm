@@ -6,7 +6,7 @@
    - [Idea 2: Understanding Torque](#idea-2-understanding-torque)
    - [Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function](#idea-3-overwrite-v8internalhistogram-__hidden-this-pointer-of-addsample-function)
 
-- [Jump function decoder](#jump-function-decoder)
+- [Function decoder](#function-decoder)
 
 # Exploreing
 
@@ -704,7 +704,7 @@ pwndbg> x/20wx 0x2acd001dca81-1
  *RDI  0x2acd001dca81 ◂— 0x2500000725001923
 ```
 
-### Jump function decoder
+### Function decoder
 
 ```js
 // r --expose-gc --allow-natives-syntax --sandbox-testing    --experimental-wasm-memory64 ../../../tests/t10.js
@@ -894,51 +894,16 @@ pwndbg> tele 0x7fff98000000+0x15000
 05:0028│  0x7fff98015028 —▸ 0x30a400038720 ◂— 0x2a040100000d61 /* 'a\r' */
 06:0030│  0x7fff98015030 —▸ 0x555556bfcac0 (Builtins_MathLog2) ◂— push rbp
 07:0038│  0x7fff98015038 —▸ 0x30a40003875c ◂— 0x2a060100000d61 /* 'a\r' */
-pwndbg> 
-08:0040│  0x7fff98015040 —▸ 0x555556bfcc00 (Builtins_MathSin) ◂— push rbp
-09:0048│  0x7fff98015048 —▸ 0x30a400038798 ◂— 0x2a080100000d61 /* 'a\r' */
-0a:0050│  0x7fff98015050 —▸ 0x555556bfcd40 (Builtins_MathSign) ◂— push rbp
-0b:0058│  0x7fff98015058 —▸ 0x30a4000387d4 ◂— 0x2a0a0100000d61 /* 'a\r' */
-0c:0060│  0x7fff98015060 —▸ 0x555556bfce00 (Builtins_MathSinh) ◂— push rbp
-0d:0068│  0x7fff98015068 —▸ 0x30a400038810 ◂— 0x2a0c0100000d61 /* 'a\r' */
-0e:0070│  0x7fff98015070 —▸ 0x555556bfcf40 (Builtins_MathSqrt) ◂— push rbp
-0f:0078│  0x7fff98015078 —▸ 0x30a40003884c ◂— 0x2a0e0100000d61 /* 'a\r' */
-pwndbg> 
-10:0080│  0x7fff98015080 —▸ 0x555556bfd080 (Builtins_MathTan) ◂— push rbp
-11:0088│  0x7fff98015088 —▸ 0x30a400038888 ◂— 0x2a100100000d61 /* 'a\r' */
-12:0090│  0x7fff98015090 —▸ 0x555556bfd1c0 (Builtins_MathTanh) ◂— push rbp
-13:0098│  0x7fff98015098 —▸ 0x30a4000388c4 ◂— 0x2a120100000d61 /* 'a\r' */
-14:00a0│  0x7fff980150a0 —▸ 0x555556bfd300 (Builtins_MathHypot) ◂— push rbp
-15:00a8│  0x7fff980150a8 —▸ 0x30a400038900 ◂— 0x2a140100000d61 /* 'a\r' */
-16:00b0│  0x7fff980150b0 —▸ 0x555556bfdd40 (Builtins_MathRandom) ◂— push rbp
-17:00b8│  0x7fff980150b8 —▸ 0x30a40003893c ◂— 0x2a160100000d61 /* 'a\r' */
-pwndbg> 
-18:00c0│  0x7fff980150c0 —▸ 0x555556bfde80 (Builtins_NumberPrototypeToString) ◂— push rbp
-19:00c8│  0x7fff980150c8 —▸ 0x30a400038978 ◂— 0x2a180100000d61 /* 'a\r' */
-1a:00d0│  0x7fff980150d0 —▸ 0x555556bfe900 (Builtins_NumberIsFinite) ◂— push rbp
-1b:00d8│  0x7fff980150d8 —▸ 0x30a4000389b4 ◂— 0x2a1a0100000d61 /* 'a\r' */
-1c:00e0│  0x7fff980150e0 —▸ 0x555556bfe9c0 (Builtins_NumberIsInteger) ◂— push rbp
-1d:00e8│  0x7fff980150e8 —▸ 0x30a4000389f0 ◂— 0x2a1c0100000d61 /* 'a\r' */
-1e:00f0│  0x7fff980150f0 —▸ 0x555556bfeb40 (Builtins_NumberIsNaN) ◂— push rbp
-1f:00f8│  0x7fff980150f8 —▸ 0x30a400038a2c ◂— 0x2a1e0100000d61 /* 'a\r' */
-pwndbg> 
-20:0100│  0x7fff98015100 —▸ 0x555556bfebc0 (Builtins_NumberIsSafeInteger) ◂— push rbp
-21:0108│  0x7fff98015108 —▸ 0x30a400038a68 ◂— 0x2a200100000d61 /* 'a\r' */
-22:0110│  0x7fff98015110 —▸ 0x555556bfed40 (Builtins_NumberPrototypeValueOf) ◂— push rbp
-23:0118│  0x7fff98015118 —▸ 0x30a400038aa4 ◂— 0x2a220100000d61 /* 'a\r' */
-24:0120│  0x7fff98015120 —▸ 0x555556bfee40 (Builtins_NumberParseFloat) ◂— push rbp
-25:0128│  0x7fff98015128 —▸ 0x30a400038ae0 ◂— 0x2a240100000d61 /* 'a\r' */
+// ... more ...
 //==============================
-
-
-Builtins_MathLog
 ```
 
+Some interesting functions:
 
 ```js
 // Builtins_WasmCEntry
 v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x12d4)*0x200);
-
+// rbx = 0 -> and can not control, but it makes the program catchs segfault
 /// asm 
 .text:0000555556B924FD loc_555556B924FD:                       ; CODE XREF: Builtins_WasmCEntry+3D↑j
 .text:0000555556B924FD                 mov     rdi, rax
