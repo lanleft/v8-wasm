@@ -8,3 +8,4 @@ wabt-1.0.35-ubuntu-20.04.tar.gz
 wabt-1.0.35/
 .cipd/
 v8/core
+tests/core

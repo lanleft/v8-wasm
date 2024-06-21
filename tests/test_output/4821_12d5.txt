@@ -1,0 +1,80 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 967896)]
+[New Thread 0x7ffff6a2c700 (LWP 967897)]
+[New Thread 0x7ffff622b700 (LWP 967898)]
+[New Thread 0x7ffff5a2a700 (LWP 967905)]
+[New Thread 0x7ffff5229700 (LWP 967909)]
+[New Thread 0x7ffff4a28700 (LWP 967913)]
+[New Thread 0x7fffe7fff700 (LWP 967916)]
+[New Thread 0x7fffe77fe700 (LWP 967917)]
+[New Thread 0x7fffe6ffd700 (LWP 967932)]
+[New Thread 0x7fffe67fc700 (LWP 967935)]
+[New Thread 0x7fffe5ffb700 (LWP 967937)]
+[New Thread 0x7fffe57fa700 (LWP 967954)]
+[New Thread 0x7fffe4ff9700 (LWP 967963)]
+[New Thread 0x7fffdbfff700 (LWP 967964)]
+[New Thread 0x7fffdb7fe700 (LWP 967965)]
+[New Thread 0x7fffdaffd700 (LWP 967968)]
+[New Thread 0x7fffda7fc700 (LWP 967970)]
+[New Thread 0x7fffd9ffb700 (LWP 967989)]
+[New Thread 0x7fffd97fa700 (LWP 967991)]
+[New Thread 0x7fffd8ff9700 (LWP 967993)]
+[New Thread 0x7fffcbfff700 (LWP 968012)]
+[New Thread 0x7fffcb7fe700 (LWP 968023)]
+[New Thread 0x7fffcaffd700 (LWP 968026)]
+[New Thread 0x7fffca7fc700 (LWP 968028)]
+[New Thread 0x7fffc9ffb700 (LWP 968030)]
+[New Thread 0x7fffc97fa700 (LWP 968032)]
+[New Thread 0x7fffc8ff9700 (LWP 968066)]
+[New Thread 0x7fffc3fff700 (LWP 968067)]
+[New Thread 0x7fffc37fe700 (LWP 968068)]
+[New Thread 0x7fffc2ffd700 (LWP 968069)]
+[New Thread 0x7fffc27fc700 (LWP 968079)]
+[New Thread 0x7fffc1ffb700 (LWP 968081)]
+[New Thread 0x7fffc17fa700 (LWP 968086)]
+[New Thread 0x7fffc0ff9700 (LWP 968118)]
+[New Thread 0x7fffb7fff700 (LWP 968121)]
+[New Thread 0x7fffb77fe700 (LWP 968133)]
+[New Thread 0x7fffb6ffd700 (LWP 968138)]
+[New Thread 0x7fffb67fc700 (LWP 968140)]
+[New Thread 0x7fffb5ffb700 (LWP 968141)]
+[New Thread 0x7fffb57fa700 (LWP 968142)]
+[New Thread 0x7fffb4ff9700 (LWP 968143)]
+[New Thread 0x7fffa7fff700 (LWP 968145)]
+[New Thread 0x7fffa77fe700 (LWP 968146)]
+[New Thread 0x7fffa6ffd700 (LWP 968148)]
+[New Thread 0x7fffa67fc700 (LWP 968152)]
+[New Thread 0x7fffa5ffb700 (LWP 968153)]
+[New Thread 0x7fffa57fa700 (LWP 968154)]
+[New Thread 0x7fffa4ff9700 (LWP 968155)]
+sandbox_base: 0x13a00000000
+target_page: 0x14dde6951000
+0x013a001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x13a001dce6d)>
+0x2bf801
+4821
+0x25aa01
+
+Thread 1 "d8" received signal SIGTRAP, Trace/breakpoint trap.
+0x0000555556b925c1 in Builtins_DirectCEntry ()
+Program finished successfully.

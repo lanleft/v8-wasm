@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 963403)]
+[New Thread 0x7ffff6a2c700 (LWP 963404)]
+[New Thread 0x7ffff622b700 (LWP 963405)]
+[New Thread 0x7ffff5a2a700 (LWP 963406)]
+[New Thread 0x7ffff5229700 (LWP 963407)]
+[New Thread 0x7ffff4a28700 (LWP 963408)]
+[New Thread 0x7fffe7fff700 (LWP 963409)]
+[New Thread 0x7fffe77fe700 (LWP 963410)]
+[New Thread 0x7fffe6ffd700 (LWP 963411)]
+[New Thread 0x7fffe67fc700 (LWP 963412)]
+[New Thread 0x7fffe5ffb700 (LWP 963413)]
+[New Thread 0x7fffe57fa700 (LWP 963414)]
+[New Thread 0x7fffe4ff9700 (LWP 963415)]
+[New Thread 0x7fffdbfff700 (LWP 963416)]
+[New Thread 0x7fffdb7fe700 (LWP 963417)]
+[New Thread 0x7fffdaffd700 (LWP 963418)]
+[New Thread 0x7fffda7fc700 (LWP 963419)]
+[New Thread 0x7fffd9ffb700 (LWP 963420)]
+[New Thread 0x7fffd97fa700 (LWP 963421)]
+[New Thread 0x7fffd8ff9700 (LWP 963422)]
+[New Thread 0x7fffcbfff700 (LWP 963423)]
+[New Thread 0x7fffcb7fe700 (LWP 963424)]
+[New Thread 0x7fffcaffd700 (LWP 963425)]
+[New Thread 0x7fffca7fc700 (LWP 963426)]
+[New Thread 0x7fffc9ffb700 (LWP 963427)]
+[New Thread 0x7fffc97fa700 (LWP 963430)]
+[New Thread 0x7fffc8ff9700 (LWP 963431)]
+[New Thread 0x7fffc3fff700 (LWP 963432)]
+[New Thread 0x7fffc37fe700 (LWP 963433)]
+[New Thread 0x7fffc2ffd700 (LWP 963434)]
+[New Thread 0x7fffc27fc700 (LWP 963435)]
+[New Thread 0x7fffc1ffb700 (LWP 963436)]
+[New Thread 0x7fffc17fa700 (LWP 963437)]
+[New Thread 0x7fffc0ff9700 (LWP 963438)]
+[New Thread 0x7fffb7fff700 (LWP 963439)]
+[New Thread 0x7fffb77fe700 (LWP 963440)]
+[New Thread 0x7fffb6ffd700 (LWP 963441)]
+[New Thread 0x7fffb67fc700 (LWP 963442)]
+[New Thread 0x7fffb5ffb700 (LWP 963443)]
+[New Thread 0x7fffb57fa700 (LWP 963445)]
+[New Thread 0x7fffb4ff9700 (LWP 963447)]
+[New Thread 0x7fffa7fff700 (LWP 963448)]
+[New Thread 0x7fffa77fe700 (LWP 963449)]
+[New Thread 0x7fffa6ffd700 (LWP 963450)]
+[New Thread 0x7fffa67fc700 (LWP 963453)]
+[New Thread 0x7fffa5ffb700 (LWP 963454)]
+[New Thread 0x7fffa57fa700 (LWP 963455)]
+[New Thread 0x7fffa4ff9700 (LWP 963456)]
+sandbox_base: 0x1a9a00000000
+target_page: 0x28873d44b000
+0x1a9a001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x1a9a001dce6d)>
+0x2bf801
+4786
+0x256401
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555e3e1a1 in v8::internal::JSAtomicsMutex::UnlockAsyncLockedMutex(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Foreign>) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x0                 0
+rbx            0x555556fa6000      93825019830272
+rcx            0x7fff78000000      140735206653952
+rdx            0x555557014ec0      93825020284608
+rsi            0x555556fa6000      93825019830272
+rdi            0x7fffffffd4d0      140737488344272
+rbp            0x7fffffffd4c0      0x7fffffffd4c0
+rsp            0x7fffffffd4a0      0x7fffffffd4a0
+r8             0x1a9a00199cb5      29248728964277
+r9             0xfffffffffffffff7  -9
+r10            0x1a9a00000741      29248727287617
+r11            0xdd                221
+r12            0x555557014eb8      93825020284600
+r13            0x1c25c1            1844673
+r14            0x7fffffffd4d0      140737488344272
+r15            0x0                 0
+rip            0x555555e3e1a1      0x555555e3e1a1 <v8::internal::JSAtomicsMutex::UnlockAsyncLockedMutex(v8::internal::Isolate*, v8::internal::Handle<v8::internal::Foreign>)+49>
+eflags         0x10246             [ PF ZF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555e3e1a1 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+49>:	mov    rdi,QWORD PTR [r15+0x8]
+   0x555555e3e1a5 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+53>:	call   0x555555bfaf30 <_ZN2v88internal7Isolate24async_waiter_queue_nodesEv>
+   0x555555e3e1aa <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+58>:	mov    rdi,rax
+   0x555555e3e1ad <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+61>:	mov    rsi,r15
+   0x555555e3e1b0 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+64>:	call   0x555555e40b10 <_ZNSt4__Cr4listINS_10unique_ptrIN2v88internal6detail15WaiterQueueNodeENS_14default_deleteIS5_EEEENS_9allocatorIS8_EEE9remove_ifIZNS4_20AsyncWaiterQueueNodeINS3_18JSAtomicsConditionEE30RemoveFromAsyncWaiterQueueListEPSF_EUlRS8_E_EEmT_>
+   0x555555e3e1b5 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+69>:	mov    rax,QWORD PTR [r14]
+   0x555555e3e1b8 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+72>:	mov    DWORD PTR [rax+0x13],0xffffffff
+   0x555555e3e1bf <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+79>:	mov    rdx,QWORD PTR [r14]
+   0x555555e3e1c2 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+82>:	xor    ecx,ecx
+   0x555555e3e1c4 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+84>:	mov    eax,0x4
+   0x555555e3e1c9 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+89>:	lock cmpxchg DWORD PTR [rdx+0xf],ecx
+   0x555555e3e1ce <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+94>:	jne    0x555555e3e1db <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+107>
+   0x555555e3e1d0 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+96>:	add    rsp,0x8
+   0x555555e3e1d4 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+100>:	pop    rbx
+   0x555555e3e1d5 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+101>:	pop    r14
+   0x555555e3e1d7 <_ZN2v88internal14JSAtomicsMutex22UnlockAsyncLockedMutexEPNS0_7IsolateENS0_6HandleINS0_7ForeignEEE+103>:	pop    r15
+0x7fffffffd4a0:	0x00192da9	0x00001a9a	0x56fa6000	0x00005555
+0x7fffffffd4b0:	0x57014eb0	0x00005555	0x001c25c1	0x00001a9a
+0x7fffffffd4c0:	0xffffd500	0x00007fff	0x55aae7b6	0x00005555
+0x7fffffffd4d0:	0x00192da9	0x00001a9a	0x56fa6000	0x00005555

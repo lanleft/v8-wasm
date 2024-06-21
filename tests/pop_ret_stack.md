@@ -830,7 +830,7 @@ pwndbg> tele 0x7fff98000000+0x15fc0
 07:0038│  0x7fff98015ff8 —▸ 0x328e0003c26c ◂— 0x2bfe0100000d61 /* 'a\r' */
 
 ```
-`rdi` is wasm exported function `func1`. `$rdi+0xb` is a id decoder function ->  `Builtins_JSToWasmWrapper`. if we changes this value, we can point rcx to whatever functions on tables.
+`rdi` is wasm exported function `func1`. `$rdi+0xb` is a id decoder function ->  `Builtins_JSToWasmWrapper`. if we change this value, we can point rcx to whatever functions on tables.
 
 This is `Builtin_*` tables:
 
@@ -914,4 +914,64 @@ v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - 
 .text:0000555556B92500                 mov     rsi, r15
 .text:0000555556B92503                 lea     rdx, [r13-80h]
 .text:0000555556B92507                 call    rbx
+
+//
+condition <breakpoint_number> (($rdi & 0xFFFFFF) == 0x1dcca9)
+```
+
+...
+redirect to each function -> 
+programming 
+
+**It jumps to rwx area**
+
+```js
+1659:b2c8│  0x7fff98020000 —▸ 0x5555b6ac0040 ◂— mov ebx, 8 /* 0xcdbc4900000008bb */
+165a:b2d0│  0x7fff98020008 —▸ 0x17db0000005c ◂— 0x40000100000d61 /* 'a\r' */
+165b:b2d8│  0x7fff98020010 —▸ 0x5555b6ac0100 ◂— mov ebx, 0x40 /* 0x39bc4900000040bb */
+165c:b2e0│  0x7fff98020018 —▸ 0x17db00000144 ◂— 0x40020100000d61 /* 'a\r' */
+165d:b2e8│  0x7fff98020020 —▸ 0x5555b6ac0440 ◂— mov ebx, 0x48 /* 0xdbc4900000048bb */
+165e:b2f0│  0x7fff98020028 —▸ 0x17db0000021c ◂— 0x40040100000d61 /* 'a\r' */
+165f:b2f8│  0x7fff98020030 —▸ 0x5555b6ac0800 ◂— mov ebx, 0x70 /* 0xb1bc4900000070bb */
+pwndbg> 
+1660:b300│  0x7fff98020038 —▸ 0x17db00000300 ◂— 0x40060100000d61 /* 'a\r' */
+1661:b308│  0x7fff98020040 —▸ 0x5555b6ac0cc0 ◂— mov ebx, 0x28 /* 0x9bc4900000028bb */
+1662:b310│  0x7fff98020048 —▸ 0x17db0000037c ◂— 0x40080100000d61 /* 'a\r' */
+1663:b318│  0x7fff98020050 —▸ 0x5555b6ac0dc0 ◂— mov ebx, 0x30 /* 0x3dbc4900000030bb */
+1664:b320│  0x7fff98020058 —▸ 0x17db000003e0 ◂— 0x400a0100000d61 /* 'a\r' */
+1665:b328│  0x7fff98020060 —▸ 0x5555b6ac0e80 ◂— mov ebx, 0x30 /* 0xe1bc4900000030bb */
+
+pwndbg> vmmap 0x5555b6ac0040
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+             Start                End Perm     Size Offset File
+    0x555556f23000     0x55555706c000 rw-p   149000      0 [heap]
+►   0x5555b6ac0000     0x5555d6ac0000 rwxp 20000000      0 [anon_5555b6ac0] +0x40
+    0x7fff0c000000     0x7fff0c021000 rw-p    21000      0 [anon_7fff0c000]
+```
+
+Delete files contain special strings
+`grep -l "rcx            0xff5555" * | xargs rm`
+
+
+**JIT**
+
+we can jump into some baseline's jit function code.  
+```js
+// breakpoint 
+Instructions (size = 4808)
+0x7fff60015180     0  bb30000000           movl rbx,0x30
+0x7fff60015185     5  49bcad3d0c00c13b0000 REX.W movq r12,0x3bc1000c3dad    ;; object: 0x3bc1000c3dad <BytecodeArray[100]>
+0x7fff6001518f     f  e8ec214b1f           call 0x7fff7f4c7380  (BaselineOutOfLinePrologue)    ;; near builtin entry
+0x7fff60015194    14  3d69000000           cmp rax,0x69      ;; (compressed) object: 0x0b9e00000069 <undefined>
+0x7fff60015199    19  740d                 jz 0x7fff600151a8  <+0x28>
+0x7fff6001519b    1b  ba7a000000           movl rdx,0x7a
+0x7fff600151a0    20  41ff95a0540000       call [r13+0x54a0]
+0x7fff600151a7    27  cc                   int3l
+0x7fff600151a8    28  50                   push rax
+0x7fff600151a9    29  50                   push rax
+0x7fff600151aa    2a  50                   push rax
+0x7fff600151ab    2b  50                   push rax
+0x7fff600151ac    2c  50                   push rax
+//...
+
 ```

@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 1001202)]
+[New Thread 0x7ffff6a2c700 (LWP 1001203)]
+[New Thread 0x7ffff622b700 (LWP 1001204)]
+[New Thread 0x7ffff5a2a700 (LWP 1001205)]
+[New Thread 0x7ffff5229700 (LWP 1001206)]
+[New Thread 0x7ffff4a28700 (LWP 1001207)]
+[New Thread 0x7fffe7fff700 (LWP 1001208)]
+[New Thread 0x7fffe77fe700 (LWP 1001209)]
+[New Thread 0x7fffe6ffd700 (LWP 1001210)]
+[New Thread 0x7fffe67fc700 (LWP 1001211)]
+[New Thread 0x7fffe5ffb700 (LWP 1001212)]
+[New Thread 0x7fffe57fa700 (LWP 1001213)]
+[New Thread 0x7fffe4ff9700 (LWP 1001214)]
+[New Thread 0x7fffdbfff700 (LWP 1001215)]
+[New Thread 0x7fffdb7fe700 (LWP 1001216)]
+[New Thread 0x7fffdaffd700 (LWP 1001217)]
+[New Thread 0x7fffda7fc700 (LWP 1001218)]
+[New Thread 0x7fffd9ffb700 (LWP 1001219)]
+[New Thread 0x7fffd97fa700 (LWP 1001220)]
+[New Thread 0x7fffd8ff9700 (LWP 1001221)]
+[New Thread 0x7fffcbfff700 (LWP 1001222)]
+[New Thread 0x7fffcb7fe700 (LWP 1001223)]
+[New Thread 0x7fffcaffd700 (LWP 1001224)]
+[New Thread 0x7fffca7fc700 (LWP 1001225)]
+[New Thread 0x7fffc9ffb700 (LWP 1001226)]
+[New Thread 0x7fffc97fa700 (LWP 1001227)]
+[New Thread 0x7fffc8ff9700 (LWP 1001228)]
+[New Thread 0x7fffc3fff700 (LWP 1001229)]
+[New Thread 0x7fffc37fe700 (LWP 1001230)]
+[New Thread 0x7fffc2ffd700 (LWP 1001231)]
+[New Thread 0x7fffc27fc700 (LWP 1001232)]
+[New Thread 0x7fffc1ffb700 (LWP 1001233)]
+[New Thread 0x7fffc17fa700 (LWP 1001234)]
+[New Thread 0x7fffc0ff9700 (LWP 1001235)]
+[New Thread 0x7fffb7fff700 (LWP 1001236)]
+[New Thread 0x7fffb77fe700 (LWP 1001237)]
+[New Thread 0x7fffb6ffd700 (LWP 1001238)]
+[New Thread 0x7fffb67fc700 (LWP 1001239)]
+[New Thread 0x7fffb5ffb700 (LWP 1001240)]
+[New Thread 0x7fffb57fa700 (LWP 1001241)]
+[New Thread 0x7fffb4ff9700 (LWP 1001242)]
+[New Thread 0x7fffa7fff700 (LWP 1001243)]
+[New Thread 0x7fffa77fe700 (LWP 1001244)]
+[New Thread 0x7fffa6ffd700 (LWP 1001245)]
+[New Thread 0x7fffa67fc700 (LWP 1001246)]
+[New Thread 0x7fffa5ffb700 (LWP 1001247)]
+[New Thread 0x7fffa57fa700 (LWP 1001248)]
+[New Thread 0x7fffa4ff9700 (LWP 1001249)]
+sandbox_base: 0x1f3d00000000
+target_page: 0x506abe21000
+0x1f3d001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x1f3d001dce6d)>
+0x2bf801
+5869
+0x2dda01
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555e74040 in v8::internal::JSNumberFormat::NumberFormatFunction(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSNumberFormat>, v8::internal::Handle<v8::internal::Object>) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x753e              30014
+rbx            0x555556fa6000      93825019830272
+rcx            0x7fff78000000      140735206653952
+rdx            0x7fffffffd590      140737488344464
+rsi            0x1f3d00180000      34346855038976
+rdi            0x1f3d00180000      34346855038976
+rbp            0x7fffffffd4f0      0x7fffffffd4f0
+rsp            0x7fffffffd440      0x7fffffffd440
+r8             0x1f3d00199cb5      34346855144629
+r9             0xfffffffffffffff7  -9
+r10            0x1f3d00000741      34346853467969
+r11            0xdd                221
+r12            0x1f3d00192da9      34346855116201
+r13            0x555557014ea8      93825020284584
+r14            0x7fffffffd590      140737488344464
+r15            0x6                 6
+rip            0x555555e74040      0x555555e74040 <v8::internal::JSNumberFormat::NumberFormatFunction(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSNumberFormat>, v8::internal::Handle<v8::internal::Object>)+112>
+eflags         0x10203             [ CF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555e74040 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+112>:	mov    rax,QWORD PTR [rcx+rax*8]
+   0x555555e74044 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+116>:	movabs rcx,0xbf4bffffffffffff
+   0x555555e7404e <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+126>:	and    rcx,rax
+   0x555555e74051 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+129>:	mov    rax,QWORD PTR [rcx+0x28]
+   0x555555e74055 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+133>:	mov    r14,QWORD PTR [rax]
+   0x555555e74058 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+136>:	test   r14,r14
+   0x555555e7405b <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+139>:	je     0x555555e74170 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+416>
+   0x555555e74061 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+145>:	lea    rdi,[rbp-0x58]
+   0x555555e74065 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+149>:	mov    rsi,rbx
+   0x555555e74068 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+152>:	call   0x555555e72970 <_ZN2v88internal21IntlMathematicalValue4FromEPNS0_7IsolateENS0_6HandleINS0_6ObjectEEE>
+   0x555555e7406d <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+157>:	cmp    BYTE PTR [rbp-0x58],0x0
+   0x555555e74071 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+161>:	je     0x555555e74185 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+437>
+   0x555555e74077 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+167>:	movups xmm0,XMMWORD PTR [rbp-0x50]
+   0x555555e7407b <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+171>:	movaps XMMWORD PTR [rbp-0x70],xmm0
+   0x555555e7407f <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+175>:	lea    rdi,[rbp-0xa8]
+   0x555555e74086 <_ZN2v88internal14JSNumberFormat20NumberFormatFunctionEPNS0_7IsolateENS0_6HandleIS1_EENS4_INS0_6ObjectEEE+182>:	lea    rcx,[rbp-0x70]
+0x7fffffffd440:	0x00000000	0x00000000	0x00000000	0x00000000
+0x7fffffffd450:	0x00000000	0x00000000	0x56fa6000	0x00005555
+0x7fffffffd460:	0x57014ea8	0x00005555	0x56fa6080	0x00005555
+0x7fffffffd470:	0x00000000	0x00001f3d	0x57016740	0x00005555

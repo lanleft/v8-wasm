@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 985046)]
+[New Thread 0x7ffff6a2c700 (LWP 985048)]
+[New Thread 0x7ffff622b700 (LWP 985065)]
+[New Thread 0x7ffff5a2a700 (LWP 985067)]
+[New Thread 0x7ffff5229700 (LWP 985070)]
+[New Thread 0x7ffff4a28700 (LWP 985071)]
+[New Thread 0x7fffe7fff700 (LWP 985072)]
+[New Thread 0x7fffe77fe700 (LWP 985073)]
+[New Thread 0x7fffe6ffd700 (LWP 985074)]
+[New Thread 0x7fffe67fc700 (LWP 985075)]
+[New Thread 0x7fffe5ffb700 (LWP 985076)]
+[New Thread 0x7fffe57fa700 (LWP 985077)]
+[New Thread 0x7fffe4ff9700 (LWP 985078)]
+[New Thread 0x7fffdbfff700 (LWP 985079)]
+[New Thread 0x7fffdb7fe700 (LWP 985080)]
+[New Thread 0x7fffdaffd700 (LWP 985081)]
+[New Thread 0x7fffda7fc700 (LWP 985082)]
+[New Thread 0x7fffd9ffb700 (LWP 985083)]
+[New Thread 0x7fffd97fa700 (LWP 985084)]
+[New Thread 0x7fffd8ff9700 (LWP 985085)]
+[New Thread 0x7fffcbfff700 (LWP 985086)]
+[New Thread 0x7fffcb7fe700 (LWP 985087)]
+[New Thread 0x7fffcaffd700 (LWP 985088)]
+[New Thread 0x7fffca7fc700 (LWP 985089)]
+[New Thread 0x7fffc9ffb700 (LWP 985090)]
+[New Thread 0x7fffc97fa700 (LWP 985091)]
+[New Thread 0x7fffc8ff9700 (LWP 985092)]
+[New Thread 0x7fffc3fff700 (LWP 985093)]
+[New Thread 0x7fffc37fe700 (LWP 985094)]
+[New Thread 0x7fffc2ffd700 (LWP 985095)]
+[New Thread 0x7fffc27fc700 (LWP 985096)]
+[New Thread 0x7fffc1ffb700 (LWP 985098)]
+[New Thread 0x7fffc17fa700 (LWP 985099)]
+[New Thread 0x7fffc0ff9700 (LWP 985100)]
+[New Thread 0x7fffb7fff700 (LWP 985101)]
+[New Thread 0x7fffb77fe700 (LWP 985102)]
+[New Thread 0x7fffb6ffd700 (LWP 985103)]
+[New Thread 0x7fffb67fc700 (LWP 985104)]
+[New Thread 0x7fffb5ffb700 (LWP 985105)]
+[New Thread 0x7fffb57fa700 (LWP 985106)]
+[New Thread 0x7fffb4ff9700 (LWP 985107)]
+[New Thread 0x7fffa7fff700 (LWP 985108)]
+[New Thread 0x7fffa77fe700 (LWP 985109)]
+[New Thread 0x7fffa6ffd700 (LWP 985110)]
+[New Thread 0x7fffa67fc700 (LWP 985112)]
+[New Thread 0x7fffa5ffb700 (LWP 985113)]
+[New Thread 0x7fffa57fa700 (LWP 985114)]
+[New Thread 0x7fffa4ff9700 (LWP 985115)]
+sandbox_base: 0x37dd00000000
+target_page: 0x25bb6528c000
+0x37dd001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x37dd001dce6d)>
+0x2bf801
+4196
+0x20c801
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555c079ac in v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x1fc9002bf801      34948151769089
+rbx            0x2032              8242
+rcx            0x555556f310e0      93825019351264
+rdx            0x0                 0
+rsi            0x37dd001dce6d      61422329253485
+rdi            0x555556fc5d70      93825019960688
+rbp            0x7fffffffd3b0      0x7fffffffd3b0
+rsp            0x7fffffffd370      0x7fffffffd370
+r8             0x0                 0
+r9             0xaf                175
+r10            0x37dd002bf801      61422330181633
+r11            0x37dd00000069      61422327300201
+r12            0x555557014ec0      93825020284608
+r13            0x0                 0
+r14            0x37dd001dce9d      61422329253533
+r15            0x555556fa6000      93825019830272
+rip            0x555555c079ac      0x555555c079ac <v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+236>
+eflags         0x10202             [ IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555c079ac <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+236>:	mov    r12d,DWORD PTR [rax+0x7]
+   0x555555c079b0 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+240>:	sar    r12d,1
+   0x555555c079b3 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+243>:	mov    rdi,r15
+   0x555555c079b6 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+246>:	mov    rsi,r14
+   0x555555c079b9 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+249>:	call   0x555555c07b40 <_ZN2v88internal12_GLOBAL__N_126FirstTimeTierUpToSparkplugEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEE>
+   0x555555c079be <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+254>:	test   al,al
+   0x555555c079c0 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+256>:	je     0x555555c079d6 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+278>
+   0x555555c079c2 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+258>:	lea    rax,[rip+0x130c637]        # 0x555556f14000 <_ZN2v88internal8v8_flagsE>
+   0x555555c079c9 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+265>:	imul   r12d,DWORD PTR [rax+0xd0]
+   0x555555c079d1 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+273>:	jmp    0x555555c07af4 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+564>
+   0x555555c079d6 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+278>:	lea    rbx,[rip+0x130c623]        # 0x555556f14000 <_ZN2v88internal8v8_flagsE>
+   0x555555c079dd <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+285>:	mov    eax,0x3fffffff
+   0x555555c079e2 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+290>:	cmp    r12d,DWORD PTR [rbx+0x20c]
+   0x555555c079e9 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+297>:	jg     0x555555c07af7 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+567>
+   0x555555c079ef <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+303>:	test   r13d,0x100
+   0x555555c079f6 <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+310>:	jne    0x555555c07a0b <_ZN2v88internal14TieringManager18InterruptBudgetForEPNS0_7IsolateENS0_6TaggedINS0_10JSFunctionEEENSt4__Cr8optionalINS0_8CodeKindEEE+331>
+0x7fffffffd370:	0xffffd520	0x00007fff	0xffffd520	0x00007fff
+0x7fffffffd380:	0x001dce6d	0x000037dd	0xffffd548	0x00007fff
+0x7fffffffd390:	0x57014ec0	0x00005555	0x000004f5	0x00000000
+0x7fffffffd3a0:	0x56fa6000	0x00005555	0x00000000	0x000037dd

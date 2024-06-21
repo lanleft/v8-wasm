@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 1001594)]
+[New Thread 0x7ffff6a2c700 (LWP 1001595)]
+[New Thread 0x7ffff622b700 (LWP 1001596)]
+[New Thread 0x7ffff5a2a700 (LWP 1001597)]
+[New Thread 0x7ffff5229700 (LWP 1001598)]
+[New Thread 0x7ffff4a28700 (LWP 1001599)]
+[New Thread 0x7fffe7fff700 (LWP 1001600)]
+[New Thread 0x7fffe77fe700 (LWP 1001601)]
+[New Thread 0x7fffe6ffd700 (LWP 1001602)]
+[New Thread 0x7fffe67fc700 (LWP 1001603)]
+[New Thread 0x7fffe5ffb700 (LWP 1001604)]
+[New Thread 0x7fffe57fa700 (LWP 1001605)]
+[New Thread 0x7fffe4ff9700 (LWP 1001606)]
+[New Thread 0x7fffdbfff700 (LWP 1001607)]
+[New Thread 0x7fffdb7fe700 (LWP 1001608)]
+[New Thread 0x7fffdaffd700 (LWP 1001609)]
+[New Thread 0x7fffda7fc700 (LWP 1001610)]
+[New Thread 0x7fffd9ffb700 (LWP 1001611)]
+[New Thread 0x7fffd97fa700 (LWP 1001612)]
+[New Thread 0x7fffd8ff9700 (LWP 1001613)]
+[New Thread 0x7fffcbfff700 (LWP 1001614)]
+[New Thread 0x7fffcb7fe700 (LWP 1001615)]
+[New Thread 0x7fffcaffd700 (LWP 1001616)]
+[New Thread 0x7fffca7fc700 (LWP 1001617)]
+[New Thread 0x7fffc9ffb700 (LWP 1001618)]
+[New Thread 0x7fffc97fa700 (LWP 1001619)]
+[New Thread 0x7fffc8ff9700 (LWP 1001620)]
+[New Thread 0x7fffc3fff700 (LWP 1001621)]
+[New Thread 0x7fffc37fe700 (LWP 1001622)]
+[New Thread 0x7fffc2ffd700 (LWP 1001623)]
+[New Thread 0x7fffc27fc700 (LWP 1001624)]
+[New Thread 0x7fffc1ffb700 (LWP 1001625)]
+[New Thread 0x7fffc17fa700 (LWP 1001626)]
+[New Thread 0x7fffc0ff9700 (LWP 1001627)]
+[New Thread 0x7fffb7fff700 (LWP 1001628)]
+[New Thread 0x7fffb77fe700 (LWP 1001629)]
+[New Thread 0x7fffb6ffd700 (LWP 1001630)]
+[New Thread 0x7fffb67fc700 (LWP 1001631)]
+[New Thread 0x7fffb5ffb700 (LWP 1001632)]
+[New Thread 0x7fffb57fa700 (LWP 1001633)]
+[New Thread 0x7fffb4ff9700 (LWP 1001634)]
+[New Thread 0x7fffa7fff700 (LWP 1001635)]
+[New Thread 0x7fffa77fe700 (LWP 1001636)]
+[New Thread 0x7fffa6ffd700 (LWP 1001637)]
+[New Thread 0x7fffa67fc700 (LWP 1001638)]
+[New Thread 0x7fffa5ffb700 (LWP 1001639)]
+[New Thread 0x7fffa57fa700 (LWP 1001640)]
+[New Thread 0x7fffa4ff9700 (LWP 1001641)]
+sandbox_base: 0x20fc00000000
+target_page: 0x5576c7c9000
+0x20fc001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x20fc001dce6d)>
+0x2bf801
+5809
+0x2d6201
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555add994 in v8::internal::Builtin_Impl_CollatorInternalCompare(v8::internal::BuiltinArguments, v8::internal::Isolate*) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x0                 0
+rbx            0x555556fa6000      93825019830272
+rcx            0x0                 0
+rdx            0x20fc00000000      36266703847424
+rsi            0x20fc00000000      36266703847424
+rdi            0x555556fa6000      93825019830272
+rbp            0x7fffffffd530      0x7fffffffd530
+rsp            0x7fffffffd4f0      0x7fffffffd4f0
+r8             0x55555703cd70      93825020448112
+r9             0x0                 0
+r10            0x1                 1
+r11            0x234               564
+r12            0x555557014eb0      93825020284592
+r13            0x6                 6
+r14            0x555557014ec0      93825020284608
+r15            0x555557014eb8      93825020284600
+rip            0x555555add994      0x555555add994 <v8::internal::Builtin_Impl_CollatorInternalCompare(v8::internal::BuiltinArguments, v8::internal::Isolate*)+356>
+eflags         0x10246             [ PF ZF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555add994 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+356>:	mov    rcx,QWORD PTR [rcx-0xdeb8]
+   0x555555add99b <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+363>:	shr    eax,0x6
+   0x555555add99e <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+366>:	mov    rax,QWORD PTR [rcx+rax*8]
+   0x555555add9a2 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+370>:	movabs rcx,0xbf3cffffffffffff
+   0x555555add9ac <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+380>:	and    rcx,rax
+   0x555555add9af <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+383>:	mov    rax,QWORD PTR [rcx+0x28]
+   0x555555add9b3 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+387>:	mov    rsi,QWORD PTR [rax]
+   0x555555add9b6 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+390>:	test   rsi,rsi
+   0x555555add9b9 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+393>:	je     0x555555adda64 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+564>
+   0x555555add9bf <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+399>:	mov    rdi,rbx
+   0x555555add9c2 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+402>:	mov    rdx,r15
+   0x555555add9c5 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+405>:	mov    rcx,r14
+   0x555555add9c8 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+408>:	xor    r8d,r8d
+   0x555555add9cb <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+411>:	call   0x555555e2ddb0 <_ZN2v88internal4Intl14CompareStringsEPNS0_7IsolateERKN6icu_748CollatorENS0_6HandleINS0_6StringEEESA_NS1_21CompareStringsOptionsE>
+   0x555555add9d0 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+416>:	movsxd r14,eax
+   0x555555add9d3 <_ZN2v88internalL36Builtin_Impl_CollatorInternalCompareENS0_16BuiltinArgumentsEPNS0_7IsolateE+419>:	add    r14,r14
+0x7fffffffd4f0:	0x00000000	0x000020fc	0x57014ea8	0x00005555
+0x7fffffffd500:	0x57016740	0x00005555	0x55add630	0x00005555
+0x7fffffffd510:	0x00000629	0x00002b15	0x56fa6080	0x00005555
+0x7fffffffd520:	0x00000000	0x000020fc	0xffffd590	0x00007fff

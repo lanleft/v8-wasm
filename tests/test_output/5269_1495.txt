@@ -1,0 +1,126 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 948405)]
+[New Thread 0x7ffff6a2c700 (LWP 948406)]
+[New Thread 0x7ffff622b700 (LWP 948408)]
+[New Thread 0x7ffff5a2a700 (LWP 948410)]
+[New Thread 0x7ffff5229700 (LWP 948412)]
+[New Thread 0x7ffff4a28700 (LWP 948414)]
+[New Thread 0x7fffe7fff700 (LWP 948416)]
+[New Thread 0x7fffe77fe700 (LWP 948420)]
+[New Thread 0x7fffe6ffd700 (LWP 948431)]
+[New Thread 0x7fffe67fc700 (LWP 948432)]
+[New Thread 0x7fffe5ffb700 (LWP 948433)]
+[New Thread 0x7fffe57fa700 (LWP 948434)]
+[New Thread 0x7fffe4ff9700 (LWP 948435)]
+[New Thread 0x7fffdbfff700 (LWP 948436)]
+[New Thread 0x7fffdb7fe700 (LWP 948437)]
+[New Thread 0x7fffdaffd700 (LWP 948438)]
+[New Thread 0x7fffda7fc700 (LWP 948439)]
+[New Thread 0x7fffd9ffb700 (LWP 948440)]
+[New Thread 0x7fffd97fa700 (LWP 948442)]
+[New Thread 0x7fffd8ff9700 (LWP 948448)]
+[New Thread 0x7fffcbfff700 (LWP 948457)]
+[New Thread 0x7fffcb7fe700 (LWP 948458)]
+[New Thread 0x7fffcaffd700 (LWP 948459)]
+[New Thread 0x7fffca7fc700 (LWP 948460)]
+[New Thread 0x7fffc9ffb700 (LWP 948461)]
+[New Thread 0x7fffc97fa700 (LWP 948466)]
+[New Thread 0x7fffc8ff9700 (LWP 948470)]
+[New Thread 0x7fffc3fff700 (LWP 948498)]
+[New Thread 0x7fffc37fe700 (LWP 948500)]
+[New Thread 0x7fffc2ffd700 (LWP 948509)]
+[New Thread 0x7fffc27fc700 (LWP 948514)]
+[New Thread 0x7fffc1ffb700 (LWP 948519)]
+[New Thread 0x7fffc17fa700 (LWP 948528)]
+[New Thread 0x7fffc0ff9700 (LWP 948529)]
+[New Thread 0x7fffb7fff700 (LWP 948531)]
+[New Thread 0x7fffb77fe700 (LWP 948534)]
+[New Thread 0x7fffb6ffd700 (LWP 948537)]
+[New Thread 0x7fffb67fc700 (LWP 948541)]
+[New Thread 0x7fffb5ffb700 (LWP 948543)]
+[New Thread 0x7fffb57fa700 (LWP 948553)]
+[New Thread 0x7fffb4ff9700 (LWP 948561)]
+[New Thread 0x7fffa7fff700 (LWP 948562)]
+[New Thread 0x7fffa77fe700 (LWP 948563)]
+[New Thread 0x7fffa6ffd700 (LWP 948600)]
+[New Thread 0x7fffa67fc700 (LWP 948602)]
+[New Thread 0x7fffa5ffb700 (LWP 948608)]
+[New Thread 0x7fffa57fa700 (LWP 948629)]
+[New Thread 0x7fffa4ff9700 (LWP 948653)]
+sandbox_base: 0x23a600000000
+target_page: 0x37cead226000
+0x23a6001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x23a6001dce6d)>
+0x2bf801
+5269
+0x292a01
+[Thread 0x7fffdaffd700 (LWP 948438) exited]
+[Thread 0x7fffdb7fe700 (LWP 948437) exited]
+[Thread 0x7fffdbfff700 (LWP 948436) exited]
+[Thread 0x7fffe4ff9700 (LWP 948435) exited]
+[Thread 0x7fffe57fa700 (LWP 948434) exited]
+[Thread 0x7fffe5ffb700 (LWP 948433) exited]
+[Thread 0x7fffe67fc700 (LWP 948432) exited]
+[Thread 0x7fffe6ffd700 (LWP 948431) exited]
+[Thread 0x7fffe77fe700 (LWP 948420) exited]
+[Thread 0x7fffe7fff700 (LWP 948416) exited]
+[Thread 0x7ffff4a28700 (LWP 948414) exited]
+[Thread 0x7ffff5229700 (LWP 948412) exited]
+[Thread 0x7ffff5a2a700 (LWP 948410) exited]
+[Thread 0x7ffff622b700 (LWP 948408) exited]
+[Thread 0x7ffff6a2c700 (LWP 948406) exited]
+[Thread 0x7ffff722d700 (LWP 948405) exited]
+[Thread 0x7fffc1ffb700 (LWP 948519) exited]
+[Thread 0x7fffc27fc700 (LWP 948514) exited]
+[Thread 0x7fffc2ffd700 (LWP 948509) exited]
+[Thread 0x7fffc37fe700 (LWP 948500) exited]
+[Thread 0x7fffc3fff700 (LWP 948498) exited]
+[Thread 0x7fffc8ff9700 (LWP 948470) exited]
+[Thread 0x7fffc97fa700 (LWP 948466) exited]
+[Thread 0x7fffc9ffb700 (LWP 948461) exited]
+[Thread 0x7fffca7fc700 (LWP 948460) exited]
+[Thread 0x7fffcaffd700 (LWP 948459) exited]
+[Thread 0x7fffcb7fe700 (LWP 948458) exited]
+[Thread 0x7fffcbfff700 (LWP 948457) exited]
+[Thread 0x7fffd8ff9700 (LWP 948448) exited]
+[Thread 0x7fffd97fa700 (LWP 948442) exited]
+[Thread 0x7fffd9ffb700 (LWP 948440) exited]
+[Thread 0x7fffda7fc700 (LWP 948439) exited]
+[Thread 0x7fffa4ff9700 (LWP 948653) exited]
+[Thread 0x7fffa57fa700 (LWP 948629) exited]
+[Thread 0x7fffa5ffb700 (LWP 948608) exited]
+[Thread 0x7fffa67fc700 (LWP 948602) exited]
+[Thread 0x7fffa6ffd700 (LWP 948600) exited]
+[Thread 0x7fffa77fe700 (LWP 948563) exited]
+[Thread 0x7fffa7fff700 (LWP 948562) exited]
+[Thread 0x7fffb4ff9700 (LWP 948561) exited]
+[Thread 0x7fffb57fa700 (LWP 948553) exited]
+[Thread 0x7fffb5ffb700 (LWP 948543) exited]
+[Thread 0x7fffb67fc700 (LWP 948541) exited]
+[Thread 0x7fffb6ffd700 (LWP 948537) exited]
+[Thread 0x7fffb77fe700 (LWP 948534) exited]
+[Thread 0x7fffb7fff700 (LWP 948531) exited]
+[Thread 0x7fffc0ff9700 (LWP 948529) exited]
+[Thread 0x7fffc17fa700 (LWP 948528) exited]
+[Inferior 1 (process 948061) exited normally]
+Program finished successfully.

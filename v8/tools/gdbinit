@@ -92,7 +92,7 @@ PrintV8InternalHandleCommand()
 end
 
 alias jlh = print-v8-local
-alias jl = print-v8-local
+# alias jl = print-v8-local
 alias jh = print-v8-internal-handle
 
 # Print Code objects containing given PC.

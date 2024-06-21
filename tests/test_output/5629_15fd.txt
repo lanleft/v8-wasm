@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 977809)]
+[New Thread 0x7ffff6a2c700 (LWP 977810)]
+[New Thread 0x7ffff622b700 (LWP 977811)]
+[New Thread 0x7ffff5a2a700 (LWP 977812)]
+[New Thread 0x7ffff5229700 (LWP 977813)]
+[New Thread 0x7ffff4a28700 (LWP 977814)]
+[New Thread 0x7fffe7fff700 (LWP 977815)]
+[New Thread 0x7fffe77fe700 (LWP 977816)]
+[New Thread 0x7fffe6ffd700 (LWP 977817)]
+[New Thread 0x7fffe67fc700 (LWP 977818)]
+[New Thread 0x7fffe5ffb700 (LWP 977819)]
+[New Thread 0x7fffe57fa700 (LWP 977820)]
+[New Thread 0x7fffe4ff9700 (LWP 977821)]
+[New Thread 0x7fffdbfff700 (LWP 977822)]
+[New Thread 0x7fffdb7fe700 (LWP 977823)]
+[New Thread 0x7fffdaffd700 (LWP 977824)]
+[New Thread 0x7fffda7fc700 (LWP 977825)]
+[New Thread 0x7fffd9ffb700 (LWP 977826)]
+[New Thread 0x7fffd97fa700 (LWP 977827)]
+[New Thread 0x7fffd8ff9700 (LWP 977862)]
+[New Thread 0x7fffcbfff700 (LWP 977863)]
+[New Thread 0x7fffcb7fe700 (LWP 977864)]
+[New Thread 0x7fffcaffd700 (LWP 977865)]
+[New Thread 0x7fffca7fc700 (LWP 977868)]
+[New Thread 0x7fffc9ffb700 (LWP 977873)]
+[New Thread 0x7fffc97fa700 (LWP 977874)]
+[New Thread 0x7fffc8ff9700 (LWP 977875)]
+[New Thread 0x7fffc3fff700 (LWP 977882)]
+[New Thread 0x7fffc37fe700 (LWP 977883)]
+[New Thread 0x7fffc2ffd700 (LWP 977887)]
+[New Thread 0x7fffc27fc700 (LWP 977897)]
+[New Thread 0x7fffc1ffb700 (LWP 977898)]
+[New Thread 0x7fffc17fa700 (LWP 977899)]
+[New Thread 0x7fffc0ff9700 (LWP 977901)]
+[New Thread 0x7fffb7fff700 (LWP 977903)]
+[New Thread 0x7fffb77fe700 (LWP 977904)]
+[New Thread 0x7fffb6ffd700 (LWP 977906)]
+[New Thread 0x7fffb67fc700 (LWP 977907)]
+[New Thread 0x7fffb5ffb700 (LWP 977908)]
+[New Thread 0x7fffb57fa700 (LWP 977909)]
+[New Thread 0x7fffb4ff9700 (LWP 977910)]
+[New Thread 0x7fffa7fff700 (LWP 977914)]
+[New Thread 0x7fffa77fe700 (LWP 977916)]
+[New Thread 0x7fffa6ffd700 (LWP 977917)]
+[New Thread 0x7fffa67fc700 (LWP 977920)]
+[New Thread 0x7fffa5ffb700 (LWP 977921)]
+[New Thread 0x7fffa57fa700 (LWP 977922)]
+[New Thread 0x7fffa4ff9700 (LWP 977923)]
+sandbox_base: 0x91c00000000
+target_page: 0x1e3137745000
+0x091c001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x91c001dce6d)>
+0x2bf801
+5629
+0x2bfa01
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555556319204 in v8::internal::wasm::StackMemory::Add(v8::internal::wasm::StackMemory*) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x5555570662a0      93825020617376
+rbx            0x555556fa6000      93825019830272
+rcx            0x555557017810      93825020295184
+rdx            0x91c00200000       10015865831424
+rsi            0x555557025c90      93825020353680
+rdi            0x0                 0
+rbp            0x7fffffffd320      0x7fffffffd320
+rsp            0x7fffffffd320      0x7fffffffd320
+r8             0x0                 0
+r9             0x4                 4
+r10            0x7ffe              32766
+r11            0xff000000007ffe    71776119061250046
+r12            0x555557014f58      93825020284760
+r13            0x555557016740      93825020290880
+r14            0x91c00000069       10015863734377
+r15            0x555557014f48      93825020284744
+rip            0x555556319204      0x555556319204 <v8::internal::wasm::StackMemory::Add(v8::internal::wasm::StackMemory*)+4>
+eflags         0x10202             [ IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555556319204 <_ZN2v88internal4wasm11StackMemory3AddEPS2_+4>:	mov    rax,QWORD PTR [rdi+0x50]
+   0x555556319208 <_ZN2v88internal4wasm11StackMemory3AddEPS2_+8>:	mov    QWORD PTR [rsi+0x50],rax
+   0x55555631920c <_ZN2v88internal4wasm11StackMemory3AddEPS2_+12>:	mov    QWORD PTR [rsi+0x58],rdi
+   0x555556319210 <_ZN2v88internal4wasm11StackMemory3AddEPS2_+16>:	mov    rax,QWORD PTR [rdi+0x50]
+   0x555556319214 <_ZN2v88internal4wasm11StackMemory3AddEPS2_+20>:	mov    QWORD PTR [rax+0x58],rsi
+   0x555556319218 <_ZN2v88internal4wasm11StackMemory3AddEPS2_+24>:	mov    QWORD PTR [rdi+0x50],rsi
+   0x55555631921c <_ZN2v88internal4wasm11StackMemory3AddEPS2_+28>:	pop    rbp
+   0x55555631921d <_ZN2v88internal4wasm11StackMemory3AddEPS2_+29>:	ret    
+   0x55555631921e:	int3   
+   0x55555631921f:	int3   
+   0x555556319220 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE>:	push   rbp
+   0x555556319221 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE+1>:	mov    rbp,rsp
+   0x555556319224 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE+4>:	push   r15
+   0x555556319226 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE+6>:	push   r14
+   0x555556319228 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE+8>:	push   rbx
+   0x555556319229 <_ZN2v88internal4wasm11StackMemoryC2EPNS0_7IsolateE+9>:	push   rax
+0x7fffffffd320:	0xffffd380	0x00007fff	0x562400ef	0x00005555
+0x7fffffffd330:	0x57014ea8	0x00005555	0x57016740	0x00005555
+0x7fffffffd340:	0x5703af01	0x00000000	0x57014ed8	0x00005555
+0x7fffffffd350:	0x56fa6000	0x00005555	0x5623fff0	0x00005555

@@ -1,0 +1,80 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 934114)]
+[New Thread 0x7ffff6a2c700 (LWP 934115)]
+[New Thread 0x7ffff622b700 (LWP 934116)]
+[New Thread 0x7ffff5a2a700 (LWP 934117)]
+[New Thread 0x7ffff5229700 (LWP 934120)]
+[New Thread 0x7ffff4a28700 (LWP 934122)]
+[New Thread 0x7fffe7fff700 (LWP 934125)]
+[New Thread 0x7fffe77fe700 (LWP 934132)]
+[New Thread 0x7fffe6ffd700 (LWP 934168)]
+[New Thread 0x7fffe67fc700 (LWP 934169)]
+[New Thread 0x7fffe5ffb700 (LWP 934170)]
+[New Thread 0x7fffe57fa700 (LWP 934171)]
+[New Thread 0x7fffe4ff9700 (LWP 934172)]
+[New Thread 0x7fffdbfff700 (LWP 934174)]
+[New Thread 0x7fffdb7fe700 (LWP 934190)]
+[New Thread 0x7fffdaffd700 (LWP 934192)]
+[New Thread 0x7fffda7fc700 (LWP 934194)]
+[New Thread 0x7fffd9ffb700 (LWP 934195)]
+[New Thread 0x7fffd97fa700 (LWP 934201)]
+[New Thread 0x7fffd8ff9700 (LWP 934202)]
+[New Thread 0x7fffcbfff700 (LWP 934204)]
+[New Thread 0x7fffcb7fe700 (LWP 934208)]
+[New Thread 0x7fffcaffd700 (LWP 934229)]
+[New Thread 0x7fffca7fc700 (LWP 934235)]
+[New Thread 0x7fffc9ffb700 (LWP 934251)]
+[New Thread 0x7fffc97fa700 (LWP 934257)]
+[New Thread 0x7fffc8ff9700 (LWP 934263)]
+[New Thread 0x7fffc3fff700 (LWP 934270)]
+[New Thread 0x7fffc37fe700 (LWP 934310)]
+[New Thread 0x7fffc2ffd700 (LWP 934313)]
+[New Thread 0x7fffc27fc700 (LWP 934316)]
+[New Thread 0x7fffc1ffb700 (LWP 934331)]
+[New Thread 0x7fffc17fa700 (LWP 934365)]
+[New Thread 0x7fffc0ff9700 (LWP 934368)]
+[New Thread 0x7fffb7fff700 (LWP 934369)]
+[New Thread 0x7fffb77fe700 (LWP 934373)]
+[New Thread 0x7fffb6ffd700 (LWP 934377)]
+[New Thread 0x7fffb67fc700 (LWP 934387)]
+[New Thread 0x7fffb5ffb700 (LWP 934393)]
+[New Thread 0x7fffb57fa700 (LWP 934397)]
+[New Thread 0x7fffb4ff9700 (LWP 934398)]
+[New Thread 0x7fffa7fff700 (LWP 934399)]
+[New Thread 0x7fffa77fe700 (LWP 934400)]
+[New Thread 0x7fffa6ffd700 (LWP 934401)]
+[New Thread 0x7fffa67fc700 (LWP 934402)]
+[New Thread 0x7fffa5ffb700 (LWP 934403)]
+[New Thread 0x7fffa57fa700 (LWP 934411)]
+[New Thread 0x7fffa4ff9700 (LWP 934415)]
+sandbox_base: 0x3b600000000
+target_page: 0xc016236c000
+0x03b6001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x3b6001dce6d)>
+0x2bf801
+5158
+0x284c01
+
+Thread 1 "d8" received signal SIGILL, Illegal instruction.
+0x0000555556bb133f in Builtins_ArrayFromAsyncIterableOnFulfilled ()
+Program finished successfully.

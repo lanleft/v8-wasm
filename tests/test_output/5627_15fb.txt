@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 972638)]
+[New Thread 0x7ffff6a2c700 (LWP 972640)]
+[New Thread 0x7ffff622b700 (LWP 972641)]
+[New Thread 0x7ffff5a2a700 (LWP 972642)]
+[New Thread 0x7ffff5229700 (LWP 972643)]
+[New Thread 0x7ffff4a28700 (LWP 972645)]
+[New Thread 0x7fffe7fff700 (LWP 972651)]
+[New Thread 0x7fffe77fe700 (LWP 972655)]
+[New Thread 0x7fffe6ffd700 (LWP 972659)]
+[New Thread 0x7fffe67fc700 (LWP 972661)]
+[New Thread 0x7fffe5ffb700 (LWP 972665)]
+[New Thread 0x7fffe57fa700 (LWP 972679)]
+[New Thread 0x7fffe4ff9700 (LWP 972682)]
+[New Thread 0x7fffdbfff700 (LWP 972688)]
+[New Thread 0x7fffdb7fe700 (LWP 972692)]
+[New Thread 0x7fffdaffd700 (LWP 972693)]
+[New Thread 0x7fffda7fc700 (LWP 972699)]
+[New Thread 0x7fffd9ffb700 (LWP 972700)]
+[New Thread 0x7fffd97fa700 (LWP 972703)]
+[New Thread 0x7fffd8ff9700 (LWP 972715)]
+[New Thread 0x7fffcbfff700 (LWP 972728)]
+[New Thread 0x7fffcb7fe700 (LWP 972731)]
+[New Thread 0x7fffcaffd700 (LWP 972735)]
+[New Thread 0x7fffca7fc700 (LWP 972746)]
+[New Thread 0x7fffc9ffb700 (LWP 972750)]
+[New Thread 0x7fffc97fa700 (LWP 972752)]
+[New Thread 0x7fffc8ff9700 (LWP 972753)]
+[New Thread 0x7fffc3fff700 (LWP 972763)]
+[New Thread 0x7fffc37fe700 (LWP 972766)]
+[New Thread 0x7fffc2ffd700 (LWP 972768)]
+[New Thread 0x7fffc27fc700 (LWP 972769)]
+[New Thread 0x7fffc1ffb700 (LWP 972770)]
+[New Thread 0x7fffc17fa700 (LWP 972771)]
+[New Thread 0x7fffc0ff9700 (LWP 972772)]
+[New Thread 0x7fffb7fff700 (LWP 972776)]
+[New Thread 0x7fffb77fe700 (LWP 972778)]
+[New Thread 0x7fffb6ffd700 (LWP 972779)]
+[New Thread 0x7fffb67fc700 (LWP 972780)]
+[New Thread 0x7fffb5ffb700 (LWP 972781)]
+[New Thread 0x7fffb57fa700 (LWP 972782)]
+[New Thread 0x7fffb4ff9700 (LWP 972785)]
+[New Thread 0x7fffa7fff700 (LWP 972786)]
+[New Thread 0x7fffa77fe700 (LWP 972787)]
+[New Thread 0x7fffa6ffd700 (LWP 972788)]
+[New Thread 0x7fffa67fc700 (LWP 972789)]
+[New Thread 0x7fffa5ffb700 (LWP 972792)]
+[New Thread 0x7fffa57fa700 (LWP 972795)]
+[New Thread 0x7fffa4ff9700 (LWP 972796)]
+sandbox_base: 0x3d4100000000
+target_page: 0x32f97502d000
+0x3d41001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x3d41001dce6d)>
+0x2bf801
+5627
+0x2bf601
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555556c5f10f in Builtins_JSToJSWrapper ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x2                 2
+rbx            0x0                 0
+rcx            0x555556c5f080      93825016393856
+rdx            0x3d4100000069      67349382168681
+rsi            0x3d4100181729      67349383747369
+rdi            0x3d41001dce9d      67349384122013
+rbp            0x7fffffffd578      0x7fffffffd578
+rsp            0x7fffffffd4e8      0x7fffffffd4e8
+r8             0xdb000c48e5        940598642917
+r9             0x7fffffffd578      140737488344440
+r10            0x7fff98000000      140735743524864
+r11            0x3d4140000000      67350455910400
+r12            0x7fff54000000      140734602674176
+r13            0x555556fa6080      93825019830400
+r14            0x3d4100000000      67349382168576
+r15            0x4f5               1269
+rip            0x555556c5f10f      0x555556c5f10f <Builtins_JSToJSWrapper+143>
+eflags         0x10206             [ PF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555556c5f10f <Builtins_JSToJSWrapper+143>:	mov    r12d,DWORD PTR [r11+0x3]
+   0x555556c5f113 <Builtins_JSToJSWrapper+147>:	sar    r12d,1
+   0x555556c5f116 <Builtins_JSToJSWrapper+150>:	movsxd r12,r12d
+   0x555556c5f119 <Builtins_JSToJSWrapper+153>:	mov    r15,r12
+   0x555556c5f11c <Builtins_JSToJSWrapper+156>:	sar    r15,0x3f
+   0x555556c5f120 <Builtins_JSToJSWrapper+160>:	mov    ebx,DWORD PTR [r11+0x7]
+   0x555556c5f124 <Builtins_JSToJSWrapper+164>:	shr    r15,0x3e
+   0x555556c5f128 <Builtins_JSToJSWrapper+168>:	add    r12,r15
+   0x555556c5f12b <Builtins_JSToJSWrapper+171>:	movsxd r15,ebx
+   0x555556c5f12e <Builtins_JSToJSWrapper+174>:	sar    r12,0x2
+   0x555556c5f132 <Builtins_JSToJSWrapper+178>:	cmp    r12,r15
+   0x555556c5f135 <Builtins_JSToJSWrapper+181>:	jb     0x555556c5fa66 <Builtins_JSToJSWrapper+2534>
+   0x555556c5f13b <Builtins_JSToJSWrapper+187>:	mov    rdx,r12
+   0x555556c5f13e <Builtins_JSToJSWrapper+190>:	sub    rdx,r15
+   0x555556c5f141 <Builtins_JSToJSWrapper+193>:	cmp    rdx,0x1
+   0x555556c5f145 <Builtins_JSToJSWrapper+197>:	jb     0x555556c5fa66 <Builtins_JSToJSWrapper+2534>
+0x7fffffffd4e8:	0x00000081	0x00000000	0x00000000	0x00003d41
+0x7fffffffd4f8:	0xffffd530	0x00007fff	0xffffd520	0x00007fff
+0x7fffffffd508:	0x56b921b6	0x00005555	0xffffd510	0x00007fff
+0x7fffffffd518:	0x00000006	0x00000000	0xffffd578	0x00007fff

@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 908873)]
+[New Thread 0x7ffff6a2c700 (LWP 908875)]
+[New Thread 0x7ffff622b700 (LWP 908876)]
+[New Thread 0x7ffff5a2a700 (LWP 908918)]
+[New Thread 0x7ffff5229700 (LWP 908919)]
+[New Thread 0x7ffff4a28700 (LWP 908920)]
+[New Thread 0x7fffe7fff700 (LWP 908921)]
+[New Thread 0x7fffe77fe700 (LWP 908922)]
+[New Thread 0x7fffe6ffd700 (LWP 908923)]
+[New Thread 0x7fffe67fc700 (LWP 908924)]
+[New Thread 0x7fffe5ffb700 (LWP 908950)]
+[New Thread 0x7fffe57fa700 (LWP 908951)]
+[New Thread 0x7fffe4ff9700 (LWP 908955)]
+[New Thread 0x7fffdbfff700 (LWP 908956)]
+[New Thread 0x7fffdb7fe700 (LWP 908959)]
+[New Thread 0x7fffdaffd700 (LWP 908963)]
+[New Thread 0x7fffda7fc700 (LWP 908964)]
+[New Thread 0x7fffd9ffb700 (LWP 908979)]
+[New Thread 0x7fffd97fa700 (LWP 908980)]
+[New Thread 0x7fffd8ff9700 (LWP 908982)]
+[New Thread 0x7fffcbfff700 (LWP 908984)]
+[New Thread 0x7fffcb7fe700 (LWP 908997)]
+[New Thread 0x7fffcaffd700 (LWP 908998)]
+[New Thread 0x7fffca7fc700 (LWP 908999)]
+[New Thread 0x7fffc9ffb700 (LWP 909000)]
+[New Thread 0x7fffc97fa700 (LWP 909002)]
+[New Thread 0x7fffc8ff9700 (LWP 909004)]
+[New Thread 0x7fffc3fff700 (LWP 909013)]
+[New Thread 0x7fffc37fe700 (LWP 909014)]
+[New Thread 0x7fffc2ffd700 (LWP 909015)]
+[New Thread 0x7fffc27fc700 (LWP 909021)]
+[New Thread 0x7fffc1ffb700 (LWP 909024)]
+[New Thread 0x7fffc17fa700 (LWP 909030)]
+[New Thread 0x7fffc0ff9700 (LWP 909031)]
+[New Thread 0x7fffb7fff700 (LWP 909040)]
+[New Thread 0x7fffb77fe700 (LWP 909083)]
+[New Thread 0x7fffb6ffd700 (LWP 909091)]
+[New Thread 0x7fffb67fc700 (LWP 909092)]
+[New Thread 0x7fffb5ffb700 (LWP 909093)]
+[New Thread 0x7fffb57fa700 (LWP 909094)]
+[New Thread 0x7fffb4ff9700 (LWP 909120)]
+[New Thread 0x7fffa7fff700 (LWP 909123)]
+[New Thread 0x7fffa77fe700 (LWP 909126)]
+[New Thread 0x7fffa6ffd700 (LWP 909130)]
+[New Thread 0x7fffa67fc700 (LWP 909132)]
+[New Thread 0x7fffa5ffb700 (LWP 909134)]
+[New Thread 0x7fffa57fa700 (LWP 909140)]
+[New Thread 0x7fffa4ff9700 (LWP 909141)]
+sandbox_base: 0x23cd00000000
+target_page: 0x90be233f000
+0x23cd001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x23cd001dce6d)>
+0x2bf801
+4835
+0x25c601
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555a76275 in v8::String::Utf8Length(v8::Isolate*) const ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x9db8              40376
+rbx            0x555556fa6000      93825019830272
+rcx            0x23cd00006242      39363375292994
+rdx            0x7ff80000          2146959360
+rsi            0x23cd7ff86242      39365522252354
+rdi            0x7ff80000          2146959360
+rbp            0x7fffffffd3f0      0x7fffffffd3f0
+rsp            0x7fffffffd3a0      0x7fffffffd3a0
+r8             0x782               1922
+r9             0xfffffffffffffff7  -9
+r10            0x23cd00000741      39363375269697
+r11            0xdd                221
+r12            0x23cd00000069      39363375267945
+r13            0x555556fa62c0      93825019830976
+r14            0x7ff80000          2146959360
+r15            0x555556f310d8      93825019351256
+rip            0x555555a76275      0x555555a76275 <v8::String::Utf8Length(v8::Isolate*) const+581>
+eflags         0x10216             [ PF AF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555a76275 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+581>:	movd   xmm5,DWORD PTR [rcx+rax*1+0x4]
+   0x555555a7627b <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+587>:	psrlw  xmm4,0x7
+   0x555555a76280 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+592>:	pand   xmm4,xmm3
+   0x555555a76284 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+596>:	psrlw  xmm5,0x7
+   0x555555a76289 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+601>:	pand   xmm5,xmm3
+   0x555555a7628d <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+605>:	punpcklbw xmm4,xmm0
+   0x555555a76291 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+609>:	punpcklwd xmm4,xmm0
+   0x555555a76295 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+613>:	paddd  xmm2,xmm4
+   0x555555a76299 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+617>:	punpcklbw xmm5,xmm0
+   0x555555a7629d <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+621>:	punpcklwd xmm5,xmm0
+   0x555555a762a1 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+625>:	paddd  xmm1,xmm5
+   0x555555a762a5 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+629>:	add    rax,0x8
+   0x555555a762a9 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+633>:	cmp    rdi,rax
+   0x555555a762ac <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+636>:	jne    0x555555a76270 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+576>
+   0x555555a762ae <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+638>:	paddd  xmm1,xmm2
+   0x555555a762b2 <_ZNK2v86String10Utf8LengthEPNS_7IsolateE+642>:	pshufd xmm0,xmm1,0xee
+0x7fffffffd3a0:	0x00000000	0x00000000	0x00000000	0x00000000
+0x7fffffffd3b0:	0x57016740	0x00005555	0x00006242	0x000023cd
+0x7fffffffd3c0:	0x7ff80000	0x00000001	0xffffd3d7	0x00007fff
+0x7fffffffd3d0:	0xffffd400	0x00007fff	0x56f310d8	0x00005555

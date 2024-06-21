@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 1006932)]
+[New Thread 0x7ffff6a2c700 (LWP 1006933)]
+[New Thread 0x7ffff622b700 (LWP 1006934)]
+[New Thread 0x7ffff5a2a700 (LWP 1006935)]
+[New Thread 0x7ffff5229700 (LWP 1006936)]
+[New Thread 0x7ffff4a28700 (LWP 1006937)]
+[New Thread 0x7fffe7fff700 (LWP 1006938)]
+[New Thread 0x7fffe77fe700 (LWP 1006939)]
+[New Thread 0x7fffe6ffd700 (LWP 1006940)]
+[New Thread 0x7fffe67fc700 (LWP 1006941)]
+[New Thread 0x7fffe5ffb700 (LWP 1006942)]
+[New Thread 0x7fffe57fa700 (LWP 1006943)]
+[New Thread 0x7fffe4ff9700 (LWP 1006944)]
+[New Thread 0x7fffdbfff700 (LWP 1006945)]
+[New Thread 0x7fffdb7fe700 (LWP 1006946)]
+[New Thread 0x7fffdaffd700 (LWP 1006947)]
+[New Thread 0x7fffda7fc700 (LWP 1006948)]
+[New Thread 0x7fffd9ffb700 (LWP 1006949)]
+[New Thread 0x7fffd97fa700 (LWP 1006950)]
+[New Thread 0x7fffd8ff9700 (LWP 1006951)]
+[New Thread 0x7fffcbfff700 (LWP 1006952)]
+[New Thread 0x7fffcb7fe700 (LWP 1006953)]
+[New Thread 0x7fffcaffd700 (LWP 1006954)]
+[New Thread 0x7fffca7fc700 (LWP 1006955)]
+[New Thread 0x7fffc9ffb700 (LWP 1006956)]
+[New Thread 0x7fffc97fa700 (LWP 1006957)]
+[New Thread 0x7fffc8ff9700 (LWP 1006958)]
+[New Thread 0x7fffc3fff700 (LWP 1006959)]
+[New Thread 0x7fffc37fe700 (LWP 1006960)]
+[New Thread 0x7fffc2ffd700 (LWP 1006961)]
+[New Thread 0x7fffc27fc700 (LWP 1006962)]
+[New Thread 0x7fffc1ffb700 (LWP 1006963)]
+[New Thread 0x7fffc17fa700 (LWP 1006964)]
+[New Thread 0x7fffc0ff9700 (LWP 1006965)]
+[New Thread 0x7fffb7fff700 (LWP 1006966)]
+[New Thread 0x7fffb77fe700 (LWP 1006967)]
+[New Thread 0x7fffb6ffd700 (LWP 1006968)]
+[New Thread 0x7fffb67fc700 (LWP 1006969)]
+[New Thread 0x7fffb5ffb700 (LWP 1006970)]
+[New Thread 0x7fffb57fa700 (LWP 1006971)]
+[New Thread 0x7fffb4ff9700 (LWP 1006972)]
+[New Thread 0x7fffa7fff700 (LWP 1006973)]
+[New Thread 0x7fffa77fe700 (LWP 1006974)]
+[New Thread 0x7fffa6ffd700 (LWP 1006975)]
+[New Thread 0x7fffa67fc700 (LWP 1006976)]
+[New Thread 0x7fffa5ffb700 (LWP 1006977)]
+[New Thread 0x7fffa57fa700 (LWP 1006978)]
+[New Thread 0x7fffa4ff9700 (LWP 1006979)]
+sandbox_base: 0x1f1400000000
+target_page: 0x1d751eef6000
+0x1f14001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x1f14001dce6d)>
+0x2bf801
+5914
+0x2e3401
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555555e422b1 in v8::internal::JSV8BreakIterator::Next(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>) ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0xff0000000021ea    71776119061225962
+rbx            0x555556fa6000      93825019830272
+rcx            0x5a0000000021ea    25332747903967722
+rdx            0x1f1400180000      34170761379840
+rsi            0x1f1400180000      34170761379840
+rdi            0x555556fa6000      93825019830272
+rbp            0x7fffffffd500      0x7fffffffd500
+rsp            0x7fffffffd4e0      0x7fffffffd4e0
+r8             0x1f1400199cb5      34170761485493
+r9             0xfffffffffffffff7  -9
+r10            0x1f1400000741      34170759808833
+r11            0xdd                221
+r12            0x555557014ea8      93825020284584
+r13            0x555556fa6080      93825019830400
+r14            0x1f1400192da9      34170761457065
+r15            0x555557016740      93825020290880
+rip            0x555555e422b1      0x555555e422b1 <v8::internal::JSV8BreakIterator::Next(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>)+113>
+eflags         0x10202             [ IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555555e422b1 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+113>:	mov    rax,QWORD PTR [rcx+0x28]
+   0x555555e422b5 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+117>:	mov    rdi,QWORD PTR [rax]
+   0x555555e422b8 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+120>:	mov    rax,QWORD PTR [rdi]
+   0x555555e422bb <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+123>:	call   QWORD PTR [rax+0x68]
+   0x555555e422be <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+126>:	movsxd r14,eax
+   0x555555e422c1 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+129>:	lea    rcx,[r14+0x40000000]
+   0x555555e422c8 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+136>:	cmp    rcx,0x7fffffff
+   0x555555e422cf <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+143>:	ja     0x555555e422f4 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+180>
+   0x555555e422d1 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+145>:	add    r14,r14
+   0x555555e422d4 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+148>:	mov    rax,QWORD PTR [rbx+0x200]
+   0x555555e422db <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+155>:	cmp    rax,QWORD PTR [rbx+0x208]
+   0x555555e422e2 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+162>:	je     0x555555e42330 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+240>
+   0x555555e422e4 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+164>:	lea    rcx,[rax+0x8]
+   0x555555e422e8 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+168>:	mov    QWORD PTR [rbx+0x200],rcx
+   0x555555e422ef <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+175>:	mov    QWORD PTR [rax],r14
+   0x555555e422f2 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+178>:	jmp    0x555555e42312 <_ZN2v88internal17JSV8BreakIterator4NextEPNS0_7IsolateENS0_6HandleIS1_EE+210>
+0x7fffffffd4e0:	0x55fee6e0	0x00005555	0x00000081	0x00000000
+0x7fffffffd4f0:	0x56fa6000	0x00005555	0x00192da9	0x00001f14
+0x7fffffffd500:	0xffffd530	0x00007fff	0x55ae0e23	0x00005555
+0x7fffffffd510:	0x55ae0bc0	0x00005555	0x00000629	0x00002d38

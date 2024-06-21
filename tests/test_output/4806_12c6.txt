@@ -1,0 +1,132 @@
+GNU gdb (Ubuntu 9.2-0ubuntu1~20.04.1) 9.2
+Copyright (C) 2020 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+[31m[1mpwndbg: [0m[31m[0m[91mloaded 147 pwndbg commands and 48 shell commands. Type [35mpwndbg [--shell | --all] [filter][0m[91m for a list.[0m
+[31m[1mpwndbg: [0m[31m[0m[91mcreated [35m$rebase[0m[91m, [35m$ida[0m[91m GDB functions (can be used with print/break)[0m
+Reading symbols from ../v8/out/release/d8...
+(No debugging symbols found in ../v8/out/release/d8)
+Catchpoint 1 (signal SIGSEGV)
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff722d700 (LWP 927430)]
+[New Thread 0x7ffff6a2c700 (LWP 927431)]
+[New Thread 0x7ffff622b700 (LWP 927432)]
+[New Thread 0x7ffff5a2a700 (LWP 927433)]
+[New Thread 0x7ffff5229700 (LWP 927434)]
+[New Thread 0x7ffff4a28700 (LWP 927435)]
+[New Thread 0x7fffe7fff700 (LWP 927437)]
+[New Thread 0x7fffe77fe700 (LWP 927438)]
+[New Thread 0x7fffe6ffd700 (LWP 927439)]
+[New Thread 0x7fffe67fc700 (LWP 927440)]
+[New Thread 0x7fffe5ffb700 (LWP 927441)]
+[New Thread 0x7fffe57fa700 (LWP 927442)]
+[New Thread 0x7fffe4ff9700 (LWP 927443)]
+[New Thread 0x7fffdbfff700 (LWP 927444)]
+[New Thread 0x7fffdb7fe700 (LWP 927445)]
+[New Thread 0x7fffdaffd700 (LWP 927446)]
+[New Thread 0x7fffda7fc700 (LWP 927448)]
+[New Thread 0x7fffd9ffb700 (LWP 927449)]
+[New Thread 0x7fffd97fa700 (LWP 927450)]
+[New Thread 0x7fffd8ff9700 (LWP 927451)]
+[New Thread 0x7fffcbfff700 (LWP 927452)]
+[New Thread 0x7fffcb7fe700 (LWP 927453)]
+[New Thread 0x7fffcaffd700 (LWP 927463)]
+[New Thread 0x7fffca7fc700 (LWP 927464)]
+[New Thread 0x7fffc9ffb700 (LWP 927466)]
+[New Thread 0x7fffc97fa700 (LWP 927467)]
+[New Thread 0x7fffc8ff9700 (LWP 927499)]
+[New Thread 0x7fffc3fff700 (LWP 927501)]
+[New Thread 0x7fffc37fe700 (LWP 927512)]
+[New Thread 0x7fffc2ffd700 (LWP 927513)]
+[New Thread 0x7fffc27fc700 (LWP 927531)]
+[New Thread 0x7fffc1ffb700 (LWP 927532)]
+[New Thread 0x7fffc17fa700 (LWP 927533)]
+[New Thread 0x7fffc0ff9700 (LWP 927538)]
+[New Thread 0x7fffb7fff700 (LWP 927539)]
+[New Thread 0x7fffb77fe700 (LWP 927540)]
+[New Thread 0x7fffb6ffd700 (LWP 927541)]
+[New Thread 0x7fffb67fc700 (LWP 927546)]
+[New Thread 0x7fffb5ffb700 (LWP 927547)]
+[New Thread 0x7fffb57fa700 (LWP 927562)]
+[New Thread 0x7fffb4ff9700 (LWP 927563)]
+[New Thread 0x7fffa7fff700 (LWP 927564)]
+[New Thread 0x7fffa77fe700 (LWP 927565)]
+[New Thread 0x7fffa6ffd700 (LWP 927574)]
+[New Thread 0x7fffa67fc700 (LWP 927577)]
+[New Thread 0x7fffa5ffb700 (LWP 927593)]
+[New Thread 0x7fffa57fa700 (LWP 927594)]
+[New Thread 0x7fffa4ff9700 (LWP 927596)]
+sandbox_base: 0x51400000000
+target_page: 0x9b8002f2000
+0x0514001dce9d <JSFunction js-to-wasm:l:l (sfi = 0x514001dce6d)>
+0x2bf801
+4806
+0x258c01
+
+Thread 1 "d8" hit Catchpoint 1 (signal SIGSEGV), 0x0000555556c07347 in Builtins_FulfillPromise ()
+Thread 1 "$arg0" received signal SIGSEGV, Segmentation fault.
+At address: $pc
+rax            0x51400192ce1       5583459134689
+rbx            0x51400200131       5583459582257
+rcx            0xb                 11
+rdx            0x514000000a1       5583457484961
+rsi            0x51400181729       5583459063593
+rdi            0x0                 0
+rbp            0x7fffffffd540      0x7fffffffd540
+rsp            0x7fffffffd510      0x7fffffffd510
+r8             0x7                 7
+r9             0x51400000000       5583457484800
+r10            0x7fff98000000      140735743524864
+r11            0x51400000000       5583457484800
+r12            0x341c00000629      57294863730217
+r13            0x555556fa6080      93825019830400
+r14            0x51400000000       5583457484800
+r15            0x4f5               1269
+rip            0x555556c07347      0x555556c07347 <Builtins_FulfillPromise+71>
+eflags         0x10206             [ PF IF RF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+k0             0x0                 0
+k1             0x0                 0
+k2             0x0                 0
+k3             0x0                 0
+k4             0x0                 0
+k5             0x0                 0
+k6             0x0                 0
+k7             0x0                 0
+=> 0x555556c07347 <Builtins_FulfillPromise+71>:	mov    DWORD PTR [rdx+r8*1],edi
+   0x555556c0734b <Builtins_FulfillPromise+75>:	test   dil,0x1
+   0x555556c0734f <Builtins_FulfillPromise+79>:	je     0x555556c07365 <Builtins_FulfillPromise+101>
+   0x555556c07351 <Builtins_FulfillPromise+81>:	mov    r11,0xfffffffffffc0000
+   0x555556c07358 <Builtins_FulfillPromise+88>:	and    r11,rdx
+   0x555556c0735b <Builtins_FulfillPromise+91>:	test   BYTE PTR [r11],0x4
+   0x555556c0735f <Builtins_FulfillPromise+95>:	jne    0x555556c075eb <Builtins_FulfillPromise+747>
+   0x555556c07365 <Builtins_FulfillPromise+101>:	mov    rdi,rdx
+   0x555556c07368 <Builtins_FulfillPromise+104>:	mov    rdx,r9
+   0x555556c0736b <Builtins_FulfillPromise+107>:	test   edx,edx
+   0x555556c0736d <Builtins_FulfillPromise+109>:	jne    0x555556c07340 <Builtins_FulfillPromise+64>
+   0x555556c0736f <Builtins_FulfillPromise+111>:	push   rbp
+   0x555556c07370 <Builtins_FulfillPromise+112>:	mov    rbp,rsp
+   0x555556c07373 <Builtins_FulfillPromise+115>:	push   0x22
+   0x555556c07375 <Builtins_FulfillPromise+117>:	sub    rsp,0x18
+   0x555556c07379 <Builtins_FulfillPromise+121>:	mov    QWORD PTR [rbp-0x10],rbx
+0x7fffffffd510:	0x56b8e3bd	0x00005555	0x00000006	0x00000000
+0x7fffffffd520:	0xffffd578	0x00007fff	0x56be6dc9	0x00005555
+0x7fffffffd530:	0x00192ce1	0x00000514	0x00000022	0x00000000
+0x7fffffffd540:	0xffffd578	0x00007fff	0x56b90205	0x00005555
