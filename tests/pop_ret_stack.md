@@ -975,3 +975,26 @@ Instructions (size = 4808)
 //...
 
 ```
+
+```js
+// 0x7fff98010000 -> stored builtin function array
+//  0x7fff78000000 -> stored something...
+pwndbg> vmmap 0x7fff78027280
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+             Start                End Perm     Size Offset File
+    0x7fff78010000     0x7fff78020000 rw-p    10000      0 [anon_7fff78010]
+►   0x7fff78020000     0x7fff78030000 rw-p    10000      0 [anon_7fff78020] +0x7280
+    0x7fff78030000     0x7fff98000000 ---p 1ffd0000      0 [anon_7fff78030]
+pwndbg> tele 0x7fff98010000
+00:0000│  0x7fff98010000 ◂— 0xff555556ae5000
+01:0008│  0x7fff98010008 —▸ 0x265d00025aa8 ◂— 0x20000100000d61 /* 'a\r' */
+02:0010│  0x7fff98010010 ◂— 0xff555556ae5600
+03:0018│  0x7fff98010018 —▸ 0x265d00025ae4 ◂— 0x20020100000d61 /* 'a\r' */
+04:0020│  0x7fff98010020 ◂— 0xff555556ae5c00
+05:0028│  0x7fff98010028 —▸ 0x265d00025b20 ◂— 0x20040100000d61 /* 'a\r' */
+06:0030│  0x7fff98010030 ◂— 0xff555556ae6780
+07:0038│  0x7fff98010038 —▸ 0x265d00025b5c ◂— 0x20060100000d61 /* 'a\r' */
+pwndbg> 
+```
+
+There's several sigsegv, but seems like all of them interacts inside sandbox. I need a function to escape it... 
