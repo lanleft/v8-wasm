@@ -74,7 +74,7 @@ let kLastKnownSectionCode = 14;
 // Name section types
 let kModuleNameCode = 0;
 let kFunctionNamesCode = 1;
-let kLocalNamesCode = 2;
+let kLocalNamesCode = 2;``
 
 let kWasmSharedTypeForm = 0x65;
 let kWasmFunctionTypeForm = 0x60;
