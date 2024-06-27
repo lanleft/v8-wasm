@@ -22,7 +22,7 @@ commands
         # Optionally, print the memory content around a specific address
         # For example, print 16 bytes of memory around the address in $rsp
         if $rsp != 0
-            x/16x $rsp
+            x/16gx $rsp
         end
     else
         echo No valid registers available.\n
