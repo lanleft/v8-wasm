@@ -1330,3 +1330,181 @@ Builtins_JSEntryTrampoline
 
 **Try to understand why the program can go to AddSample function? and why it doesn't work on the previous commit?**
 
+`/home/vult/Desktop/ctf/v8/out/release`
+
+![state1](image-4.png)
+
+`/home/vult/Desktop/v8/v8/out/release`
+
+![state2](image-5.png)
+
+
+mov r12 to [r15] (<= it's stack)
+```js
+   0x555555bd9b89 <v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)+2361>    mov    qword ptr [rbx + 0x200], rax
+   0x555555bd9b90 <v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)+2368>    mov    qword ptr [r15], r12
+   0x555555bd9b93 <v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)+2371>    mov    word ptr [rbx + 0x1b8], r13w
+   0x555555bd9b9b <v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)+2379>    mov    rdi, qword ptr [rbp - 0x130]
+   0x555555bd9ba2 <v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)+2386>    test   rdi, rdi
+```
+
+In expected case:
+
+```js
+Thread 1 "d8" hit Breakpoint 7, 0x0000555556af0492 in Builtins_JSEntry ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+ RAX  0xe4c00200199 ◂— 0x4100000002000008
+*RBX  0x2
+ RCX  0x555556af071c (Builtins_JSEntryTrampoline+92) ◂— mov rsp, rbp
+ RDX  0x78e
+ RDI  0xe4c00199cf9 ◂— 0x95001c373500000b /* '\x0b' */
+ RSI  0x20e4000c48e5 ◂— 0xd900405c0000001f
+ R8   0x3c7
+ R9   0x3c7
+*R10  0x555556fa61a8 ◂— 0x0
+ R11  0x7fffffffd5a8 ◂— 0x4141 /* 'AA' */
+ R12  0x20e40000066d ◂— 0x4200400200000009 /* '\t' */
+ R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0xe4c00000000 ◂— 0x40940
+ R15  0x555556fdd670 —▸ 0x555556c751c0 (Builtins_WideHandler) ◂— add r9, 1
+ RBP  0x7fffffffd7c0 —▸ 0x7fffffffd920 —▸ 0x7fffffffd990 —▸ 0x7fffffffda90 —▸ 0x7fffffffdcb0 ◂— ...
+*RSP  0x7fffffffd788 —▸ 0x7fffffffd720 —▸ 0x7fffffffd748 —▸ 0x7fffffffd7c0 —▸ 0x7fffffffd920 ◂— ...
+*RIP  0x555556af0492 (Builtins_JSEntry+210) ◂— pop rbx
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+   0x555556af0475 <Builtins_JSEntry+181>    lea    r10, [r13 + 0x128]
+   0x555556af047c <Builtins_JSEntry+188>    mov    qword ptr [r10], 0
+   0x555556af0483 <Builtins_JSEntry+195>    pop    qword ptr [r13 + 0x78]
+   0x555556af0487 <Builtins_JSEntry+199>    pop    qword ptr [r13 + 0x70]
+   0x555556af048b <Builtins_JSEntry+203>    pop    qword ptr [r13 + 0x90]
+ ► 0x555556af0492 <Builtins_JSEntry+210>    pop    rbx
+   0x555556af0493 <Builtins_JSEntry+211>    pop    r15
+   0x555556af0495 <Builtins_JSEntry+213>    pop    r14
+   0x555556af0497 <Builtins_JSEntry+215>    pop    r13
+   0x555556af0499 <Builtins_JSEntry+217>    pop    r12
+   0x555556af049b <Builtins_JSEntry+219>    add    rsp, 0x10
+──────────────────────────────────────────────────────────────────────────────────────────────────────[ STACK ]───────────────────────────────────────────────────────────────────────────────────────────────────────
+00:0000│ rsp 0x7fffffffd788 —▸ 0x7fffffffd720 —▸ 0x7fffffffd748 —▸ 0x7fffffffd7c0 —▸ 0x7fffffffd920 ◂— ...
+01:0008│     0x7fffffffd790 —▸ 0x555556af2ca7 (Builtins_InterpreterEntryTrampoline+295) ◂— mov r12, qword ptr [rbp - 0x20]
+02:0010│     0x7fffffffd798 —▸ 0x7fffffffd930 —▸ 0x555557014cc0 —▸ 0xe4c00199cb5 ◂— 0x250000072500181e
+03:0018│     0x7fffffffd7a0 ◂— 0x5
+04:0020│     0x7fffffffd7a8 —▸ 0xe4c00199cb5 ◂— 0x250000072500181e
+05:0028│     0x7fffffffd7b0 —▸ 0xe4c00181729 ◂— 0x450000024e001817
+06:0030│     0x7fffffffd7b8 ◂— 0x2
+07:0038│ rbp 0x7fffffffd7c0 —▸ 0x7fffffffd920 —▸ 0x7fffffffd990 —▸ 0x7fffffffda90 —▸ 0x7fffffffdcb0 ◂— ...
+```
+
+rbx => stack 
+
+```js
+
+0x0000555556af2ca5 in Builtins_InterpreterEntryTrampoline ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+ RAX  0x24d700200199 ◂— 0x4100000002000008
+ RBX  0x61
+*RCX  0x555556c8fb80 (Builtins_ShortStarHandler) ◂— movzx ebx, byte ptr [r12 + r9]
+ RDX  0x555556b02f85 (Builtins_LoadIC_NoFeedback+4101) ◂— mov rsp, rbp
+ RDI  0x2
+ RSI  0x1cb8000c48e5 ◂— 0xd900405c0000001f
+ R8   0x3c1
+ R9   0x3c6
+ R10  0xca
+ R11  0x7fffffffd5a8 ◂— 0x4141 /* 'AA' */
+ R12  0x1cb80000066d ◂— 0x4200400200000009 /* '\t' */
+ R13  0x555556fa6080 —▸ 0x555556ae6f00 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x24d700000000 ◂— 0x40940
+ R15  0x555556fdd670 —▸ 0x555556c751c0 (Builtins_WideHandler) ◂— add r9, 1
+ RBP  0x7fffffffd720 —▸ 0x7fffffffd748 —▸ 0x7fffffffd7c0 —▸ 0x7fffffffd920 —▸ 0x7fffffffd990 ◂— ...
+ RSP  0x7fffffffd798 —▸ 0x7fffffffd930 —▸ 0x555557014cc0 —▸ 0x24d700199cb5 ◂— 0x250000072500181e
+*RIP  0x555556af2ca5 (Builtins_InterpreterEntryTrampoline+293) ◂— call rcx
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+   0x555556af2d04 <Builtins_InterpreterEntryTrampoline+388>    add    r9d, r10d
+   0x555556af2d07 <Builtins_InterpreterEntryTrampoline+391>    jmp    Builtins_InterpreterEntryTrampoline+277                <Builtins_InterpreterEntryTrampoline+277>
+    ↓
+   0x555556af2c95 <Builtins_InterpreterEntryTrampoline+277>    mov    r15, qword ptr [r13 + 0x4c78]
+   0x555556af2c9c <Builtins_InterpreterEntryTrampoline+284>    movzx  r10d, byte ptr [r12 + r9]
+   0x555556af2ca1 <Builtins_InterpreterEntryTrampoline+289>    mov    rcx, qword ptr [r15 + r10*8]
+ ► 0x555556af2ca5 <Builtins_InterpreterEntryTrampoline+293>    call   rcx                           <Builtins_ShortStarHandler>
+        rdi: 0x2
+        rsi: 0x1cb8000c48e5 ◂— 0xd900405c0000001f
+        rdx: 0x555556b02f85 (Builtins_LoadIC_NoFeedback+4101) ◂— mov rsp, rbp
+        rcx: 0x555556c8fb80 (Builtins_ShortStarHandler) ◂— movzx ebx, byte ptr [r12 + r9]
+// ...
+.text:0000555556C8F300                   Builtins_ReturnHandler proc near
+.text:0000555556C8F300
+.text:0000555556C8F300                   var_10          = qword ptr -10h
+.text:0000555556C8F300                   var_s0          = qword ptr  0
+.text:0000555556C8F300
+.text:0000555556C8F300 55                                push    rbp
+.text:0000555556C8F301 48 89 E5                          mov     rbp, rsp
+.text:0000555556C8F304 6A 22                             push    22h ; '"'
+.text:0000555556C8F306 48 83 EC 08                       sub     rsp, 8
+.text:0000555556C8F30A 43 8D 14 09                       lea     edx, [r9+r9]
+.text:0000555556C8F30E 48 8B 4D 00                       mov     rcx, [rbp+var_s0]
+.text:0000555556C8F312 48 89 51 D8                       mov     [rcx-28h], rdx
+.text:0000555556C8F316 48 8B 79 F0                       mov     rdi, [rcx-10h]
+.text:0000555556C8F31A 8B 7F 17                          mov     edi, [rdi+17h]
+.text:0000555556C8F31D 49 03 FE                          add     rdi, r14
+
+```
+
+In previous commit:
+
+```js
+
+.text:0000555556C8E0C0 Builtins_ReturnHandler proc near
+.text:0000555556C8E0C0                 lea     edx, [r9+r9]
+.text:0000555556C8E0C4                 mov     rcx, rbp
+.text:0000555556C8E0C7                 mov     [rcx-28h], rdx
+.text:0000555556C8E0CB                 mov     rdi, [rcx-10h]
+.text:0000555556C8E0CF                 mov     r8, rdi
+.text:0000555556C8E0D2                 mov     r8d, [r8+17h]
+.text:0000555556C8E0D6                 add     r8, r14
+.text:0000555556C8E0D9                 sub     r9d, 26h ; '&'
+.text:0000555556C8E0DD                 mov     r11d, [r8+7]
+.text:0000555556C8E0E1                 sub     r11d, r9d
+.text:0000555556C8E0E4                 mov     [r8+7], r11d
+.text:0000555556C8E0E8                 test    r11d, r11d
+.text:0000555556C8E0EB                 jge     short locret_555556C8E124
+.text:0000555556C8E0ED                 push    rbp
+.text:0000555556C8E0EE                 mov     rbp, rsp
+```
+
+Check:
+
+```js
+pwndbg> si
+0x0000555556c8e0dd in Builtins_ReturnHandler ()
+LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
+────────────────────────────────────────────────────────────────────────────────[ REGISTERS / show-flags off / show-compact-regs off ]────────────────────────────────────────────────────────────────────────────────
+ RAX  0x2e0b00200199 ◂— 0x4100000002000008
+ RBX  0x3b6
+ RCX  0x7fffffffd720 —▸ 0x7fffffffd748 —▸ 0x7fffffffd7c0 —▸ 0x7fffffffd920 —▸ 0x7fffffffd990 ◂— ...
+ RDX  0x76c
+ RDI  0x2e0b00199c89 ◂— 0x250000072500181e
+ RSI  0x2e0b002001a8 ◂— 0x0
+ R8   0x2e0b00199ccd ◂— 0xae001c3b2500000b /* '\x0b' */
+*R9   0x390
+ R10  0xca
+ R11  0x7fffffffd5a8 ◂— 0x4141 /* 'AA' */
+ R12  0x27ab00000669 ◂— 0x2000400200000009 /* '\t' */
+ R13  0x555556fa5080 —▸ 0x555556ae2f80 (Builtins_AdaptorWithBuiltinExitFrame) ◂— mov ecx, dword ptr [rdi + 0xf]
+ R14  0x2e0b00000000 ◂— 0x40940
+ R15  0x555556fdc640 —▸ 0x555556c738c0 (Builtins_WideHandler) ◂— lea rbx, [r9 + 1]
+ RBP  0x7fffffffd720 —▸ 0x7fffffffd748 —▸ 0x7fffffffd7c0 —▸ 0x7fffffffd920 —▸ 0x7fffffffd990 ◂— ...
+ RSP  0x7fffffffd918 —▸ 0x555556aeeda7 (Builtins_InterpreterEntryTrampoline+295) ◂— mov r12, qword ptr [rbp - 0x20]
+*RIP  0x555556c8e0dd (Builtins_ReturnHandler+29) ◂— mov r11d, dword ptr [r8 + 7]
+─────────────────────────────────────────────────────────────────────────────────────────[ DISASM / x86-64 / set emulate on ]─────────────────────────────────────────────────────────────────────────────────────────
+   0x555556c8e0cb <Builtins_ReturnHandler+11>     mov    rdi, qword ptr [rcx - 0x10]
+   0x555556c8e0cf <Builtins_ReturnHandler+15>     mov    r8, rdi
+   0x555556c8e0d2 <Builtins_ReturnHandler+18>     mov    r8d, dword ptr [r8 + 0x17]
+   0x555556c8e0d6 <Builtins_ReturnHandler+22>     add    r8, r14
+   0x555556c8e0d9 <Builtins_ReturnHandler+25>     sub    r9d, 0x26
+ ► 0x555556c8e0dd <Builtins_ReturnHandler+29>     mov    r11d, dword ptr [r8 + 7]
+   0x555556c8e0e1 <Builtins_ReturnHandler+33>     sub    r11d, r9d
+   0x555556c8e0e4 <Builtins_ReturnHandler+36>     mov    dword ptr [r8 + 7], r11d
+   0x555556c8e0e8 <Builtins_ReturnHandler+40>     test   r11d, r11d
+   0x555556c8e0eb <Builtins_ReturnHandler+43>     jge    Builtins_ReturnHandler+100                <Builtins_ReturnHandler+100>
+
+```
