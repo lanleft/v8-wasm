@@ -1132,6 +1132,29 @@ pwndbg> tele 0x7b5002001b9-0x60
 **Should understand how the program calls AddSample function? and why it changes rbp?**
 
 ```js
+
+/// =================== code c ==========================
+// Builtins_JSEntryTrampoline
+transitioning javascript builtin JSToWasmWrapper(
+    js-implicit context: NativeContext, receiver: JSAny, target: JSFunction)(
+    ...arguments): JSAny {
+  JSToWasmWrapperHelper(
+      context, receiver, target, arguments, Promise::kNoPromise);
+}
+// call JSToWasmWrapperHelper
+macro JSToWasmWrapperHelper(
+    context: NativeContext, _receiver: JSAny, target: JSFunction,
+    arguments: Arguments, promise: constexpr Promise): never {
+    //...
+  let popCount = arguments.length;
+  const declaredArgCount =
+      Convert<intptr>(Convert<int32>(target.shared_function_info.length));
+  if (declaredArgCount > popCount) {
+    popCount = declaredArgCount;
+  }
+  // Also pop the receiver.
+  PopAndReturn(popCount + 1, result);
+}
 // stack PopReturn oob 
 // ============= asm ===============
    0x555556c60928 <Builtins_JSToWasmWrapper+3176>    lea    rsp, [rsp + rcx*8]
@@ -1146,9 +1169,42 @@ pwndbg> tele 0x7b5002001b9-0x60
 .text:0000555556AF2C9C                 movzx   r10d, byte ptr [r12+r9]
 .text:0000555556AF2CA1                 mov     rcx, [r15+r10*8]
 .text:0000555556AF2CA5                 call    rcx             ; Builtins_JSToWasmWrapper
+// 
+void Builtins::Generate_InterpreterEntryTrampoline(
+    MacroAssembler* masm, InterpreterEntryTrampolineMode mode) {
+  Register closure = rdi;
+  __ movzxbq(kScratchRegister,
+             Operand(kInterpreterBytecodeArrayRegister,
+                     kInterpreterBytecodeOffsetRegister, times_1, 0)); // movzx   r10d, byte ptr [r12+r9]
+  __ movq(kJavaScriptCallCodeStartRegister,
+          Operand(kInterpreterDispatchTableRegister, kScratchRegister,
+                  times_system_pointer_size, 0)); // mov     rcx, [r15+r10*8]
+  __ call(kJavaScriptCallCodeStartRegister);//  call    rcx 
 
-/// =============================================
-Builtins_JSEntryTrampoline
+    // ...
+  // Any returns to the entry trampoline are either due to the return bytecode
+  // or the interpreter tail calling a builtin and then a dispatch.
+
+  // Get bytecode array and bytecode offset from the stack frame.
+  __ movq(kInterpreterBytecodeArrayRegister,
+          Operand(rbp, InterpreterFrameConstants::kBytecodeArrayFromFp)); // 0000555556AF2CA7 4C 8B 65 E0                       mov     r12, [rbp-20h
+  __ SmiUntagUnsigned(
+      kInterpreterBytecodeOffsetRegister,
+      Operand(rbp, InterpreterFrameConstants::kBytecodeOffsetFromFp));// 0000555556AF2CAB 44 8B 4D D8                       mov     r9d, [rbp-28h]
+
+  // Either return, or advance to the next bytecode and dispatch.
+  Label do_return;
+  __ movzxbq(rbx, Operand(kInterpreterBytecodeArrayRegister,
+                          kInterpreterBytecodeOffsetRegister, times_1, 0)); // 0000555556AF2CB2 43 0F B6 1C 0C                    movzx   ebx, byte ptr [r12+r9]
+  AdvanceBytecodeOffsetOrReturn(masm, kInterpreterBytecodeArrayRegister,
+                                kInterpreterBytecodeOffsetRegister, rbx, rcx,
+                                r8, &do_return);
+  __ jmp(&do_dispatch);
+  //...
+}
+
+
+// 
 static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
                                              bool is_construct) {
 // ...
@@ -1196,6 +1252,71 @@ void Generate_JSEntryVariant(MacroAssembler* masm, StackFrame::Type type,
 .text:0000555556AF045A                 call    Builtins_JSEntryTrampoline
 .text:0000555556AF045F                 pop     qword ptr [r13+118h]
 .text:0000555556AF0466                 add     rsp, 8
+
+// ===================
+.text:0000555555BD9C4D                   loc_555555BD9C4D:                       ; CODE XREF: v8::internal::`anonymous namespace'::Invoke(v8::internal::Isolate *,v8::internal::`anonymous namespace'::InvokeParams const&)+FB9↓j
+.text:0000555555BD9C4D 48 8D BB 80 00 00                 lea     rdi, [rbx+80h]
+.text:0000555555BD9C4D 00
+.text:0000555555BD9C54 4D 63 46 10                       movsxd  r8, dword ptr [r14+10h]
+.text:0000555555BD9C58 49 FF C0                          inc     r8
+.text:0000555555BD9C5B 4C 89 E2                          mov     rdx, r12
+.text:0000555555BD9C5E 41 FF D7                          call    r15             ; Builtins_JSEntry
+.text:0000555555BD9C61 49 89 C4                          mov     r12, rax
+.text:0000555555BD9C64 48 8B BD 60 FF FF                 mov     rdi, [rbp-0A0h]
+.text:0000555555BD9C64 FF
+.text:0000555555BD9C6B 48 85 FF                          test    rdi, rdi
+.text:0000555555BD9C6E 0F 84 CD FE FF FF                 jz      loc_555555BD9B41
+
+//...
+.text:0000555555BD9B41                   loc_555555BD9B41:                       ; CODE XREF: v8::internal::`anonymous namespace'::Invoke(v8::internal::Isolate *,v8::internal::`anonymous namespace'::InvokeParams const&)+A1E↓j
+.text:0000555555BD9B41 48 8D BD 28 FF FF                 lea     rdi, [rbp+var_D8] ; this
+.text:0000555555BD9B41 FF
+.text:0000555555BD9B48 E8 B3 0C 02 00                    call    _ZN2v88internal11SaveContextD2Ev ; v8::internal::SaveContext::~SaveContext()
+.text:0000555555BD9B4D 41 81 FC 71 5C 00                 cmp     r12d, 5C71h     ;  R12  0xd8f00200199 ◂— 0x4100000002000008
+.text:0000555555BD9B4D 00
+.text:0000555555BD9B54 0F 84 6F FD FF FF                 jz      loc_555555BD98C9
+// ...
+
+.text:0000555555BD9BAB 4C 89 F8                          mov     rax, r15
+.text:0000555555BD9BAE 48 81 C4 28 01 00                 add     rsp, 128h
+.text:0000555555BD9BAE 00
+.text:0000555555BD9BB5 5B                                pop     rbx
+.text:0000555555BD9BB6 41 5C                             pop     r12
+.text:0000555555BD9BB8 41 5D                             pop     r13
+.text:0000555555BD9BBA 41 5E                             pop     r14
+.text:0000555555BD9BBC 41 5F                             pop     r15
+.text:0000555555BD9BBE 5D                                pop     rbp
+.text:0000555555BD9BBF C3                                retn                    ; 0x555555bda3bb; v8::internal::Execution::CallScript
+// ...
+.text:0000555555BDA3B6 E8 95 EE FF FF                    call    _ZN2v88internal12_GLOBAL__N_16InvokeEPNS0_7IsolateERKNS1_12InvokeParamsE ; v8::internal::`anonymous namespace'::Invoke(v8::internal::Isolate *,v8::internal::`anonymous namespace'::InvokeParams const&)
+.text:0000555555BDA3BB 48 83 C4 50                       add     rsp, 50h
+.text:0000555555BDA3BF 5B                                pop     rbx
+.text:0000555555BDA3C0 41 5E                             pop     r14
+.text:0000555555BDA3C2 5D                                pop     rbp // stack pivoting // rbp -> v8 heap 
+.text:0000555555BDA3C3 C3                                retn                    ; <0x555555a65551; v8::Script::Run(v8::Local<v8::Context>, v8::Local<v8::Data>)+945>
+.text:0000555555BDA3C4   
+
+// return last time
+.text:0000555555A6554C E8 AF 4D 17 00                    call    _ZN2v88internal9Execution10CallScriptEPNS0_7IsolateENS0_6HandleINS0_10JSFunctionEEENS4_INS0_6ObjectEEES8_ ; v8::internal::Execution::CallScript(v8::internal::Isolate *,v8::internal::Handle<v8::internal::JSFunction>,v8::internal::Handle<v8::internal::Object>,v8::internal::Handle<v8::internal::Object>)
+.text:0000555555A65551 48 85 C0                          test    rax, rax
+.text:0000555555A65554 0F 84 80 01 00 00                 jz      loc_555555A656DA
+.text:0000555555A6555A 48 8B 00                          mov     rax, [rax]
+.text:0000555555A6555D 49 89 06                          mov     [r14], rax
+.text:0000555555A65560 4C 8D 3D 99 EA 4A                 lea     r15, _ZN2v88internal8v8_flagsE ; v8::internal::v8_flags
+.text:0000555555A65560 01
+.text:0000555555A65567 49 83 7D 00 00                    cmp     qword ptr [r13+0], 0
+.text:0000555555A6556C 74 13                             jz      short loc_555555A65581
+.text:0000555555A6556E
+.text:0000555555A6556E                   loc_555555A6556E:                       ; CODE XREF: v8::Script::Run(v8::Local<v8::Context>,v8::Local<v8::Data>)+549↓j
+.text:0000555555A6556E 4C 89 EF                          mov     rdi, r13        ; this
+.text:0000555555A65571 E8 6A 86 00 00                    call    _ZNK2v88internal8compiler9ObjectRef4dataEv ; v8::internal::compiler::ObjectRef::data(void)
+.text:0000555555A65576 48 8B 7D C8                       mov     rdi, [rbp-38h]  ; this
+.text:0000555555A6557A 89 C6                             mov     esi, eax        ; int
+.text:0000555555A6557C E8 6F 9D 33 00                    call    _ZN2v88internal9Histogram9AddSampleEi ; v8::internal::Histogram::AddSample(int)
+
+/// ==================
+
+
 ```
 Stacktrace:
 
@@ -1206,3 +1327,6 @@ Builtins_CallFunction_ReceiverIsAny
 Builtins_Call_ReceiverIsAny
 Builtins_JSEntryTrampoline
 ```
+
+**Try to understand why the program can go to AddSample function? and why it doesn't work on the previous commit?**
+
