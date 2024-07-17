@@ -216,6 +216,8 @@ They moved all of trusted data to readonly region.
 
 ### Understanding Mutable Page Metadata
 
+
+
 V8 uses a garbage collector to manage memory allocation and deallocation. The heap in v8 is divied into different spaces (e.g., new space, old space, code space), and each of space consists of memory chunks or pages. Managing these pages involves maintaining metadata about their state, usage, and other attributes.  
 
 ```
@@ -575,6 +577,12 @@ pwndbg> find 0x1e700000000,0x1e800000000,0x1e700
 Corrupting a MemoryChunk (metadata_index_, flags, etc.) does not result in escaping the v8 sandbox. 
 
 ![V8 MutablePageMetadata](v8_sandbox.drawio.png)
+
+
+Issue: https://issues.chromium.org/issues/40849120
+
+Studying more...
+
 
 
 ## Escapse V8 Sandbox with changing JIT variables
