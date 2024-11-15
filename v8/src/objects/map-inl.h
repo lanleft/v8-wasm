@@ -5,6 +5,7 @@
 #ifndef V8_OBJECTS_MAP_INL_H_
 #define V8_OBJECTS_MAP_INL_H_
 
+#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/api-callbacks-inl.h"
 #include "src/objects/cell-inl.h"
@@ -57,7 +58,7 @@ RELEASE_ACQUIRE_WEAK_ACCESSORS(Map, raw_transitions,
 ACCESSORS_CHECKED2(Map, prototype, Tagged<HeapObject>, kPrototypeOffset, true,
                    IsNull(value) || IsJSProxy(value) || IsWasmObject(value) ||
                        (IsJSObject(value) &&
-                        (InWritableSharedSpace(value) ||
+                        (HeapLayout::InWritableSharedSpace(value) ||
                          value->map()->is_prototype_map())))
 
 DEF_GETTER(Map, prototype_info, Tagged<Object>) {
@@ -131,24 +132,19 @@ BIT_FIELD_ACCESSORS(Map, relaxed_bit_field3, construction_counter,
 DEF_GETTER(Map, GetNamedInterceptor, Tagged<InterceptorInfo>) {
   DCHECK(has_named_interceptor());
   Tagged<FunctionTemplateInfo> info = GetFunctionTemplateInfo(cage_base);
-  return InterceptorInfo::cast(info->GetNamedPropertyHandler(cage_base));
+  return Cast<InterceptorInfo>(info->GetNamedPropertyHandler(cage_base));
 }
 
 DEF_GETTER(Map, GetIndexedInterceptor, Tagged<InterceptorInfo>) {
   DCHECK(has_indexed_interceptor());
   Tagged<FunctionTemplateInfo> info = GetFunctionTemplateInfo(cage_base);
-  return InterceptorInfo::cast(info->GetIndexedPropertyHandler(cage_base));
+  return Cast<InterceptorInfo>(info->GetIndexedPropertyHandler(cage_base));
 }
 
 // static
 bool Map::IsMostGeneralFieldType(Representation representation,
                                  Tagged<FieldType> field_type) {
   return !representation.IsHeapObject() || IsAny(field_type);
-}
-
-// static
-bool Map::FieldTypeIsCleared(Representation rep, Tagged<FieldType> type) {
-  return IsNone(type) && rep.IsHeapObject();
 }
 
 // static
@@ -273,7 +269,7 @@ Tagged<FixedArrayBase> Map::GetInitialElements() const {
   } else {
     UNREACHABLE();
   }
-  DCHECK(!ObjectInYoungGeneration(result));
+  DCHECK(!HeapLayout::InYoungGeneration(result));
   return result;
 }
 
@@ -368,7 +364,7 @@ int Map::GetInObjectPropertyOffset(int index) const {
 
 Handle<Map> Map::AddMissingTransitionsForTesting(
     Isolate* isolate, Handle<Map> split_map,
-    Handle<DescriptorArray> descriptors) {
+    DirectHandle<DescriptorArray> descriptors) {
   return AddMissingTransitions(isolate, split_map, descriptors);
 }
 
@@ -589,7 +585,7 @@ bool Map::is_abandoned_prototype_map() const {
 bool Map::should_be_fast_prototype_map() const {
   DCHECK(is_prototype_map());
   if (!has_prototype_info()) return false;
-  return PrototypeInfo::cast(prototype_info())->should_be_fast_map();
+  return Cast<PrototypeInfo>(prototype_info())->should_be_fast_map();
 }
 
 bool Map::has_prototype_info() const {
@@ -601,7 +597,7 @@ bool Map::TryGetPrototypeInfo(Tagged<PrototypeInfo>* result) const {
   DCHECK(is_prototype_map());
   Tagged<Object> maybe_proto_info = prototype_info();
   if (!PrototypeInfo::IsPrototypeInfoFast(maybe_proto_info)) return false;
-  *result = PrototypeInfo::cast(maybe_proto_info);
+  *result = Cast<PrototypeInfo>(maybe_proto_info);
   return true;
 }
 
@@ -734,7 +730,7 @@ bool Map::CanTransition() const {
   // Shared JS objects have fixed shapes and do not transition. Their maps are
   // either in shared space or RO space.
   DCHECK_IMPLIES(InstanceTypeChecker::IsAlwaysSharedSpaceJSObject(type),
-                 InAnySharedSpace(*this));
+                 HeapLayout::InAnySharedSpace(*this));
   return InstanceTypeChecker::IsJSObject(type) &&
          !InstanceTypeChecker::IsAlwaysSharedSpaceJSObject(type);
 }
@@ -781,7 +777,8 @@ void Map::AppendDescriptor(Isolate* isolate, Descriptor* desc) {
     descriptors->Append(desc);
     SetNumberOfOwnDescriptors(number_of_own_descriptors + 1);
 #ifndef V8_DISABLE_WRITE_BARRIERS
-    WriteBarrier::Marking(descriptors, number_of_own_descriptors + 1);
+    WriteBarrier::ForDescriptorArray(descriptors,
+                                     number_of_own_descriptors + 1);
 #endif
   }
   // Properly mark the map if the {desc} is an "interesting symbol".
@@ -807,7 +804,7 @@ bool Map::ConcurrentIsHeapObjectWithMap(PtrComprCageBase cage_base,
                                         Tagged<Object> object,
                                         Tagged<Map> meta_map) {
   if (!IsHeapObject(object)) return false;
-  Tagged<HeapObject> heap_object = HeapObject::cast(object);
+  Tagged<HeapObject> heap_object = Cast<HeapObject>(object);
   return heap_object->map(cage_base) == meta_map;
 }
 
@@ -829,7 +826,7 @@ bool Map::TryGetBackPointer(PtrComprCageBase cage_base,
     DCHECK(IsMap(object));
     // Sanity check - only contextful maps can transition.
     DCHECK(IsNativeContext(meta_map->native_context_or_null()));
-    *back_pointer = Map::cast(object);
+    *back_pointer = Cast<Map>(object);
     return true;
   }
   // If it was a map that'd mean that there are maps from different native
@@ -842,7 +839,7 @@ void Map::SetBackPointer(Tagged<HeapObject> value, WriteBarrierMode mode) {
   CHECK_GE(instance_type(), FIRST_JS_RECEIVER_TYPE);
   CHECK(IsMap(value));
   CHECK(IsUndefined(GetBackPointer()));
-  CHECK_EQ(Map::cast(value)->GetConstructorRaw(),
+  CHECK_EQ(Cast<Map>(value)->GetConstructorRaw(),
            constructor_or_back_pointer());
   set_constructor_or_back_pointer(value, mode);
 }
@@ -850,7 +847,7 @@ void Map::SetBackPointer(Tagged<HeapObject> value, WriteBarrierMode mode) {
 // static
 Tagged<Map> Map::GetMapFor(ReadOnlyRoots roots, InstanceType type) {
   RootIndex map_idx = TryGetMapRootIdxFor(type).value();
-  return Map::unchecked_cast(roots.object_at(map_idx));
+  return UncheckedCast<Map>(roots.object_at(map_idx));
 }
 
 // static
@@ -899,11 +896,27 @@ bool Map::IsPrototypeValidityCellValid() const {
   Tagged<Object> validity_cell = prototype_validity_cell(kRelaxedLoad);
   if (IsSmi(validity_cell)) {
     // Smi validity cells should always be considered valid.
-    DCHECK_EQ(Smi::cast(validity_cell).value(), Map::kPrototypeChainValid);
+    DCHECK_EQ(Cast<Smi>(validity_cell).value(), Map::kPrototypeChainValid);
     return true;
   }
-  Tagged<Smi> cell_value = Smi::cast(Cell::cast(validity_cell)->value());
+  Tagged<Smi> cell_value = Cast<Smi>(Cast<Cell>(validity_cell)->value());
   return cell_value == Smi::FromInt(Map::kPrototypeChainValid);
+}
+
+bool Map::BelongsToSameNativeContextAs(Tagged<Map> other_map) const {
+  Tagged<Map> this_meta_map = map();
+  // If the meta map is contextless (as in case of remote object's meta map)
+  // we can't be sure the maps belong to the same context.
+  if (this_meta_map == GetReadOnlyRoots().meta_map()) return false;
+  DCHECK(IsNativeContext(this_meta_map->native_context_or_null()));
+  return this_meta_map == other_map->map();
+}
+
+bool Map::BelongsToSameNativeContextAs(Tagged<Context> context) const {
+  Tagged<Map> context_meta_map = context->map()->map();
+  Tagged<Map> this_meta_map = map();
+  DCHECK_NE(context_meta_map, GetReadOnlyRoots().meta_map());
+  return this_meta_map == context_meta_map;
 }
 
 DEF_GETTER(Map, GetConstructorRaw, Tagged<Object>) {
@@ -918,7 +931,7 @@ DEF_GETTER(Map, GetConstructorRaw, Tagged<Object>) {
     // Sanity check - only contextful maps can transition.
     DCHECK(IsNativeContext(meta_map->native_context_or_null()));
     maybe_constructor =
-        Map::cast(maybe_constructor)->constructor_or_back_pointer(cage_base);
+        Cast<Map>(maybe_constructor)->constructor_or_back_pointer(cage_base);
   }
   // If it was a map that'd mean that there are maps from different native
   // contexts in the transition tree.
@@ -932,7 +945,7 @@ DEF_GETTER(Map, GetNonInstancePrototype, Tagged<Object>) {
   CHECK(IsTuple2(raw_constructor));
   // Get prototype from the {constructor, non-instance_prototype} tuple.
   Tagged<Tuple2> non_instance_prototype_constructor_tuple =
-      Tuple2::cast(raw_constructor);
+      Cast<Tuple2>(raw_constructor);
   Tagged<Object> result = non_instance_prototype_constructor_tuple->value2();
   DCHECK(!IsJSReceiver(result));
   DCHECK(!IsFunctionTemplateInfo(result));
@@ -943,7 +956,7 @@ DEF_GETTER(Map, GetConstructor, Tagged<Object>) {
   Tagged<Object> maybe_constructor = GetConstructorRaw(cage_base);
   if (IsTuple2(maybe_constructor)) {
     // Get constructor from the {constructor, non-instance_prototype} tuple.
-    maybe_constructor = Tuple2::cast(maybe_constructor)->value1();
+    maybe_constructor = Cast<Tuple2>(maybe_constructor)->value1();
   }
   return maybe_constructor;
 }
@@ -955,11 +968,11 @@ Tagged<Object> Map::TryGetConstructor(PtrComprCageBase cage_base,
   while (IsMap(maybe_constructor, cage_base)) {
     if (max_steps-- == 0) return Smi::FromInt(0);
     maybe_constructor =
-        Map::cast(maybe_constructor)->constructor_or_back_pointer(cage_base);
+        Cast<Map>(maybe_constructor)->constructor_or_back_pointer(cage_base);
   }
   if (IsTuple2(maybe_constructor)) {
     // Get constructor from the {constructor, non-instance_prototype} tuple.
-    maybe_constructor = Tuple2::cast(maybe_constructor)->value1();
+    maybe_constructor = Cast<Tuple2>(maybe_constructor)->value1();
   }
   return maybe_constructor;
 }
@@ -968,12 +981,12 @@ DEF_GETTER(Map, GetFunctionTemplateInfo, Tagged<FunctionTemplateInfo>) {
   Tagged<Object> constructor = GetConstructor(cage_base);
   if (IsJSFunction(constructor, cage_base)) {
     Tagged<SharedFunctionInfo> sfi =
-        JSFunction::cast(constructor)->shared(cage_base);
+        Cast<JSFunction>(constructor)->shared(cage_base);
     DCHECK(sfi->IsApiFunction());
     return sfi->api_func_data();
   }
   DCHECK(IsFunctionTemplateInfo(constructor, cage_base));
-  return FunctionTemplateInfo::cast(constructor);
+  return Cast<FunctionTemplateInfo>(constructor);
 }
 
 void Map::SetConstructor(Tagged<Object> constructor, WriteBarrierMode mode) {
@@ -1021,19 +1034,17 @@ int Map::InstanceSizeFromSlack(int slack) const {
   return instance_size() - slack * kTaggedSize;
 }
 
-OBJECT_CONSTRUCTORS_IMPL(NormalizedMapCache, WeakFixedArray)
-CAST_ACCESSOR(NormalizedMapCache)
 NEVER_READ_ONLY_SPACE_IMPL(NormalizedMapCache)
 
-int NormalizedMapCache::GetIndex(Tagged<Map> map,
+int NormalizedMapCache::GetIndex(Isolate* isolate, Tagged<Map> map,
                                  Tagged<HeapObject> prototype) {
   DisallowGarbageCollection no_gc;
-  return map->Hash(prototype) % NormalizedMapCache::kEntries;
+  return map->Hash(isolate, prototype) % NormalizedMapCache::kEntries;
 }
 
 DEF_HEAP_OBJECT_PREDICATE(HeapObject, IsNormalizedMapCache) {
   if (!IsWeakFixedArray(obj, cage_base)) return false;
-  if (WeakFixedArray::cast(obj)->length() != NormalizedMapCache::kEntries) {
+  if (Cast<WeakFixedArray>(obj)->length() != NormalizedMapCache::kEntries) {
     return false;
   }
   return true;

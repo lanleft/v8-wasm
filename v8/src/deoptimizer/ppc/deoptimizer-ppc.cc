@@ -21,6 +21,11 @@ ASSERT_OFFSET(Builtin::kDeoptimizationEntry_Lazy);
 const int Deoptimizer::kEagerDeoptExitSize = 3 * kInstrSize;
 const int Deoptimizer::kLazyDeoptExitSize = 3 * kInstrSize;
 
+// static
+void Deoptimizer::PatchJumpToTrampoline(Address pc, Address new_pc) {
+  UNREACHABLE();
+}
+
 Float32 RegisterValues::GetFloatRegister(unsigned n) const {
   double double_val = base::ReadUnalignedValue<Float64>(
                           reinterpret_cast<Address>(simd128_registers_ + n))
@@ -32,6 +37,11 @@ Float32 RegisterValues::GetFloatRegister(unsigned n) const {
 Float64 RegisterValues::GetDoubleRegister(unsigned n) const {
   return base::ReadUnalignedValue<Float64>(
       reinterpret_cast<Address>(simd128_registers_ + n));
+}
+
+void RegisterValues::SetDoubleRegister(unsigned n, Float64 value) {
+  base::WriteUnalignedValue<Float64>(
+      reinterpret_cast<Address>(simd128_registers_ + n), value);
 }
 
 void FrameDescription::SetCallerPc(unsigned offset, intptr_t value) {

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -21,6 +22,7 @@
 #include "src/tasks/cancelable-task.h"
 #include "src/tasks/operations-barrier.h"
 #include "src/wasm/canonical-types.h"
+#include "src/wasm/stacks.h"
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-tier.h"
 #include "src/zone/accounting-allocator.h"
@@ -48,7 +50,7 @@ class AsyncCompileJob;
 class ErrorThrower;
 struct ModuleWireBytes;
 class StreamingDecoder;
-class WasmFeatures;
+class WasmEnabledFeatures;
 class WasmOrphanedGlobalHandle;
 
 class V8_EXPORT_PRIVATE CompilationResultResolver {
@@ -69,6 +71,12 @@ class V8_EXPORT_PRIVATE InstantiationResultResolver {
 class NativeModuleCache {
  public:
   struct Key {
+    Key(size_t prefix_hash, CompileTimeImports compile_imports,
+        const base::Vector<const uint8_t>& bytes)
+        : prefix_hash(prefix_hash),
+          compile_imports(std::move(compile_imports)),
+          bytes(bytes) {}
+
     // Store the prefix hash as part of the key for faster lookup, and to
     // quickly check existing prefixes for streaming compilation.
     size_t prefix_hash;
@@ -76,8 +84,8 @@ class NativeModuleCache {
     base::Vector<const uint8_t> bytes;
 
     bool operator==(const Key& other) const {
-      bool eq =
-          bytes == other.bytes && compile_imports == other.compile_imports;
+      bool eq = bytes == other.bytes &&
+                compile_imports.compare(other.compile_imports) == 0;
       DCHECK_IMPLIES(eq, prefix_hash == other.prefix_hash);
       return eq;
     }
@@ -88,12 +96,11 @@ class NativeModuleCache {
                        bytes != other.bytes);
         return prefix_hash < other.prefix_hash;
       }
-      if (compile_imports != other.compile_imports) {
-        return compile_imports.ToIntegral() <
-               other.compile_imports.ToIntegral();
-      }
       if (bytes.size() != other.bytes.size()) {
         return bytes.size() < other.bytes.size();
+      }
+      if (int cmp = compile_imports.compare(other.compile_imports)) {
+        return cmp < 0;
       }
       // Fast path when the base pointers are the same.
       // Also handles the {nullptr} case which would be UB for memcmp.
@@ -109,16 +116,16 @@ class NativeModuleCache {
 
   std::shared_ptr<NativeModule> MaybeGetNativeModule(
       ModuleOrigin origin, base::Vector<const uint8_t> wire_bytes,
-      CompileTimeImports compile_imports);
-  bool GetStreamingCompilationOwnership(size_t prefix_hash,
-                                        CompileTimeImports compile_imports);
+      const CompileTimeImports& compile_imports);
+  bool GetStreamingCompilationOwnership(
+      size_t prefix_hash, const CompileTimeImports& compile_imports);
   void StreamingCompilationFailed(size_t prefix_hash,
-                                  CompileTimeImports compile_imports);
+                                  const CompileTimeImports& compile_imports);
   std::shared_ptr<NativeModule> Update(
       std::shared_ptr<NativeModule> native_module, bool error);
   void Erase(NativeModule* native_module);
 
-  bool empty() { return map_.empty(); }
+  bool empty() const { return map_.empty(); }
 
   // Hash the wire bytes up to the code section header. Used as a heuristic to
   // avoid streaming compilation of modules that are likely already in the
@@ -138,7 +145,7 @@ class NativeModuleCache {
   // before trying to get it from the cache.
   // By contrast, an expired {weak_ptr} indicates that the native module died
   // and will soon be cleaned up from the cache.
-  std::map<Key, base::Optional<std::weak_ptr<NativeModule>>> map_;
+  std::map<Key, std::optional<std::weak_ptr<NativeModule>>> map_;
 
   base::Mutex mutex_;
 
@@ -151,6 +158,8 @@ class NativeModuleCache {
 // The central data structure that represents an engine instance capable of
 // loading, instantiating, and executing Wasm code.
 class V8_EXPORT_PRIVATE WasmEngine {
+  class LogCodesTask;
+
  public:
   WasmEngine();
   WasmEngine(const WasmEngine&) = delete;
@@ -159,14 +168,14 @@ class V8_EXPORT_PRIVATE WasmEngine {
 
   // Synchronously validates the given bytes. Returns whether the bytes
   // represent a valid encoded Wasm module.
-  bool SyncValidate(Isolate* isolate, WasmFeatures enabled,
+  bool SyncValidate(Isolate* isolate, WasmEnabledFeatures enabled,
                     CompileTimeImports compile_imports, ModuleWireBytes bytes);
 
   // Synchronously compiles the given bytes that represent a translated
   // asm.js module.
   MaybeHandle<AsmWasmData> SyncCompileTranslatedAsmJs(
       Isolate* isolate, ErrorThrower* thrower, ModuleWireBytes bytes,
-      Handle<Script> script,
+      DirectHandle<Script> script,
       base::Vector<const uint8_t> asm_js_offset_table_bytes,
       DirectHandle<HeapNumber> uses_bitset, LanguageMode language_mode);
   Handle<WasmModuleObject> FinalizeTranslatedAsmJs(
@@ -176,7 +185,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // Synchronously compiles the given bytes that represent an encoded Wasm
   // module.
   MaybeHandle<WasmModuleObject> SyncCompile(Isolate* isolate,
-                                            WasmFeatures enabled,
+                                            WasmEnabledFeatures enabled,
                                             CompileTimeImports compile_imports,
                                             ErrorThrower* thrower,
                                             ModuleWireBytes bytes);
@@ -193,7 +202,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // encoded Wasm module.
   // The {is_shared} flag indicates if the bytes backing the module could
   // be shared across threads, i.e. could be concurrently modified.
-  void AsyncCompile(Isolate* isolate, WasmFeatures enabled,
+  void AsyncCompile(Isolate* isolate, WasmEnabledFeatures enabled,
                     CompileTimeImports compile_imports,
                     std::shared_ptr<CompilationResultResolver> resolver,
                     ModuleWireBytes bytes, bool is_shared,
@@ -206,7 +215,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
                         MaybeHandle<JSReceiver> imports);
 
   std::shared_ptr<StreamingDecoder> StartStreamingCompilation(
-      Isolate* isolate, WasmFeatures enabled,
+      Isolate* isolate, WasmEnabledFeatures enabled,
       CompileTimeImports compile_imports, Handle<Context> context,
       const char* api_method_name,
       std::shared_ptr<CompilationResultResolver> resolver);
@@ -227,10 +236,12 @@ class V8_EXPORT_PRIVATE WasmEngine {
       Isolate* isolate, std::shared_ptr<NativeModule> shared_module,
       base::Vector<const char> source_url);
 
-  void FlushCode();
+  // Flushes all Liftoff code and returns the sizes of the removed
+  // (executable) code and the removed metadata.
+  std::pair<size_t, size_t> FlushLiftoffCode();
 
   // Returns the code size of all Liftoff compiled functions in all modules.
-  size_t GetLiftoffCodeSize();
+  size_t GetLiftoffCodeSizeForTesting();
 
   AccountingAllocator* allocator() { return &allocator_; }
 
@@ -241,7 +252,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
 
   // Prints the gathered compilation statistics, then resets them.
   void DumpAndResetTurboStatistics();
-  // Same, but no reset.
+  // Prints the gathered compilation statistics (without resetting them).
   void DumpTurboStatistics();
 
   // Used to redirect tracing output from {stdout} to a file.
@@ -264,12 +275,6 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // for tearing down an isolate, or to clean it up to be reused.
   void DeleteCompileJobsOnIsolate(Isolate* isolate);
 
-  // Get a token for compiling wrappers for an Isolate. The token is used to
-  // synchronize background tasks on isolate shutdown. The caller should only
-  // hold the token while compiling export wrappers. If the isolate is already
-  // shutting down, this method will return an invalid token.
-  OperationsBarrier::Token StartWrapperCompilation(Isolate*);
-
   // Manage the set of Isolates that use this WasmEngine.
   void AddIsolate(Isolate* isolate);
   void RemoveIsolate(Isolate* isolate);
@@ -278,6 +283,10 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // access to the NativeModule containing this code. This method can be called
   // from background threads.
   void LogCode(base::Vector<WasmCode*>);
+  // Trigger code logging for the given code objects, which must be wrappers
+  // that are shared engine-wide. This method can be called from background
+  // threads.
+  void LogWrapperCode(base::Vector<WasmCode*>);
 
   // Enable code logging for the given Isolate. Initially, code logging is
   // enabled if {WasmCode::ShouldBeLogged(Isolate*)} returns true during
@@ -295,7 +304,8 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // more memory.
   // TODO(wasm): isolate is only required here for CompilationState.
   std::shared_ptr<NativeModule> NewNativeModule(
-      Isolate* isolate, WasmFeatures enabled_features,
+      Isolate* isolate, WasmEnabledFeatures enabled_features,
+      WasmDetectedFeatures detected_features,
       CompileTimeImports compile_imports,
       std::shared_ptr<const WasmModule> module, size_t code_size_estimate);
 
@@ -312,7 +322,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // NativeModule later.
   std::shared_ptr<NativeModule> MaybeGetNativeModule(
       ModuleOrigin origin, base::Vector<const uint8_t> wire_bytes,
-      CompileTimeImports compile_imports, Isolate* isolate);
+      const CompileTimeImports& compile_imports, Isolate* isolate);
 
   // Replace the temporary {nullopt} with the new native module, or
   // erase it if any error occurred. Wake up blocked threads waiting for this
@@ -335,13 +345,13 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // prepared a module with the same prefix hash. The caller should wait until
   // the stream is finished and call {MaybeGetNativeModule} to either get the
   // module from the cache or get ownership for the compilation of these bytes.
-  bool GetStreamingCompilationOwnership(size_t prefix_hash,
-                                        CompileTimeImports compile_imports);
+  bool GetStreamingCompilationOwnership(
+      size_t prefix_hash, const CompileTimeImports& compile_imports);
 
   // Remove the prefix hash from the cache when compilation failed. If
   // compilation succeeded, {UpdateNativeModuleCache} should be called instead.
   void StreamingCompilationFailed(size_t prefix_hash,
-                                  CompileTimeImports compile_imports);
+                                  const CompileTimeImports& compile_imports);
 
   void FreeNativeModule(NativeModule*);
   void ClearWeakScriptHandle(Isolate* isolate,
@@ -367,8 +377,8 @@ class V8_EXPORT_PRIVATE WasmEngine {
 
   // Free dead code.
   using DeadCodeMap = std::unordered_map<NativeModule*, std::vector<WasmCode*>>;
-  void FreeDeadCode(const DeadCodeMap&);
-  void FreeDeadCodeLocked(const DeadCodeMap&);
+  void FreeDeadCode(const DeadCodeMap&, std::vector<WasmCode*>&);
+  void FreeDeadCodeLocked(const DeadCodeMap&, std::vector<WasmCode*>&);
 
   Handle<Script> GetOrCreateScript(Isolate*,
                                    const std::shared_ptr<NativeModule>&,
@@ -405,7 +415,7 @@ class V8_EXPORT_PRIVATE WasmEngine {
   struct NativeModuleInfo;
 
   AsyncCompileJob* CreateAsyncCompileJob(
-      Isolate* isolate, WasmFeatures enabled,
+      Isolate* isolate, WasmEnabledFeatures enabled,
       CompileTimeImports compile_imports,
       base::OwnedVector<const uint8_t> bytes, DirectHandle<Context> context,
       const char* api_method_name,
@@ -466,6 +476,15 @@ class V8_EXPORT_PRIVATE WasmEngine {
   // Size of code that became dead since the last GC. If this exceeds a certain
   // threshold, a new GC is triggered.
   size_t new_potentially_dead_code_size_ = 0;
+  // Set of potentially dead code. This set holds one ref for each code object,
+  // until code is detected to be really dead. At that point, the ref count is
+  // decremented and code is moved to the {dead_code} set. If the code is
+  // finally deleted, it is also removed from {dead_code}.
+  std::unordered_set<WasmCode*> potentially_dead_code_;
+  // Code that is not being executed in any isolate any more, but the ref count
+  // did not drop to zero yet.
+  std::unordered_set<WasmCode*> dead_code_;
+  int8_t num_code_gcs_triggered_ = 0;
 
   // If an engine-wide GC is currently running, this pointer stores information
   // about that.
@@ -482,6 +501,10 @@ V8_EXPORT_PRIVATE WasmEngine* GetWasmEngine();
 
 // Returns a reference to the WasmCodeManager shared by the entire process.
 V8_EXPORT_PRIVATE WasmCodeManager* GetWasmCodeManager();
+
+// Returns a reference to the WasmImportWrapperCache shared by the entire
+// process.
+V8_EXPORT_PRIVATE WasmImportWrapperCache* GetWasmImportWrapperCache();
 
 }  // namespace wasm
 }  // namespace internal

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 
 #include "src/base/macros.h"
 #include "src/base/sanitizer/asan.h"
@@ -51,13 +52,13 @@ V8_WARN_UNUSED_RESULT bool TryDiscard(PageAllocator& allocator,
                                       page_memory.overall_region().size());
 }
 
-v8::base::Optional<MemoryRegion> ReserveMemoryRegion(PageAllocator& allocator,
-                                                     size_t allocation_size) {
+std::optional<MemoryRegion> ReserveMemoryRegion(PageAllocator& allocator,
+                                                size_t allocation_size) {
   void* region_memory =
       allocator.AllocatePages(nullptr, allocation_size, kPageSize,
                               PageAllocator::Permission::kNoAccess);
   if (!region_memory) {
-    return v8::base::nullopt;
+    return std::nullopt;
   }
   const MemoryRegion reserved_region(static_cast<Address>(region_memory),
                                      allocation_size);
@@ -135,7 +136,7 @@ void NormalPageMemoryPool::Add(PageMemoryRegion* pmr) {
     AsanUnpoisonScope unpoison_for_memset(base, size);
     std::memset(base, 0, size);
   }
-  pool_.push_back({pmr, false});
+  pool_.emplace_back(PooledPageMemoryRegion(pmr));
 }
 
 PageMemoryRegion* NormalPageMemoryPool::Take() {
@@ -154,12 +155,22 @@ PageMemoryRegion* NormalPageMemoryPool::Take() {
         base, size, v8::PageAllocator::kReadWrite));
     CHECK(entry.region->allocator().SetPermissions(
         base, size, v8::PageAllocator::kReadWrite));
-    entry.is_decommitted = false;
   }
 #if DEBUG
   CheckMemoryIsZero(base, size);
 #endif
   return entry.region;
+}
+
+size_t NormalPageMemoryPool::PooledMemory() const {
+  size_t total_size = 0;
+  for (auto& entry : pool_) {
+    if (entry.is_decommitted || entry.is_discarded) {
+      continue;
+    }
+    total_size += entry.region->GetPageMemory().writeable_region().size();
+  }
+  return total_size;
 }
 
 void NormalPageMemoryPool::DiscardPooledPages(PageAllocator& page_allocator) {
@@ -170,10 +181,17 @@ void NormalPageMemoryPool::DiscardPooledPages(PageAllocator& page_allocator) {
     // Unpoison the memory before giving back to the OS.
     ASAN_UNPOISON_MEMORY_REGION(base, size);
     if (decommit_pooled_pages_) {
+      if (entry.is_decommitted) {
+        continue;
+      }
       CHECK(page_allocator.DecommitPages(base, size));
       entry.is_decommitted = true;
     } else {
+      if (entry.is_discarded) {
+        continue;
+      }
       CHECK(TryDiscard(page_allocator, entry.region->GetPageMemory()));
+      entry.is_discarded = true;
     }
   }
 }

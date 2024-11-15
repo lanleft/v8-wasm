@@ -1,0 +1,9 @@
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output/inlining.js --wasm-inlining --no-liftoff --allow-natives-syntax
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output/regress-1447367.js --wasm-inlining --no-liftoff --no-wasm-lazy-compilation
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output/regress-1523414.js --no-liftoff --wasm-inlining
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output/regress-1484393.js --no-liftoff
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output/regress-326894018.js --wasm-staging --no-wasm-lazy-compilation --no-liftoff
+
+
+
+Errors for ./out/debug/d8 --test ./test/mjsunit/mjsunit.js ./test/mjsunit/sandbox/wasm-inlining-sigcheck.js --allow-natives-syntax --sandbox-testing --turboshaft-wasm

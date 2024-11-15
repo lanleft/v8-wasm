@@ -28,9 +28,9 @@ function makeWasmMemory(length) {
   const kWasmPageSize = 64 * 1024;
   assertTrue(kHasWasm);
   assertEquals(0, length % kWasmPageSize);
-  let num_pages = length / kWasmPageSize;
+  let num_pages = BigInt(length / kWasmPageSize);
   let wasm_mem = new WebAssembly.Memory(
-      {initial: num_pages, maximum: num_pages, index: 'i64'});
+      {initial: num_pages, maximum: num_pages, address: 'i64'});
   return wasm_mem.buffer;
 }
 
@@ -298,13 +298,13 @@ function* GetTestConfigs() {
 
   // Test wait / notify.
   let worker = new Worker(function() {
-    onmessage = function(msg) {
+    onmessage = function({data:msg}) {
       if (msg.action == 'wait') {
         let ta = new Int32Array(msg.buf);
         postMessage(Atomics.wait(ta, msg.index, msg.value, msg.timeout));
         return;
       }
-      postMessage(`Unknown action: ${msg.action}`);
+      postMessage(`Unknown action: ${msg.data.action}`);
     }
   }, {type: 'function'});
 

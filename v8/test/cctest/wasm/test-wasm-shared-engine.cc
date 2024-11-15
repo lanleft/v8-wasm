@@ -106,9 +106,7 @@ ZoneBuffer* BuildReturnConstantModule(Zone* zone, int constant) {
   WasmModuleBuilder* builder = zone->New<WasmModuleBuilder>(zone);
   WasmFunctionBuilder* f = builder->AddFunction(sigs.i_v());
   f->builder()->AddExport(base::CStrVector("main"), f);
-  uint8_t code[] = {WASM_I32V_2(constant)};
-  f->EmitCode(code, sizeof(code));
-  f->Emit(kExprEnd);
+  f->EmitCode({WASM_I32V_2(constant), WASM_END});
   builder->WriteTo(buffer);
   return buffer;
 }
@@ -158,7 +156,7 @@ void PumpMessageLoop(SharedEngineIsolate* isolate) {
 Handle<WasmInstanceObject> CompileAndInstantiateAsync(
     SharedEngineIsolate* isolate, ZoneBuffer* buffer) {
   Handle<Object> maybe_instance = handle(Smi::zero(), isolate->isolate());
-  auto enabled_features = WasmFeatures::FromIsolate(isolate->isolate());
+  auto enabled_features = WasmEnabledFeatures::FromIsolate(isolate->isolate());
   constexpr const char* kAPIMethodName = "Test.CompileAndInstantiateAsync";
   GetWasmEngine()->AsyncCompile(
       isolate->isolate(), enabled_features, CompileTimeImports{},
@@ -300,7 +298,7 @@ TEST(SharedEngineRunThreadedTierUp) {
   threads.emplace_back([module](SharedEngineIsolate* isolate) {
     HandleScope scope(isolate->isolate());
     Handle<WasmInstanceObject> instance = isolate->ImportInstance(module);
-    WasmFeatures detected = WasmFeatures::None();
+    WasmDetectedFeatures detected;
     WasmCompilationUnit::CompileWasmFunction(
         isolate->isolate()->counters(), module.get(), &detected,
         &module->module()->functions[0], ExecutionTier::kTurbofan);

@@ -38,7 +38,7 @@ class MaglevCodeGenerator final {
   void EmitMetadata();
   void RecordInlinedFunctions();
 
-  GlobalHandleVector<Map> CollectRetainedMaps(Handle<Code> code);
+  GlobalHandleVector<Map> CollectRetainedMaps(DirectHandle<Code> code);
   Handle<DeoptimizationData> GenerateDeoptimizationData(
       LocalIsolate* local_isolate);
   MaybeHandle<Code> BuildCodeObject(LocalIsolate* local_isolate);
@@ -65,9 +65,11 @@ class MaglevCodeGenerator final {
 
   bool code_gen_succeeded_ = false;
 
-  Handle<DeoptimizationData> deopt_data_;
-  MaybeHandle<Code> code_;
+  IndirectHandle<DeoptimizationData> deopt_data_;
+  MaybeIndirectHandle<Code> code_;
   GlobalHandleVector<Map> retained_maps_;
+  bool is_context_specialized_;
+  Zone* zone_;
 };
 
 }  // namespace maglev

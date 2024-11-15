@@ -287,6 +287,7 @@ class RegisterRepresentation : public MaybeRegisterRepresentation {
       case MachineRepresentation::kCompressedPointer:
       case MachineRepresentation::kCompressed:
         return Compressed();
+      case MachineRepresentation::kFloat16:
       case MachineRepresentation::kFloat32:
         return Float32();
       case MachineRepresentation::kFloat64:
@@ -311,6 +312,25 @@ class RegisterRepresentation : public MaybeRegisterRepresentation {
 
   static constexpr RegisterRepresentation FromMachineType(MachineType type) {
     return FromMachineRepresentation(type.representation());
+  }
+
+  static constexpr RegisterRepresentation FromCTypeInfo(
+      CTypeInfo t, CFunctionInfo::Int64Representation int64_repr) {
+    if (t.GetType() == CTypeInfo::Type::kVoid ||
+        t.GetType() == CTypeInfo::Type::kPointer) {
+      return RegisterRepresentation::Tagged();
+    } else if (t.GetType() == CTypeInfo::Type::kInt64 ||
+               t.GetType() == CTypeInfo::Type::kUint64) {
+      if (int64_repr == CFunctionInfo::Int64Representation::kBigInt) {
+        return RegisterRepresentation::Word64();
+      } else {
+        DCHECK_EQ(int64_repr, CFunctionInfo::Int64Representation::kNumber);
+        return RegisterRepresentation::Float64();
+      }
+    } else {
+      return RegisterRepresentation::FromMachineType(
+          MachineType::TypeForCType(t));
+    }
   }
 
   constexpr bool AllowImplicitRepresentationChangeTo(
@@ -500,11 +520,15 @@ class MemoryRepresentation {
     kUint32,
     kInt64,
     kUint64,
+    kFloat16,
     kFloat32,
     kFloat64,
     kAnyTagged,
     kTaggedPointer,
     kTaggedSigned,
+    kAnyUncompressedTagged,
+    kUncompressedTaggedPointer,
+    kUncompressedTaggedSigned,
     kProtectedPointer,
     kIndirectPointer,
     kSandboxedPointer,
@@ -554,6 +578,9 @@ class MemoryRepresentation {
       return Uint32();
     }
   }
+  static constexpr MemoryRepresentation Float16() {
+    return MemoryRepresentation(Enum::kFloat16);
+  }
   static constexpr MemoryRepresentation Float32() {
     return MemoryRepresentation(Enum::kFloat32);
   }
@@ -569,11 +596,27 @@ class MemoryRepresentation {
   static constexpr MemoryRepresentation TaggedSigned() {
     return MemoryRepresentation(Enum::kTaggedSigned);
   }
+  static constexpr MemoryRepresentation AnyUncompressedTagged() {
+    return MemoryRepresentation(Enum::kAnyUncompressedTagged);
+  }
+  static constexpr MemoryRepresentation UncompressedTaggedPointer() {
+    return MemoryRepresentation(Enum::kUncompressedTaggedPointer);
+  }
+  static constexpr MemoryRepresentation UncompressedTaggedSigned() {
+    return MemoryRepresentation(Enum::kUncompressedTaggedSigned);
+  }
   static constexpr MemoryRepresentation ProtectedPointer() {
     return MemoryRepresentation(Enum::kProtectedPointer);
   }
   static constexpr MemoryRepresentation IndirectPointer() {
     return MemoryRepresentation(Enum::kIndirectPointer);
+  }
+  static constexpr MemoryRepresentation WasmCodePointer() {
+    if constexpr (V8_ENABLE_WASM_CODE_POINTER_TABLE_BOOL) {
+      return Uint32();
+    } else {
+      return UintPtr();
+    }
   }
   static constexpr MemoryRepresentation SandboxedPointer() {
     return MemoryRepresentation(Enum::kSandboxedPointer);
@@ -597,11 +640,15 @@ class MemoryRepresentation {
       case Uint32():
       case Uint64():
         return false;
+      case Float16():
       case Float32():
       case Float64():
       case AnyTagged():
       case TaggedPointer():
       case TaggedSigned():
+      case AnyUncompressedTagged():
+      case UncompressedTaggedPointer():
+      case UncompressedTaggedSigned():
       case ProtectedPointer():
       case IndirectPointer():
       case SandboxedPointer():
@@ -615,7 +662,7 @@ class MemoryRepresentation {
   // have to deal with pointer compression. Indirect/sandboxed pointers,
   // while they resolve to tagged pointers, return {false} because they
   // use incompatible compression schemes.
-  bool IsTagged() const {
+  bool IsCompressibleTagged() const {
     switch (*this) {
       case AnyTagged():
       case TaggedPointer():
@@ -629,8 +676,12 @@ class MemoryRepresentation {
       case Uint16():
       case Uint32():
       case Uint64():
+      case Float16():
       case Float32():
       case Float64():
+      case AnyUncompressedTagged():
+      case UncompressedTaggedPointer():
+      case UncompressedTaggedSigned():
       case IndirectPointer():
       case ProtectedPointer():
       case SandboxedPointer():
@@ -652,6 +703,7 @@ class MemoryRepresentation {
       case Int64():
       case Uint64():
         return RegisterRepresentation::Word64();
+      case Float16():
       case Float32():
         return RegisterRepresentation::Float32();
       case Float64():
@@ -659,6 +711,9 @@ class MemoryRepresentation {
       case AnyTagged():
       case TaggedPointer():
       case TaggedSigned():
+      case AnyUncompressedTagged():
+      case UncompressedTaggedPointer():
+      case UncompressedTaggedSigned():
       case IndirectPointer():
       case ProtectedPointer():
         return RegisterRepresentation::Tagged();
@@ -724,6 +779,8 @@ class MemoryRepresentation {
         return MachineType::Int64();
       case Uint64():
         return MachineType::Uint64();
+      case Float16():
+        return MachineType::Float16();
       case Float32():
         return MachineType::Float32();
       case Float64():
@@ -733,6 +790,12 @@ class MemoryRepresentation {
       case TaggedPointer():
         return MachineType::TaggedPointer();
       case TaggedSigned():
+        return MachineType::TaggedSigned();
+      case AnyUncompressedTagged():
+        return MachineType::AnyTagged();
+      case UncompressedTaggedPointer():
+        return MachineType::TaggedPointer();
+      case UncompressedTaggedSigned():
         return MachineType::TaggedSigned();
       case ProtectedPointer():
         return MachineType::ProtectedPointer();
@@ -771,6 +834,8 @@ class MemoryRepresentation {
         return IndirectPointer();
       case MachineRepresentation::kTagged:
         return AnyTagged();
+      case MachineRepresentation::kFloat16:
+        return Float16();
       case MachineRepresentation::kFloat32:
         return Float32();
       case MachineRepresentation::kFloat64:
@@ -806,6 +871,8 @@ class MemoryRepresentation {
         return TaggedPointer();
       case MachineRepresentation::kTagged:
         return AnyTagged();
+      case MachineRepresentation::kFloat16:
+        return Float16();
       case MachineRepresentation::kFloat32:
         return Float32();
       case MachineRepresentation::kFloat64:
@@ -838,6 +905,7 @@ class MemoryRepresentation {
         return 0;
       case Int16():
       case Uint16():
+      case Float16():
         return 1;
       case Int32():
       case Uint32():
@@ -854,6 +922,10 @@ class MemoryRepresentation {
       case TaggedSigned():
       case ProtectedPointer():
         return kTaggedSizeLog2;
+      case AnyUncompressedTagged():
+      case UncompressedTaggedPointer():
+      case UncompressedTaggedSigned():
+        return kSystemPointerSizeLog2;
       case Simd128():
         return 4;
       case Simd256():

@@ -74,6 +74,8 @@ struct ExternalBufferTableEntry {
   // Mark this entry as alive during table garbage collection.
   inline void Mark();
 
+  static constexpr bool IsWriteProtected = false;
+
  private:
   friend class ExternalBufferTable;
 
@@ -85,6 +87,7 @@ struct ExternalBufferTableEntry {
     static constexpr TagType kEvacuationEntryTag =
         kExternalBufferEvacuationEntryTag;
     static constexpr bool kSupportsEvacuation = true;
+    static constexpr bool kSupportsZapping = false;
   };
 
   using Payload = TaggedPayload<ExternalBufferTaggingScheme>;

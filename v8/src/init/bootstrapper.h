@@ -34,7 +34,7 @@ class SourceCodeCache final {
               Handle<SharedFunctionInfo>* handle);
 
   void Add(Isolate* isolate, base::Vector<const char> name,
-           Handle<SharedFunctionInfo> shared);
+           DirectHandle<SharedFunctionInfo> shared);
 
  private:
   Script::Type type_;
@@ -132,7 +132,7 @@ class BootstrapperActive final {
 
 V8_NOINLINE Handle<JSFunction> SimpleInstallFunction(
     Isolate* isolate, Handle<JSObject> base, const char* name, Builtin call,
-    int len, bool adapt, PropertyAttributes attrs = DONT_ENUM);
+    int len, AdaptArguments adapt, PropertyAttributes attrs = DONT_ENUM);
 
 }  // namespace internal
 }  // namespace v8

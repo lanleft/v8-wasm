@@ -4,8 +4,9 @@
 
 #include "src/compiler/js-native-context-specialization.h"
 
+#include <optional>
+
 #include "src/base/logging.h"
-#include "src/base/optional.h"
 #include "src/builtins/accessors.h"
 #include "src/codegen/code-factory.h"
 #include "src/common/globals.h"
@@ -31,6 +32,7 @@
 #include "src/flags/flags.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
+#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/elements-kind.h"
 #include "src/objects/feedback-vector.h"
@@ -140,7 +142,7 @@ Reduction JSNativeContextSpecialization::Reduce(Node* node) {
 // Otherwise, we can't easily convert {node} into a String, and we return
 // nullopt.
 // static
-base::Optional<size_t> JSNativeContextSpecialization::GetMaxStringLength(
+std::optional<size_t> JSNativeContextSpecialization::GetMaxStringLength(
     JSHeapBroker* broker, Node* node) {
   HeapObjectMatcher matcher(node);
   if (matcher.HasResolvedValue() && matcher.Ref(broker).IsString()) {
@@ -155,7 +157,7 @@ base::Optional<size_t> JSNativeContextSpecialization::GetMaxStringLength(
 
   // We don't support objects with possibly monkey-patched prototype.toString
   // as it might have side-effects, so we shouldn't attempt lowering them.
-  return base::nullopt;
+  return std::nullopt;
 }
 
 Reduction JSNativeContextSpecialization::ReduceJSToString(Node* node) {
@@ -175,7 +177,7 @@ Reduction JSNativeContextSpecialization::ReduceJSToString(Node* node) {
   // regressions and the stronger optimization should be re-implemented.
   NumberMatcher number_matcher(input);
   if (number_matcher.HasResolvedValue()) {
-    Handle<Object> num_obj =
+    DirectHandle<Object> num_obj =
         broker()
             ->local_isolate_or_isolate()
             ->factory()
@@ -200,7 +202,7 @@ Handle<String> JSNativeContextSpecialization::CreateStringConstant(Node* node) {
   DCHECK(IrOpcode::IsConstantOpcode(node->opcode()));
   NumberMatcher number_matcher(node);
   if (number_matcher.HasResolvedValue()) {
-    Handle<Object> num_obj =
+    DirectHandle<Object> num_obj =
         broker()
             ->local_isolate_or_isolate()
             ->factory()
@@ -378,8 +380,8 @@ Handle<String> JSNativeContextSpecialization::Concatenate(
     // build a SeqString rather than a ConsString, regardless of {length}.
     // TODO(dmercadier, dinfuehr): always build a ConsString here once the
     // generational write-barrier supports background threads.
-    if (!LocalHeap::Current() ||
-        (!ObjectInYoungGeneration(*left) && !ObjectInYoungGeneration(*right))) {
+    if (!LocalHeap::Current() || (!HeapLayout::InYoungGeneration(*left) &&
+                                  !HeapLayout::InYoungGeneration(*right))) {
       return broker()
           ->local_isolate_or_isolate()
           ->factory()
@@ -463,8 +465,8 @@ Reduction JSNativeContextSpecialization::ReduceJSAdd(Node* node) {
   Node* const lhs = node->InputAt(0);
   Node* const rhs = node->InputAt(1);
 
-  base::Optional<size_t> lhs_len = GetMaxStringLength(broker(), lhs);
-  base::Optional<size_t> rhs_len = GetMaxStringLength(broker(), rhs);
+  std::optional<size_t> lhs_len = GetMaxStringLength(broker(), lhs);
+  std::optional<size_t> rhs_len = GetMaxStringLength(broker(), rhs);
   if (!lhs_len || !rhs_len) return NoChange();
 
   // Fold if at least one of the parameters is a string constant and the
@@ -483,8 +485,8 @@ Reduction JSNativeContextSpecialization::ReduceJSAdd(Node* node) {
       // One of {lhs} or {rhs} is not safe to be read in the background.
 
       if (left->length() + right->length() > ConsString::kMinLength &&
-          (!LocalHeap::Current() || (!ObjectInYoungGeneration(*left) &&
-                                     !ObjectInYoungGeneration(*right)))) {
+          (!LocalHeap::Current() || (!HeapLayout::InYoungGeneration(*left) &&
+                                     !HeapLayout::InYoungGeneration(*right)))) {
         // We can create a ConsString with {left} and {right}, without needing
         // to read their content (and this ConsString will not introduce
         // old-to-new pointers from the background).
@@ -880,7 +882,9 @@ JSNativeContextSpecialization::InferHasInPrototypeChain(
       // might be a different object each time, so it's much simpler to include
       // {prototype}. That does, however, mean that we must check {prototype}'s
       // map stability.
-      if (!prototype.map(broker()).is_stable()) return kMayBeInPrototypeChain;
+      if (!prototype.IsJSObject() || !prototype.map(broker()).is_stable()) {
+        return kMayBeInPrototypeChain;
+      }
       last_prototype = prototype.AsJSObject();
     }
     WhereToStart start = result == NodeProperties::kUnreliableMaps
@@ -1414,7 +1418,7 @@ Reduction JSNativeContextSpecialization::ReduceMegaDOMPropertyAccess(
       simplified()->LoadField(AccessBuilder::ForMapInstanceType()),
       receiver_map, effect, control);
 
-  if (v8_flags.embedder_instance_types && range_start != 0) {
+  if (v8_flags.experimental_embedder_instance_types && range_start != 0) {
     // Embedder instance ID is set, doing a simple range check.
     Node* diff_to_start =
         graph()->NewNode(simplified()->NumberSubtract(), receiver_instance_type,
@@ -1634,7 +1638,7 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
     }
 
     // Generate the actual property access.
-    base::Optional<ValueEffectControl> continuation = BuildPropertyAccess(
+    std::optional<ValueEffectControl> continuation = BuildPropertyAccess(
         lookup_start_object, receiver, value, context, frame_state, effect,
         control, feedback.name(), if_exceptions, access_info, access_mode);
     if (!continuation) {
@@ -1761,7 +1765,7 @@ Reduction JSNativeContextSpecialization::ReduceNamedAccess(
       }
 
       // Generate the actual property access.
-      base::Optional<ValueEffectControl> continuation = BuildPropertyAccess(
+      std::optional<ValueEffectControl> continuation = BuildPropertyAccess(
           this_lookup_start_object, this_receiver, this_value, context,
           frame_state, this_effect, this_control, feedback.name(),
           if_exceptions, access_info, access_mode);
@@ -2123,11 +2127,11 @@ namespace {
 OptionalJSTypedArrayRef GetTypedArrayConstant(JSHeapBroker* broker,
                                               Node* receiver) {
   HeapObjectMatcher m(receiver);
-  if (!m.HasResolvedValue()) return base::nullopt;
+  if (!m.HasResolvedValue()) return std::nullopt;
   ObjectRef object = m.Ref(broker);
-  if (!object.IsJSTypedArray()) return base::nullopt;
+  if (!object.IsJSTypedArray()) return std::nullopt;
   JSTypedArrayRef typed_array = object.AsJSTypedArray();
-  if (typed_array.is_on_heap()) return base::nullopt;
+  if (typed_array.is_on_heap()) return std::nullopt;
   return typed_array;
 }
 
@@ -2566,7 +2570,7 @@ Reduction JSNativeContextSpecialization::ReduceJSHasProperty(Node* node) {
   PropertyAccess const& p = n.Parameters();
   Node* value = jsgraph()->Dead();
   if (!p.feedback().IsValid()) return NoChange();
-  return ReducePropertyAccess(node, n.key(), base::nullopt, value,
+  return ReducePropertyAccess(node, n.key(), std::nullopt, value,
                               FeedbackSource(p.feedback()), AccessMode::kHas);
 }
 
@@ -2606,6 +2610,39 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadPropertyWithEnumeratedKey(
   // TurboFan cannot prove that there is no observable side effect between
   // the {JSForInNext} and the {JSLoadProperty} node.
   //
+  // We can do a similar optimization when the receiver of {JSLoadProperty} is
+  // not identical to the receiver of {JSForInNext}:
+  //   for (name in receiver) {
+  //     value = object[name];
+  //     ...
+  //   }
+  //
+  // This is because when the key is {JSForInNext}, we will generate a
+  // {GetEnumeratedKeyedProperty} bytecode for {JSLoadProperty}. If the bytecode
+  // always manages to use the enum cache, we will keep the inline cache in
+  // uninitialized state. So If the graph is as below, we can firstly do a map
+  // check on {object} and then turn the {JSLoadProperty} into the
+  // {LoadFieldByIndex}. This is also safe when the bytecode has never been
+  // profiled. When it happens to pass the the map check, we can use the fast
+  // path. Otherwise it will trigger a deoptimization.
+
+  // object     receiver
+  //  ^             ^
+  //  |             |
+  //  |             |
+  //  |             |
+  //  |        JSToObject
+  //  |             ^
+  //  |             |
+  //  |             |
+  //  |        JSForInNext
+  //  |             ^
+  //  |             |
+  //  +----+  +-----+
+  //       |  |
+  //       |  |
+  //   JSLoadProperty (insufficient feedback)
+
   // Also note that it's safe to look through the {JSToObject}, since the
   // [[Get]] operation does an implicit ToObject anyway, and these operations
   // are not observable.
@@ -2626,11 +2663,32 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadPropertyWithEnumeratedKey(
   if (object->opcode() == IrOpcode::kJSToObject) {
     object = NodeProperties::GetValueInput(object, 0);
   }
-  if (object != receiver) return NoChange();
+  bool speculating_object_is_receiver = false;
+  if (object != receiver) {
+    JSLoadPropertyNode n(node);
+    PropertyAccess const& p = n.Parameters();
+
+    ProcessedFeedback const& feedback = broker()->GetFeedbackForPropertyAccess(
+        FeedbackSource(p.feedback()), AccessMode::kLoad, std::nullopt);
+    // When the feedback is uninitialized, it is either a load from a
+    // {GetEnumeratedKeyedProperty} which always hits the enum cache, or a keyed
+    // load that had never been reached. In either case, we can check the map
+    // of the receiver and use the enum cache if the map match the {cache_type}.
+    if (feedback.kind() != ProcessedFeedback::kInsufficient) {
+      return NoChange();
+    }
+
+    // Ensure that {receiver} is a HeapObject.
+    receiver = effect = graph()->NewNode(simplified()->CheckHeapObject(),
+                                         receiver, effect, control);
+    speculating_object_is_receiver = true;
+  }
 
   // No need to repeat the map check if we can prove that there's no
-  // observable side effect between {effect} and {name].
-  if (!NodeProperties::NoObservableSideEffectBetween(effect, name)) {
+  // observable side effect between {effect} and {name]. But we always need a
+  // map check when {object} is not identical to {receiver}.
+  if (!NodeProperties::NoObservableSideEffectBetween(effect, name) ||
+      speculating_object_is_receiver) {
     // Check that the {receiver} map is still valid.
     Node* receiver_map = effect =
         graph()->NewNode(simplified()->LoadField(AccessBuilder::ForMap()),
@@ -2687,7 +2745,7 @@ Reduction JSNativeContextSpecialization::ReduceJSLoadProperty(Node* node) {
 
   if (!p.feedback().IsValid()) return NoChange();
   Node* value = jsgraph()->Dead();
-  return ReducePropertyAccess(node, name, base::nullopt, value,
+  return ReducePropertyAccess(node, name, std::nullopt, value,
                               FeedbackSource(p.feedback()), AccessMode::kLoad);
 }
 
@@ -2695,7 +2753,7 @@ Reduction JSNativeContextSpecialization::ReduceJSSetKeyedProperty(Node* node) {
   JSSetKeyedPropertyNode n(node);
   PropertyAccess const& p = n.Parameters();
   if (!p.feedback().IsValid()) return NoChange();
-  return ReducePropertyAccess(node, n.key(), base::nullopt, n.value(),
+  return ReducePropertyAccess(node, n.key(), std::nullopt, n.value(),
                               FeedbackSource(p.feedback()), AccessMode::kStore);
 }
 
@@ -2704,7 +2762,7 @@ Reduction JSNativeContextSpecialization::ReduceJSDefineKeyedOwnProperty(
   JSDefineKeyedOwnPropertyNode n(node);
   PropertyAccess const& p = n.Parameters();
   if (!p.feedback().IsValid()) return NoChange();
-  return ReducePropertyAccess(node, n.key(), base::nullopt, n.value(),
+  return ReducePropertyAccess(node, n.key(), std::nullopt, n.value(),
                               FeedbackSource(p.feedback()),
                               AccessMode::kDefine);
 }
@@ -2799,7 +2857,10 @@ Node* JSNativeContextSpecialization::InlineApiCall(
     FunctionTemplateInfoRef function_template_info) {
   compiler::OptionalObjectRef maybe_callback_data =
       function_template_info.callback_data(broker());
+  // Check if the function has an associated C++ code to execute.
   if (!maybe_callback_data.has_value()) {
+    // TODO(ishell): consider generating "return undefined" for empty function
+    // instead of failing.
     TRACE_BROKER_MISSING(broker(), "call code for function template info "
                                        << function_template_info);
     return nullptr;
@@ -2820,7 +2881,8 @@ Node* JSNativeContextSpecialization::InlineApiCall(
           1 /* implicit receiver */,
       CallDescriptor::kNeedsFrameState);
 
-  Node* data = jsgraph()->ConstantNoHole(maybe_callback_data.value(), broker());
+  Node* func_templ =
+      jsgraph()->HeapConstantNoHole(function_template_info.object());
   ApiFunction function(function_template_info.callback(broker()));
   Node* function_reference =
       graph()->NewNode(common()->ExternalConstant(ExternalReference::Create(
@@ -2829,8 +2891,9 @@ Node* JSNativeContextSpecialization::InlineApiCall(
 
   // Add CallApiCallbackStub's register argument as well.
   Node* context = jsgraph()->ConstantNoHole(native_context(), broker());
-  Node* inputs[11] = {code, function_reference, jsgraph()->ConstantNoHole(argc),
-                      data, api_holder,         receiver};
+  Node* inputs[11] = {
+      code,       function_reference, jsgraph()->ConstantNoHole(argc),
+      func_templ, api_holder,         receiver};
   int index = 6 + argc;
   inputs[index++] = context;
   inputs[index++] = frame_state;
@@ -2846,7 +2909,7 @@ Node* JSNativeContextSpecialization::InlineApiCall(
              graph()->NewNode(common()->Call(call_descriptor), index, inputs);
 }
 
-base::Optional<JSNativeContextSpecialization::ValueEffectControl>
+std::optional<JSNativeContextSpecialization::ValueEffectControl>
 JSNativeContextSpecialization::BuildPropertyLoad(
     Node* lookup_start_object, Node* receiver, Node* context, Node* frame_state,
     Node* effect, Node* control, NameRef name, ZoneVector<Node*>* if_exceptions,
@@ -2898,7 +2961,7 @@ JSNativeContextSpecialization::BuildPropertyLoad(
   if (value != nullptr) {
     return ValueEffectControl(value, effect, control);
   }
-  return base::Optional<ValueEffectControl>();
+  return std::optional<ValueEffectControl>();
 }
 
 JSNativeContextSpecialization::ValueEffectControl
@@ -2919,7 +2982,7 @@ JSNativeContextSpecialization::BuildPropertyTest(
       jsgraph()->BooleanConstant(!access_info.IsNotFound()), effect, control);
 }
 
-base::Optional<JSNativeContextSpecialization::ValueEffectControl>
+std::optional<JSNativeContextSpecialization::ValueEffectControl>
 JSNativeContextSpecialization::BuildPropertyAccess(
     Node* lookup_start_object, Node* receiver, Node* value, Node* context,
     Node* frame_state, Node* effect, Node* control, NameRef name,
@@ -3085,6 +3148,7 @@ JSNativeContextSpecialization::BuildPropertyStore(
       case MachineRepresentation::kWord16:
       case MachineRepresentation::kWord32:
       case MachineRepresentation::kWord64:
+      case MachineRepresentation::kFloat16:
       case MachineRepresentation::kFloat32:
       case MachineRepresentation::kSimd128:
       case MachineRepresentation::kSimd256:
@@ -3157,7 +3221,7 @@ JSNativeContextSpecialization::ReduceJSDefineKeyedOwnPropertyInLiteral(
   if (cflags & DefineKeyedOwnPropertyInLiteralFlag::kSetFunctionName)
     return NoChange();
 
-  return ReducePropertyAccess(node, n.name(), base::nullopt, n.value(),
+  return ReducePropertyAccess(node, n.name(), std::nullopt, n.value(),
                               FeedbackSource(p.feedback()),
                               AccessMode::kStoreInLiteral);
 }
@@ -3167,7 +3231,7 @@ Reduction JSNativeContextSpecialization::ReduceJSStoreInArrayLiteral(
   JSStoreInArrayLiteralNode n(node);
   FeedbackParameter const& p = n.Parameters();
   if (!p.feedback().IsValid()) return NoChange();
-  return ReducePropertyAccess(node, n.index(), base::nullopt, n.value(),
+  return ReducePropertyAccess(node, n.index(), std::nullopt, n.value(),
                               FeedbackSource(p.feedback()),
                               AccessMode::kStoreInLiteral);
 }
@@ -3265,7 +3329,7 @@ JSNativeContextSpecialization::BuildElementAccess(
     element_type = Type::SignedSmall();
     element_machine_type = MachineType::TaggedSigned();
   }
-  ElementAccess element_access = {kTaggedBase, FixedArray::kHeaderSize,
+  ElementAccess element_access = {kTaggedBase, OFFSET_OF_DATA_START(FixedArray),
                                   element_type, element_machine_type,
                                   kFullWriteBarrier};
 
@@ -4076,7 +4140,7 @@ OptionalMapRef JSNativeContextSpecialization::InferRootMap(Node* object) const {
       return *initial_map;
     }
   }
-  return base::nullopt;
+  return std::nullopt;
 }
 
 Node* JSNativeContextSpecialization::BuildLoadPrototypeFromObject(

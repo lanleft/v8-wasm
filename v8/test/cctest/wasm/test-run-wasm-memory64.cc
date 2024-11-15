@@ -17,17 +17,17 @@ class Memory64Runner : public WasmRunner<ReturnType, ParamTypes...> {
   explicit Memory64Runner(TestExecutionTier execution_tier)
       : WasmRunner<ReturnType, ParamTypes...>(execution_tier, kWasmOrigin,
                                               nullptr, "main") {
-    this->builder().EnableFeature(kFeature_memory64);
+    this->builder().EnableFeature(WasmEnabledFeature::memory64);
   }
 
   template <typename T>
   T* AddMemoryElems(uint32_t count) {
-    return this->builder().template AddMemoryElems<T>(count, kMemory64);
+    return this->builder().template AddMemoryElems<T>(count, AddressType::kI64);
   }
 
   uint8_t* AddMemory(uint32_t size, size_t max_size,
                      SharedFlag shared = SharedFlag::kNotShared) {
-    return this->builder().AddMemory(size, shared, kMemory64, max_size);
+    return this->builder().AddMemory(size, shared, AddressType::kI64, max_size);
   }
 };
 

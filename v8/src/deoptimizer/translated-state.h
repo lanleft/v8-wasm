@@ -5,6 +5,7 @@
 #ifndef V8_DEOPTIMIZER_TRANSLATED_STATE_H_
 #define V8_DEOPTIMIZER_TRANSLATED_STATE_H_
 
+#include <optional>
 #include <stack>
 #include <vector>
 
@@ -283,7 +284,7 @@ class TranslatedFrame {
 
 #if V8_ENABLE_WEBASSEMBLY
   // Only for Kind == kJSToWasmBuiltinContinuation
-  base::Optional<wasm::ValueKind> wasm_call_return_kind() const {
+  std::optional<wasm::ValueKind> wasm_call_return_kind() const {
     DCHECK_EQ(kind(), kJSToWasmBuiltinContinuation);
     return return_kind_;
   }
@@ -299,7 +300,7 @@ class TranslatedFrame {
   friend class Deoptimizer;
 
   // Constructor static methods.
-  static TranslatedFrame UnoptimizedFrame(
+  static TranslatedFrame UnoptimizedJSFrame(
       BytecodeOffset bytecode_offset, Tagged<SharedFunctionInfo> shared_info,
       int height, int return_value_offset, int return_value_count);
   static TranslatedFrame AccessorFrame(Kind kind,
@@ -319,7 +320,7 @@ class TranslatedFrame {
       int height);
   static TranslatedFrame JSToWasmBuiltinContinuationFrame(
       BytecodeOffset bailout_id, Tagged<SharedFunctionInfo> shared_info,
-      int height, base::Optional<wasm::ValueKind> return_type);
+      int height, std::optional<wasm::ValueKind> return_type);
   static TranslatedFrame LiftoffFrame(BytecodeOffset bailout_id, int height,
                                       int function_index);
 #endif  // V8_ENABLE_WEBASSEMBLY
@@ -363,7 +364,7 @@ class TranslatedFrame {
 
 #if V8_ENABLE_WEBASSEMBLY
   // Only for Kind == kJSToWasmBuiltinContinuation
-  base::Optional<wasm::ValueKind> return_kind_;
+  std::optional<wasm::ValueKind> return_kind_;
   // Only for Kind == kLiftOffFunction
   int wasm_function_index_ = -1;
 #endif  // V8_ENABLE_WEBASSEMBLY
@@ -477,7 +478,8 @@ class TranslatedState {
 
   void UpdateFromPreviouslyMaterializedObjects();
   void MaterializeFixedDoubleArray(TranslatedFrame* frame, int* value_index,
-                                   TranslatedValue* slot, Handle<Map> map);
+                                   TranslatedValue* slot,
+                                   DirectHandle<Map> map);
   void MaterializeHeapNumber(TranslatedFrame* frame, int* value_index,
                              TranslatedValue* slot);
 
@@ -486,9 +488,9 @@ class TranslatedState {
   void SkipSlots(int slots_to_skip, TranslatedFrame* frame, int* value_index);
 
   Handle<ByteArray> AllocateStorageFor(TranslatedValue* slot);
-  void EnsureJSObjectAllocated(TranslatedValue* slot, Handle<Map> map);
+  void EnsureJSObjectAllocated(TranslatedValue* slot, DirectHandle<Map> map);
   void EnsurePropertiesAllocatedAndMarked(TranslatedValue* properties_slot,
-                                          Handle<Map> map);
+                                          DirectHandle<Map> map);
   void EnsureChildrenAllocated(int count, TranslatedFrame* frame,
                                int* value_index, std::stack<int>* worklist);
   void EnsureCapturedObjectAllocatedAt(int object_index,
@@ -497,11 +499,11 @@ class TranslatedState {
   void InitializeCapturedObjectAt(int object_index, std::stack<int>* worklist,
                                   const DisallowGarbageCollection& no_gc);
   void InitializeJSObjectAt(TranslatedFrame* frame, int* value_index,
-                            TranslatedValue* slot, Handle<Map> map,
+                            TranslatedValue* slot, DirectHandle<Map> map,
                             const DisallowGarbageCollection& no_gc);
   void InitializeObjectWithTaggedFieldsAt(
       TranslatedFrame* frame, int* value_index, TranslatedValue* slot,
-      Handle<Map> map, const DisallowGarbageCollection& no_gc);
+      DirectHandle<Map> map, const DisallowGarbageCollection& no_gc);
 
   void ReadUpdateFeedback(DeoptTranslationIterator* iterator,
                           Tagged<DeoptimizationLiteralArray> literal_array,

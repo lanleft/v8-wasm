@@ -24,8 +24,7 @@ namespace internal {
 class BasicTracedReferenceExtractor final {
  public:
   static Address* GetObjectSlotForMarking(const TracedReferenceBase& ref) {
-    return const_cast<Address*>(
-        reinterpret_cast<const Address*>(ref.GetSlotThreadSafe()));
+    return const_cast<Address*>(ref.GetSlotThreadSafe());
   }
 };
 
@@ -48,7 +47,7 @@ void UnifiedHeapMarkingState::MarkAndPush(
     // objects are just passed around as Smis.
     return;
   }
-  Tagged<HeapObject> heap_object = HeapObject::cast(object);
+  Tagged<HeapObject> heap_object = Cast<HeapObject>(object);
   const auto worklist_target =
       MarkingHelper::ShouldMarkObject(heap_, heap_object);
   if (worklist_target) {

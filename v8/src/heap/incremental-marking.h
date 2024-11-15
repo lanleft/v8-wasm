@@ -6,6 +6,7 @@
 #define V8_HEAP_INCREMENTAL_MARKING_H_
 
 #include <cstdint>
+#include <optional>
 
 #include "src/base/functional.h"
 #include "src/base/logging.h"
@@ -15,7 +16,7 @@
 #include "src/heap/heap.h"
 #include "src/heap/incremental-marking-job.h"
 #include "src/heap/mark-compact.h"
-#include "src/heap/mutable-page.h"
+#include "src/heap/mutable-page-metadata.h"
 #include "src/tasks/cancelable-task.h"
 
 namespace v8 {
@@ -52,7 +53,7 @@ constexpr const char* ToString(StepOrigin step_origin) {
 
 class V8_EXPORT_PRIVATE IncrementalMarking final {
  public:
-  class V8_NODISCARD PauseBlackAllocationScope final {
+  class V8_NODISCARD V8_EXPORT_PRIVATE PauseBlackAllocationScope final {
    public:
     explicit PauseBlackAllocationScope(IncrementalMarking* marking);
     ~PauseBlackAllocationScope();
@@ -101,6 +102,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking final {
   bool Stop();
 
   void UpdateMarkingWorklistAfterScavenge();
+  void UpdateExternalPointerTableAfterScavenge();
   void UpdateMarkedBytesAfterScavenge(size_t dead_bytes_in_new_space);
 
   // Performs incremental marking step and finalizes marking if complete.
@@ -215,7 +217,7 @@ class V8_EXPORT_PRIVATE IncrementalMarking final {
                      base::hash<MutablePageMetadata*>>
       background_live_bytes_;
   std::unique_ptr<::heap::base::IncrementalMarkingSchedule> schedule_;
-  base::Optional<uint64_t> current_trace_id_;
+  std::optional<uint64_t> current_trace_id_;
 
   friend class IncrementalMarkingJob;
 };

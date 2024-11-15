@@ -26,12 +26,44 @@
 #define UNIMPLEMENTED_S390()
 #endif
 
+#if V8_OS_ZOS
+#define ABI_USES_FUNCTION_DESCRIPTORS 1
+#define ABI_PASSES_HANDLES_IN_REGS 1
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
+#ifdef _EXT
+// Defined in stdlib.h and conflict with those in S390_RS_A_OPCODE_LIST below:
+#undef cs
+#undef cds
+#endif
+#else
+#define ABI_USES_FUNCTION_DESCRIPTORS 0
+#define ABI_PASSES_HANDLES_IN_REGS 1
+
+// ObjectPair is defined under runtime/runtime-util.h.
+// On 64-bit, ObjectPair is a Struct.  ABI dictaes Structs be
+//            returned in a storage buffer allocated by the caller,
+//            with the address of this buffer passed as a hidden
+//            argument in r2. (Does NOT return in Regs)
+// For x86 linux, ObjectPair is returned in registers.
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 0
+#endif
+
+#define ABI_CALL_VIA_IP 1
+
 namespace v8 {
 namespace internal {
 
 // The maximum size of the code range s.t. pc-relative calls are possible
 // between all Code objects in the range.
 constexpr size_t kMaxPCRelativeCodeRangeInMB = 4096;
+
+#if V8_OS_ZOS
+// Used to encode a boolean value when emitting 32 bit
+// opcodes which will indicate the presence of function descriptors
+constexpr int kHasFunctionDescriptorBitShift = 4;
+constexpr int kHasFunctionDescriptorBitMask = 1
+                                              << kHasFunctionDescriptorBitShift;
+#endif
 
 // Number of registers
 const int kNumRegisters = 16;
@@ -190,6 +222,14 @@ inline Condition NegateCondition(Condition cond) {
       return CC_OF;
     case CC_OF:
       return CC_NOF;
+    case kUnsignedLessThan:
+      return kUnsignedGreaterThanEqual;
+    case kUnsignedGreaterThan:
+      return kUnsignedLessThanEqual;
+    case kUnsignedLessThanEqual:
+      return kUnsignedGreaterThan;
+    case kUnsignedGreaterThanEqual:
+      return kUnsignedLessThan;
     default:
       DCHECK(false);
   }

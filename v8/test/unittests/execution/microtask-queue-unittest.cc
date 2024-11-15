@@ -82,10 +82,11 @@ class MicrotaskQueueTest : public TestWithNativeContextAndFinalizationRegistry,
  public:
   template <typename F>
   Handle<Microtask> NewMicrotask(F&& f) {
-    DirectHandle<Foreign> runner = factory()->NewForeign<kGenericForeignTag>(
+    DirectHandle<Foreign> runner = factory()->NewForeign<kMicrotaskCallbackTag>(
         reinterpret_cast<Address>(&RunStdFunction));
-    DirectHandle<Foreign> data = factory()->NewForeign<kGenericForeignTag>(
-        reinterpret_cast<Address>(new Closure(std::forward<F>(f))));
+    DirectHandle<Foreign> data =
+        factory()->NewForeign<kMicrotaskCallbackDataTag>(
+            reinterpret_cast<Address>(new Closure(std::forward<F>(f))));
     return factory()->NewCallbackTask(runner, data);
   }
 
@@ -429,7 +430,7 @@ TEST_P(MicrotaskQueueTest, DetachGlobal_ResolveThenableForeignThen) {
       "result");
   Handle<JSFunction> then = RunJS<JSFunction>("() => { result[0] = true; }");
 
-  Handle<JSPromise> stale_promise;
+  DirectHandle<JSPromise> stale_promise;
 
   {
     // Create a context with its own microtask queue.
@@ -596,7 +597,7 @@ TEST_P(MicrotaskQueueTest, DetachGlobal_InactiveHandler) {
 
   Handle<JSArray> result;
   Handle<JSFunction> stale_handler;
-  Handle<JSPromise> stale_promise;
+  DirectHandle<JSPromise> stale_promise;
   {
     v8::Context::Scope scope(sub_context);
     result = RunJS<JSArray>("var result = [false, false]; result");

@@ -5,6 +5,7 @@
 #ifndef V8_DEOPTIMIZER_DEOPTIMIZER_H_
 #define V8_DEOPTIMIZER_DEOPTIMIZER_H_
 
+#include <optional>
 #include <vector>
 
 #include "src/builtins/builtins.h"
@@ -16,6 +17,7 @@
 #include "src/objects/js-function.h"
 
 #if V8_ENABLE_WEBASSEMBLY
+#include "src/sandbox/hardware-support.h"
 #include "src/wasm/value-type.h"
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -68,6 +70,7 @@ class Deoptimizer : public Malloced {
   Handle<JSFunction> function() const;
   Handle<Code> compiled_code() const;
   DeoptimizeKind deopt_kind() const { return deopt_kind_; }
+  int output_count() const { return output_count_; }
 
   // Where the deopt exit occurred *in the outermost frame*, i.e in the
   // function we generated OSR'd code for. If the deopt occurred in an inlined
@@ -80,7 +83,9 @@ class Deoptimizer : public Malloced {
                           Address from, int fp_to_sp_delta, Isolate* isolate);
   static Deoptimizer* Grab(Isolate* isolate);
 
-  static void DeleteForWasm(Isolate* isolate);
+  // Delete and deregister the deoptimizer from the current isolate. Returns the
+  // count of output (liftoff) frames that were constructed by the deoptimizer.
+  static size_t DeleteForWasm(Isolate* isolate);
 
   // The returned object with information on the optimized frame needs to be
   // freed before another one can be generated.
@@ -106,7 +111,7 @@ class Deoptimizer : public Malloced {
   // Deoptimizes all optimized code that implements the given function (whether
   // directly or inlined).
   static void DeoptimizeAllOptimizedCodeWithFunction(
-      Isolate* isolate, Handle<SharedFunctionInfo> function);
+      Isolate* isolate, DirectHandle<SharedFunctionInfo> function);
 
   // Check the given address against a list of allowed addresses, to prevent a
   // potential attacker from using the frame creation process in the
@@ -154,6 +159,10 @@ class Deoptimizer : public Malloced {
                                                Tagged<SharedFunctionInfo> sfi,
                                                const char* reason);
 
+  // Patch the generated code to jump to a safepoint entry. This is used only
+  // when Shadow Stack is enabled.
+  static void PatchJumpToTrampoline(Address pc, Address new_pc);
+
  private:
   void QueueValueForMaterialization(Address output_address, Tagged<Object> obj,
                                     const TranslatedFrame::iterator& iterator);
@@ -165,10 +174,18 @@ class Deoptimizer : public Malloced {
   void DeleteFrameDescriptions();
 
   void DoComputeOutputFrames();
+
+#if V8_ENABLE_WEBASSEMBLY
   void DoComputeOutputFramesWasmImpl();
-  FrameDescription* DoComputeWasmLiftoffFrame(TranslatedFrame& frame,
-                                              wasm::NativeModule* native_module,
-                                              int frame_index);
+  FrameDescription* DoComputeWasmLiftoffFrame(
+      TranslatedFrame& frame, wasm::NativeModule* native_module,
+      Tagged<WasmTrustedInstanceData> wasm_trusted_instance, int frame_index);
+
+  void GetWasmStackSlotsCounts(const wasm::FunctionSig* sig,
+                               int* parameter_stack_slots,
+                               int* return_stack_slots);
+#endif
+
   void DoComputeUnoptimizedFrame(TranslatedFrame* translated_frame,
                                  int frame_index, bool goto_catch_handler);
   void DoComputeInlinedExtraArguments(TranslatedFrame* translated_frame,
@@ -183,7 +200,7 @@ class Deoptimizer : public Malloced {
 
 #if V8_ENABLE_WEBASSEMBLY
   TranslatedValue TranslatedValueForWasmReturnKind(
-      base::Optional<wasm::ValueKind> wasm_call_return_kind);
+      std::optional<wasm::ValueKind> wasm_call_return_kind);
 #endif  // V8_ENABLE_WEBASSEMBLY
 
   void DoComputeBuiltinContinuation(TranslatedFrame* translated_frame,
@@ -193,8 +210,7 @@ class Deoptimizer : public Malloced {
   unsigned ComputeInputFrameAboveFpFixedSize() const;
   unsigned ComputeInputFrameSize() const;
 
-  static unsigned ComputeIncomingArgumentSize(
-      Tagged<SharedFunctionInfo> shared);
+  static unsigned ComputeIncomingArgumentSize(Tagged<Code> code);
 
   // Tracing.
   bool tracing_enabled() const { return trace_scope_ != nullptr; }
@@ -265,6 +281,19 @@ class Deoptimizer : public Malloced {
   // Note: This is intentionally not a unique_ptr s.t. the Deoptimizer
   // satisfies is_standard_layout, needed for offsetof().
   CodeTracer::Scope* const trace_scope_;
+
+#if V8_ENABLE_WEBASSEMBLY && V8_TARGET_ARCH_32_BIT
+  // Needed by webassembly for lowering signatures containing i64 types. Stored
+  // as members for re-use for multiple signatures during one de-optimization.
+  std::optional<AccountingAllocator> alloc_;
+  std::optional<Zone> zone_;
+#endif
+#if V8_ENABLE_WEBASSEMBLY && V8_ENABLE_SANDBOX
+  // Wasm deoptimizations should not access the heap at all. All deopt data is
+  // stored off-heap.
+  std::optional<SandboxHardwareSupport::BlockAccessScope>
+      no_heap_access_during_wasm_deopt_;
+#endif
 
   friend class DeoptimizedFrameInfo;
   friend class FrameDescription;

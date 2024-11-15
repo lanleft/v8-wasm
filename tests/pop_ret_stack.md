@@ -1,15 +1,16 @@
 # Table of Contents
 
-- [libv8.so mapping](#libv8so-mapping)
+<!-- toc -->
 
-- [Function decoder](#function-decoder)
+- [Exploreing](#exploreing)
+    + [libv8.so mapping](#libv8so-mapping)
+    + [Function decoder](#function-decoder)
+    + [PopAndReturn](#popandreturn)
+    + [Idea 1: overwriting `0x7fffffffd548` return address of JSWasmWrapperHelper](#idea-1-overwriting-0x7fffffffd548-return-address-of-jswasmwrapperhelper)
+    + [Idea 2: Understanding Torque](#idea-2-understanding-torque)
+    + [Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function](#idea-3-overwrite-v8internalhistogram-__hidden-this-pointer-of-addsample-function)
 
-- [PopAndReturn](#popandreturn)
-   - [Idea 1: overwriting `0x7fffffffd548` return address of JSWasmWrapperHelper](#idea-1-overwriting-0x7fffffffd548-return-address-of-jswasmwrapperhelper)
-   - [Idea 2: Understanding Torque](#idea-2-understanding-torque)
-   - [Idea 3: Overwrite `v8::internal::Histogram *__hidden this` pointer of `AddSample` function](#idea-3-overwrite-v8internalhistogram-__hidden-this-pointer-of-addsample-function)
-
-
+<!-- tocstop -->
 
 # Exploreing
 
@@ -1508,5 +1509,3 @@ LEGEND: STACK | HEAP | CODE | DATA | RWX | RODATA
    0x555556c8e0eb <Builtins_ReturnHandler+43>     jge    Builtins_ReturnHandler+100                <Builtins_ReturnHandler+100>
 
 ```
-
-Can not understand this context...

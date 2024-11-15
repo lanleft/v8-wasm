@@ -325,3 +325,32 @@ test({0:0,1:0}, idView);
       ...v7,
   };
 })();
+
+// A case where we copy from a smaller into a bigger object.
+(function() {
+  function F0() {
+  }
+  function F3() {
+      const v9 = new F0();
+      const o10 = {
+          ...v9,
+      };
+  }
+  new F3();
+  new F3();
+  new F3();
+})();
+
+(function() {
+  var r = Realm.createAllowCrossRealmAccess();
+  var [is_same, x] = Realm.eval(r, `
+    var is_same = true;
+    function f(x) {
+      is_same = is_same && %HaveSameMap(x, {...x});
+    }
+    var x = {};
+    for (var i = 0; i < 10; ++i) f(x);
+    [is_same, x];`);
+  assertTrue(is_same);
+  assertFalse(%HaveSameMap(x, {...x}));
+})();

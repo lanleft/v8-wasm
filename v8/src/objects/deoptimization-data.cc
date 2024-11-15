@@ -8,6 +8,7 @@
 
 #include "src/deoptimizer/translated-state.h"
 #include "src/interpreter/bytecode-array-iterator.h"
+#include "src/objects/casting.h"
 #include "src/objects/code.h"
 #include "src/objects/deoptimization-data-inl.h"
 #include "src/objects/shared-function-info.h"
@@ -34,9 +35,14 @@ Handle<Object> DeoptimizationLiteral::Reify(Isolate* isolate) const {
     case DeoptimizationLiteralKind::kUnsignedBigInt64: {
       return BigInt::FromUint64(isolate, uint64_);
     }
+    case DeoptimizationLiteralKind::kHoleNaN: {
+      // Hole NaNs that made it to here represent the undefined value.
+      return isolate->factory()->undefined_value();
+    }
     case DeoptimizationLiteralKind::kWasmI31Ref:
     case DeoptimizationLiteralKind::kWasmInt32:
-    case DeoptimizationLiteralKind::kWasmFloat:
+    case DeoptimizationLiteralKind::kWasmFloat32:
+    case DeoptimizationLiteralKind::kWasmFloat64:
     case DeoptimizationLiteralKind::kInvalid: {
       UNREACHABLE();
     }
@@ -46,31 +52,31 @@ Handle<Object> DeoptimizationLiteral::Reify(Isolate* isolate) const {
 
 Handle<DeoptimizationData> DeoptimizationData::New(Isolate* isolate,
                                                    int deopt_entry_count) {
-  return Handle<DeoptimizationData>::cast(
+  return Cast<DeoptimizationData>(
       isolate->factory()->NewProtectedFixedArray(LengthFor(deopt_entry_count)));
 }
 
 Handle<DeoptimizationData> DeoptimizationData::New(LocalIsolate* isolate,
                                                    int deopt_entry_count) {
-  return Handle<DeoptimizationData>::cast(
+  return Cast<DeoptimizationData>(
       isolate->factory()->NewProtectedFixedArray(LengthFor(deopt_entry_count)));
 }
 
 Handle<DeoptimizationData> DeoptimizationData::Empty(Isolate* isolate) {
-  return Handle<DeoptimizationData>::cast(
+  return Cast<DeoptimizationData>(
       isolate->factory()->empty_protected_fixed_array());
 }
 
 Handle<DeoptimizationData> DeoptimizationData::Empty(LocalIsolate* isolate) {
-  return Handle<DeoptimizationData>::cast(
+  return Cast<DeoptimizationData>(
       isolate->factory()->empty_protected_fixed_array());
 }
 
 Tagged<SharedFunctionInfo> DeoptimizationData::GetInlinedFunction(int index) {
   if (index == -1) {
-    return SharedFunctionInfo::cast(SharedFunctionInfo());
+    return GetSharedFunctionInfo();
   } else {
-    return SharedFunctionInfo::cast(LiteralArray()->get(index));
+    return Cast<i::SharedFunctionInfo>(LiteralArray()->get(index));
   }
 }
 
@@ -146,7 +152,7 @@ void DeoptimizationData::PrintDeoptimizationData(std::ostream& os) const {
   os << "Inlined functions (count = " << inlined_function_count << ")\n";
   for (int id = 0; id < inlined_function_count; ++id) {
     Tagged<Object> info = LiteralArray()->get(id);
-    os << " " << Brief(SharedFunctionInfo::cast(info)) << "\n";
+    os << " " << Brief(Cast<i::SharedFunctionInfo>(info)) << "\n";
   }
   os << "\n";
   int deopt_count = DeoptCount();
@@ -216,9 +222,7 @@ DeoptTranslationIterator::DeoptTranslationIterator(
 DeoptimizationFrameTranslation::Iterator::Iterator(
     Tagged<DeoptimizationFrameTranslation> buffer, int index)
     : DeoptTranslationIterator(
-          base::Vector<uint8_t>(buffer->AddressOfElementAt(0),
-                                buffer->length()),
-          index) {}
+          base::Vector<uint8_t>(buffer->begin(), buffer->length()), index) {}
 
 int32_t DeoptTranslationIterator::NextOperand() {
   if (V8_UNLIKELY(v8_flags.turbo_compress_frame_translations)) {
@@ -382,7 +386,7 @@ void DeoptimizationFrameTranslation::PrintFrameTranslation(
     Tagged<DeoptimizationLiteralArray> literal_array) const {
   DisallowGarbageCollection gc_oh_noes;
 
-  DeoptimizationFrameTranslation::Iterator iterator(*this, index);
+  DeoptimizationFrameTranslation::Iterator iterator(this, index);
   TranslationOpcode opcode = iterator.NextOpcode();
   DCHECK(TranslationOpcodeIsBegin(opcode));
   os << opcode << " ";

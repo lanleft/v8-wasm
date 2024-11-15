@@ -10,6 +10,7 @@
 #define V8_WASM_COMPILATION_ENVIRONMENT_H_
 
 #include <memory>
+#include <optional>
 
 #include "src/wasm/wasm-features.h"
 #include "src/wasm/wasm-limits.h"
@@ -66,13 +67,13 @@ struct CompilationEnv {
   const WasmModule* const module;
 
   // Features enabled for this compilation.
-  const WasmFeatures enabled_features;
+  const WasmEnabledFeatures enabled_features;
 
   const DynamicTiering dynamic_tiering;
 
   const std::atomic<Address>* fast_api_targets;
 
-  std::atomic<bool>* fast_api_return_is_bool;
+  std::atomic<const MachineSignature*>* fast_api_signatures;
 
   uint32_t deopt_info_bytecode_offset = std::numeric_limits<uint32_t>::max();
   LocationKindForDeopt deopt_location_kind = LocationKindForDeopt::kNone;
@@ -85,16 +86,15 @@ struct CompilationEnv {
   static constexpr CompilationEnv NoModuleAllFeatures();
 
  private:
-  constexpr CompilationEnv(const WasmModule* module,
-                           WasmFeatures enabled_features,
-                           DynamicTiering dynamic_tiering,
-                           std::atomic<Address>* fast_api_targets,
-                           std::atomic<bool>* fast_api_return_is_bool)
+  constexpr CompilationEnv(
+      const WasmModule* module, WasmEnabledFeatures enabled_features,
+      DynamicTiering dynamic_tiering, std::atomic<Address>* fast_api_targets,
+      std::atomic<const MachineSignature*>* fast_api_signatures)
       : module(module),
         enabled_features(enabled_features),
         dynamic_tiering(dynamic_tiering),
         fast_api_targets(fast_api_targets),
-        fast_api_return_is_bool(fast_api_return_is_bool) {}
+        fast_api_signatures(fast_api_signatures) {}
 };
 
 // The wire bytes are either owned by the StreamingDecoder, or (after streaming)
@@ -105,14 +105,13 @@ class WireBytesStorage {
   virtual base::Vector<const uint8_t> GetCode(WireBytesRef) const = 0;
   // Returns the ModuleWireBytes corresponding to the underlying module if
   // available. Not supported if the wire bytes are owned by a StreamingDecoder.
-  virtual base::Optional<ModuleWireBytes> GetModuleBytes() const = 0;
+  virtual std::optional<ModuleWireBytes> GetModuleBytes() const = 0;
 };
 
 // Callbacks will receive either {kFailedCompilation} or
 // {kFinishedBaselineCompilation}.
 enum class CompilationEvent : uint8_t {
   kFinishedBaselineCompilation,
-  kFinishedExportWrappers,
   kFinishedCompilationChunk,
   kFailedCompilation,
 };
@@ -142,6 +141,12 @@ class V8_EXPORT_PRIVATE CompilationEventCallback {
 class V8_EXPORT_PRIVATE CompilationState {
  public:
   ~CompilationState();
+
+  // Override {operator delete} to avoid implicit instantiation of {operator
+  // delete} with {size_t} argument. The {size_t} argument would be incorrect.
+  void operator delete(void* ptr) { ::operator delete(ptr); }
+
+  CompilationState() = delete;
 
   void InitCompileJob();
 
@@ -178,16 +183,17 @@ class V8_EXPORT_PRIVATE CompilationState {
 
   DynamicTiering dynamic_tiering() const;
 
-  // Override {operator delete} to avoid implicit instantiation of {operator
-  // delete} with {size_t} argument. The {size_t} argument would be incorrect.
-  void operator delete(void* ptr) { ::operator delete(ptr); }
-
-  CompilationState() = delete;
-
   size_t EstimateCurrentMemoryConsumption() const;
 
   std::vector<WasmCode*> PublishCode(
       base::Vector<std::unique_ptr<WasmCode>> unpublished_code);
+
+  WasmDetectedFeatures detected_features() const;
+
+  // Update the set of detected features. Returns any features that were not
+  // detected previously.
+  V8_WARN_UNUSED_RESULT WasmDetectedFeatures
+      UpdateDetectedFeatures(WasmDetectedFeatures);
 
  private:
   // NativeModule is allowed to call the static {New} method.
@@ -198,7 +204,7 @@ class V8_EXPORT_PRIVATE CompilationState {
   // certain scopes.
   static std::unique_ptr<CompilationState> New(
       const std::shared_ptr<NativeModule>&, std::shared_ptr<Counters>,
-      DynamicTiering dynamic_tiering);
+      DynamicTiering dynamic_tiering, WasmDetectedFeatures detected_features);
 };
 
 }  // namespace wasm

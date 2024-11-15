@@ -97,7 +97,7 @@ type JSPrimitive = Numeric|String|Symbol|Boolean|Null|Undefined;
 
 // A user-exposed JavaScript value, as opposed to V8-internal values like Holes
 // or a FixedArray.
-type JSAny = JSReceiver|JSPrimitive;
+type JSAny = JSPrimitive|JSReceiver;
 
 type JSAnyNotNumeric = String|Symbol|Boolean|Null|Undefined|JSReceiver;
 type JSAnyNotNumber = BigInt|JSAnyNotNumeric;
@@ -130,6 +130,7 @@ type float64 generates 'TNode<Float64T>' constexpr 'double';
 type bool generates 'TNode<BoolT>' constexpr 'bool';
 type bint generates 'TNode<BInt>' constexpr 'BInt';
 type string constexpr 'const char*';
+type DispatchHandle generates 'TNode<JSDispatchHandleT>';
 
 type Simd128 generates 'TNode<Simd128T>';
 type I8X16 extends Simd128 generates 'TNode<I8x16T>';
@@ -243,12 +244,10 @@ type ExternalPointer
     generates 'TNode<ExternalPointerT>' constexpr 'ExternalPointer_t';
 type CppHeapPointer
     generates 'TNode<CppHeapPointerT>' constexpr 'CppHeapPointer_t';
-type IndirectPointer
-    generates 'TNode<IndirectPointerHandleT>'
-    constexpr 'IndirectPointerHandle';
-// TODO(saelo): implement accessors and type checkers for these fields.
-type IndirectPointer<To : type extends ExposedTrustedObject> extends
-    IndirectPointer;
+type TrustedPointer
+    generates 'TNode<TrustedPointerT>' constexpr 'TrustedPointer_t';
+type TrustedPointer<To : type extends ExposedTrustedObject> extends
+    TrustedPointer;
 type ProtectedPointer extends Tagged;
 type ProtectedPointer<To : type extends TrustedObject> extends ProtectedPointer;
 extern class InstructionStream extends TrustedObject;
@@ -597,6 +596,7 @@ extern macro TrueConstant(): True;
 extern macro UndefinedConstant(): Undefined;
 extern macro ValueOfStringConstant(): String;
 extern macro WasmWrappedObjectSymbolConstant(): Symbol;
+extern macro InvalidDispatchHandleConstant(): DispatchHandle;
 
 const TheHole: TheHole = TheHoleConstant();
 const PromiseHole: PromiseHole = PromiseHoleConstant();
@@ -623,6 +623,13 @@ const false: constexpr bool generates 'false';
 
 extern enum LanguageMode extends bool { kStrict, kSloppy }
 type LanguageModeSmi extends Smi;
+
+// Dispatch handle constant used when tailcalling into C++ builtins. As these
+// currently don't use the dispatch handle parameter, we can just use a constant
+// here. Alternatively, we could obtain the "real" dispatch handle (the one used
+// for calling the torque builtin) through a new CSA function that accesses the
+// kJSCallDispatchHandle parameter.
+const kInvalidDispatchHandle: DispatchHandle = InvalidDispatchHandleConstant();
 
 const SKIP_WRITE_BARRIER:
     constexpr WriteBarrierMode generates 'SKIP_WRITE_BARRIER';
@@ -1013,10 +1020,10 @@ macro Float64IsNaN(n: float64): bool {
 // The type of all tagged values that can safely be compared with TaggedEqual.
 @if(V8_ENABLE_WEBASSEMBLY)
   type TaggedWithIdentity = JSReceiver|FixedArrayBase|Oddball|Hole|Map|WeakCell|
-      Context|EmptyString|Symbol|WasmFuncRef|WasmNull;
+      Context|EmptyString|Symbol|FunctionTemplateInfo|WasmFuncRef|WasmNull;
 @ifnot(V8_ENABLE_WEBASSEMBLY)
   type TaggedWithIdentity = JSReceiver|FixedArrayBase|Oddball|Hole|Map|WeakCell|
-      Context|EmptyString|Symbol;
+      Context|EmptyString|Symbol|FunctionTemplateInfo;
 
 extern operator '==' macro TaggedEqual(TaggedWithIdentity, Object): bool;
 extern operator '==' macro TaggedEqual(Object, TaggedWithIdentity): bool;
@@ -1317,7 +1324,6 @@ extern macro ChangeUint32ToWord(uint32): uintptr;  // Doesn't sign-extend.
 extern macro ChangeInt32ToInt64(int32): int64;  // Sign-extends.
 extern macro ChangeUint32ToUint64(uint32): uint64;  // Doesn't sign-extend.
 extern macro LoadNativeContext(Context): NativeContext;
-extern macro GetContinuationPreservedEmbedderData(): Object;
 extern macro TruncateFloat64ToFloat16(float64): float16;
 extern macro TruncateFloat32ToFloat16(float32): float16;
 extern macro TruncateFloat64ToFloat32(float64): float32;
@@ -1486,6 +1492,9 @@ macro GetArrayBufferNoInitFunction(implicit context: Context)(): JSFunction {
 macro GetIteratorFunction(implicit context: Context)(): JSFunction {
   return *NativeContextSlot(ContextSlot::ITERATOR_FUNCTION_INDEX);
 }
+macro GetStringFunction(implicit context: Context)(): JSFunction {
+  return *NativeContextSlot(ContextSlot::STRING_FUNCTION_INDEX);
+}
 macro GetFastPackedElementsJSArrayMap(implicit context: Context)(): Map {
   return *NativeContextSlot(ContextSlot::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX);
 }
@@ -1585,26 +1594,12 @@ macro RequireObjectCoercible(
   return value;
 }
 
-extern macro BranchIfSameValue(JSAny, JSAny): never labels Taken, NotTaken;
-macro SameValue(a: JSAny, b: JSAny): bool {
+extern macro BranchIfSameValue(
+    JSAny|TaggedWithIdentity, JSAny|TaggedWithIdentity): never labels Taken,
+    NotTaken;
+macro SameValue(
+    a: JSAny|TaggedWithIdentity, b: JSAny|TaggedWithIdentity): bool {
   BranchIfSameValue(a, b) otherwise return true, return false;
-}
-macro SameValue(a: (JSAny|TheHole), b: (JSAny|TheHole)): bool {
-  typeswitch (a) {
-    case (a: TheHole): {
-      return UnsafeCast<TheHole>(b) == a;
-    }
-    case (a: JSAny): {
-      typeswitch (b) {
-        case (TheHole): {
-          return false;
-        }
-        case (b: JSAny): {
-          return SameValue(a, b);
-        }
-      }
-    }
-  }
 }
 
 // Does "if (index1 + index2 > limit) goto IfOverflow" in an uintptr overflow

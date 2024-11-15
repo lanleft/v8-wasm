@@ -17,15 +17,12 @@
 #include "src/wasm/wasm-opcodes.h"
 #include "src/wasm/wasm-result.h"
 
-namespace v8 {
-namespace internal {
-namespace wasm {
-namespace testing {
+namespace v8::internal::wasm::testing {
 
 MaybeHandle<WasmModuleObject> CompileForTesting(Isolate* isolate,
                                                 ErrorThrower* thrower,
                                                 ModuleWireBytes bytes) {
-  auto enabled_features = WasmFeatures::FromIsolate(isolate);
+  auto enabled_features = WasmEnabledFeatures::FromIsolate(isolate);
   MaybeHandle<WasmModuleObject> module = GetWasmEngine()->SyncCompile(
       isolate, enabled_features, CompileTimeImports{}, thrower, bytes);
   DCHECK_EQ(thrower->error(), module.is_null());
@@ -68,7 +65,9 @@ base::OwnedVector<Handle<Object>> MakeDefaultArguments(Isolate* isolate,
       case kRtt:
       case kI8:
       case kI16:
+      case kF16:
       case kVoid:
+      case kTop:
       case kBottom:
         UNREACHABLE();
     }
@@ -115,15 +114,15 @@ int32_t CallWasmFunctionForTesting(Isolate* isolate,
   DCHECK_IMPLIES(exception != nullptr, *exception == nullptr);
   MaybeHandle<WasmExportedFunction> maybe_export =
       GetExportedFunction(isolate, instance, name);
-  Handle<WasmExportedFunction> main_export;
-  if (!maybe_export.ToHandle(&main_export)) {
+  Handle<WasmExportedFunction> exported_function;
+  if (!maybe_export.ToHandle(&exported_function)) {
     return -1;
   }
 
   // Call the JS function.
   Handle<Object> undefined = isolate->factory()->undefined_value();
-  MaybeHandle<Object> retval = Execution::Call(isolate, main_export, undefined,
-                                               args.length(), args.begin());
+  MaybeHandle<Object> retval = Execution::Call(
+      isolate, exported_function, undefined, args.length(), args.begin());
 
   // The result should be a number.
   if (retval.is_null()) {
@@ -156,11 +155,6 @@ int32_t CallWasmFunctionForTesting(Isolate* isolate,
   return -1;
 }
 
-void SetupIsolateForWasmModule(Isolate* isolate) {
-  WasmJs::Install(isolate, true);
-}
+void SetupIsolateForWasmModule(Isolate* isolate) { WasmJs::Install(isolate); }
 
-}  // namespace testing
-}  // namespace wasm
-}  // namespace internal
-}  // namespace v8
+}  // namespace v8::internal::wasm::testing

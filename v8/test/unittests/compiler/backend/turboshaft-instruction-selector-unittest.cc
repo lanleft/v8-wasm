@@ -7,8 +7,8 @@
 #include "src/codegen/code-factory.h"
 #include "src/codegen/tick-counter.h"
 #include "src/compiler/compiler-source-position-table.h"
-#include "src/compiler/graph.h"
 #include "src/compiler/schedule.h"
+#include "src/compiler/turbofan-graph.h"
 #include "src/compiler/turboshaft/instruction-selection-phase.h"
 #include "src/compiler/turboshaft/phase.h"
 #include "src/compiler/turboshaft/representations.h"
@@ -34,7 +34,7 @@ TurboshaftInstructionSelectorTest::StreamBuilder::Build(
     StdoutStream{} << "=== Graph before instruction selection ===" << std::endl
                    << output_graph();
   }
-  size_t const node_count = output_graph().number_of_operations();
+  size_t const node_count = output_graph().NumberOfOperationsForDebugging();
   EXPECT_NE(0u, node_count);
   Linkage linkage(call_descriptor());
 

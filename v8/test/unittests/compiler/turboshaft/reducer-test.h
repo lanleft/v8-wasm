@@ -5,7 +5,7 @@
 #include <map>
 
 #include "src/compiler/backend/instruction.h"
-#include "src/compiler/graph-visualizer.h"
+#include "src/compiler/turbofan-graph-visualizer.h"
 #include "src/compiler/turboshaft/assembler.h"
 #include "src/compiler/turboshaft/phase.h"
 #include "src/compiler/turboshaft/variable-reducer.h"
@@ -219,7 +219,8 @@ class ReducerTest : public TestWithNativeContextAndZone {
 
   void SetUp() override {
     pipeline_data_.reset(new turboshaft::PipelineData(
-        &zone_stats_, TurboshaftPipelineKind::kJS, this->isolate(), nullptr));
+        &zone_stats_, TurboshaftPipelineKind::kJS, this->isolate(), nullptr,
+        AssemblerOptions::Default(this->isolate())));
   }
   void TearDown() override { pipeline_data_.reset(); }
 

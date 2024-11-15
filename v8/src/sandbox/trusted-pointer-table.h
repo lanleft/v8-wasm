@@ -37,6 +37,9 @@ struct TrustedPointerTableEntry {
   // on the freelist.
   inline void MakeFreelistEntry(uint32_t next_entry_index);
 
+  // Make this entry a zapped entry. Zapped entries contain invalid pointers.
+  inline void MakeZappedEntry();
+
   // Retrieve the pointer stored in this entry. This entry must be tagged with
   // the given tag, otherwise an inaccessible pointer will be returned.
   // This entry must not be a freelist entry.
@@ -45,6 +48,9 @@ struct TrustedPointerTableEntry {
   // Store the given pointer in this entry while preserving the marking state.
   // This entry must not be a freelist entry.
   inline void SetPointer(Address pointer, IndirectPointerTag tag);
+
+  // Returns true if this entry contains a pointer with the given tag.
+  inline bool HasPointer(IndirectPointerTag tag) const;
 
   // Returns true if this entry is a freelist entry.
   inline bool IsFreelistEntry() const;
@@ -64,6 +70,8 @@ struct TrustedPointerTableEntry {
   // Test whether this entry is currently marked as alive.
   inline bool IsMarked() const;
 
+  static constexpr bool IsWriteProtected = false;
+
  private:
   friend class TrustedPointerTable;
 
@@ -75,6 +83,7 @@ struct TrustedPointerTableEntry {
     static constexpr uint64_t kTagMask = kIndirectPointerTagMask;
     static constexpr TagType kFreeEntryTag = kFreeTrustedPointerTableEntryTag;
     static constexpr bool kSupportsEvacuation = false;
+    static constexpr bool kSupportsZapping = false;
   };
 
   struct Payload : TaggedPayload<TrustedPointerTaggingScheme> {
@@ -90,6 +99,10 @@ struct TrustedPointerTableEntry {
 
     static Payload ForFreelistEntry(uint32_t next_entry) {
       return Payload(next_entry, kFreeTrustedPointerTableEntryTag);
+    }
+
+    static Payload ForZappedEntry() {
+      return Payload(0, kIndirectPointerNullTag);
     }
 
    private:
@@ -122,8 +135,10 @@ class V8_EXPORT_PRIVATE TrustedPointerTable
                                  kTrustedPointerTableReservationSize> {
  public:
   // Size of a TrustedPointerTable, for layout computation in IsolateData.
-  static int constexpr kSize = 2 * kSystemPointerSize;
+  static constexpr int kSize = 2 * kSystemPointerSize;
+
   static_assert(kMaxTrustedPointers == kMaxCapacity);
+  static_assert(!kSupportsCompaction);
 
   TrustedPointerTable() = default;
   TrustedPointerTable(const TrustedPointerTable&) = delete;
@@ -163,6 +178,11 @@ class V8_EXPORT_PRIVATE TrustedPointerTable
   //
   // Returns the number of live entries after sweeping.
   uint32_t Sweep(Space* space, Counters* counters);
+
+  // Zaps the content of the entry referenced by the given handle.
+  //
+  // Accessing a zapped entry will return an invalid pointer.
+  inline void Zap(TrustedPointerHandle handle);
 
   // Iterate over all active entries in the given space.
   //

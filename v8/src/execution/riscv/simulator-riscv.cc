@@ -1952,7 +1952,7 @@ void RiscvDebugger::Debug() {
           // Tagged<Object> obj(*cur);
           // Heap* current_heap = sim_->isolate_->heap();
           // if (IsSmi(obj) ||
-          //     IsValidHeapObject(current_heap, HeapObject::cast(obj))) {
+          //     IsValidHeapObject(current_heap, Cast<HeapObject>(obj))) {
           //   PrintF(" (");
           //   if (IsSmi(obj)) {
           //     PrintF("smi %d", Smi::ToInt(obj));
@@ -3087,11 +3087,11 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
   return reinterpret_cast<uintptr_t>(stack_) + kStackProtectionSize;
 }
 
-base::Vector<uint8_t> Simulator::GetCurrentStackView() const {
+base::Vector<uint8_t> Simulator::GetCentralStackView() const {
   // We do not add an additional safety margin as above in
   // Simulator::StackLimit, as this is currently only used in wasm::StackMemory,
   // which adds its own margin.
-  return base::VectorOf(stack_, UsableStackSize());
+  return base::VectorOf(stack_ + kStackProtectionSize, UsableStackSize());
 }
 
 // Unsupported instructions use Format to print an error and stop execution.
@@ -3329,19 +3329,22 @@ void Simulator::SoftwareInterrupt() {
           case ExternalReference::BUILTIN_FP_FP_CALL:
           case ExternalReference::BUILTIN_COMPARE_CALL:
             PrintF("Call to host function %s at %p with args %f, %f",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                       pc, IsolateGroup::current()->external_ref_table()),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0, dval1);
             break;
           case ExternalReference::BUILTIN_FP_CALL:
             PrintF("Call to host function %s at %p with arg %f",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                       pc, IsolateGroup::current()->external_ref_table()),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0);
             break;
           case ExternalReference::BUILTIN_FP_INT_CALL:
             PrintF("Call to host function %s at %p with args %f, %d",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                       pc, IsolateGroup::current()->external_ref_table()),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0, ival);
             break;
@@ -3415,7 +3418,8 @@ void Simulator::SoftwareInterrupt() {
       // void f(v8::FunctionCallbackInfo&)
       if (v8_flags.trace_sim) {
         PrintF("Call to host function %s at %p args %08" REGIx_FORMAT " \n",
-               ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
+               ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                   pc, IsolateGroup::current()->external_ref_table()),
                reinterpret_cast<void*>(external), arg0);
       }
       SimulatorRuntimeDirectApiCall target =
@@ -3464,7 +3468,8 @@ void Simulator::SoftwareInterrupt() {
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " \n",
-            ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
+            ExternalReferenceTable::NameOfIsolateIndependentAddress(
+                pc, IsolateGroup::current()->external_ref_table()),
             reinterpret_cast<void*>(FUNCTION_ADDR(target)), arg0, arg1, arg2,
             arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12,
             arg13, arg14, arg15, arg16, arg17, arg18, arg19);
@@ -3721,6 +3726,18 @@ void Simulator::DecodeRVRType() {
       set_rd(rs2() + (zext32(rs1()) << 3));
       break;
     }
+    case RO_ROLW: {
+      reg_t extz_rs1 = zext32(rs1());
+      sreg_t shamt = rs2() & 31;
+      set_rd(sext32((extz_rs1 << shamt) | (extz_rs1 >> (32 - shamt))));
+      break;
+    }
+    case RO_RORW: {
+      reg_t extz_rs1 = zext32(rs1());
+      sreg_t shamt = rs2() & 31;
+      set_rd(sext32((extz_rs1 >> shamt) | (extz_rs1 << (32 - shamt))));
+      break;
+    }
 #endif /* V8_TARGET_ARCH_RISCV64 */
       // TODO(riscv): Add RISCV M extension macro
     case RO_MUL: {
@@ -3857,6 +3874,16 @@ void Simulator::DecodeRVRType() {
     case RO_ZEXTH:
       set_rd(zext_xlen(uint16_t(rs1())));
       break;
+    case RO_ROL: {
+      sreg_t shamt = rs2() & (xlen - 1);
+      set_rd((reg_t(rs1()) << shamt) | (reg_t(rs1()) >> (xlen - shamt)));
+      break;
+    }
+    case RO_ROR: {
+      sreg_t shamt = rs2() & (xlen - 1);
+      set_rd((reg_t(rs1()) >> shamt) | (reg_t(rs1()) << (xlen - shamt)));
+      break;
+    }
     case RO_BCLR: {
       sreg_t index = rs2() & (xlen - 1);
       set_rd(rs1() & ~(1l << index));
@@ -3877,7 +3904,16 @@ void Simulator::DecodeRVRType() {
       set_rd(rs1() | (1 << index));
       break;
     }
-      // TODO(riscv): End Add RISCV M extension macro
+    case RO_CZERO_EQZ: {
+      sreg_t condition = rs2();
+      set_rd(condition == 0 ? 0 : rs1());
+      break;
+    }
+    case RO_CZERO_NEZ: {
+      sreg_t condition = rs2();
+      set_rd(condition != 0 ? 0 : rs1());
+      break;
+    }
     default: {
       switch (instr_.BaseOpcode()) {
         case AMO:
@@ -5278,6 +5314,29 @@ void Simulator::DecodeRVIType() {
           set_rd((rs1() >> index) & 1);
           break;
         }
+        case RO_ORCB&(kFunct6Mask | OP_SHR): {
+          reg_t rs1_val = rs1();
+          reg_t result = 0;
+          reg_t mask = 0xFF;
+          reg_t step = 8;
+          for (reg_t i = 0; i < xlen; i += step) {
+            if ((rs1_val & mask) != 0) {
+              result |= mask;
+            }
+            mask <<= step;
+          }
+          set_rd(result);
+          break;
+        }
+        case RO_RORI: {
+#ifdef V8_TARGET_ARCH_RISCV64
+          int16_t shamt = shamt6();
+#else
+          int16_t shamt = shamt5();
+#endif
+          set_rd((reg_t(rs1()) >> shamt) | (reg_t(rs1()) << (xlen - shamt)));
+          break;
+        }
         case RO_REV8: {
           if (imm12() == RO_REV8_IMM12) {
             reg_t input = rs1();
@@ -5363,6 +5422,12 @@ void Simulator::DecodeRVIType() {
         case RO_SRAIW:
           set_rd(sext32(int32_t(rs1()) >> shamt5()));
           break;
+        case RO_RORIW: {
+          reg_t extz_rs1 = zext32(rs1());
+          int16_t shamt = shamt5();
+          set_rd(sext32((extz_rs1 >> shamt) | (extz_rs1 << (32 - shamt))));
+          break;
+        }
         default:
           UNSUPPORTED_RISCV();
       }
@@ -8112,7 +8177,7 @@ void Simulator::InstructionDecode(Instruction* instr) {
     // Object obj(*watch_address_);
     // Heap* current_heap = isolate_->heap();
     // if (obj.IsSmi() || IsValidHeapObject(current_heap,
-    // HeapObject::cast(obj))) {
+    // Cast<HeapObject>(obj))) {
     //   PrintF(" (");
     //   if (obj.IsSmi()) {
     //     PrintF("smi %d", Smi::ToInt(obj));

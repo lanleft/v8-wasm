@@ -153,9 +153,19 @@ class V8_NODISCARD ScopedLoggerInitializer {
       size_t start = 0) {
     CHECK_GT(log_.size(), 0);
     for (auto& search_terms : all_line_search_terms) {
-      start = IndexOfLine(search_terms, start);
-      if (start == std::string::npos) return false;
-      ++start;  // Skip the found line.
+      size_t next = IndexOfLine(search_terms, start);
+      if (next == std::string::npos) {
+        for (size_t i = 0; i < search_terms.size(); ++i) {
+          printf("%s ", search_terms[i].c_str());
+        }
+        printf(" -- mismatch\n");
+        printf("Log contents:\n");
+        for (size_t i = start; i < log_.size(); ++i) {
+          printf("%s\n", log_.at(start).c_str());
+        }
+        return false;
+      }
+      start = next + 1;  // Skip the found line.
     }
     return true;
   }
@@ -935,8 +945,7 @@ void ValidateMapDetailsLogging(v8::Isolate* isolate,
 TEST_F(LogMapsTest, LogMapsDetailsStartup) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking ||
-      i::v8_flags.enable_third_party_heap) {
+      i::v8_flags.stress_incremental_marking) {
     return;
   }
   // Test that all Map details from Maps in the snapshot are logged properly.
@@ -959,8 +968,7 @@ class LogMapsCodeTest : public LogTest {
 TEST_F(LogMapsCodeTest, LogMapsDetailsCode) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking ||
-      i::v8_flags.enable_third_party_heap) {
+      i::v8_flags.stress_incremental_marking) {
     return;
   }
 
@@ -1049,8 +1057,7 @@ TEST_F(LogMapsCodeTest, LogMapsDetailsCode) {
 TEST_F(LogMapsTest, LogMapsDetailsContexts) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking ||
-      i::v8_flags.enable_third_party_heap) {
+      i::v8_flags.stress_incremental_marking) {
     return;
   }
   // Test that all Map details from Maps in the snapshot are logged properly.
@@ -1100,11 +1107,11 @@ TEST_F(LogTimerTest, ConsoleTimeEvents) {
     const char* source_text =
         "console.time();"
         "console.timeEnd();"
-        "console.timeStamp();"
+        "console.timeLog();"
         "console.time('timerEvent1');"
         "console.timeEnd('timerEvent1');"
-        "console.timeStamp('timerEvent2');"
-        "console.timeStamp('timerEvent3');";
+        "console.timeLog('timerEvent2');"
+        "console.timeLog('timerEvent3');";
     RunJS(source_text);
 
     logger.StopLogging();

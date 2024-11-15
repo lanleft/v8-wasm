@@ -69,7 +69,7 @@ class DeclarationContext {
 
  protected:
   virtual v8::Local<Value> Get(Local<Name> key);
-  virtual v8::Local<Value> Set(Local<Name> key, Local<Value> value);
+  virtual Maybe<bool> Set(Local<Name> key, Local<Value> value);
   virtual v8::Local<Integer> Query(Local<Name> key);
 
   void InitializeIfNeeded();
@@ -194,9 +194,12 @@ v8::Intercepted DeclarationContext::HandleSet(
     const v8::PropertyCallbackInfo<void>& info) {
   DeclarationContext* context = GetInstance(info.Data());
   context->set_count_++;
-  auto result = context->Set(key, value);
-  if (!result.IsEmpty()) {
-    info.GetReturnValue().SetNonEmpty(result);
+  Maybe<bool> maybe_result = context->Set(key, value);
+  bool result;
+  if (maybe_result.To(&result)) {
+    if (!result) {
+      info.GetReturnValue().SetFalse();
+    }
     return v8::Intercepted::kYes;
   }
   return v8::Intercepted::kNo;
@@ -223,8 +226,8 @@ v8::Local<Value> DeclarationContext::Get(Local<Name> key) {
   return v8::Local<Value>();
 }
 
-v8::Local<Value> DeclarationContext::Set(Local<Name> key, Local<Value> value) {
-  return v8::Local<Value>();
+Maybe<bool> DeclarationContext::Set(Local<Name> key, Local<Value> value) {
+  return Nothing<bool>();
 }
 
 v8::Local<Integer> DeclarationContext::Query(Local<Name> key) {
@@ -1068,6 +1071,7 @@ TEST_F(DeclsTest, TestUsing) {
   {
     SimpleContext context;
     context.Check("using x = 42;", EXPECT_ERROR);
+    context.Check("{ using = 42;}", EXPECT_ERROR);
     context.Check("{ using await x = 1;}", EXPECT_ERROR);
     context.Check("{ using \n x = 1;}", EXPECT_EXCEPTION);
     context.Check("{using {x} = {x:5};}", EXPECT_ERROR);
@@ -1085,6 +1089,8 @@ TEST_F(DeclsTest, TestAwaitUsing) {
   {
     SimpleContext context;
     context.Check("await using x = 42;", EXPECT_ERROR);
+    context.Check("async function f() {await using = 1;} \n f();",
+                  EXPECT_ERROR);
     context.Check("async function f() {await using await x = 1;} \n f();",
                   EXPECT_ERROR);
     context.Check("async function f() {await using {x} = {x:5};} \n f();",
@@ -1096,6 +1102,32 @@ TEST_F(DeclsTest, TestAwaitUsing) {
     context.Check(
         "async function f() {for(await using {x} = {x:5}; x < 10 ; i++) {\n "
         "console.log(x);}} \n f();",
+        EXPECT_ERROR);
+    context.Check(
+        "class staticBlockClass { \n "
+        " static { \n "
+        "   await using x = { \n "
+        "     value: 1, \n "
+        "      [Symbol.asyncDispose]() { \n "
+        "       classStaticBlockBodyValues.push(42); \n "
+        "     } \n "
+        "   }; \n "
+        " } \n "
+        "} ",
+        EXPECT_ERROR);
+    context.Check(
+        "async function f() { \n "
+        " class staticBlockClass { \n "
+        " static { \n "
+        "   await using x = { \n "
+        "     value: 1, \n "
+        "      [Symbol.asyncDispose]() { \n "
+        "       classStaticBlockBodyValues.push(42); \n "
+        "     } \n "
+        "   }; \n "
+        " } \n "
+        " } } \n "
+        " f(); ",
         EXPECT_ERROR);
   }
 }

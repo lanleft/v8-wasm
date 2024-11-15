@@ -1,0 +1,147 @@
+v8-version,13,2,0,0,1
+v8-platform,linux,linux
+new,CodeRange,0x5555b6c00000,0
+new,MemoryChunk,0xa1700000000,262144
+new,MemoryChunk,0xa1700280000,262144
+new,MemoryChunk,0xa1700040000,262144
+new,MemoryChunk,0xa1700080000,262144
+new,MemoryChunk,0xa17000c0000,262144
+new,MemoryChunk,0xa1700100000,262144
+heap-capacity,1048512
+heap-available,4295753600
+new,MemoryChunk,0xa1700140000,262144
+script,deserialize,1,1066
+script-details,1,,0,0,
+new,MemoryChunk,0x211500000000,262144
+script,deserialize,2,1111
+script-details,2,,0,0,
+new,MemoryChunk,0xa1700180000,262144
+script,reserve-id,3,2452
+script,create,3,2513
+script-details,3,/home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js,0,0,
+function,preparse-resolution,3,1730,2238,0.029,2586,constructor
+function,preparse-resolution,3,2253,2396,0.004,2608,message
+function,preparse-resolution,3,2408,2470,0.002,2616,toString
+function,preparse-resolution,3,10450,10664,0.005,2705,classOf
+function,preparse-resolution,3,10685,11129,0.008,2726,ValueOf
+function,parse,3,12372,12533,0.005,2758,arrow function
+function,preparse-resolution,3,11235,13951,0.049,2784,prettyPrint
+function,preparse-resolution,3,11172,13986,0.063,2796,prettyPrinted
+function,parse,3,14080,14091,0.001,2806,arrow function
+function,preparse-resolution,3,14032,14097,0.008,2812,failWithMessage
+function,preparse-resolution,3,14129,14621,0.009,2829,
+function,parse,3,14717,14769,0.001,2838,arrow function
+function,preparse-resolution,3,14638,14775,0.014,2849,fail
+function,preparse-resolution,3,14805,15367,0.01,2865,deepObjectEquals
+function,preparse-resolution,3,15403,17221,0.029,2902,deepEquals
+function,preparse-resolution,3,17257,17386,0.004,2913,assertSame
+function,preparse-resolution,3,17429,17576,0.004,2923,assertNotSame
+function,preparse-resolution,3,17616,17749,0.005,2936,assertEquals
+function,preparse-resolution,3,17796,17947,0.003,2946,assertNotEquals
+function,preparse-resolution,3,18005,18183,0.004,2957,assertEqualsDelta
+function,preparse-resolution,3,18235,18632,0.009,2973,assertArrayEquals
+function,preparse-resolution,3,18692,18903,0.002,2983,assertPropertiesEqual
+function,preparse-resolution,3,18961,19132,0.002,2992,assertToStringEquals
+function,preparse-resolution,3,19170,19234,0.002,3002,assertTrue
+function,preparse-resolution,3,19274,19339,0.001,3010,assertFalse
+function,preparse-resolution,3,19377,19469,0.002,3021,assertNull
+function,preparse-resolution,3,19513,19609,0.001,3029,assertNotNull
+function,preparse-resolution,3,19634,19891,0.005,3041,executeCode
+function,preparse-resolution,3,19937,20323,0.007,3055,assertException
+function,preparse-resolution,3,20363,21006,0.011,3073,assertThrows
+function,preparse-resolution,3,21059,21242,0.005,3085,assertThrowsEquals
+function,parse,3,21968,21998,0,3102,arrow function
+function,parse,3,21950,22002,0.007,3108,arrow function
+function,parse,3,22012,22056,0.001,3115,arrow function
+function,preparse-resolution,3,21293,22062,0.03,3122,assertThrowsAsync
+function,preparse-resolution,3,22111,22298,0.004,3132,assertEarlyError
+function,preparse-resolution,3,22356,22545,0.004,3144,assertThrowsAtRuntime
+function,preparse-resolution,3,22593,23105,0.014,3164,assertInstanceof
+function,preparse-resolution,3,23158,23360,0.005,3176,assertDoesNotThrow
+function,preparse-resolution,3,23411,23616,0.003,3186,assertUnreachable
+function,preparse-resolution,3,23646,23811,0.005,3198,
+function,preparse-resolution,3,23840,24045,0.007,3212,
+function,preparse-resolution,3,24076,24488,0.006,3233,concatenateErrors
+function,parse,3,25048,25117,0.001,3251,arrow function
+function,parse,3,24814,25144,0.01,3257,arrow function
+function,parse,3,25408,25477,0.001,3266,arrow function
+function,parse,3,25154,25504,0.012,3274,arrow function
+function,preparse-resolution,3,24522,25624,0.048,3288,
+function,preparse-resolution,3,25705,26011,0.004,3301,
+function,preparse-resolution,3,26061,27520,0.014,3321,assertUnoptimized
+function,preparse-resolution,3,27566,28890,0.014,3342,assertOptimized
+function,preparse-resolution,3,28952,29080,0.002,3352,isNeverOptimizeLiteMode
+function,preparse-resolution,3,29126,29259,0.003,3362,isNeverOptimize
+function,preparse-resolution,3,29307,29441,0.002,3379,isAlwaysOptimize
+function,preparse-resolution,3,29469,29696,0.004,3390,isLazy
+function,preparse-resolution,3,29738,30037,0.003,3400,isInterpreted
+function,preparse-resolution,3,30073,30369,0.003,3410,isBaseline
+function,preparse-resolution,3,30411,30472,0.004,3421,isUnoptimized
+function,preparse-resolution,3,30510,30740,0.004,3431,isOptimized
+function,preparse-resolution,3,30778,31075,0.004,3441,isMaglevved
+function,preparse-resolution,3,31121,31377,0.003,3450,willBeMaglevved
+function,preparse-resolution,3,31427,31683,0.004,3460,willBeTurbofanned
+function,preparse-resolution,3,31725,32024,0.004,3470,isTurboFanned
+function,preparse-resolution,3,32082,32225,0.002,3478,topFrameIsInterpreted
+function,preparse-resolution,3,32277,32417,0.002,3490,topFrameIsBaseline
+function,preparse-resolution,3,32471,32609,0.002,3499,topFrameIsMaglevved
+function,preparse-resolution,3,32667,32810,0.003,3508,topFrameIsTurboFanned
+function,parse,3,33893,34382,0.009,3554,arrow function
+function,parse,3,34460,34905,0.008,3570,arrow function
+function,preparse-resolution,3,32966,35034,0.069,3584,
+function,full-parse,3,9628,35036,0.917,3591,
+function,parse-script,3,0,35041,1.1,3634,
+new,MemoryChunk,0x211500040000,262144
+function,interpreter,3,0,35041,0.086,3820,
+function,interpreter,3,9628,35036,0.068,3830,
+function,interpreter,3,1658,1714,0.003,3835,<instance_members_initializer>
+compilation-cache,put,script,3,0,35041,3846
+function,first-execution,3,0,35041,0,3869,
+function,first-execution,3,9628,35036,0,3953,
+script,reserve-id,4,4057
+script,create,4,4069
+script-details,4,/home/vult/Desktop/v8-wasm/v8/test/mjsunit/asm/log-lazy-code.js,0,0,
+function,parse,4,679,708,0.001,4094,arrow function
+function,preparse-no-resolution,4,551,1257,0.026,4111,OnProfilerSampleCallback
+function,preparse-resolution,4,1409,1451,0.002,4126,f
+function,preparse-no-resolution,4,1334,1473,0.015,4136,Asm
+function,preparse-no-resolution,4,1523,1597,0.002,4147,g
+function,parse-script,4,0,1725,0.204,4285,
+function,interpreter,4,0,1725,0.02,4319,
+compilation-cache,put,script,4,0,1725,4328
+function,first-execution,4,0,1725,0,4338,
+function,preparse-resolution,4,1409,1451,0.001,4396,f
+function,full-parse,4,1334,1473,0.018,4407,Asm
+function,parse-function,4,1334,1473,0.027,4415,Asm
+function,interpreter,4,1334,1473,0.14,4568,Asm
+new,MemoryChunk,0x5555b6c00000,262144
+function,full-parse,3,19170,19234,0.006,5535,assertTrue
+function,parse-function,3,19170,19234,0.027,5553,assertTrue
+function,interpreter,3,19170,19234,0.021,5585,assertTrue
+function,first-execution,3,19170,19234,0,5594,assertTrue
+function,full-parse,3,17616,17749,0.007,5612,assertEquals
+function,parse-function,3,17616,17749,0.015,5620,assertEquals
+function,interpreter,3,17616,17749,0.022,5652,assertEquals
+function,first-execution,3,17616,17749,0,5659,assertEquals
+function,full-parse,3,15403,17221,0.04,5707,deepEquals
+function,parse-function,3,15403,17221,0.053,5719,deepEquals
+function,interpreter,3,15403,17221,0.046,5774,deepEquals
+function,first-execution,3,15403,17221,0,5788,deepEquals
+function,parse,4,679,708,0.002,7886,arrow function
+function,full-parse,4,551,1257,0.041,7916,OnProfilerSampleCallback
+function,parse-function,4,551,1257,0.054,7929,OnProfilerSampleCallback
+function,interpreter,4,551,1257,0.024,7964,OnProfilerSampleCallback
+function,first-execution,4,551,1257,0,7974,OnProfilerSampleCallback
+function,parse,4,679,708,0.002,8074,arrow function
+function,parse-function,4,679,708,0.013,8083,
+function,interpreter,4,679,708,0.003,8095,
+function,first-execution,4,679,708,0,8101,
+delete,MemoryChunk,0x55555712db90
+delete,MemoryChunk,0x55555712fe00
+delete,MemoryChunk,0x555557132070
+delete,MemoryChunk,0x5555571342e0
+delete,MemoryChunk,0x55555713b610
+delete,MemoryChunk,0x55555714a750
+delete,MemoryChunk,0x55555716af00
+delete,MemoryChunk,0x5555571465e0
+delete,MemoryChunk,0x555557170420

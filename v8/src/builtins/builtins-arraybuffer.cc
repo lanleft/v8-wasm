@@ -41,7 +41,8 @@ namespace {
 
 Tagged<Object> ConstructBuffer(Isolate* isolate, Handle<JSFunction> target,
                                Handle<JSReceiver> new_target,
-                               Handle<Object> length, Handle<Object> max_length,
+                               DirectHandle<Object> length,
+                               Handle<Object> max_length,
                                InitializedFlag initialized) {
   SharedFlag shared = *target != target->native_context()->array_buffer_fun()
                           ? SharedFlag::kShared
@@ -53,7 +54,7 @@ Tagged<Object> ConstructBuffer(Isolate* isolate, Handle<JSFunction> target,
       isolate, result,
       JSObject::New(target, new_target, Handle<AllocationSite>::null(),
                     NewJSObjectType::kAPIWrapper));
-  auto array_buffer = Handle<JSArrayBuffer>::cast(result);
+  auto array_buffer = Cast<JSArrayBuffer>(result);
   // Ensure that all fields are initialized because BackingStore::Allocate is
   // allowed to GC. Note that we cannot move the allocation of the ArrayBuffer
   // after BackingStore::Allocate because of the spec.
@@ -123,13 +124,13 @@ BUILTIN(ArrayBufferConstructor) {
                               handle(target->shared()->Name(), isolate)));
   }
   // [[Construct]]
-  Handle<JSReceiver> new_target = Handle<JSReceiver>::cast(args.new_target());
+  Handle<JSReceiver> new_target = Cast<JSReceiver>(args.new_target());
   Handle<Object> length = args.atOrUndefined(isolate, 1);
 
   Handle<Object> number_length;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, number_length,
                                      Object::ToInteger(isolate, length));
-  if (Object::Number(*number_length) < 0.0) {
+  if (Object::NumberValue(*number_length) < 0.0) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
   }
@@ -157,7 +158,7 @@ BUILTIN(ArrayBufferConstructor_DoNotInitialize) {
   HandleScope scope(isolate);
   Handle<JSFunction> target(isolate->native_context()->array_buffer_fun(),
                             isolate);
-  Handle<Object> length = args.atOrUndefined(isolate, 1);
+  DirectHandle<Object> length = args.atOrUndefined(isolate, 1);
   return ConstructBuffer(isolate, target, target, length, Handle<Object>(),
                          InitializedFlag::kUninitialized);
 }
@@ -196,9 +197,9 @@ static Tagged<Object> SliceHelper(BuiltinArguments args, Isolate* isolate,
   // * If relativeStart < 0, let first be max((len + relativeStart), 0); else
   //   let first be min(relativeStart, len).
   double const first =
-      (Object::Number(*relative_start) < 0)
-          ? std::max(len + Object::Number(*relative_start), 0.0)
-          : std::min(Object::Number(*relative_start), len);
+      (Object::NumberValue(*relative_start) < 0)
+          ? std::max(len + Object::NumberValue(*relative_start), 0.0)
+          : std::min(Object::NumberValue(*relative_start), len);
 
   // * If end is undefined, let relativeEnd be len; else let relativeEnd be ?
   //   ToInteger(end).
@@ -209,7 +210,7 @@ static Tagged<Object> SliceHelper(BuiltinArguments args, Isolate* isolate,
     Handle<Object> relative_end_obj;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, relative_end_obj,
                                        Object::ToInteger(isolate, end));
-    relative_end = Object::Number(*relative_end_obj);
+    relative_end = Object::NumberValue(*relative_end_obj);
   }
 
   // * If relativeEnd < 0, let final be max((len + relativeEnd), 0); else let
@@ -229,22 +230,20 @@ static Tagged<Object> SliceHelper(BuiltinArguments args, Isolate* isolate,
   Handle<Object> ctor;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, ctor,
-      Object::SpeciesConstructor(
-          isolate, Handle<JSReceiver>::cast(args.receiver()), constructor_fun));
+      Object::SpeciesConstructor(isolate, Cast<JSReceiver>(args.receiver()),
+                                 constructor_fun));
 
   // * Let new be ? Construct(ctor, newLen).
   Handle<JSReceiver> new_;
   {
-    const int argc = 1;
-
-    base::ScopedVector<Handle<Object>> argv(argc);
-    argv[0] = new_len_obj;
+    constexpr int argc = 1;
+    std::array<Handle<Object>, argc> argv = {new_len_obj};
 
     Handle<Object> new_obj;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, new_obj, Execution::New(isolate, ctor, argc, argv.begin()));
+        isolate, new_obj, Execution::New(isolate, ctor, argc, argv.data()));
 
-    new_ = Handle<JSReceiver>::cast(new_obj);
+    new_ = Cast<JSReceiver>(new_obj);
   }
 
   // * If new does not have an [[ArrayBufferData]] internal slot, throw a
@@ -259,7 +258,7 @@ static Tagged<Object> SliceHelper(BuiltinArguments args, Isolate* isolate,
 
   // * [AB] If IsSharedArrayBuffer(new) is true, throw a TypeError exception.
   // * [SAB] If IsSharedArrayBuffer(new) is false, throw a TypeError exception.
-  Handle<JSArrayBuffer> new_array_buffer = Handle<JSArrayBuffer>::cast(new_);
+  Handle<JSArrayBuffer> new_array_buffer = Cast<JSArrayBuffer>(new_);
   CHECK_SHARED(is_shared, new_array_buffer, kMethodName);
 
   // The created ArrayBuffer might or might not be resizable, since the species
@@ -441,6 +440,10 @@ static Tagged<Object> ResizeHelper(BuiltinArguments args, Isolate* isolate,
       }
     }
 
+    isolate->heap()->ResizeArrayBufferExtension(
+        array_buffer->extension(),
+        static_cast<int64_t>(new_byte_length) - array_buffer->byte_length());
+
     // [RAB] Set O.[[ArrayBufferByteLength]] to newLength.
     array_buffer->set_byte_length(new_byte_length);
   } else {
@@ -520,7 +523,7 @@ Tagged<Object> ArrayBufferTransfer(Isolate* isolate,
     Handle<Object> number_new_byte_length;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, number_new_byte_length,
                                        Object::ToInteger(isolate, new_length));
-    if (Object::Number(*number_new_byte_length) < 0.0) {
+    if (Object::NumberValue(*number_new_byte_length) < 0.0) {
       THROW_NEW_ERROR_RETURN_FAILURE(
           isolate, NewRangeError(MessageTemplate::kInvalidArrayBufferLength));
     }

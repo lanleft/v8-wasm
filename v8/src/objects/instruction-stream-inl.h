@@ -5,7 +5,10 @@
 #ifndef V8_OBJECTS_INSTRUCTION_STREAM_INL_H_
 #define V8_OBJECTS_INSTRUCTION_STREAM_INL_H_
 
+#include <optional>
+
 #include "src/common/ptr-compr-inl.h"
+#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/code.h"
 #include "src/objects/instruction-stream.h"
@@ -14,10 +17,8 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8 {
-namespace internal {
+namespace v8::internal {
 
-CAST_ACCESSOR(InstructionStream)
 OBJECT_CONSTRUCTORS_IMPL(InstructionStream, TrustedObject)
 NEVER_READ_ONLY_SPACE_IMPL(InstructionStream)
 
@@ -61,7 +62,7 @@ Tagged<InstructionStream> InstructionStream::Initialize(
     writable_allocation.WriteHeaderSlot<Smi, kCodeOffset>(Smi::zero(),
                                                           kReleaseStore);
 
-    DCHECK(!ObjectInYoungGeneration(reloc_info));
+    DCHECK(!HeapLayout::InYoungGeneration(reloc_info));
     writable_allocation.WriteProtectedPointerHeaderSlot<TrustedByteArray,
                                                         kRelocationInfoOffset>(
         reloc_info, kRelaxedStore);
@@ -74,7 +75,7 @@ Tagged<InstructionStream> InstructionStream::Initialize(
                                    TrailingPaddingSizeFor(body_size));
   }
 
-  Tagged<InstructionStream> istream = InstructionStream::cast(self);
+  Tagged<InstructionStream> istream = Cast<InstructionStream>(self);
 
   // We want to keep the code minimal that runs with write access to a JIT
   // allocation, so trigger the write barriers after the WritableJitAllocation
@@ -120,7 +121,7 @@ void InstructionStream::Finalize(Tagged<Code> code,
                                  Tagged<TrustedByteArray> reloc_info,
                                  CodeDesc desc, Heap* heap) {
   DisallowGarbageCollection no_gc;
-  base::Optional<WriteBarrierPromise> promise;
+  std::optional<WriteBarrierPromise> promise;
 
   // Copy the relocation info first before we unlock the Jit allocation.
   // TODO(sroettger): reloc info should live in protected memory.
@@ -174,18 +175,18 @@ Address InstructionStream::body_end() const {
 
 Tagged<Object> InstructionStream::raw_code(AcquireLoadTag tag) const {
   Tagged<Object> value = RawProtectedPointerField(kCodeOffset).Acquire_Load();
-  DCHECK(!ObjectInYoungGeneration(value));
-  DCHECK(IsSmi(value) || IsTrustedSpaceObject(HeapObject::cast(value)));
+  DCHECK(!HeapLayout::InYoungGeneration(value));
+  DCHECK(IsSmi(value) || HeapLayout::InTrustedSpace(Cast<HeapObject>(value)));
   return value;
 }
 
 Tagged<Code> InstructionStream::code(AcquireLoadTag tag) const {
-  return Code::cast(raw_code(tag));
+  return Cast<Code>(raw_code(tag));
 }
 
 void InstructionStream::set_code(Tagged<Code> value, ReleaseStoreTag tag) {
-  DCHECK(!ObjectInYoungGeneration(value));
-  DCHECK(IsTrustedSpaceObject(value));
+  DCHECK(!HeapLayout::InYoungGeneration(value));
+  DCHECK(HeapLayout::InTrustedSpace(value));
   WriteProtectedPointerField(kCodeOffset, value, tag);
   CONDITIONAL_PROTECTED_POINTER_WRITE_BARRIER(*this, kCodeOffset, value,
                                               UPDATE_WRITE_BARRIER);
@@ -195,7 +196,7 @@ bool InstructionStream::TryGetCode(Tagged<Code>* code_out,
                                    AcquireLoadTag tag) const {
   Tagged<Object> maybe_code = raw_code(tag);
   if (maybe_code == Smi::zero()) return false;
-  *code_out = Code::cast(maybe_code);
+  *code_out = Cast<Code>(maybe_code);
   return true;
 }
 
@@ -203,12 +204,12 @@ bool InstructionStream::TryGetCodeUnchecked(Tagged<Code>* code_out,
                                             AcquireLoadTag tag) const {
   Tagged<Object> maybe_code = raw_code(tag);
   if (maybe_code == Smi::zero()) return false;
-  *code_out = Code::unchecked_cast(maybe_code);
+  *code_out = UncheckedCast<Code>(maybe_code);
   return true;
 }
 
 Tagged<TrustedByteArray> InstructionStream::relocation_info() const {
-  return TrustedByteArray::cast(
+  return Cast<TrustedByteArray>(
       ReadProtectedPointerField(kRelocationInfoOffset));
 }
 
@@ -219,7 +220,7 @@ Address InstructionStream::instruction_start() const {
 Tagged<TrustedByteArray> InstructionStream::unchecked_relocation_info() const {
   Tagged<Object> value =
       RawProtectedPointerField(kRelocationInfoOffset).Acquire_Load();
-  return TrustedByteArray::unchecked_cast(value);
+  return UncheckedCast<TrustedByteArray>(value);
 }
 
 uint8_t* InstructionStream::relocation_start() const {
@@ -252,7 +253,7 @@ Tagged<InstructionStream> InstructionStream::FromTargetAddress(
       HeapObject::FromAddress(address - InstructionStream::kHeaderSize);
   // Unchecked cast because we can't rely on the map currently not being a
   // forwarding pointer.
-  return InstructionStream::unchecked_cast(code);
+  return UncheckedCast<InstructionStream>(code);
 }
 
 // static
@@ -263,7 +264,7 @@ Tagged<InstructionStream> InstructionStream::FromEntryAddress(
       HeapObject::FromAddress(code_entry - InstructionStream::kHeaderSize);
   // Unchecked cast because we can't rely on the map currently not being a
   // forwarding pointer.
-  return InstructionStream::unchecked_cast(code);
+  return UncheckedCast<InstructionStream>(code);
 }
 
 // static
@@ -275,8 +276,7 @@ PtrComprCageBase InstructionStream::main_cage_base() {
 #endif
 }
 
-}  // namespace internal
-}  // namespace v8
+}  // namespace v8::internal
 
 #include "src/objects/object-macros-undef.h"
 

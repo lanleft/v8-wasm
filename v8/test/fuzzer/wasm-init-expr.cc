@@ -175,7 +175,7 @@ void CheckEquivalent(const WasmValue& lhs, const WasmValue& rhs,
           default:
             CHECK(lhs.type().heap_type().is_index());
             if (IsWasmNull(lhs_ref)) break;
-            uint32_t type_index = lhs.type().ref_index();
+            ModuleTypeIndex type_index = lhs.type().ref_index();
             if (module.has_signature(type_index)) {
               CHECK_EQ(lhs_ref, rhs_ref);
             } else if (module.has_struct(type_index)) {
@@ -205,22 +205,20 @@ void FuzzIt(base::Vector<const uint8_t> data) {
   // are saved as recursive groups as part of the type canonicalizer, but types
   // from previous runs just waste memory.
   GetTypeCanonicalizer()->EmptyStorageForTesting();
-  i_isolate->heap()->ClearWasmCanonicalRttsForTesting();
+  TypeCanonicalizer::ClearWasmCanonicalTypesForTesting(i_isolate);
 
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(support->GetContext());
+
+  // Disable the optimizing compiler. The init expressions can be huge and might
+  // produce long compilation times. The function is only used as a reference
+  // and only run once, so use liftoff only as it allows much faster fuzzing.
+  v8_flags.liftoff_only = true;
 
   // We explicitly enable staged WebAssembly features here to increase fuzzer
   // coverage. For libfuzzer fuzzers it is not possible that the fuzzer enables
   // the flag by itself.
   EnableExperimentalWasmFeatures(isolate);
-  //  We switch it to synchronous mode to avoid the nondeterminism of background
-  //  jobs finishing at random times.
-  FlagScope<bool> sync_tier_up(&v8_flags.wasm_sync_tier_up, true);
-
-  // Experiment: Disable inlining. It seems, inlining can cause timeouts in the
-  // fuzzer.
-  FlagScope<bool> inlining(&v8_flags.experimental_wasm_inlining, false);
 
   v8::TryCatch try_catch(isolate);
   HandleScope scope(i_isolate);
@@ -233,10 +231,9 @@ void FuzzIt(base::Vector<const uint8_t> data) {
 
   testing::SetupIsolateForWasmModule(i_isolate);
   ModuleWireBytes wire_bytes(buffer.begin(), buffer.end());
-  auto enabled_features = WasmFeatures::FromIsolate(i_isolate);
-  CompileTimeImports compile_imports;
-  bool valid = GetWasmEngine()->SyncValidate(i_isolate, enabled_features,
-                                             compile_imports, wire_bytes);
+  auto enabled_features = WasmEnabledFeatures::FromIsolate(i_isolate);
+  bool valid = GetWasmEngine()->SyncValidate(
+      i_isolate, enabled_features, CompileTimeImportsForFuzzing(), wire_bytes);
 
   if (v8_flags.wasm_fuzzer_gen_test) {
     GenerateTestCase(i_isolate, wire_bytes, valid);
@@ -246,7 +243,8 @@ void FuzzIt(base::Vector<const uint8_t> data) {
   FlagScope<bool> eager_compile(&v8_flags.wasm_lazy_compilation, false);
   ErrorThrower thrower(i_isolate, "WasmFuzzerSyncCompile");
   MaybeHandle<WasmModuleObject> compiled_module = GetWasmEngine()->SyncCompile(
-      i_isolate, enabled_features, compile_imports, &thrower, wire_bytes);
+      i_isolate, enabled_features, CompileTimeImportsForFuzzing(), &thrower,
+      wire_bytes);
   CHECK(!compiled_module.is_null());
   CHECK(!thrower.error());
   thrower.Reset();

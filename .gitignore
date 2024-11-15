@@ -9,3 +9,6 @@ wabt-1.0.35/
 .cipd/
 v8/core
 tests/core
+
+.cipd/
+v8/

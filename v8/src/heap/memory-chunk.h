@@ -27,6 +27,7 @@ class CodeStubAssembler;
 class ExternalReference;
 template <typename T>
 class Tagged;
+class TestDebugHelper;
 
 enum class MarkingMode { kNoMarking, kMinorMarking, kMajorMarking };
 
@@ -69,53 +70,57 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
     // allocations. Such chunks can never contain any young objects.
     CONTAINS_ONLY_OLD = 1u << 8,
 
+    // Page was allocated during major incremental marking. May only contain old
+    // objects.
+    BLACK_ALLOCATED = 1u << 9,
+
     // ----------------------------------------------------------------
     // Values below here are not critical for the heap write barrier.
 
-    LARGE_PAGE = 1u << 9,
-    EVACUATION_CANDIDATE = 1u << 10,
-    NEVER_EVACUATE = 1u << 11,
+    LARGE_PAGE = 1u << 10,
+    EVACUATION_CANDIDATE = 1u << 11,
+    NEVER_EVACUATE = 1u << 12,
 
     // |PAGE_NEW_OLD_PROMOTION|: A page tagged with this flag has been promoted
     // from new to old space during evacuation.
-    PAGE_NEW_OLD_PROMOTION = 1u << 12,
+    PAGE_NEW_OLD_PROMOTION = 1u << 13,
 
     // This flag is intended to be used for testing. Works only when both
     // v8_flags.stress_compaction and
     // v8_flags.manual_evacuation_candidates_selection are set. It forces the
     // page to become an evacuation candidate at next candidates selection
     // cycle.
-    FORCE_EVACUATION_CANDIDATE_FOR_TESTING = 1u << 13,
+    FORCE_EVACUATION_CANDIDATE_FOR_TESTING = 1u << 14,
 
     // This flag is intended to be used for testing.
-    NEVER_ALLOCATE_ON_PAGE = 1u << 14,
+    NEVER_ALLOCATE_ON_PAGE = 1u << 15,
 
     // The memory chunk is already logically freed, however the actual freeing
     // still has to be performed.
-    PRE_FREED = 1u << 15,
+    PRE_FREED = 1u << 16,
 
     // |COMPACTION_WAS_ABORTED|: Indicates that the compaction in this page
     //   has been aborted and needs special handling by the sweeper.
-    COMPACTION_WAS_ABORTED = 1u << 16,
+    COMPACTION_WAS_ABORTED = 1u << 17,
 
-    NEW_SPACE_BELOW_AGE_MARK = 1u << 17,
+    NEW_SPACE_BELOW_AGE_MARK = 1u << 18,
 
     // The memory chunk freeing bookkeeping has been performed but the chunk has
     // not yet been freed.
-    UNREGISTERED = 1u << 18,
+    UNREGISTERED = 1u << 19,
 
     // The memory chunk is pinned in memory and can't be moved. This is likely
     // because there exists a potential pointer to somewhere in the chunk which
     // can't be updated.
-    PINNED = 1u << 19,
+    PINNED = 1u << 20,
 
     // A Page with code objects.
-    IS_EXECUTABLE = 1u << 20,
+    IS_EXECUTABLE = 1u << 21,
 
     // The memory chunk belongs to the trusted space. When the sandbox is
     // enabled, the trusted space is located outside of the sandbox and so its
     // content cannot be corrupted by an attacker.
-    IS_TRUSTED = 1u << 21,
+    IS_TRUSTED = 1u << 22,
   };
 
   using MainThreadFlags = base::Flags<Flag, uintptr_t>;
@@ -137,12 +142,6 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
       MainThreadFlags(kEvacuationCandidateMask) |
       MainThreadFlags(kIsInYoungGenerationMask);
 
-  // Page flags copied from from-space to to-space when flipping semispaces.
-  static constexpr MainThreadFlags kCopyOnFlipFlagsMask =
-      MainThreadFlags(POINTERS_TO_HERE_ARE_INTERESTING) |
-      MainThreadFlags(POINTERS_FROM_HERE_ARE_INTERESTING) |
-      MainThreadFlags(INCREMENTAL_MARKING);
-
   static constexpr MainThreadFlags kIsOnlyOldOrMajorGCInProgressMask =
       MainThreadFlags(CONTAINS_ONLY_OLD) |
       MainThreadFlags(IS_MAJOR_GC_IN_PROGRESS);
@@ -159,13 +158,11 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
   }
 
   V8_INLINE static MemoryChunk* FromAddress(Address addr) {
-    DCHECK(!V8_ENABLE_THIRD_PARTY_HEAP_BOOL);
     return reinterpret_cast<MemoryChunk*>(BaseAddress(addr));
   }
 
   template <typename HeapObject>
   V8_INLINE static MemoryChunk* FromHeapObject(Tagged<HeapObject> object) {
-    DCHECK(!V8_ENABLE_THIRD_PARTY_HEAP_BOOL);
     return FromAddress(object.ptr());
   }
 
@@ -185,14 +182,12 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
 
   V8_INLINE bool InYoungGeneration() const {
     UNREACHABLE_WITH_STICKY_MARK_BITS();
-    if (V8_ENABLE_THIRD_PARTY_HEAP_BOOL) return false;
     constexpr uintptr_t kYoungGenerationMask = FROM_PAGE | TO_PAGE;
     return GetFlags() & kYoungGenerationMask;
   }
 
   // Checks whether chunk is either in young gen or shared heap.
   V8_INLINE bool IsYoungOrSharedChunk() const {
-    if (V8_ENABLE_THIRD_PARTY_HEAP_BOOL) return false;
     constexpr uintptr_t kYoungOrSharedChunkMask =
         FROM_PAGE | TO_PAGE | IN_WRITABLE_SHARED_SPACE;
     return GetFlags() & kYoungOrSharedChunkMask;
@@ -247,9 +242,14 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
   void SynchronizedLoad() const;
   bool InReadOnlySpace() const;
 #else
-  V8_INLINE bool InReadOnlySpace() const { 
-    
-    return IsFlagSet(READ_ONLY_HEAP); }
+  V8_INLINE bool InReadOnlySpace() const { return IsFlagSet(READ_ONLY_HEAP); }
+#endif
+
+#ifdef V8_ENABLE_SANDBOX
+  // Flags are stored in the page header and are not safe to rely on for sandbox
+  // checks. This alternative version will check if the page is read-only
+  // without relying on the inline flag.
+  bool SandboxSafeInReadOnlySpace() const;
 #endif
 
   V8_INLINE bool InCodeSpace() const { return IsFlagSet(IS_EXECUTABLE); }
@@ -360,9 +360,6 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
 #ifndef V8_EXTERNAL_CODE_SPACE
 #error The global metadata pointer table requires a single external code space.
 #endif
-#ifdef V8_ENABLE_THIRD_PARTY_HEAP
-#error The global metadata pointer table is incompatible with third party heap.
-#endif
 
   static constexpr size_t kPagesInMainCage =
       kPtrComprCageReservationSize / kRegularPageSize;
@@ -399,10 +396,11 @@ class V8_EXPORT_PRIVATE MemoryChunk final {
   friend class MacroAssembler;
   // For access to the MetadataTableAddress;
   friend class ExternalReference;
+  friend class TestDebugHelper;
 
 #endif  // V8_ENABLE_SANDBOX
 
-  friend class BasicMemoryChunkValidator;
+  friend class MemoryChunkValidator;
 };
 
 DEFINE_OPERATORS_FOR_FLAGS(MemoryChunk::MainThreadFlags)

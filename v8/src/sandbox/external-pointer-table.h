@@ -5,8 +5,6 @@
 #ifndef V8_SANDBOX_EXTERNAL_POINTER_TABLE_H_
 #define V8_SANDBOX_EXTERNAL_POINTER_TABLE_H_
 
-#include <vector>
-
 #include "include/v8config.h"
 #include "src/base/atomicops.h"
 #include "src/base/memory.h"
@@ -44,7 +42,8 @@ struct ExternalPointerTableEntry {
 
   // Make this entry an external pointer entry containing the given pointer
   // tagged with the given tag.
-  inline void MakeExternalPointerEntry(Address value, ExternalPointerTag tag);
+  inline void MakeExternalPointerEntry(Address value, ExternalPointerTag tag,
+                                       bool mark_as_alive);
 
   // Load and untag the external pointer stored in this entry.
   // This entry must be an external pointer entry.
@@ -102,6 +101,8 @@ struct ExternalPointerTableEntry {
   // Mark this entry as alive during table garbage collection.
   inline void Mark();
 
+  static constexpr bool IsWriteProtected = false;
+
  private:
   friend class ExternalPointerTable;
 
@@ -112,7 +113,9 @@ struct ExternalPointerTableEntry {
     static constexpr TagType kFreeEntryTag = kExternalPointerFreeEntryTag;
     static constexpr TagType kEvacuationEntryTag =
         kExternalPointerEvacuationEntryTag;
+    static constexpr TagType kZappedEntryTag = kExternalPointerZappedEntryTag;
     static constexpr bool kSupportsEvacuation = true;
+    static constexpr bool kSupportsZapping = true;
   };
 
   using Payload = TaggedPayload<ExternalPointerTaggingScheme>;
@@ -240,19 +243,19 @@ class V8_EXPORT_PRIVATE ExternalPointerTable
 #else
   static_assert(kMaxExternalPointers == kMaxCapacity);
 #endif
+  static_assert(kSupportsCompaction);
 
  public:
   using EvacuateMarkMode = ExternalPointerTableEntry::EvacuateMarkMode;
 
   // Size of an ExternalPointerTable, for layout computation in IsolateData.
-  static int constexpr kSize = 2 * kSystemPointerSize;
+  static constexpr int kSize = 2 * kSystemPointerSize;
 
   ExternalPointerTable() = default;
   ExternalPointerTable(const ExternalPointerTable&) = delete;
   ExternalPointerTable& operator=(const ExternalPointerTable&) = delete;
 
-  // The Spaces used by an ExternalPointerTable also contain the state related
-  // to compaction.
+  // The Spaces used by an ExternalPointerTable.
   struct Space : public Base::Space {
    public:
     // During table compaction, we may record the addresses of fields
@@ -269,6 +272,14 @@ class V8_EXPORT_PRIVATE ExternalPointerTable
 
     // Not atomic.  Mutators and concurrent marking must be paused.
     void AssertEmpty() { CHECK(segments_.empty()); }
+
+    bool allocate_black() { return allocate_black_; }
+    void set_allocate_black(bool allocate_black) {
+      allocate_black_ = allocate_black;
+    }
+
+   private:
+    bool allocate_black_ = false;
   };
 
   // Initializes all slots in the RO space from pre-existing artifacts.
@@ -351,6 +362,10 @@ class V8_EXPORT_PRIVATE ExternalPointerTable
   uint32_t SweepAndCompact(Space* space, Counters* counters);
   uint32_t Sweep(Space* space, Counters* counters);
 
+  // Updates all evacuation entries with new handle locations. The function
+  // takes the old hanlde location and returns the new one.
+  void UpdateAllEvacuationEntries(Space*, std::function<Address(Address)>);
+
   inline bool Contains(Space* space, ExternalPointerHandle handle) const;
 
   // A resource outside of the V8 heap whose lifetime is tied to something
@@ -389,6 +404,8 @@ class V8_EXPORT_PRIVATE ExternalPointerTable
   static inline uint32_t HandleToIndex(ExternalPointerHandle handle);
   static inline ExternalPointerHandle IndexToHandle(uint32_t index);
 
+  inline void TakeOwnershipOfManagedResourceIfNecessary(
+      Address value, ExternalPointerHandle handle, ExternalPointerTag tag);
   inline void FreeManagedResourceIfPresent(uint32_t entry_index);
 
   void ResolveEvacuationEntryDuringSweeping(

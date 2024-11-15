@@ -134,8 +134,8 @@ WASM_EXEC_TEST(MemoryInitOutOfBounds) {
 WASM_EXEC_TEST(MemoryCopy) {
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   uint8_t* mem = r.builder().AddMemory(kWasmPageSize);
-  r.Build({WASM_MEMORY_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
-                            WASM_LOCAL_GET(2)),
+  r.Build({WASM_MEMORY0_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
+                             WASM_LOCAL_GET(2)),
            kExprI32Const, 0});
 
   const uint8_t initial[] = {0, 11, 22, 33, 44, 55, 66, 77};
@@ -161,8 +161,8 @@ WASM_EXEC_TEST(MemoryCopy) {
 WASM_EXEC_TEST(MemoryCopyOverlapping) {
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   uint8_t* mem = r.builder().AddMemory(kWasmPageSize);
-  r.Build({WASM_MEMORY_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
-                            WASM_LOCAL_GET(2)),
+  r.Build({WASM_MEMORY0_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
+                             WASM_LOCAL_GET(2)),
            kExprI32Const, 0});
 
   const uint8_t initial[] = {10, 20, 30};
@@ -182,8 +182,8 @@ WASM_EXEC_TEST(MemoryCopyOverlapping) {
 WASM_EXEC_TEST(MemoryCopyOutOfBoundsData) {
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   uint8_t* mem = r.builder().AddMemory(kWasmPageSize);
-  r.Build({WASM_MEMORY_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
-                            WASM_LOCAL_GET(2)),
+  r.Build({WASM_MEMORY0_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
+                             WASM_LOCAL_GET(2)),
            kExprI32Const, 0});
 
   const uint8_t data[] = {11, 22, 33, 44, 55, 66, 77, 88};
@@ -209,8 +209,8 @@ WASM_EXEC_TEST(MemoryCopyOutOfBoundsData) {
 WASM_EXEC_TEST(MemoryCopyOutOfBounds) {
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   r.builder().AddMemory(kWasmPageSize);
-  r.Build({WASM_MEMORY_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
-                            WASM_LOCAL_GET(2)),
+  r.Build({WASM_MEMORY0_COPY(WASM_LOCAL_GET(0), WASM_LOCAL_GET(1),
+                             WASM_LOCAL_GET(2)),
            kExprI32Const, 0});
 
   // Copy full range is OK.
@@ -391,7 +391,7 @@ void TestTableCopyElems(TestExecutionTier execution_tier, int table_dst,
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   const uint32_t kTableSize = 5;
   uint16_t function_indexes[kTableSize];
-  const uint32_t sig_index = r.builder().AddSignature(sigs.i_v());
+  const ModuleTypeIndex sig_index = r.builder().AddSignature(sigs.i_v());
 
   for (uint32_t i = 0; i < kTableSize; ++i) {
     WasmFunctionCompiler& fn = r.NewFunction(sigs.i_v(), "f");
@@ -468,7 +468,7 @@ void TestTableCopyCalls(TestExecutionTier execution_tier, int table_dst,
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   const uint32_t kTableSize = 5;
   uint16_t function_indexes[kTableSize];
-  const uint32_t sig_index = r.builder().AddSignature(sigs.i_v());
+  const ModuleTypeIndex sig_index = r.builder().AddSignature(sigs.i_v());
 
   for (uint32_t i = 0; i < kTableSize; ++i) {
     WasmFunctionCompiler& fn = r.NewFunction(sigs.i_v(), "f");
@@ -538,7 +538,7 @@ void TestTableCopyOobWrites(TestExecutionTier execution_tier, int table_dst,
   WasmRunner<uint32_t, uint32_t, uint32_t, uint32_t> r(execution_tier);
   const uint32_t kTableSize = 5;
   uint16_t function_indexes[kTableSize];
-  const uint32_t sig_index = r.builder().AddSignature(sigs.i_v());
+  const ModuleTypeIndex sig_index = r.builder().AddSignature(sigs.i_v());
 
   for (uint32_t i = 0; i < kTableSize; ++i) {
     WasmFunctionCompiler& fn = r.NewFunction(sigs.i_v(), "f");

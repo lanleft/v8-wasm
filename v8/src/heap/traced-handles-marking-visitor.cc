@@ -4,6 +4,9 @@
 
 #include "src/heap/traced-handles-marking-visitor.h"
 
+#include <algorithm>
+#include <iterator>
+
 #include "src/heap/marking-state-inl.h"
 #include "src/heap/marking-worklist-inl.h"
 #include "src/heap/marking.h"
@@ -44,7 +47,7 @@ void ConservativeTracedHandlesMarkingVisitor::VisitPointer(
       // object to mark.
       return;
     }
-    Tagged<HeapObject> heap_object = HeapObject::cast(object);
+    Tagged<HeapObject> heap_object = Cast<HeapObject>(object);
     const auto target_worklist =
         MarkingHelper::ShouldMarkObject(&heap_, heap_object);
     if (target_worklist) {
