@@ -2807,6 +2807,9 @@ class WasmGraphBuildingInterface {
   void ThrowRef(FullDecoder* decoder, TFNode* exception) {
     DCHECK_NOT_NULL(exception);
     printf("===== graph-builder-interface.cc ThrowRef =====\n");
+    //print object exception
+    builder_->PrintDebugName(exception);
+    printf("\n====================================\n");
     CheckForException(decoder, builder_->Rethrow(exception), false);
     builder_->TerminateThrow(effect(), control());
   }

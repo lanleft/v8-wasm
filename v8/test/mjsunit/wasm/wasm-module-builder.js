@@ -167,7 +167,7 @@ function wasmRefNullType(heap_type, is_shared = false) {
 }
 
 function wasmRefNullTypeShared(heap_type, is_shared = false) {
-  return {opcode: kWasmRef, heap_type: heap_type, is_shared: is_shared};
+  return {opcode: kWasmNullExnRef, heap_type: heap_type, is_shared: is_shared};
 }
 function wasmRefType(heap_type, is_shared = false) {
   return {opcode: kWasmRef, heap_type: heap_type, is_shared: is_shared};
@@ -233,6 +233,7 @@ let kSig_r_r = makeSig([kWasmExternRef], [kWasmExternRef]);
 let kSig_a_a = makeSig([kWasmAnyFunc], [kWasmAnyFunc]);
 let kSig_i_r = makeSig([kWasmExternRef], [kWasmI32]);
 let kSig_v_r = makeSig([kWasmExternRef], []);
+let kSig_v2_r = makeSig([kWasmNullExternRef], []);
 let kSig_v_a = makeSig([kWasmAnyFunc], []);
 let kSig_v_rr = makeSig([kWasmExternRef, kWasmExternRef], []);
 let kSig_v_aa = makeSig([kWasmAnyFunc, kWasmAnyFunc], []);

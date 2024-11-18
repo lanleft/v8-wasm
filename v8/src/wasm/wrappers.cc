@@ -214,6 +214,7 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
           case HeapType::kNoExtern:
           case HeapType::kExn:
           case HeapType::kNoExn:
+            printf("kRef == type.heap_representation_non_shared() = %d\n", type.heap_representation_non_shared());
             return ret;
           case HeapType::kBottom:
           case HeapType::kTop:
@@ -252,6 +253,7 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
           case HeapType::kNoExtern:
           case HeapType::kExn:
           case HeapType::kNoExn:
+            printf("kRefNull == type.heap_representation_non_shared() = %d\n", type.heap_representation_non_shared());
             return ret;
           case HeapType::kNone:
           case HeapType::kNoFunc:

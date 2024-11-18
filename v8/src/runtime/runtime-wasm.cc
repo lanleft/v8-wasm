@@ -398,6 +398,7 @@ RUNTIME_FUNCTION(Runtime_WasmThrow) {
 RUNTIME_FUNCTION(Runtime_WasmReThrow) {
   ClearThreadInWasmScope clear_wasm_flag(isolate);
   HandleScope scope(isolate);
+  printf("===Runtime_WasmReThrow====\n");
   DCHECK_EQ(1, args.length());
   return isolate->ReThrow(args[0]);
 }
@@ -1454,6 +1455,7 @@ RUNTIME_FUNCTION(Runtime_WasmAllocateSuspender) {
 // "Special" because the type must be in a recgroup of its own.
 // Used by "JS String Builtins".
 RUNTIME_FUNCTION(Runtime_WasmCastToSpecialPrimitiveArray) {
+  printf("===Runtime_WasmCastToSpecialPrimitiveArray===\n");
   ClearThreadInWasmScope flag_scope(isolate);
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());

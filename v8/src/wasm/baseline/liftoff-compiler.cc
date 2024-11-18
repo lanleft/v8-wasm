@@ -3105,6 +3105,8 @@ class LiftoffCompiler {
 
   void AssertNullTypecheckImpl(FullDecoder* decoder, const Value& arg,
                                Value* result, Condition cond) {
+
+    printf("=== AssertNullTypecheckImpl ===\n");
     LiftoffRegList pinned;
     LiftoffRegister obj = pinned.set(__ PopToRegister(pinned));
     Label* trap_label =
@@ -7173,6 +7175,7 @@ class LiftoffCompiler {
                const Value& obj, Value* result, bool null_succeeds) {
     if (v8_flags.experimental_wasm_assume_ref_cast_succeeds) return;
 
+    printf("=== RefCast ====\n");
     Label* trap_label =
         AddOutOfLineTrap(decoder, Builtin::kThrowWasmTrapIllegalCast);
     LiftoffRegList pinned;
@@ -7478,6 +7481,7 @@ class LiftoffCompiler {
   template <TypeChecker type_checker>
   void AbstractTypeCast(const Value& object, FullDecoder* decoder,
                         bool null_succeeds) {
+    printf("=== AbstractTypeCast ====\n");
     Label match;
     Label* trap_label =
         AddOutOfLineTrap(decoder, Builtin::kThrowWasmTrapIllegalCast);

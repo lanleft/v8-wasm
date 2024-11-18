@@ -437,6 +437,11 @@ builtin WasmThrow(tag: Object, values: FixedArray): JSAny {
 }
 
 builtin WasmRethrow(exception: Object): JSAny {
+  // print exception 
+  Print('==== builtin WasmRethrow ====\n');
+  Print('exception: ', exception);
+  // Print('changing exception to kWasmNull');
+  // exception = kWasmNull;
   if (exception == Null) tail ThrowWasmTrapRethrowNull();
   tail runtime::WasmReThrow(LoadContextFromFrame(), exception);
 }
@@ -853,6 +858,7 @@ builtin ThrowWasmTrapNullDereference(): JSAny {
 }
 
 builtin ThrowWasmTrapIllegalCast(): JSAny {
+  Print('===ThrowWasmTrapIllegalCast===\n');
   tail WasmTrap(SmiConstant(MessageTemplate::kWasmTrapIllegalCast));
 }
 
