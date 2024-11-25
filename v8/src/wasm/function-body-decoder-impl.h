@@ -3531,6 +3531,7 @@ class WasmFullDecoder : public WasmDecoder<ValidationTag, decoding_mode> {
           base::Vector<Value> values(
               stack_.begin() + stack_.size() - push_count, push_count);
           if (c->might_throw) {
+            printf("=== %s:%d\n", __FILE__, __LINE__);
             // Already type checked on block entry.
             CALL_INTERFACE_IF_OK_AND_PARENT_REACHABLE(CatchCase, c, catch_case,
                                                       values);

@@ -4,7 +4,8 @@
 
 // Flags: --invoke-weak-callbacks --omit-quit --allow-natives-syntax
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 const builder = new WasmModuleBuilder();
 builder.addFunction('f', kSig_i_v).addBody([kExprI32Const, 42]);

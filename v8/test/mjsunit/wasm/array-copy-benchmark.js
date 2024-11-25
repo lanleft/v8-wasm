@@ -4,7 +4,8 @@
 
 // Flags: --no-liftoff
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 // This is benchmark to investigate at which point it is more efficient to call
 // a memcpy-based builtin for array.copy, rather than copying

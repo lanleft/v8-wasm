@@ -6,7 +6,8 @@
 // Needed for exceptions-utils.js.
 // Flags: --allow-natives-syntax
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
 // Test that lowering a ror operator with int64-lowering does not produce

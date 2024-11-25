@@ -5,6 +5,8 @@
 // Flags: --no-liftoff
 // scripts/output/regress-1484393.js
 
+// /home/vult/Desktop/v8-wasm/v8/out/debug/d8 -test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/simple-tests/test4.js --no-liftoff  --experimental-wasm-exnref --allow-natives-syntax --expose-gc --wasm-inlining --experimental-wasm-jspi --turboshaft-wasm
+
 d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 // Helper module to produce an exnref or convert a JS value to an exnref.
@@ -22,12 +24,13 @@ let helper = (function () {
           kExprUnreachable,
       ]).exportFunc();
 
-  function throw_js(r) {
+  function throw_js_eh(r) {
     console.log("================ throw_js object =================");
     %DebugPrint(r);
-    // r = kWasmNullExternRef;
      throw r; }
-  let instance = builder.instantiate({m: {import: throw_js}});
+  let throw_js_wrapper = Function.prototype.call.bind(throw_js_eh);
+  function throw_js_wasm(r) {throw new WebAssembly.Exception(new WebAssembly.Tag({parameters: []}), []);};
+  let instance = builder.instantiate({m: {import: throw_js_wrapper}});
   return instance;
 })();
 
@@ -43,7 +46,7 @@ builder.addFunction('main',
 .addBody([
     kExprLocalGet, 0,
     kExprCallFunction, to_exnref,
-    kGCPrefix, kExprRefCastNull, kExnRefCode,
+    kGCPrefix, kExprRefCast, kExnRefCode,
     kExprThrowRef])
 .exportFunc();
 
@@ -51,14 +54,17 @@ builder.addFunction('main',
 let instance = builder.instantiate({m: {to_exnref: helper.exports.to_exnref}});
 
 let obj = {};
-%DebugPrint(obj);
+// %DebugPrint(obj);
 console.log("==================begining object =====================");
 
+// instance.exports.main(obj);
 try {
   instance.exports.main(obj);
 } catch (e) {
     console.log("==================catch object =====================");
     console.log(e);
-    // %DebugPrint(e);
+    %DebugPrint(e);
+    console.log(e.a.b.c);
+    // %SystemBreak();
 }
 

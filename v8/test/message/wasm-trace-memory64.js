@@ -4,7 +4,8 @@
 
 // Flags: --trace-wasm-memory --no-liftoff --experimental-wasm-memory64
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 const GB = 1024 * 1024 * 1024;
 const BIG_OFFSET = 4294970000n; // 0x100000a90n

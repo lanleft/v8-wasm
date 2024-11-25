@@ -91,11 +91,14 @@ setField(f1, kWasmFuncRefInternalOffset, f0_int);
 let f1_map = getField(f1, kMapOffset);
 setField(f0, kMapOffset, f1_map);
 
+console.log("111");
+
 // Trigger optimization. This would inline the wrong target; the signature
 // check should kill the process instead.
 %WasmTierUpFunction(instance.exports.boom);
 
 // If the process was still alive, this would cause the sandbox violation.
-instance.exports.boom(func0, BigInt(Sandbox.targetPage));
+// instance.exports.boom(func0, BigInt(Sandbox.targetPage));
+instance.exports.boom(func0, 0x414141414141n);
 
 assertUnreachable("Process should have been killed.");

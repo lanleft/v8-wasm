@@ -7,7 +7,8 @@
 
 assertEquals = () => {};
 assertTrue  = () => {};
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 d8.test.enableJSPI();
 let v0 = new WasmModuleBuilder();

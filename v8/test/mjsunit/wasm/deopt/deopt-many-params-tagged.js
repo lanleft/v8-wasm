@@ -8,7 +8,8 @@
 // Flags: --wasm-inlining-ignore-call-counts --wasm-inlining-factor=30
 // Flags: --wasm-inlining-budget=100000 --no-jit-fuzzing
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 // Test deopt with many params with different types, some tagged, some untagged.
 (function TestManyParamsTagged() {

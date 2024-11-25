@@ -4,7 +4,8 @@
 
 // Flags: --expose-wasm
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 var builder = new WasmModuleBuilder();
 builder.addImportedTable("x", "table", 1, 10000000);

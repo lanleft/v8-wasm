@@ -191,6 +191,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
   }
 
   V<Object> ToJS(OpIndex ret, CanonicalValueType type, V<Context> context) {
+    printf("\033[1;35m=== wrappers.cc ToJS ===\033[0m\n");
+    printf("=== ToJS -> name: %s - type.kind(): %d \n", type.name().c_str(), type.kind());
     switch (type.kind()) {
       case kI32:
         return BuildChangeInt32ToNumber(ret);
@@ -936,6 +938,8 @@ class WasmWrapperTSGraphBuilder : public WasmGraphBuilderBase {
 
   OpIndex FromJS(OpIndex input, OpIndex context, CanonicalValueType type,
                  OptionalOpIndex frame_state = {}) {
+    printf("=== wrappers.cc FromJS ===\n");
+    printf("=== FromJS -> %s ====\n", type.name().c_str());
     switch (type.kind()) {
       case kRef:
       case kRefNull: {

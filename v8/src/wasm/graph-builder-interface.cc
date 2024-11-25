@@ -1401,6 +1401,7 @@ class WasmGraphBuildingInterface {
   void CatchCase(FullDecoder* decoder, Control* block,
                  const CatchCase& catch_case, base::Vector<Value> values) {
     DCHECK(block->is_try_table());
+    printf("==== graph-builder-interface == CatchCase ======\n");
     TFNode* exception = block->try_info->exception;
     SetEnv(block->try_info->catch_env);
 
@@ -1480,6 +1481,7 @@ class WasmGraphBuildingInterface {
     bool is_last = &catch_case == &block->catch_cases.last();
     if (is_last && !decoder->HasCatchAll(block)) {
       SetEnv(block->try_info->catch_env);
+      printf("===== before ThrowRef =====\n");
       ThrowRef(decoder, block->try_info->exception);
     }
   }

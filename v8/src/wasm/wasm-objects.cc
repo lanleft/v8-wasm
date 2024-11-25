@@ -2938,6 +2938,7 @@ MaybeHandle<Object> JSToWasmObject(Isolate* isolate, Handle<Object> value,
                                    CanonicalValueType expected,
                                    const char** error_message) {
   DCHECK(expected.is_object_reference());
+  printf("\033[1;36m===== wasmm-objects.cc JSToWasmObject =====\033[0m\n");
   if (expected.kind() == kRefNull && IsNull(*value, isolate)) {
     switch (expected.heap_representation()) {
       case HeapType::kStringViewWtf8:

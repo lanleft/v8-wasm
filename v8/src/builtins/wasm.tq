@@ -440,16 +440,20 @@ builtin WasmRethrow(exception: Object): JSAny {
   // print exception 
   Print('==== builtin WasmRethrow ====\n');
   Print('exception: ', exception);
+  // breakpoint here
   // Print('changing exception to kWasmNull');
   // exception = kWasmNull;
   if (exception == Null) tail ThrowWasmTrapRethrowNull();
   tail runtime::WasmReThrow(LoadContextFromFrame(), exception);
+  // tail runtime::WasmReThrow(LoadContextFromFrame(), kWasmNull);
 }
 
 // We need this for frames that do not have the instance in the parameters.
 // Currently, this is CapiCallWrapper frames.
 builtin WasmRethrowExplicitContext(
     exception: Object, explicitContext: Context): JSAny {
+  Print('==== builtin WasmRethrowExplicitContext ====\n');
+  Print('exception: ', exception);
   if (exception == Null) tail ThrowWasmTrapRethrowNull();
   tail runtime::WasmReThrow(explicitContext, exception);
 }

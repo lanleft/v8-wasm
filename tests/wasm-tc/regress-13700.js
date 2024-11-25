@@ -4,7 +4,8 @@
 
 // Flags: --no-liftoff
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 let bases = [0n, 1234n, 4294967296n, -4294967297n];
 let expects = [0n, 1234n, 0n, -1n];

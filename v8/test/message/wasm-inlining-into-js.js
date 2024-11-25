@@ -7,7 +7,8 @@
 // Concurrent inlining leads to additional traces.
 // Flags: --no-stress-concurrent-inlining
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 function testOptimized(run, fctToOptimize) {
   fctToOptimize = fctToOptimize ?? run;

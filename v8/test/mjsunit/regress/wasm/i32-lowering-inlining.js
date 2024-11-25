@@ -7,7 +7,8 @@
 // This tests that inlining tolerates multi-return call uses that are not
 // projections after Int64Lowering.
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 let builder = new WasmModuleBuilder();
 

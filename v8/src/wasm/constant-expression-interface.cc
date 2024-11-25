@@ -203,11 +203,11 @@ WasmValue DefaultValueForType(ValueType type, Isolate* isolate) {
     case kS128:
       return WasmValue(Simd128());
     case kRefNull:
-      printf("kRefNull and type.use_wasm_null() = %d\n", type.use_wasm_null());
-      printf("repr = %d\n", type.heap_representation_non_shared());
+      // printf("kRefNull and type.use_wasm_null() = %d\n", type.use_wasm_null());
+      // printf("repr = %d\n", type.heap_representation_non_shared());
       return WasmValue(type.use_wasm_null()
-                           ? Cast<Object>(isolate->factory()->wasm_null()) // wasm_null is null
-                           : Cast<Object>(isolate->factory()->null_value()), // js null is JS object
+                           ? Cast<Object>(isolate->factory()->wasm_null()) // 
+                           : Cast<Object>(isolate->factory()->null_value()), // 
                        type);
     case kVoid:
     case kRtt:

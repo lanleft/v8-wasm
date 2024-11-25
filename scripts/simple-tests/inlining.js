@@ -4,7 +4,8 @@
 
 // Flags: --wasm-inlining --no-liftoff --allow-natives-syntax
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 // TODO(12166): Consider running tests with --trace-wasm and inspecting their
 // output, or implementing testing infrastructure with --allow-natives-syntax.

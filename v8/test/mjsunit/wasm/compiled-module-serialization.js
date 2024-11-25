@@ -6,7 +6,8 @@
 // Flags: --allow-natives-syntax --expose-gc --no-liftoff
 // Flags: --no-wasm-lazy-compilation
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 (function SerializeAndDeserializeModule() {
   print(arguments.callee.name);

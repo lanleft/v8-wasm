@@ -6,7 +6,7 @@ def read_file_as_hex_array(filename):
             data = file.read()
             # Convert each byte to its hexadecimal representation
             hex_array = [f"0x{byte:02x}" for byte in data]
-            print(f"\n[{', '.join(hex_array)}]\n")  # Print the array without quotes
+            print(f"\nvar wasm_code = new Uint8Array([{', '.join(hex_array)}]);\n")  # Print the array without quotes
     except FileNotFoundError:
         print(f"Error: The file '{filename}' was not found.")
     except Exception as e:

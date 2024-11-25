@@ -5,7 +5,8 @@
 // Flags: --allow-natives-syntax --experimental-wasm-type-reflection
 // Flags: --wasm-wrapper-tiering-budget=1
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 const builder = new WasmModuleBuilder();
 const impIndex = builder.addImport('m', 'foo', kSig_v_v);

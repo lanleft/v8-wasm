@@ -4,7 +4,8 @@
 
 // Flags: --experimental-wasm-stringref
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 // Test type checks when creating a global with a value imported from a global
 // from another module.

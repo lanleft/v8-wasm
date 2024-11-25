@@ -188,6 +188,7 @@ RUNTIME_FUNCTION(Runtime_WasmGenericJSToWasmObject) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
   Handle<Object> value(args[1], isolate);
+  printf("\033[31m===Runtime_WasmGenericJSToWasmObject===\033[0m\n");
   // Make sure CanonicalValueType fits properly in a Smi.
   static_assert(wasm::CanonicalValueType::kLastUsedBit + 1 <= kSmiValueSize);
   int raw_type = args.smi_value_at(2);
@@ -214,6 +215,7 @@ RUNTIME_FUNCTION(Runtime_WasmJSToWasmObject) {
   DCHECK_EQ(2, args.length());
   Handle<Object> value(args[0], isolate);
   // Make sure ValueType fits properly in a Smi.
+  printf("\033[31m===Runtime_WasmJSToWasmObject===\033[0m\n");
   static_assert(wasm::CanonicalValueType::kLastUsedBit + 1 <= kSmiValueSize);
   int raw_type = args.smi_value_at(1);
 
@@ -301,6 +303,7 @@ RUNTIME_FUNCTION(Runtime_ThrowWasmStackOverflow) {
 }
 
 RUNTIME_FUNCTION(Runtime_WasmThrowJSTypeError) {
+  printf("\033[31m===Runtime_WasmThrowJSTypeError===\033[0m\n");
   // The caller may be wasm or JS. Only clear the thread_in_wasm flag if the
   // caller is wasm, and let the unwinder set it back depending on the handler.
   if (trap_handler::IsTrapHandlerEnabled() && trap_handler::IsThreadInWasm()) {
@@ -396,9 +399,9 @@ RUNTIME_FUNCTION(Runtime_WasmThrow) {
 }
 
 RUNTIME_FUNCTION(Runtime_WasmReThrow) {
+  printf("===Runtime_WasmReThrow====\n");
   ClearThreadInWasmScope clear_wasm_flag(isolate);
   HandleScope scope(isolate);
-  printf("===Runtime_WasmReThrow====\n");
   DCHECK_EQ(1, args.length());
   return isolate->ReThrow(args[0]);
 }
@@ -617,6 +620,7 @@ RUNTIME_FUNCTION(Runtime_IsWasmExternalFunction) {
 }
 
 RUNTIME_FUNCTION(Runtime_TierUpWasmToJSWrapper) {
+  printf("\033[31m===Runtime_TierUpWasmToJSWrapper===\033[0m\n");
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
   DirectHandle<WasmImportData> import_data(Cast<WasmImportData>(args[0]),
@@ -703,6 +707,7 @@ RUNTIME_FUNCTION(Runtime_TierUpWasmToJSWrapper) {
   wasm::CanonicalTypeIndex sig_index = wasm::CanonicalTypeIndex::Invalid();
   if (WasmImportData::CallOriginIsImportIndex(call_origin_index)) {
     int func_index = WasmImportData::CallOriginAsIndex(call_origin_index);
+    printf("%s:%d func_index=%d\n", __FILE__, __LINE__, func_index);
     sig_index = defining_module->canonical_sig_id(
         defining_module->functions[func_index].sig_index);
   } else {

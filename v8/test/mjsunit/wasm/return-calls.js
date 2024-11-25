@@ -6,7 +6,8 @@
 // of standard calls which consume stack space).
 // Flags: --stack-size=128
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 (function TestFactorialReturnCall() {
   print(arguments.callee.name);

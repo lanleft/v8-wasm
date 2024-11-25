@@ -13,3 +13,7 @@ tests/core
 .cipd/
 v8/
 wabt-*
+exception-handling/
+
+scripts/core
+v8/test/

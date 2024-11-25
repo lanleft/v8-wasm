@@ -9,7 +9,8 @@
 // variant of the wrapper. We don't suspend the stacks in this test, we only
 // test the wrapper's argument conversion logic.
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 function GC() {
   %CheckIsOnCentralStack();

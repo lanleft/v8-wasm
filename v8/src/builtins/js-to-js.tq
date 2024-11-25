@@ -17,6 +17,8 @@ extern builtin CallVarargs(
 
 macro ConvertToAndFromWasm(context: Context, wasmType: int32, value: JSAny):
     JSAny {
+  
+  Print("\033[1;33m===== js-to-js.tq ConvertToAndFromWasm =====\033[0m\n");
   if (wasmType == kWasmI32Type) {
     typeswitch (value) {
       case (smiParam: Smi): {

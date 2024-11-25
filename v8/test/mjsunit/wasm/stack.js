@@ -4,7 +4,8 @@
 
 // Flags: --no-force-slow-path
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 // The stack trace contains file path, only keep "stack.js".
 function stripPath(s) {

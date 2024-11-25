@@ -3749,6 +3749,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
       } else {
         // We just throw to the caller, no need to handle the exception in this
         // frame.
+        printf("\033[1;31m==== turboshaft - Delegate ====\033[0m\n");
         CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmRethrow>(
             decoder, {block->exception});
         __ Unreachable();
@@ -3794,6 +3795,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
     // Otherwise, {block->false_or_loop_or_catch_block} has been overwritten by
     // the previous handler, and is where we jump to if we did not catch the
     // exception yet.
+    printf("\033[1;31m==== turboshaft - CatchCase ====\033[0m\n");
     BindBlockAndGeneratePhis(decoder, block->false_or_loop_or_catch_block,
                              nullptr, &block->exception);
     if (catch_case.kind == kCatchAll || catch_case.kind == kCatchAllRef) {
@@ -3886,6 +3888,7 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
 
     bool is_last = &catch_case == &block->catch_cases.last();
     if (is_last && !decoder->HasCatchAll(block)) {
+      printf("==== 1111 ====\n");
       BindBlockAndGeneratePhis(decoder, block->false_or_loop_or_catch_block,
                                nullptr, &block->exception);
       ThrowRef(decoder, block->exception);
@@ -7817,6 +7820,9 @@ class TurboshaftGraphBuildingInterface : public WasmGraphBuilderBase {
   }
 
   void ThrowRef(FullDecoder* decoder, OpIndex exn) {
+    printf("\033[1;31m=== turboshaft-graph-interface.cc === ThrowRef ===\033[0m\n");
+    // print OpIndex exn
+
     CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmRethrow>(
         decoder, {exn}, CheckForException::kCatchInThisFrame);
     __ Unreachable();

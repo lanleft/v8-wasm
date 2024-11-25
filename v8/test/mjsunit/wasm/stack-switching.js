@@ -6,7 +6,8 @@
 // Flags: --expose-gc --wasm-stack-switching-stack-size=100
 // Flags: --experimental-wasm-type-reflection
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+
 
 (function TestInvalidWrappers() {
   print(arguments.callee.name);
