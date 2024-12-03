@@ -1856,9 +1856,13 @@ RUNTIME_FUNCTION(Runtime_WasmStringEncodeWtf16) {
   size_t mem_size = trusted_instance_data->memory_size(memory);
   static_assert(String::kMaxLength <=
                 (std::numeric_limits<size_t>::max() / sizeof(base::uc16)));
+  printf("===> Runtime_WasmStringEncodeWtf16\n");
   if (!base::IsInBounds<size_t>(offset, length * sizeof(base::uc16),
                                 mem_size)) {
+      printf("=> wasm throws trap mem out of bounds\n");
     return ThrowWasmError(isolate, MessageTemplate::kWasmTrapMemOutOfBounds);
+      // return isolate->Throw(*isolate->factory()->NewTypeError(
+      //         MessageTemplate::kWasmTrapMemOutOfBounds));
   }
   if (offset & 1) {
     return ThrowWasmError(isolate, MessageTemplate::kWasmTrapUnalignedAccess);

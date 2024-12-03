@@ -1447,6 +1447,7 @@ builtin WasmStringViewIterSlice(view: WasmStringViewIter, codepoints: uint32):
 }
 
 builtin WasmIntToString(x: int32, radix: int32): String {
+  Print("==> WasmIntToString\n");
   if (radix == 10) {
     const smi = SmiFromInt32(x);
     const untagged = SmiToInt32(smi);

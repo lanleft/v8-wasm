@@ -30,6 +30,7 @@
 #include "src/compiler/node-matchers.h"
 #include "src/compiler/node-origin-table.h"
 #include "src/compiler/node-properties.h"
+#include "src/compiler/operator.h"
 #include "src/compiler/pipeline.h"
 #include "src/compiler/turboshaft/wasm-turboshaft-compiler.h"
 #include "src/compiler/wasm-call-descriptors.h"
@@ -6915,7 +6916,7 @@ Node* WasmGraphBuilder::WellKnown_DoubleToString(Node* n) {
 Node* WasmGraphBuilder::WellKnown_IntToString(Node* n, Node* radix) {
   BuildModifyThreadInWasmFlag(false);
   Node* result = gasm_->CallBuiltin(Builtin::kWasmIntToString,
-                                    Operator::kNoDeopt, n, radix);
+                                    Operator::kNoDeopt | Operator::kNoThrow, n, radix);
   BuildModifyThreadInWasmFlag(true);
   return result;
 }

@@ -1,6 +1,1 @@
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/multi-table-element-section.js --expose-wasm
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/import-table.js --expose-wasm
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/indirect-tables.js --expose-gc
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/memory-external-call.js --expose-wasm
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/table-grow.js
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/regress-964607.js --expose-wasm
+/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/recognize-imports.js --experimental-wasm-stringref --allow-natives-syntax

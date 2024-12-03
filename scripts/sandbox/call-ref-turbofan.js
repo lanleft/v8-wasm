@@ -14,6 +14,15 @@ let $nop = builder.addFunction("nop", $sig_v_ll)
   .addBody([
   ]);
 let $fn = builder.addGlobal(wasmRefType($sig_v_ll), true, false, [kExprRefFunc, $nop.index]).exportAs("fn");
+builder.addFunction("boom", $sig_v_ll)
+  .exportFunc()
+  .addBody([
+    kExprLocalGet, 1,
+    kExprLocalGet, 0,
+    kExprGlobalGet, $fn.index,
+    kExprCallRef, $sig_v_ll, // call_ref
+  ]);
+
 builder.addFunction("writer", $sig_v_ls)
   .exportFunc()
   .addBody([
@@ -21,14 +30,7 @@ builder.addFunction("writer", $sig_v_ls)
     kExprLocalGet, 0,
     kGCPrefix, kExprStructSet, $struct, 0,
   ]);
-builder.addFunction("boom", $sig_v_ll)
-  .exportFunc()
-  .addBody([
-    kExprLocalGet, 1,
-    kExprLocalGet, 0,
-    kExprGlobalGet, $fn.index,
-    kExprCallRef, $sig_v_ll,
-  ]);
+
 
 let instance = builder.instantiate();
 let { fn, writer, boom, nop } = instance.exports;
