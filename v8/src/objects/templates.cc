@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <optional>
 
 #include "src/api/api-inl.h"
 #include "src/base/macros.h"
@@ -23,7 +22,8 @@
 #include "src/objects/shared-function-info-inl.h"
 #include "src/objects/string-inl.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 bool FunctionTemplateInfo::HasInstanceType() {
   return instance_type() != kNoJSApiObjectType;
@@ -54,8 +54,15 @@ Handle<SharedFunctionInfo> FunctionTemplateInfo::GetOrCreateSharedFunctionInfo(
   Handle<SharedFunctionInfo> sfi =
       isolate->factory()->NewSharedFunctionInfoForApiFunction(name_string, info,
                                                               function_kind);
-  DCHECK(sfi->IsApiFunction());
-  info->set_shared_function_info(*sfi);
+  {
+    DisallowGarbageCollection no_gc;
+    Tagged<SharedFunctionInfo> raw_sfi = *sfi;
+    Tagged<FunctionTemplateInfo> raw_template = *info;
+    raw_sfi->set_length(raw_template->length());
+    raw_sfi->DontAdaptArguments();
+    DCHECK(raw_sfi->IsApiFunction());
+    raw_template->set_shared_function_info(raw_sfi);
+  }
   return sfi;
 }
 
@@ -69,7 +76,7 @@ bool FunctionTemplateInfo::IsTemplateFor(Tagged<Map> map) const {
   // There is a constraint on the object; check.
   if (!IsJSObjectMap(map)) return false;
 
-  if (v8_flags.experimental_embedder_instance_types) {
+  if (v8_flags.embedder_instance_types) {
     DCHECK_IMPLIES(allowed_receiver_instance_type_range_start() == 0,
                    allowed_receiver_instance_type_range_end() == 0);
     if (base::IsInRange(map->instance_type(),
@@ -135,7 +142,7 @@ FunctionTemplateInfo::AllocateFunctionTemplateRareData(
   return *rare_data;
 }
 
-std::optional<Tagged<Name>> FunctionTemplateInfo::TryGetCachedPropertyName(
+base::Optional<Tagged<Name>> FunctionTemplateInfo::TryGetCachedPropertyName(
     Isolate* isolate, Tagged<Object> getter) {
   DisallowGarbageCollection no_gc;
   if (!IsFunctionTemplateInfo(getter)) {
@@ -157,25 +164,24 @@ int FunctionTemplateInfo::GetCFunctionsCount() const {
          kFunctionOverloadEntrySize;
 }
 
-Address FunctionTemplateInfo::GetCFunction(Isolate* isolate, int index) const {
+Address FunctionTemplateInfo::GetCFunction(int index) const {
   i::DisallowHeapAllocation no_gc;
   return v8::ToCData<kCFunctionTag>(
-      isolate, Cast<FixedArray>(GetCFunctionOverloads())
-                   ->get(index * kFunctionOverloadEntrySize));
+      Cast<FixedArray>(GetCFunctionOverloads())
+          ->get(index * kFunctionOverloadEntrySize));
 }
 
-const CFunctionInfo* FunctionTemplateInfo::GetCSignature(Isolate* isolate,
-                                                         int index) const {
+const CFunctionInfo* FunctionTemplateInfo::GetCSignature(int index) const {
   i::DisallowHeapAllocation no_gc;
   return v8::ToCData<CFunctionInfo*, kCFunctionInfoTag>(
-      isolate, Cast<FixedArray>(GetCFunctionOverloads())
-                   ->get(index * kFunctionOverloadEntrySize + 1));
+      Cast<FixedArray>(GetCFunctionOverloads())
+          ->get(index * kFunctionOverloadEntrySize + 1));
 }
 
 // static
 Handle<DictionaryTemplateInfo> DictionaryTemplateInfo::Create(
     Isolate* isolate, const v8::MemorySpan<const std::string_view>& names) {
-  DirectHandle<FixedArray> property_names = isolate->factory()->NewFixedArray(
+  Handle<FixedArray> property_names = isolate->factory()->NewFixedArray(
       static_cast<int>(names.size()), AllocationType::kOld);
   int index = 0;
   uint32_t unused_array_index;
@@ -333,4 +339,5 @@ Handle<JSObject> DictionaryTemplateInfo::NewInstance(
   return object;
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

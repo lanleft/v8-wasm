@@ -74,7 +74,6 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) TorqueGeneratedFactory {
 struct NewCodeOptions {
   CodeKind kind;
   Builtin builtin;
-  bool is_context_specialized;
   bool is_turbofanned;
   int stack_slots;
   uint16_t parameter_count;
@@ -85,7 +84,6 @@ struct NewCodeOptions {
   int handler_table_offset;
   int constant_pool_offset;
   int code_comments_offset;
-  int32_t builtin_jump_table_info_offset;
   int32_t unwinding_info_offset;
   MaybeHandle<TrustedObject> bytecode_or_interpreter_data;
   MaybeHandle<DeoptimizationData> deoptimization_data;
@@ -145,8 +143,7 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
       int length, AllocationType allocation = AllocationType::kYoung);
 
   // Allocates a trusted fixed array in trusted space, initialized with zeros.
-  Handle<TrustedFixedArray> NewTrustedFixedArray(
-      int length, AllocationType allocation = AllocationType::kTrusted);
+  Handle<TrustedFixedArray> NewTrustedFixedArray(int length);
 
   // Allocates a protected fixed array in trusted space, initialized with zeros.
   Handle<ProtectedFixedArray> NewProtectedFixedArray(int length);
@@ -195,6 +192,9 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   Handle<TrustedByteArray> NewTrustedByteArray(
       int length, AllocationType allocation_type = AllocationType::kTrusted);
 
+  Handle<ExternalPointerArray> NewExternalPointerArray(
+      int length, AllocationType allocation = AllocationType::kYoung);
+
   Handle<DeoptimizationLiteralArray> NewDeoptimizationLiteralArray(int length);
   Handle<DeoptimizationFrameTranslation> NewDeoptimizationFrameTranslation(
       int length);
@@ -203,11 +203,14 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
       int length, const uint8_t* raw_bytecodes, int frame_size,
       uint16_t parameter_count, uint16_t max_arguments,
       DirectHandle<TrustedFixedArray> constant_pool,
-      DirectHandle<TrustedByteArray> handler_table,
-      AllocationType allocation = AllocationType::kTrusted);
+      DirectHandle<TrustedByteArray> handler_table);
 
-  Handle<BytecodeWrapper> NewBytecodeWrapper(
-      AllocationType allocation = AllocationType::kOld);
+  Handle<BytecodeWrapper> NewBytecodeWrapper();
+
+#if V8_ENABLE_WEBASSEMBLY
+  Handle<WasmTrustedInstanceData> NewWasmTrustedInstanceData();
+  Handle<WasmDispatchTable> NewWasmDispatchTable(int length);
+#endif  // V8_ENABLE_WEBASSEMBLY
 
   // Allocates a fixed array for name-value pairs of boilerplate properties and
   // calculates the number of properties we need to store in the backing store.
@@ -218,10 +221,8 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   Handle<ArrayBoilerplateDescription> NewArrayBoilerplateDescription(
       ElementsKind elements_kind, DirectHandle<FixedArrayBase> constant_values);
 
-  Handle<RegExpDataWrapper> NewRegExpDataWrapper();
-
   Handle<RegExpBoilerplateDescription> NewRegExpBoilerplateDescription(
-      DirectHandle<RegExpData> data, DirectHandle<String> source,
+      DirectHandle<FixedArray> data, DirectHandle<String> source,
       Tagged<Smi> flags);
 
   // Create a new TemplateObjectDescription struct.
@@ -410,7 +411,6 @@ class FactoryBase : public TorqueGeneratedFactory<Impl> {
   Handle<SharedFunctionInfo> NewSharedFunctionInfo(
       MaybeDirectHandle<String> maybe_name,
       MaybeDirectHandle<HeapObject> maybe_function_data, Builtin builtin,
-      int len, AdaptArguments adapt,
       FunctionKind kind = FunctionKind::kNormalFunction);
 
   Handle<String> MakeOrFindTwoCharacterString(uint16_t c1, uint16_t c2);

@@ -6,7 +6,6 @@
 #define V8_TEST_CCTEST_TEST_SWISS_NAME_DICTIONARY_INFRA_H_
 
 #include <memory>
-#include <optional>
 #include <utility>
 
 #include "src/objects/objects-inl.h"
@@ -18,13 +17,13 @@ namespace internal {
 namespace test_swiss_hash_table {
 
 using Value = std::string;
-using ValueOpt = std::optional<Value>;
-using PropertyDetailsOpt = std::optional<PropertyDetails>;
-using IndexOpt = std::optional<InternalIndex>;
+using ValueOpt = base::Optional<Value>;
+using PropertyDetailsOpt = base::Optional<PropertyDetails>;
+using IndexOpt = base::Optional<InternalIndex>;
 
 static const ValueOpt kNoValue;
 static const PropertyDetailsOpt kNoDetails;
-static const std::optional<int> kNoInt;
+static const base::Optional<int> kNoInt;
 static const IndexOpt kIndexUnknown;
 
 static const std::vector<int> interesting_initial_capacities = {
@@ -77,8 +76,8 @@ struct FakeH2 {
   bool operator==(const FakeH2& other) const { return value == other.value; }
 };
 
-using FakeH1Opt = std::optional<FakeH1>;
-using FakeH2Opt = std::optional<FakeH2>;
+using FakeH1Opt = base::Optional<FakeH1>;
+using FakeH2Opt = base::Optional<FakeH2>;
 
 // Representation of keys used when writing test cases.
 struct Key {
@@ -187,7 +186,7 @@ class TestSequence {
   }
 
   void CheckDataAtKey(Handle<Name> key, IndexOpt expected_index_opt,
-                      std::optional<Handle<Object>> expected_value_opt,
+                      base::Optional<Handle<Object>> expected_value_opt,
                       PropertyDetailsOpt expected_details_opt) {
     InternalIndex actual_index = runner_.FindEntry(key);
 
@@ -213,7 +212,7 @@ class TestSequence {
                       ValueOpt expected_value = kNoValue,
                       PropertyDetailsOpt expected_details = kNoDetails) {
     Handle<Name> key_handle = CreateKeyWithHash(isolate, keys_, expected_key);
-    std::optional<Handle<Object>> value_handle_opt;
+    base::Optional<Handle<Object>> value_handle_opt;
     if (expected_value) {
       value_handle_opt = isolate->factory()->NewStringFromAsciiChecked(
           expected_value.value().c_str(), AllocationType::kYoung);
@@ -238,9 +237,9 @@ class TestSequence {
     CHECK(runner_.FindEntry(key_handle).is_found());
   }
 
-  void CheckCounts(std::optional<int> capacity,
-                   std::optional<int> elements = std::optional<int>(),
-                   std::optional<int> deleted = std::optional<int>()) {
+  void CheckCounts(base::Optional<int> capacity,
+                   base::Optional<int> elements = base::Optional<int>(),
+                   base::Optional<int> deleted = base::Optional<int>()) {
     runner_.CheckCounts(capacity, elements, deleted);
   }
 

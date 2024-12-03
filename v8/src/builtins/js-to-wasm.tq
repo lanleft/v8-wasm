@@ -8,18 +8,15 @@ namespace runtime {
 extern runtime WasmGenericJSToWasmObject(
     Context, WasmTrustedInstanceData|Undefined, JSAny, Smi): JSAny;
 extern runtime WasmGenericWasmToJSObject(Context, Object): JSAny;
-extern runtime TierUpJSToWasmWrapper(NoContext, WasmExportedFunctionData):
-    JSAny;
+extern runtime WasmCompileWrapper(NoContext, WasmExportedFunctionData): JSAny;
 extern runtime WasmAllocateSuspender(Context): JSAny;
 }  // namespace runtime
 
 namespace wasm {
 extern builtin JSToWasmWrapperAsm(
-    RawPtr<intptr>, WasmImportData|WasmTrustedInstanceData, JSAny): JSAny;
+    RawPtr<intptr>, WasmApiFunctionRef|WasmTrustedInstanceData, JSAny): JSAny;
 extern builtin WasmReturnPromiseOnSuspendAsm(
-    RawPtr<intptr>, WasmImportData|WasmTrustedInstanceData, JSAny): JSAny;
-extern builtin JSToWasmStressSwitchStacksAsm(
-    RawPtr<intptr>, WasmImportData|WasmTrustedInstanceData, JSAny): JSAny;
+    RawPtr<intptr>, WasmApiFunctionRef|WasmTrustedInstanceData, JSAny): JSAny;
 
 extern macro UniqueIntPtrConstant(constexpr intptr): intptr;
 
@@ -75,8 +72,8 @@ extern enum ValueKind extends int32 constexpr 'wasm::ValueKind' {
 
 extern enum Promise extends int32 constexpr 'wasm::Promise' {
   kPromise,
-  kNoPromise,
-  kStressSwitch
+  kPromiseWithSuspender,
+  kNoPromise
 }
 
 extern enum HeapType extends int32
@@ -432,18 +429,13 @@ macro JSToWasmObject(
     targetType: int32, value: JSAny): Object {
   const heapType = (targetType >> kValueTypeKindBits) & kValueTypeHeapTypeMask;
   const kind = targetType & kValueTypeKindBitsMask;
-
-  Print("\033[1;33m============= js-to-wasm.tq JSToWasmObject =================\033[0m\n");
-  Print("value: ", value);
-
-  if (heapType == HeapType::kExtern) {
+  if (heapType == HeapType::kExtern || heapType == HeapType::kNoExtern) {
     if (kind == ValueKind::kRef && value == Null) {
       ThrowTypeError(MessageTemplate::kWasmTrapJSTypeError);
     }
     return value;
   }
   if (heapType == HeapType::kString) {
-    Print("====  HeapType::kString ====\n");
     if (TaggedIsSmi(value)) {
       ThrowTypeError(MessageTemplate::kWasmTrapJSTypeError);
     }
@@ -454,8 +446,6 @@ macro JSToWasmObject(
       if (kind == ValueKind::kRef) {
         ThrowTypeError(MessageTemplate::kWasmTrapJSTypeError);
       } else {
-        Print("=> return kWasmNull\n");
-        dcheck(kind == ValueKind::kRefNull);
         return kWasmNull;
       }
     }
@@ -492,23 +482,28 @@ macro HandleF32Params(
 macro JSToWasmWrapperHelper(
     context: NativeContext, _receiver: JSAny, target: JSFunction,
     arguments: Arguments, promise: constexpr Promise): never {
-  const functionData = target.shared_function_info.wasm_exported_function_data;
+  const functionData =
+      UnsafeCast<WasmExportedFunctionData>(target.shared_function_info.data);
+  // The SFI::data field is a trusted pointer but loaded using the
+  // wildcard/unknown type tag as it can reference trusted objects of different
+  // types. As such, here it is not guaranteed that the received object really
+  // is a WasmExportedFunctionData and so an explicit check is required.
+  sbxcheck(Is<WasmExportedFunctionData>(functionData));
 
   // Trigger a wrapper tier-up when this function got called often enough.
-  const switchStack =
-      promise == Promise::kPromise || promise == Promise::kStressSwitch;
+  const switchStack = promise != Promise::kNoPromise;
   if constexpr (!switchStack) {
     const budget: Smi =
         UnsafeCast<Smi>(functionData.wrapper_budget.value) - SmiConstant(1);
     functionData.wrapper_budget.value = budget;
     if (budget == SmiConstant(0)) {
-      runtime::TierUpJSToWasmWrapper(kNoContext, functionData);
+      runtime::WasmCompileWrapper(kNoContext, functionData);
     }
   }
 
   const sig = functionData.sig;
-  const implicitArg: WasmImportData|WasmTrustedInstanceData =
-      functionData.internal.implicit_arg;
+  const ref: WasmApiFunctionRef|WasmTrustedInstanceData =
+      functionData.internal.ref;
   const trustedInstanceData: WasmTrustedInstanceData =
       functionData.instance_data;
 
@@ -616,24 +611,21 @@ macro JSToWasmWrapperHelper(
             Convert<intptr>(torque_internal::SizeOf<intptr>()) +
         UniqueIntPtrConstant(kNumFPRegisterParameters) * kSlotSize +
         Convert<intptr>(paramCount) * kSlotSize;
-    const slice = &AllocateByteArray(Convert<uintptr>(bufferSize)).values;
+    const slice = &AllocateByteArray(Convert<uintptr>(bufferSize)).bytes;
     paramBuffer = torque_internal::unsafe::NewReference<intptr>(
         slice.object, slice.offset);
   }
 
   let locationAllocator = LocationAllocatorForParams(paramBuffer);
   let hasRefParam: bool = false;
-  // A storage for converted reference parameters, so that they don't get
-  // garbage collected if the conversion of primitive parameters causes a GC.
-  // The storage gets allocated lazily when the first reference parameter gets
-  // converted to avoid performance regressions for signatures without tagged
-  // parameters. An old implementation used the `arguments` array as the storage
-  // for converted reference parameters, but this does not work because then
-  // converted reference parameters can be accessed from JavaScript using
-  // `Function.prototype.arguments`.
-  let convertedTagged: FixedArray|Smi = Convert<Smi>(0);
 
   let paramTypeIndex: int32 = 0;
+  // For stack switching paramTypeIndex and paramIndex diverges,
+  // because a suspender is not passed to wrapper as param.
+  if constexpr (promise == Promise::kPromiseWithSuspender) {
+    paramTypeIndex++;
+    hasRefParam = true;
+  }
   for (let paramIndex: int32 = 0; paramTypeIndex < paramCount; paramIndex++) {
     const param = arguments[Convert<intptr>(paramIndex)];
     const paramType = *paramTypes.UncheckedAtIndex(
@@ -642,10 +634,11 @@ macro JSToWasmWrapperHelper(
       let toRef = locationAllocator.GetGPSlot();
       typeswitch (param) {
         case (smiParam: Smi): {
-          *toRef = Convert<intptr>(SmiToInt32(smiParam));
+          *toRef = Convert<intptr>(Unsigned(SmiToInt32(smiParam)));
         }
         case (heapParam: JSAnyNotSmi): {
-          *toRef = Convert<intptr>(WasmTaggedNonSmiToInt32(heapParam));
+          *toRef =
+              Convert<intptr>(Unsigned(WasmTaggedNonSmiToInt32(heapParam)));
         }
       }
     } else if (paramType == kWasmF32Type) {
@@ -682,24 +675,13 @@ macro JSToWasmWrapperHelper(
       // primitive types are finished. For now we write the converted parameter
       // back to the stack.
       hasRefParam = true;
-      if (TaggedIsSmi(convertedTagged)) {
-        convertedTagged =
-            WasmAllocateZeroedFixedArray(Convert<intptr>(paramCount));
-      }
-      UnsafeCast<FixedArray>(convertedTagged)
-          .objects[Convert<intptr>(paramIndex)] =
+      arguments[Convert<intptr>(paramIndex)] =
           JSToWasmObject(context, trustedInstanceData, paramType, param);
     }
   }
   let suspender: JSAny = Undefined;
   if constexpr (switchStack) {
     suspender = runtime::WasmAllocateSuspender(context);
-    if (promise == Promise::kStressSwitch) {
-      // In case we have a non-JSPI test where an import returns a Promise,
-      // we don't want the import to try and suspend the wasm stack. Clear the
-      // "resume" field as a way to signal this to the import.
-      UnsafeCast<WasmSuspenderObject>(suspender).resume = Undefined;
-    }
   }
   if (hasRefParam) {
     // Iterate over all parameters again and handle all those with ref types.
@@ -708,6 +690,13 @@ macro JSToWasmWrapperHelper(
     // because a suspender is not passed to wrapper as param.
     let paramIndex: int32 = 0;
     locationAllocator.StartRefs();
+
+    if (promise == Promise::kPromiseWithSuspender) {
+      const toRef = locationAllocator.GetGPSlot();
+      *toRef = BitcastTaggedToWord(suspender);
+      // First param is suspender, so skip it in the signature loop.
+      k++;
+    }
 
     // We are not using a `for` loop here because Torque does not support
     // `continue` in `for` loops.
@@ -719,8 +708,7 @@ macro JSToWasmWrapperHelper(
         paramIndex++;
         continue;
       }
-      const param = UnsafeCast<FixedArray>(convertedTagged)
-                        .objects[Convert<intptr>(paramIndex++)];
+      const param = arguments[Convert<intptr>(paramIndex++)];
       let toRef = locationAllocator.GetGPSlot();
       *toRef = BitcastTaggedToWord(param);
       k++;
@@ -744,8 +732,7 @@ macro JSToWasmWrapperHelper(
   *GetRefAt<RawPtr>(wrapperBuffer, kWrapperBufferSigRepresentationArray) = reps;
   *GetRefAt<intptr>(wrapperBuffer, kWrapperBufferStackReturnBufferSize) =
       returnSize;
-  *GetRefAt<WasmCodePointer>(wrapperBuffer, kWrapperBufferCallTarget) =
-      callTarget;
+  *GetRefAt<RawPtr>(wrapperBuffer, kWrapperBufferCallTarget) = callTarget;
   *GetRefAt<RawPtr<intptr>>(wrapperBuffer, kWrapperBufferParamStart) =
       paramStart;
   *GetRefAt<RawPtr>(wrapperBuffer, kWrapperBufferParamEnd) = paramEnd;
@@ -755,16 +742,10 @@ macro JSToWasmWrapperHelper(
   // they get scanned by the GC as part of the outgoing parameters of this
   // Torque builtin.
   let result: JSAny;
-  if constexpr (promise == Promise::kPromise) {
-    result =
-        WasmReturnPromiseOnSuspendAsm(wrapperBuffer, implicitArg, resultArray);
-  } else if (promise == Promise::kNoPromise) {
-    result = JSToWasmWrapperAsm(wrapperBuffer, implicitArg, resultArray);
-  } else if (promise == Promise::kStressSwitch) {
-    result =
-        JSToWasmStressSwitchStacksAsm(wrapperBuffer, implicitArg, resultArray);
+  if constexpr (switchStack) {
+    result = WasmReturnPromiseOnSuspendAsm(wrapperBuffer, ref, resultArray);
   } else {
-    unreachable;
+    result = JSToWasmWrapperAsm(wrapperBuffer, ref, resultArray);
   }
 
   // The normal return sequence of Torque-generated JavaScript builtins does not
@@ -792,18 +773,18 @@ transitioning javascript builtin JSToWasmWrapper(
       context, receiver, target, arguments, Promise::kNoPromise);
 }
 
+transitioning javascript builtin WasmPromisingWithSuspender(
+    js-implicit context: NativeContext, receiver: JSAny, target: JSFunction)(
+    ...arguments): JSAny {
+  JSToWasmWrapperHelper(
+      context, receiver, target, arguments, Promise::kPromiseWithSuspender);
+}
+
 transitioning javascript builtin WasmPromising(
     js-implicit context: NativeContext, receiver: JSAny, target: JSFunction)(
     ...arguments): JSAny {
   JSToWasmWrapperHelper(
       context, receiver, target, arguments, Promise::kPromise);
-}
-
-transitioning javascript builtin WasmStressSwitch(
-    js-implicit context: NativeContext, receiver: JSAny, target: JSFunction)(
-    ...arguments): JSAny {
-  JSToWasmWrapperHelper(
-      context, receiver, target, arguments, Promise::kStressSwitch);
 }
 
 macro WasmToJSObject(context: NativeContext, value: Object, retType: int32):

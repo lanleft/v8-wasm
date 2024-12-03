@@ -307,8 +307,6 @@ class V8_NODISCARD AsyncWaiterQueueNode final : public WaiterQueueNode {
     return internal_waiting_promise;
   }
 
-  bool IsEmpty() const { return synchronization_primitive_.IsEmpty(); }
-
   Handle<T> GetSynchronizationPrimitive() {
     v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(requester_);
     Handle<T> synchronization_primitive =
@@ -513,11 +511,11 @@ Tagged<Object> JSSynchronizationPrimitive::NumWaitersForTesting(
 // result object, like we do for the iterator result object.
 // static
 Handle<JSObject> JSAtomicsMutex::CreateResultObject(Isolate* isolate,
-                                                    DirectHandle<Object> value,
+                                                    Handle<Object> value,
                                                     bool success) {
   Handle<JSObject> result =
       isolate->factory()->NewJSObject(isolate->object_function());
-  DirectHandle<Object> success_value = isolate->factory()->ToBoolean(success);
+  Handle<Object> success_value = isolate->factory()->ToBoolean(success);
   JSObject::AddProperty(isolate, result, "value", value,
                         PropertyAttributes::NONE);
   JSObject::AddProperty(isolate, result, "success", success_value,
@@ -535,12 +533,6 @@ void JSAtomicsMutex::CleanupMatchingAsyncWaiters(Isolate* isolate,
     // any other matching nodes and mark them as ready for async cleanup. This
     // way we avoid taking the queue lock multiple times, which could slow down
     // other threads.
-    return;
-  }
-  if (async_node->IsEmpty()) {
-    // The node's underlying synchronization primitive has been collected, so
-    // delete it.
-    async_node->SetNotInListForVerification();
     return;
   }
   DirectHandle<JSAtomicsMutex> mutex =
@@ -1107,13 +1099,7 @@ void JSAtomicsCondition::CleanupMatchingAsyncWaiters(Isolate* isolate,
   auto* async_node = static_cast<WaitAsyncWaiterQueueNode*>(node);
   if (async_node->ready_for_async_cleanup_) {
     // The node is not in the waiter queue and there is no HandleNotify task
-    // for it in the event loop. So it is safe to delete it.
-    return;
-  }
-  if (async_node->IsEmpty()) {
-    // The node's underlying synchronization primitive has been collected, so
-    // delete it.
-    async_node->SetNotInListForVerification();
+    // for it in the event loop. So it is safe to delete the it.
     return;
   }
   DirectHandle<JSAtomicsCondition> cv =
@@ -1123,7 +1109,8 @@ void JSAtomicsCondition::CleanupMatchingAsyncWaiters(Isolate* isolate,
 
   WaiterQueueLockGuard waiter_queue_lock_guard(state, current_state);
 
-  WaiterQueueNode* waiter_head = cv->DestructivelyGetWaiterQueueHead(isolate);
+  WaiterQueueNode* waiter_head =
+      cv->DestructivelyGetWaiterQueueHead(cv->GetIsolate());
   if (waiter_head) {
     WaiterQueueNode::DequeueAllMatchingForAsyncCleanup(&waiter_head, matcher);
   }

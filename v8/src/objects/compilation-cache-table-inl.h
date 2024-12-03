@@ -5,8 +5,6 @@
 #ifndef V8_OBJECTS_COMPILATION_CACHE_TABLE_INL_H_
 #define V8_OBJECTS_COMPILATION_CACHE_TABLE_INL_H_
 
-#include <optional>
-
 #include "src/objects/compilation-cache-table.h"
 #include "src/objects/name-inl.h"
 #include "src/objects/script-inl.h"
@@ -17,7 +15,13 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
+
+CompilationCacheTable::CompilationCacheTable(Address ptr)
+    : HashTable<CompilationCacheTable, CompilationCacheShape>(ptr) {
+  SLOW_DCHECK(IsCompilationCacheTable(*this));
+}
 
 NEVER_READ_ONLY_SPACE_IMPL(CompilationCacheTable)
 
@@ -73,7 +77,7 @@ class ScriptCacheKey : public HashTableKey {
   Handle<Object> AsHandle(Isolate* isolate,
                           DirectHandle<SharedFunctionInfo> shared);
 
-  static std::optional<Tagged<String>> SourceFromObject(Tagged<Object> obj) {
+  static base::Optional<Tagged<String>> SourceFromObject(Tagged<Object> obj) {
     DisallowGarbageCollection no_gc;
     DCHECK(IsWeakFixedArray(obj));
     Tagged<WeakFixedArray> array = Cast<WeakFixedArray>(obj);
@@ -144,27 +148,25 @@ uint32_t CompilationCacheShape::HashForObject(ReadOnlyRoots roots,
         Cast<WeakFixedArray>(object)->get(ScriptCacheKey::kHash).ToSmi()));
   }
 
-  // RegExpData: The key field (and the value field) contains the RegExpData
-  // object.
-  if (IsRegExpDataWrapper(object)) {
-    Tagged<RegExpDataWrapper> re_wrapper = Cast<RegExpDataWrapper>(object);
-    Isolate* isolate = GetIsolateFromWritableObject(re_wrapper);
-    Tagged<RegExpData> data = re_wrapper->data(isolate);
-    return RegExpHash(data->source(), Smi::FromInt(data->flags()));
-  }
-
   // Eval: See EvalCacheKey::ToHandle for the encoding.
   Tagged<FixedArray> val = Cast<FixedArray>(object);
-  DCHECK_EQ(val->map(), roots.fixed_cow_array_map());
-  DCHECK_EQ(4, val->length());
-  Tagged<String> source = Cast<String>(val->get(1));
-  int language_unchecked = Smi::ToInt(val->get(2));
-  DCHECK(is_valid_language_mode(language_unchecked));
-  LanguageMode language_mode = static_cast<LanguageMode>(language_unchecked);
-  int position = Smi::ToInt(val->get(3));
-  Tagged<Object> shared = val->get(0);
-  return EvalHash(source, Cast<SharedFunctionInfo>(shared), language_mode,
-                  position);
+  if (val->map() == roots.fixed_cow_array_map()) {
+    DCHECK_EQ(4, val->length());
+    Tagged<String> source = Cast<String>(val->get(1));
+    int language_unchecked = Smi::ToInt(val->get(2));
+    DCHECK(is_valid_language_mode(language_unchecked));
+    LanguageMode language_mode = static_cast<LanguageMode>(language_unchecked);
+    int position = Smi::ToInt(val->get(3));
+    Tagged<Object> shared = val->get(0);
+    return EvalHash(source, Cast<SharedFunctionInfo>(shared), language_mode,
+                    position);
+  }
+
+  // RegExp: The key field (and the value field) contains the
+  // JSRegExp::data fixed array.
+  DCHECK_GE(val->length(), JSRegExp::kMinDataArrayLength);
+  return RegExpHash(Cast<String>(val->get(JSRegExp::kSourceIndex)),
+                    Cast<Smi>(val->get(JSRegExp::kFlagsIndex)));
 }
 
 InfoCellPair::InfoCellPair(Isolate* isolate, Tagged<SharedFunctionInfo> shared,
@@ -174,7 +176,8 @@ InfoCellPair::InfoCellPair(Isolate* isolate, Tagged<SharedFunctionInfo> shared,
       shared_(shared),
       feedback_cell_(feedback_cell) {}
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"
 

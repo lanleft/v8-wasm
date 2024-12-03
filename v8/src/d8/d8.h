@@ -8,7 +8,6 @@
 #include <iterator>
 #include <map>
 #include <memory>
-#include <optional>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -34,7 +33,7 @@ class D8Console;
 class Message;
 class TryCatch;
 
-enum class ModuleType { kJavaScript, kJSON, kWebAssembly, kInvalid };
+enum class ModuleType { kJavaScript, kJSON, kInvalid };
 
 namespace internal {
 class CancelableTaskManager;
@@ -152,7 +151,7 @@ class SerializationData {
   const std::vector<CompiledWasmModule>& compiled_wasm_modules() {
     return compiled_wasm_modules_;
   }
-  const std::optional<v8::SharedValueConveyor>& shared_value_conveyor() {
+  const base::Optional<v8::SharedValueConveyor>& shared_value_conveyor() {
     return shared_value_conveyor_;
   }
 
@@ -166,7 +165,7 @@ class SerializationData {
   std::vector<std::shared_ptr<v8::BackingStore>> backing_stores_;
   std::vector<std::shared_ptr<v8::BackingStore>> sab_backing_stores_;
   std::vector<CompiledWasmModule> compiled_wasm_modules_;
-  std::optional<v8::SharedValueConveyor> shared_value_conveyor_;
+  base::Optional<v8::SharedValueConveyor> shared_value_conveyor_;
 
  private:
   friend class Serializer;
@@ -529,9 +528,6 @@ class Shell : public i::AllStatic {
   };
   enum class CodeType { kFileName, kString, kFunction, kInvalid, kNone };
 
-  // Boolean return values (for any method below) typically denote "success".
-  // We return `false` on uncaught exceptions, except for termination
-  // exceptions.
   static bool ExecuteString(Isolate* isolate, Local<String> source,
                             Local<String> name,
                             ReportExceptions report_exceptions,
@@ -543,8 +539,6 @@ class Shell : public i::AllStatic {
   static void ReportException(Isolate* isolate, const TryCatch& try_catch);
   static MaybeLocal<String> ReadFile(Isolate* isolate, const char* name,
                                      bool should_throw = true);
-  static std::unique_ptr<base::OS::MemoryMappedFile> ReadFileData(
-      Isolate* isolate, const char* name, bool should_throw = true);
   static Local<String> WasmLoadSourceMapCallback(Isolate* isolate,
                                                  const char* name);
   static MaybeLocal<Context> CreateEvaluationContext(Isolate* isolate);
@@ -721,10 +715,6 @@ class Shell : public i::AllStatic {
       Local<Context> context, Local<Data> host_defined_options,
       Local<Value> resource_name, Local<String> specifier,
       Local<FixedArray> import_attributes);
-  static MaybeLocal<Promise> HostImportModuleWithPhaseDynamically(
-      Local<Context> context, Local<Data> host_defined_options,
-      Local<Value> resource_name, Local<String> specifier,
-      ModuleImportPhase phase, Local<FixedArray> import_attributes);
 
   static void ModuleResolutionSuccessCallback(
       const v8::FunctionCallbackInfo<v8::Value>& info);
@@ -838,10 +828,6 @@ class Shell : public i::AllStatic {
       v8::MaybeLocal<Value> global_object);
   static void DisposeRealm(const v8::FunctionCallbackInfo<v8::Value>& info,
                            int index);
-
-  static MaybeLocal<Object> FetchModuleSource(
-      v8::Local<v8::Module> origin_module, v8::Local<v8::Context> context,
-      const std::string& file_name, ModuleType module_type);
   static MaybeLocal<Module> FetchModuleTree(v8::Local<v8::Module> origin_module,
                                             v8::Local<v8::Context> context,
                                             const std::string& file_name,

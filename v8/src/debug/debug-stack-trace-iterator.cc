@@ -122,7 +122,7 @@ v8::Local<v8::Value> DebugStackTraceIterator::GetReturnValue() const {
   }
 #endif  // V8_ENABLE_WEBASSEMBLY
   CHECK_NOT_NULL(iterator_.frame());
-  bool is_optimized = iterator_.frame()->is_optimized_js();
+  bool is_optimized = iterator_.frame()->is_optimized();
   if (is_optimized || !is_top_frame_ ||
       !isolate_->debug()->IsBreakAtReturn(iterator_.javascript_frame())) {
     return v8::Local<v8::Value>();
@@ -158,15 +158,6 @@ debug::Location DebugStackTraceIterator::GetFunctionLocation() const {
                                func->GetScriptColumnNumber());
   }
 #if V8_ENABLE_WEBASSEMBLY
-#if V8_ENABLE_DRUMBRAKE
-  if (iterator_.frame()->is_wasm_interpreter_entry()) {
-    auto frame = WasmInterpreterEntryFrame::cast(iterator_.frame());
-    Handle<WasmInstanceObject> instance(frame->wasm_instance(), isolate_);
-    auto offset =
-        instance->module()->functions[frame->function_index(0)].code.offset();
-    return v8::debug::Location(inlined_frame_index_, offset);
-  }
-#endif  // V8_ENABLE_DRUMBRAKE
   if (iterator_.frame()->is_wasm()) {
     auto frame = WasmFrame::cast(iterator_.frame());
     const wasm::WasmModule* module = frame->trusted_instance_data()->module();
@@ -194,18 +185,9 @@ std::unique_ptr<v8::debug::ScopeIterator>
 DebugStackTraceIterator::GetScopeIterator() const {
   DCHECK(!Done());
 #if V8_ENABLE_WEBASSEMBLY
-#if V8_ENABLE_DRUMBRAKE
-  if (iterator_.frame()->is_wasm_interpreter_entry()) {
-    return GetWasmInterpreterScopeIterator(
-        WasmInterpreterEntryFrame::cast(iterator_.frame()));
-  } else {
-#endif  // V8_ENABLE_DRUMBRAKE
-    if (iterator_.frame()->is_wasm()) {
-      return GetWasmScopeIterator(WasmFrame::cast(iterator_.frame()));
-    }
-#if V8_ENABLE_DRUMBRAKE
+  if (iterator_.frame()->is_wasm()) {
+    return GetWasmScopeIterator(WasmFrame::cast(iterator_.frame()));
   }
-#endif  // V8_ENABLE_DRUMBRAKE
 #endif  // V8_ENABLE_WEBASSEMBLY
   return std::make_unique<DebugScopeIterator>(isolate_, frame_inspector_.get());
 }
@@ -243,7 +225,7 @@ void DebugStackTraceIterator::UpdateInlineFrameIndexAndResumableFnOnStack() {
   if (resumable_fn_on_stack_) return;
 
   StackFrame* frame = iterator_.frame();
-  if (!frame->is_javascript()) return;
+  if (!frame->is_java_script()) return;
 
   std::vector<Handle<SharedFunctionInfo>> shareds;
   JavaScriptFrame::cast(frame)->GetFunctions(&shareds);

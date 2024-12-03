@@ -22,40 +22,33 @@ namespace internal {
 TQ_OBJECT_CONSTRUCTORS_IMPL(JSArgumentsObject)
 TQ_OBJECT_CONSTRUCTORS_IMPL(AliasedArgumentsEntry)
 
-Tagged<Context> SloppyArgumentsElements::context() const {
-  return context_.load();
-}
-void SloppyArgumentsElements::set_context(Tagged<Context> value,
-                                          WriteBarrierMode mode) {
-  context_.store(this, value, mode);
-}
-Tagged<UnionOf<FixedArray, NumberDictionary>>
-SloppyArgumentsElements::arguments() const {
-  return arguments_.load();
-}
-void SloppyArgumentsElements::set_arguments(
-    Tagged<UnionOf<FixedArray, NumberDictionary>> value,
-    WriteBarrierMode mode) {
-  arguments_.store(this, value, mode);
-}
+OBJECT_CONSTRUCTORS_IMPL(SloppyArgumentsElements, FixedArrayBase)
 
-Tagged<UnionOf<Smi, Hole>> SloppyArgumentsElements::mapped_entries(
+ACCESSORS_NOCAGE(SloppyArgumentsElements, context, Tagged<Context>,
+                 kContextOffset)
+ACCESSORS_NOCAGE(SloppyArgumentsElements, arguments, Tagged<FixedArray>,
+                 kArgumentsOffset)
+
+Tagged<Object> SloppyArgumentsElements::mapped_entries(
     int index, RelaxedLoadTag tag) const {
   DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
-  return objects()[index].Relaxed_Load();
+  return RELAXED_READ_FIELD(*this, OffsetOfElementAt(index));
 }
 
-void SloppyArgumentsElements::set_mapped_entries(
-    int index, Tagged<UnionOf<Smi, Hole>> value) {
+void SloppyArgumentsElements::set_mapped_entries(int index,
+                                                 Tagged<Object> value) {
   DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
-  objects()[index].store(this, value);
+  WRITE_FIELD(*this, OffsetOfElementAt(index), value);
 }
 
-void SloppyArgumentsElements::set_mapped_entries(
-    int index, Tagged<UnionOf<Smi, Hole>> value, RelaxedStoreTag tag) {
+void SloppyArgumentsElements::set_mapped_entries(int index,
+                                                 Tagged<Object> value,
+                                                 RelaxedStoreTag tag) {
   DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
-  objects()[index].Relaxed_Store(this, value);
+  RELAXED_WRITE_FIELD(*this, OffsetOfElementAt(index), value);
 }
+
+int SloppyArgumentsElements::AllocatedSize() const { return SizeFor(length()); }
 
 }  // namespace internal
 }  // namespace v8

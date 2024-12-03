@@ -65,10 +65,9 @@ class MaglevCodeGenerator final {
 
   bool code_gen_succeeded_ = false;
 
-  IndirectHandle<DeoptimizationData> deopt_data_;
-  MaybeIndirectHandle<Code> code_;
+  Handle<DeoptimizationData> deopt_data_;
+  MaybeHandle<Code> code_;
   GlobalHandleVector<Map> retained_maps_;
-  bool is_context_specialized_;
   Zone* zone_;
 };
 

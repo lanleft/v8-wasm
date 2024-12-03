@@ -5,8 +5,6 @@
 #ifndef V8_SANDBOX_COMPACTIBLE_EXTERNAL_ENTITY_TABLE_INL_H_
 #define V8_SANDBOX_COMPACTIBLE_EXTERNAL_ENTITY_TABLE_INL_H_
 
-#include <algorithm>
-
 #include "src/logging/counters.h"
 #include "src/sandbox/compactible-external-entity-table.h"
 #include "src/sandbox/external-entity-table-inl.h"
@@ -202,11 +200,9 @@ void CompactibleExternalEntityTable<Entry,
                         (num_segments_to_evacuate >= 1);
 
   // However, if --stress-compaction is enabled, we compact whenever possible:
-  // whenever we have at least two segments, one to evacuate entries into and
-  // the other to evacuate entries from.
+  // whenever we have at least one segment worth of empty entries.
   if (v8_flags.stress_compaction) {
-    should_compact = this->num_segments() > 1;
-    num_segments_to_evacuate = std::max(1u, num_segments_to_evacuate);
+    should_compact = num_free_entries > Base::kEntriesPerSegment;
   }
 
   if (should_compact) {

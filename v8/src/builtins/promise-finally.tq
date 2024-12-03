@@ -37,9 +37,6 @@ transitioning javascript builtin PromiseThrowerFinally(
   Throw(reason);
 }
 
-const kPromiseThrowerFinallySharedFun: constexpr intptr
-    generates 'RootIndex::kPromiseThrowerFinallySharedFun';
-
 macro CreateThrowerFunction(
     implicit context: Context)(nativeContext: NativeContext,
     reason: JSAny): JSFunction {
@@ -50,8 +47,10 @@ macro CreateThrowerFunction(
               kPromiseValueThunkOrReasonContextLength));
   InitContextSlot(
       throwerContext, PromiseValueThunkOrReasonContextSlot::kValueSlot, reason);
-  return AllocateRootFunctionWithContext(
-      kPromiseThrowerFinallySharedFun, throwerContext, nativeContext);
+  const map = *ContextSlot(
+      nativeContext, ContextSlot::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+  const throwerInfo = PromiseThrowerFinallySharedFunConstant();
+  return AllocateFunctionWithMapAndContext(map, throwerInfo, throwerContext);
 }
 
 transitioning javascript builtin PromiseCatchFinally(
@@ -83,9 +82,6 @@ transitioning javascript builtin PromiseCatchFinally(
   return UnsafeCast<JSAny>(InvokeThen(nativeContext, promise, thrower));
 }
 
-const kPromiseValueThunkFinallySharedFun: constexpr intptr
-    generates 'RootIndex::kPromiseValueThunkFinallySharedFun';
-
 macro CreateValueThunkFunction(
     implicit context: Context)(nativeContext: NativeContext,
     value: JSAny): JSFunction {
@@ -97,8 +93,11 @@ macro CreateValueThunkFunction(
   InitContextSlot(
       valueThunkContext, PromiseValueThunkOrReasonContextSlot::kValueSlot,
       value);
-  return AllocateRootFunctionWithContext(
-      kPromiseValueThunkFinallySharedFun, valueThunkContext, nativeContext);
+  const map = *ContextSlot(
+      nativeContext, ContextSlot::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+  const valueThunkInfo = PromiseValueThunkFinallySharedFunConstant();
+  return AllocateFunctionWithMapAndContext(
+      map, valueThunkInfo, valueThunkContext);
 }
 
 transitioning javascript builtin PromiseThenFinally(
@@ -135,11 +134,6 @@ struct PromiseFinallyFunctions {
   catch_finally: JSFunction;
 }
 
-const kPromiseThenFinallySharedFun:
-    constexpr intptr generates 'RootIndex::kPromiseThenFinallySharedFun';
-const kPromiseCatchFinallySharedFun: constexpr intptr
-    generates 'RootIndex::kPromiseCatchFinallySharedFun';
-
 macro CreatePromiseFinallyFunctions(
     implicit context: Context)(nativeContext: NativeContext,
     onFinally: Callable, constructor: Constructor): PromiseFinallyFunctions {
@@ -151,10 +145,14 @@ macro CreatePromiseFinallyFunctions(
       promiseContext, PromiseFinallyContextSlot::kOnFinallySlot, onFinally);
   InitContextSlot(
       promiseContext, PromiseFinallyContextSlot::kConstructorSlot, constructor);
-  const thenFinally = AllocateRootFunctionWithContext(
-      kPromiseThenFinallySharedFun, promiseContext, nativeContext);
-  const catchFinally = AllocateRootFunctionWithContext(
-      kPromiseCatchFinallySharedFun, promiseContext, nativeContext);
+  const map = *ContextSlot(
+      nativeContext, ContextSlot::STRICT_FUNCTION_WITHOUT_PROTOTYPE_MAP_INDEX);
+  const thenFinallyInfo = PromiseThenFinallySharedFunConstant();
+  const thenFinally =
+      AllocateFunctionWithMapAndContext(map, thenFinallyInfo, promiseContext);
+  const catchFinallyInfo = PromiseCatchFinallySharedFunConstant();
+  const catchFinally =
+      AllocateFunctionWithMapAndContext(map, catchFinallyInfo, promiseContext);
   return PromiseFinallyFunctions{
     then_finally: thenFinally,
     catch_finally: catchFinally

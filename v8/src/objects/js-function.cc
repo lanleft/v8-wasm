@@ -4,8 +4,7 @@
 
 #include "src/objects/js-function.h"
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/baseline/baseline-batch-compiler.h"
 #include "src/codegen/compiler.h"
 #include "src/common/globals.h"
@@ -22,7 +21,8 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 CodeKinds JSFunction::GetAttachedCodeKinds(IsolateForSandbox isolate) const {
   const CodeKind kind = code(isolate)->kind();
@@ -51,7 +51,6 @@ CodeKinds JSFunction::GetAvailableCodeKinds(IsolateForSandbox isolate) const {
     }
   }
 
-#ifndef V8_ENABLE_LEAPTIERING
   // Check the optimized code cache.
   if (has_feedback_vector() && feedback_vector()->has_optimized_code() &&
       !feedback_vector()
@@ -61,7 +60,6 @@ CodeKinds JSFunction::GetAvailableCodeKinds(IsolateForSandbox isolate) const {
     DCHECK(CodeKindIsOptimizedJSFunction(code->kind()));
     result |= CodeKindToCodeKindFlag(code->kind());
   }
-#endif  // !V8_ENABLE_LEAPTIERING
 
   DCHECK_EQ((result & ~kJSFunctionCodeKindsMask), 0);
   return result;
@@ -114,7 +112,7 @@ V8_WARN_UNUSED_RESULT bool HighestTierOf(CodeKinds kinds,
                                          CodeKind* highest_tier) {
   DCHECK_EQ((kinds & ~kJSFunctionCodeKindsMask), 0);
   // Higher tiers > lower tiers.
-  static_assert(CodeKind::TURBOFAN_JS > CodeKind::INTERPRETED_FUNCTION);
+  static_assert(CodeKind::TURBOFAN > CodeKind::INTERPRETED_FUNCTION);
   if (kinds == 0) return false;
   const int highest_tier_log2 =
       31 - base::bits::CountLeadingZeros(static_cast<uint32_t>(kinds));
@@ -125,7 +123,7 @@ V8_WARN_UNUSED_RESULT bool HighestTierOf(CodeKinds kinds,
 
 }  // namespace
 
-std::optional<CodeKind> JSFunction::GetActiveTier(
+base::Optional<CodeKind> JSFunction::GetActiveTier(
     IsolateForSandbox isolate) const {
 #if V8_ENABLE_WEBASSEMBLY
   // Asm/Wasm functions are currently not supported. For simplicity, this
@@ -141,7 +139,7 @@ std::optional<CodeKind> JSFunction::GetActiveTier(
   if (!HighestTierOf(GetAvailableCodeKinds(isolate), &highest_tier)) return {};
 
 #ifdef DEBUG
-  CHECK(highest_tier == CodeKind::TURBOFAN_JS ||
+  CHECK(highest_tier == CodeKind::TURBOFAN ||
         highest_tier == CodeKind::BASELINE ||
         highest_tier == CodeKind::MAGLEV ||
         highest_tier == CodeKind::INTERPRETED_FUNCTION);
@@ -171,7 +169,7 @@ bool JSFunction::ActiveTierIsMaglev(IsolateForSandbox isolate) const {
 }
 
 bool JSFunction::ActiveTierIsTurbofan(IsolateForSandbox isolate) const {
-  return GetActiveTier(isolate) == CodeKind::TURBOFAN_JS;
+  return GetActiveTier(isolate) == CodeKind::TURBOFAN;
 }
 
 bool JSFunction::CanDiscardCompiled(IsolateForSandbox isolate) const {
@@ -193,8 +191,7 @@ namespace {
 
 constexpr TieringState TieringStateFor(CodeKind target_kind,
                                        ConcurrencyMode mode) {
-  DCHECK(target_kind == CodeKind::MAGLEV ||
-         target_kind == CodeKind::TURBOFAN_JS);
+  DCHECK(target_kind == CodeKind::MAGLEV || target_kind == CodeKind::TURBOFAN);
   return target_kind == CodeKind::MAGLEV
              ? (IsConcurrent(mode) ? TieringState::kRequestMaglev_Concurrent
                                    : TieringState::kRequestMaglev_Synchronous)
@@ -241,7 +238,7 @@ void JSFunction::MarkForOptimization(Isolate* isolate, CodeKind target_kind,
 }
 
 void JSFunction::SetInterruptBudget(
-    Isolate* isolate, std::optional<CodeKind> override_active_tier) {
+    Isolate* isolate, base::Optional<CodeKind> override_active_tier) {
   raw_feedback_cell()->set_interrupt_budget(
       TieringManager::InterruptBudgetFor(isolate, *this, override_active_tier));
 }
@@ -333,8 +330,8 @@ Maybe<bool> JSFunctionOrBoundFunctionOrWrappedFunction::CopyNameAndLength(
 }
 
 // static
-MaybeHandle<String> JSBoundFunction::GetName(
-    Isolate* isolate, DirectHandle<JSBoundFunction> function) {
+MaybeHandle<String> JSBoundFunction::GetName(Isolate* isolate,
+                                             Handle<JSBoundFunction> function) {
   Handle<String> prefix = isolate->factory()->bound__string();
   Handle<String> target_name = prefix;
   Factory* factory = isolate->factory();
@@ -365,7 +362,7 @@ MaybeHandle<String> JSBoundFunction::GetName(
 
 // static
 Maybe<int> JSBoundFunction::GetLength(Isolate* isolate,
-                                      DirectHandle<JSBoundFunction> function) {
+                                      Handle<JSBoundFunction> function) {
   int nof_bound_arguments = function->bound_arguments()->length();
   while (IsJSBoundFunction(function->bound_target_function())) {
     function = handle(Cast<JSBoundFunction>(function->bound_target_function()),
@@ -527,7 +524,7 @@ void JSFunction::EnsureClosureFeedbackCellArray(
 #endif  // V8_ENABLE_WEBASSEMBLY
 
   DirectHandle<SharedFunctionInfo> shared(function->shared(), isolate);
-  DCHECK(shared->HasBytecodeArray());
+  DCHECK(function->shared()->HasBytecodeArray());
 
   const bool has_closure_feedback_cell_array =
       (function->has_closure_feedback_cell_array() ||
@@ -557,18 +554,6 @@ void JSFunction::EnsureClosureFeedbackCellArray(
   if (function->raw_feedback_cell() == isolate->heap()->many_closures_cell()) {
     DirectHandle<FeedbackCell> feedback_cell =
         isolate->factory()->NewOneClosureCell(feedback_cell_array);
-#ifdef V8_ENABLE_LEAPTIERING
-    // This is a rare case where we copy the dispatch entry from a JSFunction
-    // to its FeedbackCell instead of the other way around.
-    // TODO(42204201): investigate whether this can be avoided so that we only
-    // ever copy a dispatch handle from a FeedbackCell to a JSFunction. That
-    // would probably require refactoring the way JSFunctions are built so that
-    // we always allocate a FeedbackCell up front (if needed).
-    DCHECK_NE(function->dispatch_handle(), kNullJSDispatchHandle);
-    // The feedback cell should never contain context specialized code.
-    DCHECK(!function->code(isolate)->is_context_specialized());
-    feedback_cell->set_dispatch_handle(function->dispatch_handle());
-#endif  // V8_ENABLE_LEAPTIERING
     function->set_raw_feedback_cell(*feedback_cell, kReleaseStore);
     function->SetInterruptBudget(isolate);
   } else {
@@ -623,25 +608,11 @@ void JSFunction::CreateAndAttachFeedbackVector(
 
   DCHECK_EQ(v8_flags.log_function_events,
             feedback_vector->log_next_execution());
-
-  if (v8_flags.profile_guided_optimization &&
-      v8_flags.profile_guided_optimization_for_empty_feedback_vector &&
-      function->feedback_vector()->length() == 0) {
-    if (function->shared()->cached_tiering_decision() ==
-        CachedTieringDecision::kEarlyMaglev) {
-      function->MarkForOptimization(isolate, CodeKind::MAGLEV,
-                                    ConcurrencyMode::kConcurrent);
-    } else if (function->shared()->cached_tiering_decision() ==
-               CachedTieringDecision::kEarlyTurbofan) {
-      function->MarkForOptimization(isolate, CodeKind::TURBOFAN_JS,
-                                    ConcurrencyMode::kConcurrent);
-    }
-  }
 }
 
 // static
 void JSFunction::InitializeFeedbackCell(
-    DirectHandle<JSFunction> function, IsCompiledScope* is_compiled_scope,
+    Handle<JSFunction> function, IsCompiledScope* is_compiled_scope,
     bool reset_budget_for_feedback_allocation) {
   Isolate* const isolate = function->GetIsolate();
 #if V8_ENABLE_WEBASSEMBLY
@@ -671,8 +642,7 @@ void JSFunction::InitializeFeedbackCell(
       // profile and more precise code coverage.
       v8_flags.log_function_events ||
       !isolate->is_best_effort_code_coverage() ||
-      function->shared()->cached_tiering_decision() !=
-          CachedTieringDecision::kPending;
+      function->shared()->sparkplug_compiled();
 
   if (needs_feedback_vector) {
     CreateAndAttachFeedbackVector(isolate, function, is_compiled_scope);
@@ -682,8 +652,7 @@ void JSFunction::InitializeFeedbackCell(
   }
 #ifdef V8_ENABLE_SPARKPLUG
   // TODO(jgruber): Unduplicate these conditions from tiering-manager.cc.
-  if (function->shared()->cached_tiering_decision() !=
-          CachedTieringDecision::kPending &&
+  if (function->shared()->sparkplug_compiled() &&
       CanCompileWithBaseline(isolate, function->shared()) &&
       function->ActiveTierIsIgnition(isolate)) {
     if (v8_flags.baseline_batch_compilation) {
@@ -696,6 +665,21 @@ void JSFunction::InitializeFeedbackCell(
     }
   }
 #endif  // V8_ENABLE_SPARKPLUG
+
+  if (v8_flags.profile_guided_optimization &&
+      v8_flags.profile_guided_optimization_for_empty_feedback_vector &&
+      function->has_feedback_vector() &&
+      function->feedback_vector()->length() == 0) {
+    if (function->shared()->cached_tiering_decision() ==
+        CachedTieringDecision::kEarlyMaglev) {
+      function->MarkForOptimization(isolate, CodeKind::MAGLEV,
+                                    ConcurrencyMode::kConcurrent);
+    } else if (function->shared()->cached_tiering_decision() ==
+               CachedTieringDecision::kEarlyTurbofan) {
+      function->MarkForOptimization(isolate, CodeKind::TURBOFAN,
+                                    ConcurrencyMode::kConcurrent);
+    }
+  }
 }
 
 namespace {
@@ -748,7 +732,7 @@ void SetInstancePrototype(Isolate* isolate, DirectHandle<JSFunction> function,
 
 }  // anonymous namespace
 
-void JSFunction::SetPrototype(DirectHandle<JSFunction> function,
+void JSFunction::SetPrototype(Handle<JSFunction> function,
                               Handle<Object> value) {
   DCHECK(IsConstructor(*function) ||
          IsGeneratorFunction(function->shared()->kind()));
@@ -763,7 +747,7 @@ void JSFunction::SetPrototype(DirectHandle<JSFunction> function,
     // Copy the map so this does not affect unrelated functions.
     // Remove map transitions because they point to maps with a
     // different prototype.
-    DirectHandle<Map> new_map =
+    Handle<Map> new_map =
         Map::Copy(isolate, handle(function->map(), isolate), "SetPrototype");
 
     // Create a new {constructor, non-instance_prototype} tuple and store it
@@ -890,8 +874,6 @@ bool CanSubclassHaveInobjectProperties(InstanceType instance_type) {
     case JS_PROMISE_CONSTRUCTOR_TYPE:
     case JS_REG_EXP_CONSTRUCTOR_TYPE:
     case JS_ARRAY_CONSTRUCTOR_TYPE:
-    case JS_ASYNC_DISPOSABLE_STACK_TYPE:
-    case JS_SYNC_DISPOSABLE_STACK_TYPE:
 #define TYPED_ARRAY_CONSTRUCTORS_SWITCH(Type, type, TYPE, Ctype) \
   case TYPE##_TYPED_ARRAY_CONSTRUCTOR_TYPE:
       TYPED_ARRAYS(TYPED_ARRAY_CONSTRUCTORS_SWITCH)
@@ -1463,6 +1445,7 @@ void JSFunction::ClearAllTypeFeedbackInfoForTesting() {
   }
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"

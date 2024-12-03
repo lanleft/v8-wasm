@@ -9,7 +9,7 @@
 #include "src/compiler/linkage.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
-#include "src/compiler/turbofan-types.h"
+#include "src/compiler/types.h"
 #include "src/handles/handles-inl.h"  // for operator<<
 #include "src/objects/feedback-cell.h"
 #include "src/objects/map.h"
@@ -1534,10 +1534,9 @@ const Operator* SimplifiedOperatorBuilder::WasmTypeCastAbstract(
       "WasmTypeCastAbstract", 1, 1, 1, 1, 1, 1, config);
 }
 
-const Operator* SimplifiedOperatorBuilder::RttCanon(
-    wasm::ModuleTypeIndex index) {
+const Operator* SimplifiedOperatorBuilder::RttCanon(int index) {
   return zone()->New<Operator1<int>>(IrOpcode::kRttCanon, Operator::kPure,
-                                     "RttCanon", 1, 0, 0, 1, 0, 0, index.index);
+                                     "RttCanon", 1, 0, 0, 1, 0, 0, index);
 }
 
 // Note: The following two operators have a control input solely to find the
@@ -1891,17 +1890,17 @@ const Operator* SimplifiedOperatorBuilder::SpeculativeToBigInt(
 
 const Operator* SimplifiedOperatorBuilder::CheckClosure(
     const Handle<FeedbackCell>& feedback_cell) {
-  return zone()->New<Operator1<IndirectHandle<FeedbackCell>>>(  // --
-      IrOpcode::kCheckClosure,                                  // opcode
-      Operator::kNoThrow | Operator::kNoWrite,                  // flags
-      "CheckClosure",                                           // name
-      1, 1, 1, 1, 1, 0,                                         // counts
-      feedback_cell);                                           // parameter
+  return zone()->New<Operator1<Handle<FeedbackCell>>>(  // --
+      IrOpcode::kCheckClosure,                          // opcode
+      Operator::kNoThrow | Operator::kNoWrite,          // flags
+      "CheckClosure",                                   // name
+      1, 1, 1, 1, 1, 0,                                 // counts
+      feedback_cell);                                   // parameter
 }
 
 Handle<FeedbackCell> FeedbackCellOf(const Operator* op) {
   DCHECK(IrOpcode::kCheckClosure == op->opcode());
-  return OpParameter<IndirectHandle<FeedbackCell>>(op);
+  return OpParameter<Handle<FeedbackCell>>(op);
 }
 
 const Operator* SimplifiedOperatorBuilder::SpeculativeToNumber(

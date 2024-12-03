@@ -19,8 +19,6 @@
 namespace v8 {
 namespace internal {
 
-#include "src/codegen/define-code-stub-assembler-macros.inc"
-
 template <class T>
 using TVariable = compiler::TypedCodeAssemblerVariable<T>;
 
@@ -349,8 +347,8 @@ TNode<JSObject> BaseCollectionsAssembler::AllocateJSCollection(
 
   return Select<JSObject>(
       is_target_unmodified,
-      [=, this] { return AllocateJSCollectionFast(constructor); },
-      [=, this] {
+      [=] { return AllocateJSCollectionFast(constructor); },
+      [=] {
         return AllocateJSCollectionSlow(context, constructor, new_target);
       });
 }
@@ -533,9 +531,8 @@ TNode<BoolT> BaseCollectionsAssembler::HasInitialCollectionPrototype(
 TNode<Object> BaseCollectionsAssembler::LoadAndNormalizeFixedArrayElement(
     TNode<FixedArray> elements, TNode<IntPtrT> index) {
   TNode<Object> element = UnsafeLoadFixedArrayElement(elements, index);
-  return Select<Object>(
-      IsTheHole(element), [=, this] { return UndefinedConstant(); },
-      [=] { return element; });
+  return Select<Object>(IsTheHole(element), [=] { return UndefinedConstant(); },
+                        [=] { return element; });
 }
 
 TNode<Object> BaseCollectionsAssembler::LoadAndNormalizeFixedDoubleArrayElement(
@@ -1038,8 +1035,7 @@ TNode<JSArray> CollectionsBuiltinsAssembler::MapIteratorToList(
   TNode<JSArray> array = AllocateJSArray(kind, array_map, size, size_smi);
   TNode<FixedArray> elements = CAST(LoadElements(array));
 
-  const int first_element_offset =
-      OFFSET_OF_DATA_START(FixedArray) - kHeapObjectTag;
+  const int first_element_offset = FixedArray::kHeaderSize - kHeapObjectTag;
   TNode<IntPtrT> first_to_element_offset =
       ElementOffsetFromIndex(IntPtrConstant(0), kind, 0);
   TVARIABLE(
@@ -1120,8 +1116,7 @@ TNode<JSArray> CollectionsBuiltinsAssembler::SetOrSetIteratorToList(
   TNode<JSArray> array = AllocateJSArray(kind, array_map, size, size_smi);
   TNode<FixedArray> elements = CAST(LoadElements(array));
 
-  const int first_element_offset =
-      OFFSET_OF_DATA_START(FixedArray) - kHeapObjectTag;
+  const int first_element_offset = FixedArray::kHeaderSize - kHeapObjectTag;
   TNode<IntPtrT> first_to_element_offset =
       ElementOffsetFromIndex(IntPtrConstant(0), kind, 0);
   TVARIABLE(
@@ -3050,8 +3045,6 @@ TF_BUILTIN(WeakSetPrototypeHas, WeakCollectionsBuiltinsAssembler) {
   BIND(&return_false);
   Return(FalseConstant());
 }
-
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace internal
 }  // namespace v8

@@ -1128,7 +1128,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
     Push(Immediate(StackFrame::TypeToMarker(type)));
   }
 #if V8_ENABLE_WEBASSEMBLY
-  if (type == StackFrame::WASM) Push(kWasmImplicitArgRegister);
+  if (type == StackFrame::WASM) Push(kWasmInstanceRegister);
 #endif  // V8_ENABLE_WEBASSEMBLY
 }
 
@@ -1523,10 +1523,9 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   // We call indirectly through the code field in the function to
   // allow recompilation to take effect without changing any of the
   // call sites.
-  constexpr int unused_argument_count = 0;
   switch (type) {
     case InvokeType::kCall:
-      CallJSFunction(function, unused_argument_count);
+      CallJSFunction(function);
       break;
     case InvokeType::kJump:
       JumpJSFunction(function);
@@ -2122,11 +2121,8 @@ void MacroAssembler::JumpCodeObject(Register code_object, JumpMode jump_mode) {
   }
 }
 
-void MacroAssembler::CallJSFunction(Register function_object,
-                                    uint16_t argument_count) {
+void MacroAssembler::CallJSFunction(Register function_object) {
   static_assert(kJavaScriptCallCodeStartRegister == ecx, "ABI mismatch");
-  DCHECK_WITH_MSG(!V8_ENABLE_LEAPTIERING_BOOL,
-                  "argument_count is only used with Leaptiering");
   mov(ecx, FieldOperand(function_object, JSFunction::kCodeOffset));
   CallCodeObject(ecx);
 }

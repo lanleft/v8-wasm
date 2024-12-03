@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class ObjectBoilerplateDescription extends HeapObject {
-  const length: Smi;
+  const capacity: Smi;
   backing_store_size: Smi;
   flags: Smi;
-  raw_entries[length]: Object;
+  raw_entries[capacity]: Object;
 }
 
 extern class ArrayBoilerplateDescription extends Struct {
@@ -15,9 +15,8 @@ extern class ArrayBoilerplateDescription extends Struct {
   constant_elements: FixedArrayBase;
 }
 
-@cppObjectDefinition
 extern class RegExpBoilerplateDescription extends Struct {
-  data: TrustedPointer<RegExpData>;
+  data: FixedArray;
   source: String;
   flags: SmiTagged<JSRegExpFlags>;
 }

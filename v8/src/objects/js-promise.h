@@ -31,8 +31,6 @@ namespace internal {
 class JSPromise
     : public TorqueGeneratedJSPromise<JSPromise, JSObjectWithEmbedderSlots> {
  public:
-  static constexpr uint32_t kInvalidAsyncTaskId = 0;
-
   // [result]: Checks that the promise is settled and returns the result.
   inline Tagged<Object> result() const;
 
@@ -46,12 +44,8 @@ class JSPromise
   // rejected.
   DECL_BOOLEAN_ACCESSORS(is_silent)
 
-  inline bool has_async_task_id() const;
-  inline uint32_t async_task_id() const;
-  inline void set_async_task_id(uint32_t id);
-  // Computes next valid async task ID, silently wrapping around max
-  // value and skipping invalid (zero) ID.
-  static inline uint32_t GetNextAsyncTaskId(uint32_t current_async_task_id);
+  int async_task_id() const;
+  void set_async_task_id(int id);
 
   static const char* Status(Promise::PromiseState status);
   V8_EXPORT_PRIVATE Promise::PromiseState status() const;

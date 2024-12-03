@@ -5,11 +5,11 @@
 #ifndef V8_REGEXP_REGEXP_FLAGS_H_
 #define V8_REGEXP_REGEXP_FLAGS_H_
 
-#include <optional>
-
 #include "src/base/flags.h"
+#include "src/base/optional.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 // TODO(jgruber,pthier): Decouple more parts of the codebase from
 // JSRegExp::Flags. Consider removing JSRegExp::Flags.
@@ -64,14 +64,15 @@ constexpr bool IsEitherUnicode(RegExpFlags f) {
 // clang-format off
 #define V(Lower, Camel, LowerCamel, Char, Bit) \
   c == Char ? RegExpFlag::k##Camel :
-constexpr std::optional<RegExpFlag> TryRegExpFlagFromChar(char c) {
-  return REGEXP_FLAG_LIST(V) std::optional<RegExpFlag>{};
+constexpr base::Optional<RegExpFlag> TryRegExpFlagFromChar(char c) {
+  return REGEXP_FLAG_LIST(V) base::Optional<RegExpFlag>{};
 }
 #undef V
 // clang-format on
 
 std::ostream& operator<<(std::ostream& os, RegExpFlags flags);
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_REGEXP_REGEXP_FLAGS_H_

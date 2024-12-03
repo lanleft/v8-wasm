@@ -119,24 +119,20 @@ static_assert(sizeof(CodePointerTableEntry) == kCodePointerTableEntrySize);
 class V8_EXPORT_PRIVATE CodePointerTable
     : public ExternalEntityTable<CodePointerTableEntry,
                                  kCodePointerTableReservationSize> {
-  using Base = ExternalEntityTable<CodePointerTableEntry,
-                                   kCodePointerTableReservationSize>;
-
  public:
   // Size of a CodePointerTable, for layout computation in IsolateData.
-  static constexpr int kSize = 2 * kSystemPointerSize;
-
+  static int constexpr kSize = 2 * kSystemPointerSize;
   static_assert(kMaxCodePointers == kMaxCapacity);
-  static_assert(!kSupportsCompaction);
 
   CodePointerTable() = default;
   CodePointerTable(const CodePointerTable&) = delete;
   CodePointerTable& operator=(const CodePointerTable&) = delete;
 
   // The Spaces used by a CodePointerTable.
-  using Space = Base::SpaceWithBlackAllocationSupport;
+  using Space = ExternalEntityTable<
+      CodePointerTableEntry,
+      kCodePointerTableReservationSize>::SpaceWithBlackAllocationSupport;
 
-  // Retrieves the entrypoint of the entry referenced by the given handle.
   //
   // This method is atomic and can be called from background threads.
   inline Address GetEntrypoint(CodePointerHandle handle,
@@ -190,12 +186,16 @@ class V8_EXPORT_PRIVATE CodePointerTable
   // The base address of this table, for use in JIT compilers.
   Address base_address() const { return base(); }
 
+  void Initialize();
+
  private:
   inline uint32_t HandleToIndex(CodePointerHandle handle) const;
   inline CodePointerHandle IndexToHandle(uint32_t index) const;
 };
 
 static_assert(sizeof(CodePointerTable) == CodePointerTable::kSize);
+
+V8_EXPORT_PRIVATE CodePointerTable* GetProcessWideCodePointerTable();
 
 }  // namespace internal
 }  // namespace v8

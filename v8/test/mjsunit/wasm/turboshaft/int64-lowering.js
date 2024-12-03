@@ -5,8 +5,7 @@
 // Flags: --no-liftoff --no-wasm-lazy-compilation
 // Flags: --turboshaft-wasm --enable-testing-opcode-in-wasm
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Make sure turboshaft bails out graciously for non-implemented features.
 (function I64Identity() {

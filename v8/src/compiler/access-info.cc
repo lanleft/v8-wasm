@@ -5,7 +5,6 @@
 
 #include "src/compiler/access-info.h"
 
-#include <optional>
 #include <ostream>
 
 #include "src/builtins/accessors.h"
@@ -361,7 +360,7 @@ ConstFieldInfo PropertyAccessInfo::GetConstFieldInfo() const {
 AccessInfoFactory::AccessInfoFactory(JSHeapBroker* broker, Zone* zone)
     : broker_(broker), type_cache_(TypeCache::Get()), zone_(zone) {}
 
-std::optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
+base::Optional<ElementAccessInfo> AccessInfoFactory::ComputeElementAccessInfo(
     MapRef map, AccessMode access_mode) const {
   if (!map.CanInlineElementAccess()) return {};
   return ElementAccessInfo({{map}, zone()}, map.elements_kind(), zone());
@@ -376,7 +375,7 @@ bool AccessInfoFactory::ComputeElementAccessInfos(
     // double), always use the "worst case" code without a transition.  This is
     // much faster than transitioning the elements to the worst case, trading a
     // TransitionElementsKind for a CheckMaps, avoiding mutation of the array.
-    std::optional<ElementAccessInfo> access_info =
+    base::Optional<ElementAccessInfo> access_info =
         ConsolidateElementLoad(feedback);
     if (access_info.has_value()) {
       access_infos->push_back(*access_info);
@@ -387,7 +386,7 @@ bool AccessInfoFactory::ComputeElementAccessInfos(
   for (auto const& group : feedback.transition_groups()) {
     DCHECK(!group.empty());
     OptionalMapRef target = group.front();
-    std::optional<ElementAccessInfo> access_info =
+    base::Optional<ElementAccessInfo> access_info =
         ComputeElementAccessInfo(target.value(), access_mode);
     if (!access_info.has_value()) return false;
 
@@ -574,7 +573,7 @@ PropertyAccessInfo AccessorAccessInfoHelper(
       return PropertyAccessInfo::Invalid(zone);
     }
     if (DEBUG_BOOL && holder.has_value()) {
-      std::optional<Tagged<NativeContext>> holder_creation_context =
+      base::Optional<Tagged<NativeContext>> holder_creation_context =
           holder->object()->GetCreationContext();
       CHECK(holder_creation_context.has_value());
       CHECK_EQ(*broker->target_native_context().object(),
@@ -600,7 +599,7 @@ PropertyAccessInfo AccessorAccessInfoHelper(
     }
   }
   if (access_mode == AccessMode::kLoad) {
-    std::optional<Tagged<Name>> cached_property_name =
+    base::Optional<Tagged<Name>> cached_property_name =
         FunctionTemplateInfo::TryGetCachedPropertyName(isolate, *accessor);
     if (cached_property_name.has_value()) {
       OptionalNameRef cached_property_name_ref =
@@ -925,7 +924,6 @@ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
       return PropertyAccessInfo::NotFound(zone(), receiver_map, holder);
     }
 
-    CHECK(prototype.IsJSObject());
     holder = prototype.AsJSObject();
     map = map_prototype_map;
 
@@ -1026,7 +1024,7 @@ Maybe<ElementsKind> GeneralizeElementsKind(ElementsKind this_kind,
 
 }  // namespace
 
-std::optional<ElementAccessInfo> AccessInfoFactory::ConsolidateElementLoad(
+base::Optional<ElementAccessInfo> AccessInfoFactory::ConsolidateElementLoad(
     ElementAccessFeedback const& feedback) const {
   if (feedback.transition_groups().empty()) return {};
 

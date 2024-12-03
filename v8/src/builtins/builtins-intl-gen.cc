@@ -17,8 +17,6 @@
 namespace v8 {
 namespace internal {
 
-#include "src/codegen/define-code-stub-assembler-macros.inc"
-
 class IntlBuiltinsAssembler : public CodeStubAssembler {
  public:
   explicit IntlBuiltinsAssembler(compiler::CodeAssemblerState* state)
@@ -159,8 +157,11 @@ void IntlBuiltinsAssembler::ToLowerCaseImpl(
   const TNode<Uint32T> length = LoadStringLengthAsWord32(string);
   GotoIf(Word32Equal(length, Uint32Constant(0)), &return_string);
 
-  const TNode<BoolT> is_one_byte = to_direct.IsOneByte();
-  GotoIfNot(is_one_byte, &runtime);
+  const TNode<Int32T> instance_type = to_direct.instance_type();
+  CSA_DCHECK(this,
+             Word32BinaryNot(IsIndirectStringInstanceType(instance_type)));
+
+  GotoIfNot(IsOneByteStringInstanceType(instance_type), &runtime);
 
   // For short strings, do the conversion in CSA through the lookup table.
 
@@ -290,8 +291,6 @@ TF_BUILTIN(ListFormatPrototypeFormatToParts, IntlBuiltinsAssembler) {
       UncheckedParameter<Int32T>(Descriptor::kJSActualArgumentsCount),
       Runtime::kFormatListToParts, "Intl.ListFormat.prototype.formatToParts");
 }
-
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace internal
 }  // namespace v8

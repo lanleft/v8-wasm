@@ -6,17 +6,19 @@
 #define V8_TORQUE_TYPES_H_
 
 #include <algorithm>
-#include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "src/base/optional.h"
 #include "src/torque/ast.h"
 #include "src/torque/constants.h"
 #include "src/torque/source-positions.h"
 #include "src/torque/utils.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 class AggregateType;
 struct Identifier;
@@ -90,7 +92,7 @@ struct SpecializationKey {
   TypeVector specialized_types;
 };
 
-using MaybeSpecializationKey = std::optional<SpecializationKey<GenericType>>;
+using MaybeSpecializationKey = base::Optional<SpecializationKey<GenericType>>;
 
 struct TypeChecker {
   // The type of the object. This string is not guaranteed to correspond to a
@@ -140,9 +142,9 @@ class V8_EXPORT_PRIVATE Type : public TypeBase {
   virtual bool IsTransient() const { return false; }
   virtual const Type* NonConstexprVersion() const { return this; }
   virtual std::string GetConstexprGeneratedTypeName() const;
-  std::optional<const ClassType*> ClassSupertype() const;
-  std::optional<const StructType*> StructSupertype() const;
-  std::optional<const AggregateType*> AggregateSupertype() const;
+  base::Optional<const ClassType*> ClassSupertype() const;
+  base::Optional<const StructType*> StructSupertype() const;
+  base::Optional<const AggregateType*> AggregateSupertype() const;
   virtual std::vector<TypeChecker> GetTypeCheckers() const { return {}; }
   virtual std::string GetRuntimeType() const;
   virtual std::string GetDebugType() const;
@@ -153,8 +155,8 @@ class V8_EXPORT_PRIVATE Type : public TypeBase {
     return specialized_from_;
   }
 
-  static std::optional<const Type*> MatchUnaryGeneric(const Type* type,
-                                                      GenericType* generic);
+  static base::Optional<const Type*> MatchUnaryGeneric(const Type* type,
+                                                       GenericType* generic);
 
   static std::string ComputeName(const std::string& basename,
                                  MaybeSpecializationKey specialized_from);
@@ -173,7 +175,7 @@ class V8_EXPORT_PRIVATE Type : public TypeBase {
 
  protected:
   Type(TypeBase::Kind kind, const Type* parent,
-       MaybeSpecializationKey specialized_from = std::nullopt);
+       MaybeSpecializationKey specialized_from = base::nullopt);
   Type(const Type& other) V8_NOEXCEPT;
   void set_parent(const Type* t) { parent_ = t; }
   int Depth() const;
@@ -218,7 +220,7 @@ struct Field {
 
   SourcePosition pos;
   const AggregateType* aggregate;
-  std::optional<ClassFieldIndexInfo> index;
+  base::Optional<ClassFieldIndexInfo> index;
   NameAndType name_and_type;
 
   // The byte offset of this field from the beginning of the containing class or
@@ -227,7 +229,7 @@ struct Field {
   // irrelevant.
   // The offset may be unknown because the field is after an indexed field or
   // because we don't support the struct field for on-heap layouts.
-  std::optional<size_t> offset;
+  base::Optional<size_t> offset;
 
   bool custom_weak_marking;
   bool const_qualified;
@@ -409,12 +411,12 @@ class V8_EXPORT_PRIVATE UnionType final : public Type {
     return types_ == other.types_;
   }
 
-  std::optional<const Type*> GetSingleMember() const {
+  base::Optional<const Type*> GetSingleMember() const {
     if (types_.size() == 1) {
       DCHECK_EQ(*types_.begin(), parent());
       return *types_.begin();
     }
-    return std::nullopt;
+    return base::nullopt;
   }
 
   bool IsSubtypeOf(const Type* other) const override {
@@ -579,7 +581,7 @@ class AggregateType : public Type {
   }
 
   const Field& LastField() const {
-    for (std::optional<const AggregateType*> current = this;
+    for (base::Optional<const AggregateType*> current = this;
          current.has_value();
          current = (*current)->parent()->AggregateSupertype()) {
       const std::vector<Field>& fields = (*current)->fields_;
@@ -591,7 +593,7 @@ class AggregateType : public Type {
  protected:
   AggregateType(Kind kind, const Type* parent, Namespace* nspace,
                 const std::string& name,
-                MaybeSpecializationKey specialized_from = std::nullopt)
+                MaybeSpecializationKey specialized_from = base::nullopt)
       : Type(kind, parent, specialized_from),
         is_finalized_(false),
         namespace_(nspace),
@@ -639,7 +641,7 @@ class StructType final : public AggregateType {
  private:
   friend class TypeOracle;
   StructType(Namespace* nspace, const StructDeclaration* decl,
-             MaybeSpecializationKey specialized_from = std::nullopt);
+             MaybeSpecializationKey specialized_from = base::nullopt);
 
   void Finalize() const override;
   std::string ToExplicitString() const override;
@@ -658,14 +660,14 @@ enum class ObjectSlotKind : uint8_t {
   kCustomWeakPointer
 };
 
-inline std::optional<ObjectSlotKind> Combine(ObjectSlotKind a,
-                                             ObjectSlotKind b) {
+inline base::Optional<ObjectSlotKind> Combine(ObjectSlotKind a,
+                                              ObjectSlotKind b) {
   if (a == b) return {a};
   if (std::min(a, b) == ObjectSlotKind::kStrongPointer &&
       std::max(a, b) == ObjectSlotKind::kMaybeObjectPointer) {
     return {ObjectSlotKind::kMaybeObjectPointer};
   }
-  return std::nullopt;
+  return base::nullopt;
 }
 
 class ClassType final : public AggregateType {
@@ -756,7 +758,7 @@ class ClassType final : public AggregateType {
   // that may or may not require GC visiting. These helper functions determine
   // what kind of GC visiting the individual slots require.
   std::vector<ObjectSlotKind> ComputeHeaderSlotKinds() const;
-  std::optional<ObjectSlotKind> ComputeArraySlotKind() const;
+  base::Optional<ObjectSlotKind> ComputeArraySlotKind() const;
   bool HasNoPointerSlotsExceptMap() const;
   bool HasIndexedFieldsIncludingInParents() const;
   const Field* GetFieldPreceding(size_t field_index) const;
@@ -785,10 +787,10 @@ class ClassType final : public AggregateType {
   // TODO(turbofan): We should no longer pass around types as const pointers, so
   // that we can avoid mutable fields and const initializers for
   // late-initialized portions of types like this one.
-  void InitializeInstanceTypes(std::optional<int> own,
-                               std::optional<std::pair<int, int>> range) const;
-  std::optional<int> OwnInstanceType() const;
-  std::optional<std::pair<int, int>> InstanceTypeRange() const;
+  void InitializeInstanceTypes(base::Optional<int> own,
+                               base::Optional<std::pair<int, int>> range) const;
+  base::Optional<int> OwnInstanceType() const;
+  base::Optional<std::pair<int, int>> InstanceTypeRange() const;
 
  private:
   friend class TypeOracle;
@@ -805,8 +807,8 @@ class ClassType final : public AggregateType {
   const std::string generates_;
   const ClassDeclaration* decl_;
   const TypeAlias* alias_;
-  mutable std::optional<int> own_instance_type_;
-  mutable std::optional<std::pair<int, int>> instance_type_range_;
+  mutable base::Optional<int> own_instance_type_;
+  mutable base::Optional<std::pair<int, int>> instance_type_range_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Type& t) {
@@ -846,7 +848,7 @@ class VisitResult {
   const std::string& constexpr_value() const { return *constexpr_value_; }
   const StackRange& stack_range() const { return *stack_range_; }
   void SetType(const Type* new_type) { type_ = new_type; }
-  bool IsOnStack() const { return stack_range_ != std::nullopt; }
+  bool IsOnStack() const { return stack_range_ != base::nullopt; }
   bool operator==(const VisitResult& other) const {
     return type_ == other.type_ && constexpr_value_ == other.constexpr_value_ &&
            stack_range_ == other.stack_range_;
@@ -854,8 +856,8 @@ class VisitResult {
 
  private:
   const Type* type_ = nullptr;
-  std::optional<std::string> constexpr_value_;
-  std::optional<StackRange> stack_range_;
+  base::Optional<std::string> constexpr_value_;
+  base::Optional<StackRange> stack_range_;
 };
 
 VisitResult ProjectStructField(VisitResult structure,
@@ -905,7 +907,7 @@ enum class ParameterMode { kProcessImplicit, kIgnoreImplicit };
 using NameVector = std::vector<Identifier*>;
 
 struct Signature {
-  Signature(NameVector n, std::optional<std::string> arguments_variable,
+  Signature(NameVector n, base::Optional<std::string> arguments_variable,
             ParameterTypes p, size_t i, const Type* r, LabelDeclarationVector l,
             bool transitioning)
       : parameter_names(std::move(n)),
@@ -918,7 +920,7 @@ struct Signature {
   Signature() = default;
   const TypeVector& types() const { return parameter_types.types; }
   NameVector parameter_names;
-  std::optional<std::string> arguments_variable;
+  base::Optional<std::string> arguments_variable;
   ParameterTypes parameter_types;
   size_t implicit_count = 0;
   size_t ExplicitCount() const { return types().size() - implicit_count; }
@@ -950,15 +952,17 @@ TypeVector LowerParameterTypes(const TypeVector& parameters);
 TypeVector LowerParameterTypes(const ParameterTypes& parameter_types,
                                size_t vararg_count = 0);
 
-std::optional<std::tuple<size_t, std::string>> SizeOf(const Type* type);
+base::Optional<std::tuple<size_t, std::string>> SizeOf(const Type* type);
 bool IsAnyUnsignedInteger(const Type* type);
 bool IsAllowedAsBitField(const Type* type);
 bool IsPointerSizeIntegralType(const Type* type);
 bool Is32BitIntegralType(const Type* type);
 
-std::optional<NameAndType> ExtractSimpleFieldArraySize(
+base::Optional<NameAndType> ExtractSimpleFieldArraySize(
     const ClassType& class_type, Expression* array_size);
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TORQUE_TYPES_H_

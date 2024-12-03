@@ -3,21 +3,20 @@
 # found in the LICENSE file.
 
 import json
+import os
 import random
 
-from pathlib import Path
-
-THIS_DIR = Path(__file__).parent.resolve()
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # List of configuration experiments for correctness fuzzing.
 # List of <probability>, <1st config name>, <2nd config name>, <2nd d8>.
 # Probabilities must add up to 100.
-with (THIS_DIR / 'v8_fuzz_experiments.json').open() as f:
+with open(os.path.join(THIS_DIR, 'v8_fuzz_experiments.json')) as f:
   FOOZZIE_EXPERIMENTS = json.load(f)
 
 # Additional flag experiments. List of tuples like
 # (<likelihood to use flags in [0,1)>, <flag>).
-with (THIS_DIR / 'v8_fuzz_flags.json').open() as f:
+with open(os.path.join(THIS_DIR, 'v8_fuzz_flags.json')) as f:
   ADDITIONAL_FLAGS = json.load(f)
 
 
@@ -49,7 +48,7 @@ class Config(object):
     for p, flags in additional_flags:
       if self.rng.random() < p:
         for flag in flags.split():
-          extra_flags.append(f'--second-config-extra-flags={flag}')
+          extra_flags.append('--second-config-extra-flags=%s' % flag)
 
     # Calculate flags determining the experiment.
     acc = 0
@@ -58,8 +57,8 @@ class Config(object):
       acc += prob
       if acc > threshold:
         return [
-            f'--first-config={first_config}',
-            f'--second-config={second_config}',
-            f'--second-d8={second_d8}',
+          '--first-config=' + first_config,
+          '--second-config=' + second_config,
+          '--second-d8=' + second_d8,
         ] + extra_flags
     assert False

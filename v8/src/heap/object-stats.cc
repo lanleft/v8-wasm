@@ -14,7 +14,6 @@
 #include "src/execution/isolate.h"
 #include "src/heap/combined-heap.h"
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/mark-compact.h"
 #include "src/heap/marking-state-inl.h"
 #include "src/logging/counters.h"
@@ -850,16 +849,16 @@ bool ObjectStatsCollectorImpl::CanRecordFixedArray(
 }
 
 bool ObjectStatsCollectorImpl::IsCowArray(Tagged<FixedArrayBase> array) {
-  return array->map() == ReadOnlyRoots(heap_).fixed_cow_array_map();
+  return array->map(cage_base()) == ReadOnlyRoots(heap_).fixed_cow_array_map();
 }
 
 bool ObjectStatsCollectorImpl::SameLiveness(Tagged<HeapObject> obj1,
                                             Tagged<HeapObject> obj2) {
   if (obj1.is_null() || obj2.is_null()) return true;
   const auto obj1_marked =
-      HeapLayout::InReadOnlySpace(obj1) || marking_state_->IsMarked(obj1);
+      InReadOnlySpace(obj1) || marking_state_->IsMarked(obj1);
   const auto obj2_marked =
-      HeapLayout::InReadOnlySpace(obj2) || marking_state_->IsMarked(obj2);
+      InReadOnlySpace(obj2) || marking_state_->IsMarked(obj2);
   return obj1_marked == obj2_marked;
 }
 
@@ -930,8 +929,9 @@ void ObjectStatsCollectorImpl::RecordVirtualMapDetails(Tagged<Map> map) {
 
 void ObjectStatsCollectorImpl::RecordVirtualScriptDetails(
     Tagged<Script> script) {
-  RecordSimpleVirtualObjectStats(script, script->infos(),
-                                 ObjectStats::SCRIPT_INFOS_TYPE);
+  RecordSimpleVirtualObjectStats(
+      script, script->shared_function_infos(),
+      ObjectStats::SCRIPT_SHARED_FUNCTION_INFOS_TYPE);
 
   // Log the size of external source code.
   Tagged<Object> raw_source = script->source();
@@ -1109,7 +1109,7 @@ class ObjectStatsVisitor {
         phase_(phase) {}
 
   void Visit(Tagged<HeapObject> obj) {
-    if (HeapLayout::InReadOnlySpace(obj) || marking_state_->IsMarked(obj)) {
+    if (InReadOnlySpace(obj) || marking_state_->IsMarked(obj)) {
       live_collector_->CollectStatistics(
           obj, phase_, ObjectStatsCollectorImpl::CollectFieldStats::kYes);
     } else {

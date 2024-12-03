@@ -8,8 +8,7 @@
 // reachability is handled differently for unreachable catch blocks in liftoff
 // and Turboshaft causing Turboshaft to assign wrong feedback slots for calls.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function InliningDecisionsWithUnreachableCatchBlocks() {
   print(arguments.callee.name);

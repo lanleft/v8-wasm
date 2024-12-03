@@ -35,32 +35,25 @@ class V8_EXPORT_PRIVATE ConservativeStackVisitor
 
   static ConservativeStackVisitor ForTesting(Isolate* isolate,
                                              GarbageCollector collector) {
-    return ConservativeStackVisitor(isolate, nullptr, collector);
+    return ConservativeStackVisitor(isolate, collector);
   }
 
  private:
-  ConservativeStackVisitor(Isolate* isolate, RootVisitor* delegate,
-                           GarbageCollector collector);
+  ConservativeStackVisitor(Isolate* isolate, GarbageCollector collector);
 
   void VisitConservativelyIfPointer(Address address);
   void VisitConservativelyIfPointer(Address address,
                                     PtrComprCageBase cage_base);
 
-#ifdef V8_COMPRESS_POINTERS
-  bool IsInterestingCage(PtrComprCageBase cage_base) const;
-#endif
-
   // The "interesting" cages where we conservatively scan pointers are:
   // - The regular cage for the V8 heap.
   // - The cage used for code objects, if an external code space is used.
-  // - The trusted space cage.
+  // We don't need to scan pointers in the trusted space, so we can ignore
+  // the trusted cage.
   const PtrComprCageBase cage_base_;
 #ifdef V8_EXTERNAL_CODE_SPACE
   const PtrComprCageBase code_cage_base_;
   base::AddressRegion code_address_region_;
-#endif
-#ifdef V8_ENABLE_SANDBOX
-  const PtrComprCageBase trusted_cage_base_;
 #endif
 
   RootVisitor* const delegate_;

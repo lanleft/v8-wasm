@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestDeoptMemoryStart() {
   var builder = new WasmModuleBuilder();
@@ -52,8 +51,6 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(42, wasm.main(12, 30, wasm.add));
   %WasmTierUpFunction(wasm.main);
   assertEquals(42, wasm.main(12, 30, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(360, wasm.main(12, 30, wasm.mul));
 })();

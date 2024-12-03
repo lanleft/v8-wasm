@@ -4,8 +4,6 @@
 
 #include "src/compiler/graph-assembler.h"
 
-#include <optional>
-
 #include "src/base/container-utils.h"
 #include "src/codegen/callable.h"
 #include "src/codegen/machine-type.h"
@@ -46,7 +44,7 @@ class V8_NODISCARD GraphAssembler::BlockInlineReduction {
 
 GraphAssembler::GraphAssembler(
     MachineGraph* mcgraph, Zone* zone, BranchSemantics default_branch_semantics,
-    std::optional<NodeChangedCallback> node_changed_callback,
+    base::Optional<NodeChangedCallback> node_changed_callback,
     bool mark_loop_exits)
     : temp_zone_(zone),
       mcgraph_(mcgraph),
@@ -561,28 +559,28 @@ class ArrayBufferViewAccessBuilder {
     });
   }
 
-  std::optional<int> TryComputeStaticElementShift() {
+  base::Optional<int> TryComputeStaticElementShift() {
     DCHECK(instance_type_ != JS_RAB_GSAB_DATA_VIEW_TYPE);
     if (instance_type_ == JS_DATA_VIEW_TYPE) return 0;
-    if (candidates_.empty()) return std::nullopt;
+    if (candidates_.empty()) return base::nullopt;
     int shift = ElementsKindToShiftSize(*candidates_.begin());
     if (!base::all_of(candidates_, [shift](auto e) {
           return ElementsKindToShiftSize(e) == shift;
         })) {
-      return std::nullopt;
+      return base::nullopt;
     }
     return shift;
   }
 
-  std::optional<int> TryComputeStaticElementSize() {
+  base::Optional<int> TryComputeStaticElementSize() {
     DCHECK(instance_type_ != JS_RAB_GSAB_DATA_VIEW_TYPE);
     if (instance_type_ == JS_DATA_VIEW_TYPE) return 1;
-    if (candidates_.empty()) return std::nullopt;
+    if (candidates_.empty()) return base::nullopt;
     int size = ElementsKindToByteSize(*candidates_.begin());
     if (!base::all_of(candidates_, [size](auto e) {
           return ElementsKindToByteSize(e) == size;
         })) {
-      return std::nullopt;
+      return base::nullopt;
     }
     return size;
   }
@@ -678,7 +676,8 @@ class ArrayBufferViewAccessBuilder {
       TNode<Number> temp = TNode<Number>::UncheckedCast(a.TypeGuard(
           TypeCache::Get()->kJSArrayBufferViewByteLengthType,
           a.JSCallRuntime1(Runtime::kGrowableSharedArrayBufferByteLength,
-                           buffer, context, std::nullopt, Operator::kNoWrite)));
+                           buffer, context, base::nullopt,
+                           Operator::kNoWrite)));
       TNode<UintPtrT> byte_length =
           a.EnterMachineGraph<UintPtrT>(temp, UseInfo::Word());
       TNode<UintPtrT> byte_offset = MachineLoadField<UintPtrT>(
@@ -808,7 +807,8 @@ class ArrayBufferViewAccessBuilder {
       TNode<Number> temp = TNode<Number>::UncheckedCast(a.TypeGuard(
           TypeCache::Get()->kJSArrayBufferViewByteLengthType,
           a.JSCallRuntime1(Runtime::kGrowableSharedArrayBufferByteLength,
-                           buffer, context, std::nullopt, Operator::kNoWrite)));
+                           buffer, context, base::nullopt,
+                           Operator::kNoWrite)));
       TNode<UintPtrT> byte_length =
           a.EnterMachineGraph<UintPtrT>(temp, UseInfo::Word());
       TNode<UintPtrT> byte_offset = MachineLoadField<UintPtrT>(
@@ -985,7 +985,7 @@ TNode<Uint32T> JSGraphAssembler::LookupByteSizeForElementsKind(
 
 TNode<Object> JSGraphAssembler::JSCallRuntime1(
     Runtime::FunctionId function_id, TNode<Object> arg0, TNode<Context> context,
-    std::optional<FrameState> frame_state, Operator::Properties properties) {
+    base::Optional<FrameState> frame_state, Operator::Properties properties) {
   return MayThrow([&]() {
     if (frame_state.has_value()) {
       return AddNode<Object>(graph()->NewNode(
@@ -1051,7 +1051,7 @@ TNode<RawPtrT> GraphAssembler::StackSlot(int size, int alignment,
 }
 
 Node* GraphAssembler::AdaptLocalArgument(Node* argument) {
-#ifdef V8_ENABLE_DIRECT_HANDLE
+#ifdef V8_ENABLE_DIRECT_LOCAL
   // With direct locals, the argument can be passed directly.
   return BitcastTaggedToWord(argument);
 #else

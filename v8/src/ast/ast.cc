@@ -76,10 +76,6 @@ bool Expression::IsStringLiteral() const {
   return IsLiteral() && AsLiteral()->type() == Literal::kString;
 }
 
-bool Expression::IsConsStringLiteral() const {
-  return IsLiteral() && AsLiteral()->type() == Literal::kConsString;
-}
-
 bool Expression::IsPropertyName() const {
   return IsLiteral() && AsLiteral()->IsPropertyName();
 }
@@ -281,7 +277,7 @@ ObjectLiteralProperty::ObjectLiteralProperty(AstValueFactory* ast_value_factory,
                                              Expression* key, Expression* value,
                                              bool is_computed_name)
     : LiteralProperty(key, value, is_computed_name), emit_store_(true) {
-  if (!is_computed_name && key->AsLiteral()->IsRawString() &&
+  if (!is_computed_name && key->AsLiteral()->IsString() &&
       key->AsLiteral()->AsRawString() == ast_value_factory->proto_string()) {
     kind_ = PROTOTYPE;
   } else if (value_->AsMaterializedLiteral() != nullptr) {
@@ -308,19 +304,6 @@ ClassLiteralProperty::ClassLiteralProperty(Expression* key, Expression* value,
       is_static_(is_static),
       is_private_(is_private),
       private_or_computed_name_proxy_(nullptr) {}
-
-ClassLiteralProperty::ClassLiteralProperty(Expression* key, Expression* value,
-                                           AutoAccessorInfo* info,
-                                           bool is_static,
-                                           bool is_computed_name,
-                                           bool is_private)
-    : LiteralProperty(key, value, is_computed_name),
-      kind_(Kind::AUTO_ACCESSOR),
-      is_static_(is_static),
-      is_private_(is_private),
-      auto_accessor_info_(info) {
-  DCHECK_NOT_NULL(info);
-}
 
 bool ObjectLiteral::Property::IsCompileTimeValue() const {
   return kind_ == CONSTANT ||
@@ -632,7 +615,6 @@ void ArrayLiteralBoilerplateBuilder::InitDepthAndFlags() {
             break;
           case Literal::kBigInt:
           case Literal::kString:
-          case Literal::kConsString:
           case Literal::kBoolean:
           case Literal::kUndefined:
           case Literal::kNull:
@@ -733,7 +715,7 @@ void ArrayLiteralBoilerplateBuilder::BuildBoilerplateDescription(
   if (is_simple() && depth() == kShallow && array_index > 0 &&
       IsSmiOrObjectElementsKind(kind)) {
     elements->set_map_safe_transition(
-        isolate, ReadOnlyRoots(isolate).fixed_cow_array_map(), kReleaseStore);
+        ReadOnlyRoots(isolate).fixed_cow_array_map());
   }
 
   boilerplate_description_ =
@@ -1054,8 +1036,6 @@ Handle<Object> Literal::BuildValue(IsolateT* isolate) const {
           number_);
     case kString:
       return string_->string();
-    case kConsString:
-      return cons_string_->AllocateFlat(isolate);
     case kBoolean:
       return isolate->factory()->ToBoolean(boolean_);
     case kNull:
@@ -1084,8 +1064,6 @@ bool Literal::ToBooleanIsTrue() const {
       return DoubleToBoolean(number_);
     case kString:
       return !string_->IsEmpty();
-    case kConsString:
-      return !cons_string_->IsEmpty();
     case kNull:
     case kUndefined:
       return false;
@@ -1110,15 +1088,14 @@ bool Literal::ToBooleanIsTrue() const {
 }
 
 uint32_t Literal::Hash() {
-  DCHECK(IsRawString() || IsNumber());
   uint32_t index;
   if (AsArrayIndex(&index)) {
     // Treat array indices as numbers, so that array indices are de-duped
     // correctly even if one of them is a string and the other is a number.
     return ComputeLongHash(index);
   }
-  return IsRawString() ? AsRawString()->Hash()
-                       : ComputeLongHash(base::double_to_uint64(AsNumber()));
+  return IsString() ? AsRawString()->Hash()
+                    : ComputeLongHash(base::double_to_uint64(AsNumber()));
 }
 
 // static
@@ -1130,7 +1107,7 @@ bool Literal::Match(void* a, void* b) {
   if (x->AsArrayIndex(&index_x)) {
     return y->AsArrayIndex(&index_y) && index_x == index_y;
   }
-  return (x->IsRawString() && y->IsRawString() &&
+  return (x->IsString() && y->IsString() &&
           x->AsRawString() == y->AsRawString()) ||
          (x->IsNumber() && y->IsNumber() && x->AsNumber() == y->AsNumber());
 }

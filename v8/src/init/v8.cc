@@ -200,8 +200,8 @@ void V8::Initialize() {
   GetProcessWideSandbox()->Initialize(GetPlatformVirtualAddressSpace());
   CHECK_EQ(kSandboxSize, GetProcessWideSandbox()->size());
 
-  IsolateGroup::current()->code_pointer_table()->Initialize();
-  JSDispatchTable::Initialize();
+  GetProcessWideCodePointerTable()->Initialize();
+  GetProcessWideJSDispatchTable()->Initialize();
 
   // Enable sandbox testing mode if requested.
   //
@@ -242,10 +242,7 @@ void V8::Initialize() {
   wasm::WasmEngine::InitializeOncePerProcess();
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-#ifndef V8_COMPRESS_POINTERS_IN_MULTIPLE_CAGES
-  ExternalReferenceTable::InitializeOncePerIsolateGroup(
-      IsolateGroup::current()->external_ref_table());
-#endif  // V8_COMPRESS_POINTERS_IN_MULTIPLE_CAGES
+  ExternalReferenceTable::InitializeOncePerProcess();
 
   AdvanceStartupState(V8StartupState::kV8Initialized);
 }

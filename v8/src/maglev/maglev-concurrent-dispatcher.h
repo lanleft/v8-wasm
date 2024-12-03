@@ -56,8 +56,8 @@ class MaglevCompilationJob final : public OptimizedCompilationJob {
                         LocalIsolate* local_isolate) override;
   Status FinalizeJobImpl(Isolate* isolate) override;
 
-  IndirectHandle<JSFunction> function() const;
-  MaybeIndirectHandle<Code> code() const;
+  Handle<JSFunction> function() const;
+  MaybeHandle<Code> code() const;
   BytecodeOffset osr_offset() const;
   bool is_osr() const;
 

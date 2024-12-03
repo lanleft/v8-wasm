@@ -171,7 +171,7 @@ class Object : public AllStatic {
   static Handle<JSAny> WrapForRead(IsolateT* isolate, Handle<JSAny> object,
                                    Representation representation);
 
-  // Returns true if the object is of the correct type to be used as an
+  // Returns true if the object is of the correct type to be used as a
   // implementation of a JSObject's elements.
   static inline bool HasValidElements(Tagged<Object> obj);
 
@@ -252,10 +252,12 @@ class Object : public AllStatic {
   V8_WARN_UNUSED_RESULT static inline MaybeHandle<String> ToString(
       Isolate* isolate, Handle<T> input);
 
+#ifdef V8_ENABLE_DIRECT_HANDLE
   template <typename T, typename = std::enable_if_t<std::is_convertible_v<
                             DirectHandle<T>, DirectHandle<Object>>>>
   V8_WARN_UNUSED_RESULT static inline MaybeDirectHandle<String> ToString(
       Isolate* isolate, DirectHandle<T> input);
+#endif
 
   V8_EXPORT_PRIVATE static MaybeDirectHandle<String> NoSideEffectsToMaybeString(
       Isolate* isolate, DirectHandle<Object> input);
@@ -358,15 +360,13 @@ class Object : public AllStatic {
   V8_WARN_UNUSED_RESULT static Maybe<bool> SetDataProperty(
       LookupIterator* it, Handle<Object> value);
   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static Maybe<bool> AddDataProperty(
-      LookupIterator* it, DirectHandle<Object> value,
-      PropertyAttributes attributes, Maybe<ShouldThrow> should_throw,
-      StoreOrigin store_origin,
+      LookupIterator* it, Handle<Object> value, PropertyAttributes attributes,
+      Maybe<ShouldThrow> should_throw, StoreOrigin store_origin,
       EnforceDefineSemantics semantics = EnforceDefineSemantics::kSet);
 
   V8_WARN_UNUSED_RESULT static Maybe<bool> TransitionAndWriteDataProperty(
-      LookupIterator* it, DirectHandle<Object> value,
-      PropertyAttributes attributes, Maybe<ShouldThrow> should_throw,
-      StoreOrigin store_origin);
+      LookupIterator* it, Handle<Object> value, PropertyAttributes attributes,
+      Maybe<ShouldThrow> should_throw, StoreOrigin store_origin);
 
   V8_WARN_UNUSED_RESULT static inline MaybeHandle<Object> GetPropertyOrElement(
       Isolate* isolate, Handle<Object> object, Handle<Name> name);

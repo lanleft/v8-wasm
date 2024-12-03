@@ -5,8 +5,6 @@
 #ifndef V8_OBJECTS_LOOKUP_H_
 #define V8_OBJECTS_LOOKUP_H_
 
-#include <optional>
-
 #include "src/common/globals.h"
 #include "src/execution/isolate.h"
 #include "src/heap/factory.h"
@@ -19,7 +17,8 @@
 #include "src/wasm/value-type.h"
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 class PropertyKey {
  public:
@@ -137,10 +136,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
     InterceptorState state = InterceptorState::kUninitialized;
     IsElement() ? RestartInternal<true>(state) : RestartInternal<false>(state);
   }
-
-  // Checks index validity in a TypedArray again, but doesn't do the whole
-  // lookup anew (holder doesn't change).
-  void RecheckTypedArrayBounds();
 
   Isolate* isolate() const { return isolate_; }
   State state() const { return state_; }
@@ -393,7 +388,7 @@ class ConcurrentLookupIterator final : public AllStatic {
   // consistent among themselves (e.g. the elements kind may not match the
   // given elements backing store). We are thus extra-careful to handle
   // exceptional situations.
-  V8_EXPORT_PRIVATE static std::optional<Tagged<Object>> TryGetOwnCowElement(
+  V8_EXPORT_PRIVATE static base::Optional<Tagged<Object>> TryGetOwnCowElement(
       Isolate* isolate, Tagged<FixedArray> array_elements,
       ElementsKind elements_kind, int array_length, size_t index);
 
@@ -418,12 +413,13 @@ class ConcurrentLookupIterator final : public AllStatic {
   // LookupIterator it(holder, isolate, name, LookupIterator::OWN);
   // it.TryLookupCachedProperty();
   // if (it.state() == LookupIterator::DATA) it.GetPropertyCell();
-  V8_EXPORT_PRIVATE static std::optional<Tagged<PropertyCell>>
+  V8_EXPORT_PRIVATE static base::Optional<Tagged<PropertyCell>>
   TryGetPropertyCell(Isolate* isolate, LocalIsolate* local_isolate,
                      DirectHandle<JSGlobalObject> holder,
                      DirectHandle<Name> name);
 };
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_OBJECTS_LOOKUP_H_

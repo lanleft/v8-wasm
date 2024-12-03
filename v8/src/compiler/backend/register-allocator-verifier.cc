@@ -4,8 +4,6 @@
 
 #include "src/compiler/backend/register-allocator-verifier.h"
 
-#include <optional>
-
 #include "src/compiler/backend/instruction.h"
 #include "src/utils/bit-vector.h"
 #include "src/utils/ostreams.h"
@@ -355,7 +353,7 @@ void BlockAssessments::CheckReferenceMap(const ReferenceMap* reference_map) {
 }
 
 bool BlockAssessments::IsStaleReferenceStackSlot(InstructionOperand op,
-                                                 std::optional<int> vreg) {
+                                                 base::Optional<int> vreg) {
   if (!op.IsStackSlot()) return false;
   if (vreg.has_value() && !sequence_->IsReference(*vreg)) return false;
 
@@ -483,10 +481,13 @@ void RegisterAllocatorVerifier::ValidatePendingAssessment(
       auto pred_assignment = assessments_.find(pred);
       if (pred_assignment == assessments_.end()) {
         CHECK(origin->IsLoopHeader());
-        auto [todo_iter, inserted] = outstanding_assessments_.try_emplace(pred);
-        DelayedAssessments*& set = todo_iter->second;
-        if (inserted) {
+        auto todo_iter = outstanding_assessments_.find(pred);
+        DelayedAssessments* set = nullptr;
+        if (todo_iter == outstanding_assessments_.end()) {
           set = zone()->New<DelayedAssessments>(zone());
+          outstanding_assessments_.insert(std::make_pair(pred, set));
+        } else {
+          set = todo_iter->second;
         }
         set->AddDelayedAssessment(current_operand, expected);
         continue;
@@ -506,9 +507,9 @@ void RegisterAllocatorVerifier::ValidatePendingAssessment(
           // This happens if we have a diamond feeding into another one, and
           // the inner one never being used - other than for carrying the value.
           const PendingAssessment* next = PendingAssessment::cast(contribution);
-          auto [it, inserted] = seen.insert(pred);
-          if (inserted) {
+          if (seen.find(pred) == seen.end()) {
             worklist.push({next, expected});
+            seen.insert(pred);
           }
           // Note that we do not want to finalize pending assessments at the
           // beginning of a block - which is the information we'd have

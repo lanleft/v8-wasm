@@ -103,11 +103,13 @@ static i::Handle<i::BreakPoint> SetBreakPoint(v8::Local<v8::Function> fun,
   return break_point;
 }
 
-static void ClearBreakPoint(i::DirectHandle<i::BreakPoint> break_point) {
+
+static void ClearBreakPoint(i::Handle<i::BreakPoint> break_point) {
   v8::internal::Isolate* isolate = CcTest::i_isolate();
   v8::internal::Debug* debug = isolate->debug();
   debug->ClearBreakPoint(break_point);
 }
+
 
 // Change break on exception.
 static void ChangeBreakOnException(v8::Isolate* isolate, bool caught,
@@ -302,12 +304,12 @@ TEST(DebugInfo) {
   CHECK(!HasBreakInfo(bar));
   EnableDebugger(env->GetIsolate());
   // One function (foo) is debugged.
-  i::DirectHandle<i::BreakPoint> bp1 = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp1 = SetBreakPoint(foo, 0);
   CHECK_EQ(1, v8::internal::GetDebuggedFunctions()->length());
   CHECK(HasBreakInfo(foo));
   CHECK(!HasBreakInfo(bar));
   // Two functions are debugged.
-  i::DirectHandle<i::BreakPoint> bp2 = SetBreakPoint(bar, 0);
+  i::Handle<i::BreakPoint> bp2 = SetBreakPoint(bar, 0);
   CHECK_EQ(2, v8::internal::GetDebuggedFunctions()->length());
   CHECK(HasBreakInfo(foo));
   CHECK(HasBreakInfo(bar));
@@ -341,7 +343,7 @@ TEST(BreakPointICStore) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
   CHECK_EQ(1, break_point_hit_count);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
@@ -372,7 +374,7 @@ TEST(BreakPointCondition) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0, "a == true");
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0, "a == true");
   CompileRun("foo()");
   CHECK_EQ(0, break_point_hit_count);
 
@@ -406,7 +408,7 @@ TEST(BreakPointICLoad) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint.
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
   CHECK_EQ(1, break_point_hit_count);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
@@ -438,7 +440,7 @@ TEST(BreakPointICCall) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
   CHECK_EQ(1, break_point_hit_count);
   foo->Call(env.local(), env->Global(), 0, nullptr).ToLocalChecked();
@@ -474,7 +476,7 @@ TEST(BreakPointICCallWithGC) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint.
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
   CHECK_EQ(1, foo->Call(context, env->Global(), 0, nullptr)
                   .ToLocalChecked()
                   ->Int32Value(context)
@@ -516,7 +518,7 @@ TEST(BreakPointConstructCallWithGC) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint.
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
   CHECK_EQ(1, foo->Call(context, env->Global(), 0, nullptr)
                   .ToLocalChecked()
                   ->Int32Value(context)
@@ -546,7 +548,7 @@ TEST(BreakPointBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test simple builtin ===
   break_point_hit_count = 0;
@@ -680,7 +682,7 @@ TEST(BreakPointJSBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test JS builtin ===
   break_point_hit_count = 0;
@@ -711,7 +713,7 @@ TEST(BreakPointBoundBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test bound function from a builtin ===
   break_point_hit_count = 0;
@@ -744,7 +746,7 @@ TEST(BreakPointConstructorBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test Promise constructor ===
   break_point_hit_count = 0;
@@ -807,7 +809,7 @@ TEST(BreakPointInlinedBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test inlined builtin ===
   break_point_hit_count = 0;
@@ -851,7 +853,7 @@ TEST(BreakPointInlineBoundBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test inlined bound builtin ===
   break_point_hit_count = 0;
@@ -899,7 +901,7 @@ TEST(BreakPointInlinedConstructorBuiltin) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test inlined constructor builtin (regular construct builtin) ===
   break_point_hit_count = 0;
@@ -943,7 +945,7 @@ TEST(BreakPointBuiltinConcurrentOpt) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test concurrent optimization ===
   break_point_hit_count = 0;
@@ -984,7 +986,7 @@ TEST(BreakPointBuiltinTFOperator) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test builtin represented as operator ===
   break_point_hit_count = 0;
@@ -1027,9 +1029,9 @@ TEST(BreakPointBuiltinNewContext) {
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
-  // === Test builtin from a new context ===
+// === Test builtin from a new context ===
   break_point_hit_count = 0;
   builtin = CompileRun("String.prototype.repeat").As<v8::Function>();
   CompileRun("'a'.repeat(10)");
@@ -1072,7 +1074,7 @@ TEST(BreakPointApiFunction) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   v8::Local<v8::FunctionTemplate> function_template =
       v8::FunctionTemplate::New(env->GetIsolate(), NoOpFunctionCallback);
@@ -1114,7 +1116,7 @@ TEST(BreakPointApiConstructor) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   v8::Local<v8::FunctionTemplate> function_template =
       v8::FunctionTemplate::New(env->GetIsolate(), NoOpFunctionCallback);
@@ -1163,7 +1165,7 @@ TEST(BreakPointApiGetter) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   v8::Local<v8::FunctionTemplate> function_template =
       v8::FunctionTemplate::New(env->GetIsolate(), NoOpFunctionCallback);
@@ -1217,7 +1219,7 @@ TEST(BreakPointApiSetter) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   v8::Local<v8::FunctionTemplate> function_template =
       v8::FunctionTemplate::New(env->GetIsolate(), NoOpFunctionCallback);
@@ -1284,7 +1286,7 @@ TEST(BreakPointApiAccessor) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // Create 'foo' class, with a hidden property.
   v8::Local<v8::ObjectTemplate> obj_template =
@@ -1363,7 +1365,7 @@ TEST(Regress1163547) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   auto constructor_tmpl = v8::FunctionTemplate::New(env->GetIsolate());
   auto prototype_tmpl = constructor_tmpl->PrototypeTemplate();
@@ -1475,7 +1477,7 @@ TEST(BreakPointInlineApiFunction) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
 
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   v8::Local<v8::FunctionTemplate> function_template =
       v8::FunctionTemplate::New(env->GetIsolate(), NoOpFunctionCallback);
@@ -1521,7 +1523,7 @@ TEST(BreakPointConditionBuiltin) {
   DebugEventCounter delegate;
   v8::debug::SetDebugDelegate(env->GetIsolate(), &delegate);
   v8::Local<v8::Function> builtin;
-  i::DirectHandle<i::BreakPoint> bp;
+  i::Handle<i::BreakPoint> bp;
 
   // === Test global variable ===
   break_point_hit_count = 0;
@@ -1662,7 +1664,7 @@ TEST(BreakPointInlining) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with breakpoint.
-  i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(inlinee, 0);
+  i::Handle<i::BreakPoint> bp = SetBreakPoint(inlinee, 0);
   CompileRun("f(0.1);");
   CHECK_EQ(1, break_point_hit_count);
   CompileRun("test(0.2);");
@@ -1880,7 +1882,7 @@ TEST(DebuggerStatementBreakpoint) {
     foo->Call(context, env->Global(), 0, nullptr).ToLocalChecked();
     CHECK_EQ(1, break_point_hit_count);
 
-    i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
+    i::Handle<i::BreakPoint> bp = SetBreakPoint(foo, 0);
 
     // Set breakpoint does not duplicate hits
     foo->Call(context, env->Global(), 0, nullptr).ToLocalChecked();
@@ -3148,7 +3150,7 @@ class DebugScopingListener : public v8::debug::DebugDelegate {
 
     auto scopes = stack_traces->GetScopeIterator();
     CHECK_EQ(v8::debug::ScopeIterator::ScopeTypeWith, scopes->GetType());
-    CHECK_EQ(19, scopes->GetStartLocation().GetColumnNumber());
+    CHECK_EQ(20, scopes->GetStartLocation().GetColumnNumber());
     CHECK_EQ(31, scopes->GetEndLocation().GetColumnNumber());
 
     scopes->Advance();
@@ -3435,7 +3437,7 @@ TEST(DebugScriptLineEndsAreAscending) {
           .ToLocalChecked();
   USE(script);
 
-  DirectHandle<v8::internal::FixedArray> instances;
+  Handle<v8::internal::FixedArray> instances;
   {
     v8::internal::Debug* debug = CcTest::i_isolate()->debug();
     instances = debug->GetLoadedScripts();
@@ -4378,7 +4380,7 @@ UNINITIALIZED_TEST(Bug1511649UnlockerRestoreDebug) {
 
     v8::Local<v8::Function> test =
         CompileFunction(isolate, "function test() {}", "test");
-    i::DirectHandle<i::BreakPoint> bp = SetBreakPoint(test, 0);
+    i::Handle<i::BreakPoint> bp = SetBreakPoint(test, 0);
 
     {
       isolate->Exit();
@@ -4828,82 +4830,6 @@ TEST(DebugEvaluateLocalSharedCrossOrigin) {
   v8::debug::SetDebugDelegate(isolate, nullptr);
 }
 
-TEST(DebugEvaluateImportMetaInScript) {
-  struct BreakProgramDelegate : public v8::debug::DebugDelegate {
-    void BreakProgramRequested(v8::Local<v8::Context> context,
-                               std::vector<v8::debug::BreakpointId> const&,
-                               v8::debug::BreakReasons) final {
-      v8::Isolate* isolate = context->GetIsolate();
-      v8::TryCatch tryCatch(isolate);
-      tryCatch.SetCaptureMessage(true);
-      std::unique_ptr<v8::debug::StackTraceIterator> it =
-          v8::debug::StackTraceIterator::Create(isolate);
-      auto result =
-          it->Evaluate(v8_str(isolate, "import.meta"), false).ToLocalChecked();
-
-      // Within the context of a devtools evaluation, import.meta is
-      // always permitted, and will return `undefined` when outside of a
-      // module.
-      CHECK(result->IsUndefined());
-      CHECK(!tryCatch.HasCaught());
-    }
-  } delegate;
-  LocalContext env;
-  v8::Isolate* isolate = env->GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::debug::SetDebugDelegate(isolate, &delegate);
-  v8::Script::Compile(env.local(), v8_str(isolate, "debugger;"))
-      .ToLocalChecked()
-      ->Run(env.local())
-      .ToLocalChecked();
-  v8::debug::SetDebugDelegate(isolate, nullptr);
-}
-
-static v8::MaybeLocal<v8::Module> UnexpectedModuleResolveCallback(
-    v8::Local<v8::Context> context, v8::Local<v8::String> specifier,
-    v8::Local<v8::FixedArray> import_assertions,
-    v8::Local<v8::Module> referrer) {
-  CHECK_WITH_MSG(false, "Unexpected call to resolve callback");
-}
-
-TEST(DebugEvaluateImportMetaInModule) {
-  struct BreakProgramDelegate : public v8::debug::DebugDelegate {
-    void BreakProgramRequested(v8::Local<v8::Context> context,
-                               std::vector<v8::debug::BreakpointId> const&,
-                               v8::debug::BreakReasons) final {
-      v8::Isolate* isolate = context->GetIsolate();
-      v8::TryCatch tryCatch(isolate);
-      tryCatch.SetCaptureMessage(true);
-      std::unique_ptr<v8::debug::StackTraceIterator> it =
-          v8::debug::StackTraceIterator::Create(isolate);
-      auto result =
-          it->Evaluate(v8_str(isolate, "import.meta"), false).ToLocalChecked();
-      CHECK(result->IsObject());
-      CHECK(!tryCatch.HasCaught());
-    }
-  } delegate;
-  LocalContext env;
-  v8::Isolate* isolate = env->GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::debug::SetDebugDelegate(isolate, &delegate);
-
-  v8::ScriptOrigin script_origin(v8_str("test"), 0, 0, false, -1,
-                                 v8::Local<v8::Value>(), false, false, true);
-  v8::ScriptCompiler::Source script_compiler_source(v8_str("debugger;"),
-                                                    script_origin);
-  v8::Local<v8::Module> module =
-      v8::ScriptCompiler::CompileModule(isolate, &script_compiler_source)
-          .ToLocalChecked();
-
-  CHECK_EQ(
-      module->InstantiateModule(env.local(), UnexpectedModuleResolveCallback)
-          .ToChecked(),
-      true);
-  module->Evaluate(env.local()).ToLocalChecked();
-
-  v8::debug::SetDebugDelegate(isolate, nullptr);
-}
-
 namespace {
 i::MaybeHandle<i::Script> FindScript(
     i::Isolate* isolate, const std::vector<i::Handle<i::Script>>& scripts,
@@ -5000,7 +4926,7 @@ TEST(SourceInfo) {
       "}\n";
   v8::Local<v8::Script> v8_script =
       v8::Script::Compile(env.local(), v8_str(source)).ToLocalChecked();
-  i::DirectHandle<i::Script> i_script(
+  i::Handle<i::Script> i_script(
       i::Cast<i::Script>(
           v8::Utils::OpenDirectHandle(*v8_script)->shared()->script()),
       CcTest::i_isolate());
@@ -5628,177 +5554,6 @@ TEST(GetPrivateStaticAndInstanceMethodsAndAccessors) {
     } else {
       CHECK_EQ(name_str, "#writeOnly");
       CHECK(accessors->getter()->IsNull());
-      CHECK(accessors->setter()->IsFunction());
-    }
-  }
-}
-
-TEST(GetPrivateAutoAccessors) {
-  i::v8_flags.js_decorators = true;
-  LocalContext env;
-  v8::Isolate* v8_isolate = CcTest::isolate();
-  v8::HandleScope scope(v8_isolate);
-  v8::Local<v8::Context> context = env.local();
-  v8::Local<v8::String> source = v8_str(
-      "var Y = class {\n"
-      "  static accessor #static_base_field = 4;\n"
-      "  accessor #base_field = 3;\n"
-      "}\n"
-      "var X = class extends Y{\n"
-      "  static accessor #static_field = 2\n;"
-      "  accessor #field = 1;\n"
-      "}\n"
-      "var y = new Y();\n"
-      "var x = new X();");
-  CompileRun(source);
-  int field_filter =
-      static_cast<int>(v8::debug::PrivateMemberFilter::kPrivateFields);
-  int accessor_filter =
-      static_cast<int>(v8::debug::PrivateMemberFilter::kPrivateAccessors);
-
-  v8::Local<v8::Object> object = v8::Local<v8::Object>::Cast(
-      env->Global()
-          ->Get(context, v8_str(env->GetIsolate(), "Y"))
-          .ToLocalChecked());
-  v8::LocalVector<v8::Value> names(v8_isolate);
-  v8::LocalVector<v8::Value> values(v8_isolate);
-  CHECK(v8::debug::GetPrivateMembers(context, object, field_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK_EQ(name_str, ".accessor-storage-0");
-    CHECK(values[0]->Equals(context, v8_num(4)).FromJust());
-  }
-
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, accessor_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK(v8::debug::AccessorPair::IsAccessorPair(values[0]));
-    v8::Local<v8::debug::AccessorPair> accessors =
-        values[0].As<v8::debug::AccessorPair>();
-    CHECK_EQ(name_str, "#static_base_field");
-    CHECK(accessors->getter()->IsFunction());
-    CHECK(accessors->setter()->IsFunction());
-  }
-
-  object = v8::Local<v8::Object>::Cast(
-      env->Global()
-          ->Get(context, v8_str(env->GetIsolate(), "y"))
-          .ToLocalChecked());
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, field_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK_EQ(name_str, ".accessor-storage-1");
-    CHECK(values[0]->Equals(context, v8_num(3)).FromJust());
-  }
-
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, accessor_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK(v8::debug::AccessorPair::IsAccessorPair(values[0]));
-    v8::Local<v8::debug::AccessorPair> accessors =
-        values[0].As<v8::debug::AccessorPair>();
-    CHECK_EQ(name_str, "#base_field");
-    CHECK(accessors->getter()->IsFunction());
-    CHECK(accessors->setter()->IsFunction());
-  }
-
-  object = v8::Local<v8::Object>::Cast(
-      env->Global()
-          ->Get(context, v8_str(env->GetIsolate(), "X"))
-          .ToLocalChecked());
-  names.clear();
-  values.clear();
-
-  CHECK(v8::debug::GetPrivateMembers(context, object, field_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK_EQ(name_str, ".accessor-storage-0");
-    CHECK(values[0]->Equals(context, v8_num(2)).FromJust());
-  }
-
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, accessor_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 1);
-  CHECK(names[0]->IsString());
-  {
-    std::string name_str = FromString(v8_isolate, names[0].As<v8::String>());
-    CHECK(v8::debug::AccessorPair::IsAccessorPair(values[0]));
-    v8::Local<v8::debug::AccessorPair> accessors =
-        values[0].As<v8::debug::AccessorPair>();
-    CHECK_EQ(name_str, "#static_field");
-    CHECK(accessors->getter()->IsFunction());
-    CHECK(accessors->setter()->IsFunction());
-  }
-
-  object = v8::Local<v8::Object>::Cast(
-      env->Global()
-          ->Get(context, v8_str(env->GetIsolate(), "x"))
-          .ToLocalChecked());
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, field_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 2);
-  int expected[2] = {/*#base_field=*/3, /*#field=*/1};
-  for (int i = 0; i < 2; i++) {
-    v8::Local<v8::Value> name = names[i];
-    v8::Local<v8::Value> value = values[i];
-    CHECK(name->IsString());
-    std::string name_str = FromString(v8_isolate, name.As<v8::String>());
-    CHECK_EQ(name_str, ".accessor-storage-1");
-    CHECK(value->Equals(context, v8_num(expected[i])).FromJust());
-  }
-
-  names.clear();
-  values.clear();
-  CHECK(v8::debug::GetPrivateMembers(context, object, accessor_filter, &names,
-                                     &values));
-
-  CHECK_EQ(names.size(), 2);
-  for (int i = 0; i < 2; i++) {
-    v8::Local<v8::Value> name = names[i];
-    v8::Local<v8::Value> value = values[i];
-    CHECK(name->IsString());
-    std::string name_str = FromString(v8_isolate, name.As<v8::String>());
-    CHECK(v8::debug::AccessorPair::IsAccessorPair(value));
-    v8::Local<v8::debug::AccessorPair> accessors =
-        value.As<v8::debug::AccessorPair>();
-    if (name_str == "#base_field") {
-      CHECK(accessors->getter()->IsFunction());
-      CHECK(accessors->setter()->IsFunction());
-    } else {
-      CHECK_EQ(name_str, "#field");
-      CHECK(accessors->getter()->IsFunction());
       CHECK(accessors->setter()->IsFunction());
     }
   }

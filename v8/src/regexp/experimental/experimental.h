@@ -25,9 +25,9 @@ class ExperimentalRegExp final : public AllStatic {
   static void Initialize(Isolate* isolate, DirectHandle<JSRegExp> re,
                          DirectHandle<String> pattern, RegExpFlags flags,
                          int capture_count);
-  static bool IsCompiled(DirectHandle<IrRegExpData> re_data, Isolate* isolate);
+  static bool IsCompiled(DirectHandle<JSRegExp> re, Isolate* isolate);
   V8_WARN_UNUSED_RESULT
-  static bool Compile(Isolate* isolate, DirectHandle<IrRegExpData> re_data);
+  static bool Compile(Isolate* isolate, DirectHandle<JSRegExp> re);
 
   // Execution:
   static int32_t MatchForCallFromJs(Address subject, int32_t start_position,
@@ -35,26 +35,23 @@ class ExperimentalRegExp final : public AllStatic {
                                     int* output_registers,
                                     int32_t output_register_count,
                                     RegExp::CallOrigin call_origin,
-                                    Isolate* isolate, Address regexp_data);
+                                    Isolate* isolate, Address regexp);
   static MaybeHandle<Object> Exec(
-      Isolate* isolate, DirectHandle<IrRegExpData> regexp_data,
-      Handle<String> subject, int index,
-      Handle<RegExpMatchInfo> last_match_info,
+      Isolate* isolate, Handle<JSRegExp> regexp, Handle<String> subject,
+      int index, Handle<RegExpMatchInfo> last_match_info,
       RegExp::ExecQuirks exec_quirks = RegExp::ExecQuirks::kNone);
   static int32_t ExecRaw(Isolate* isolate, RegExp::CallOrigin call_origin,
-                         Tagged<IrRegExpData> regexp_data,
-                         Tagged<String> subject, int32_t* output_registers,
+                         Tagged<JSRegExp> regexp, Tagged<String> subject,
+                         int32_t* output_registers,
                          int32_t output_register_count, int32_t subject_index);
 
   // Compile and execute a regexp with the experimental engine, regardless of
   // its type tag.  The regexp itself is not changed (apart from lastIndex).
   static MaybeHandle<Object> OneshotExec(
-      Isolate* isolate, DirectHandle<IrRegExpData> regexp_data,
-      DirectHandle<String> subject, int index,
-      Handle<RegExpMatchInfo> last_match_info,
+      Isolate* isolate, Handle<JSRegExp> regexp, DirectHandle<String> subject,
+      int index, Handle<RegExpMatchInfo> last_match_info,
       RegExp::ExecQuirks exec_quirks = RegExp::ExecQuirks::kNone);
-  static int32_t OneshotExecRaw(Isolate* isolate,
-                                DirectHandle<IrRegExpData> regexp_data,
+  static int32_t OneshotExecRaw(Isolate* isolate, DirectHandle<JSRegExp> regexp,
                                 DirectHandle<String> subject,
                                 int32_t* output_registers,
                                 int32_t output_register_count,

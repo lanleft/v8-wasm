@@ -35,10 +35,6 @@ Handle<Object> DeoptimizationLiteral::Reify(Isolate* isolate) const {
     case DeoptimizationLiteralKind::kUnsignedBigInt64: {
       return BigInt::FromUint64(isolate, uint64_);
     }
-    case DeoptimizationLiteralKind::kHoleNaN: {
-      // Hole NaNs that made it to here represent the undefined value.
-      return isolate->factory()->undefined_value();
-    }
     case DeoptimizationLiteralKind::kWasmI31Ref:
     case DeoptimizationLiteralKind::kWasmInt32:
     case DeoptimizationLiteralKind::kWasmFloat32:
@@ -74,7 +70,7 @@ Handle<DeoptimizationData> DeoptimizationData::Empty(LocalIsolate* isolate) {
 
 Tagged<SharedFunctionInfo> DeoptimizationData::GetInlinedFunction(int index) {
   if (index == -1) {
-    return GetSharedFunctionInfo();
+    return Cast<i::SharedFunctionInfo>(SharedFunctionInfo());
   } else {
     return Cast<i::SharedFunctionInfo>(LiteralArray()->get(index));
   }
@@ -222,7 +218,9 @@ DeoptTranslationIterator::DeoptTranslationIterator(
 DeoptimizationFrameTranslation::Iterator::Iterator(
     Tagged<DeoptimizationFrameTranslation> buffer, int index)
     : DeoptTranslationIterator(
-          base::Vector<uint8_t>(buffer->begin(), buffer->length()), index) {}
+          base::Vector<uint8_t>(buffer->AddressOfElementAt(0),
+                                buffer->length()),
+          index) {}
 
 int32_t DeoptTranslationIterator::NextOperand() {
   if (V8_UNLIKELY(v8_flags.turbo_compress_frame_translations)) {
@@ -386,7 +384,7 @@ void DeoptimizationFrameTranslation::PrintFrameTranslation(
     Tagged<DeoptimizationLiteralArray> literal_array) const {
   DisallowGarbageCollection gc_oh_noes;
 
-  DeoptimizationFrameTranslation::Iterator iterator(this, index);
+  DeoptimizationFrameTranslation::Iterator iterator(*this, index);
   TranslationOpcode opcode = iterator.NextOpcode();
   DCHECK(TranslationOpcodeIsBegin(opcode));
   os << opcode << " ";

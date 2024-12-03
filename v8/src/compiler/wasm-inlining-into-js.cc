@@ -59,7 +59,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
       parameters_[i] = nullptr;
     }
     // Instance node at parameter 0.
-    trusted_data_node_ = Param(wasm::kWasmInstanceDataParameterIndex);
+    trusted_data_node_ = Param(wasm::kWasmInstanceParameterIndex);
   }
 
   Node* Param(int index, const char* debug_name = nullptr) {
@@ -70,7 +70,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
     if (parameters_[array_index] == nullptr) {
       Node* param = graph_->NewNode(
           mcgraph_->common()->Parameter(index, debug_name), graph_->start());
-      if (index > wasm::kWasmInstanceDataParameterIndex) {
+      if (index > wasm::kWasmInstanceParameterIndex) {
         // Add a type guard to keep type information based on the inlinee's
         // signature.
         wasm::ValueType type = body_.sig->GetParam(index - 1);
@@ -106,7 +106,6 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
           continue;
         case wasm::kExprRefCast:
         case wasm::kExprRefCastNull:
-          printf("TryInlining opcode = %d\n", opcode);
           DCHECK(!stack.empty());
           stack.back() =
               ParseRefCast(stack.back(), opcode == wasm::kExprRefCastNull);
@@ -212,7 +211,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
   }
 
   Value ParseStructGet(Value struct_val, WasmOpcode opcode) {
-    wasm::ModuleTypeIndex struct_index{consume_u32v()};
+    uint32_t struct_index = consume_u32v();
     DCHECK(module_->has_struct(struct_index));
     const wasm::StructType* struct_type = module_->struct_type(struct_index);
     uint32_t field_index = consume_u32v();
@@ -227,7 +226,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
   }
 
   void ParseStructSet(Value wasm_struct, Value value) {
-    wasm::ModuleTypeIndex struct_index{consume_u32v()};
+    uint32_t struct_index = consume_u32v();
     DCHECK(module_->has_struct(struct_index));
     const wasm::StructType* struct_type = module_->struct_type(struct_index);
     uint32_t field_index = consume_u32v();
@@ -271,13 +270,12 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
       gasm_.InitializeEffectControl(type_guard, gasm_.control());
       return TypeNode(type_guard, result_type);
     }
-    if (module_->has_signature(
-            wasm::ModuleTypeIndex{static_cast<uint32_t>(heap_index)})) {
+    if (module_->has_signature(static_cast<uint32_t>(heap_index))) {
       is_inlineable_ = false;
       return {};
     }
     wasm::ValueType target_type = wasm::ValueType::RefMaybeNull(
-        wasm::ModuleTypeIndex{static_cast<uint32_t>(heap_index)},
+        static_cast<uint32_t>(heap_index),
         null_succeeds ? wasm::kNullable : wasm::kNonNullable);
     Node* rtt = mcgraph_->graph()->NewNode(
         gasm_.simplified()->RttCanon(target_type.ref_index()),
@@ -300,7 +298,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
   }
 
   Value ParseArrayGet(Value array, Value index, WasmOpcode opcode) {
-    wasm::ModuleTypeIndex array_index{consume_u32v()};
+    uint32_t array_index = consume_u32v();
     DCHECK(module_->has_array(array_index));
     const wasm::ArrayType* array_type = module_->array_type(array_index);
     const bool is_signed = opcode == WasmOpcode::kExprArrayGetS;
@@ -319,7 +317,7 @@ class WasmIntoJSInlinerImpl : private wasm::Decoder {
   }
 
   void ParseArraySet(Value array, Value index, Value value) {
-    wasm::ModuleTypeIndex array_index{consume_u32v()};
+    uint32_t array_index = consume_u32v();
     DCHECK(module_->has_array(array_index));
     const wasm::ArrayType* array_type = module_->array_type(array_index);
     const CheckForNull null_check =

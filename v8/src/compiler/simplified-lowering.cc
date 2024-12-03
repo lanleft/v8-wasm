@@ -5,7 +5,6 @@
 #include "src/compiler/simplified-lowering.h"
 
 #include <limits>
-#include <optional>
 
 #include "include/v8-fast-api-calls.h"
 #include "src/base/small-vector.h"
@@ -16,6 +15,7 @@
 #include "src/compiler/common-operator.h"
 #include "src/compiler/compiler-source-position-table.h"
 #include "src/compiler/diamond.h"
+#include "src/compiler/graph-visualizer.h"
 #include "src/compiler/js-heap-broker.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/node-matchers.h"
@@ -26,7 +26,6 @@
 #include "src/compiler/representation-change.h"
 #include "src/compiler/simplified-lowering-verifier.h"
 #include "src/compiler/simplified-operator.h"
-#include "src/compiler/turbofan-graph-visualizer.h"
 #include "src/compiler/type-cache.h"
 #include "src/numbers/conversions-inl.h"
 #include "src/objects/objects.h"
@@ -153,7 +152,6 @@ UseInfo TruncatingUseInfoFromRepresentation(MachineRepresentation rep) {
       return UseInfo::AnyTagged();
     case MachineRepresentation::kFloat64:
       return UseInfo::TruncatingFloat64();
-    case MachineRepresentation::kFloat16:
     case MachineRepresentation::kFloat32:
       return UseInfo::Float32();
     case MachineRepresentation::kWord8:
@@ -242,7 +240,7 @@ class JSONGraphWriterWithVerifierTypes : public JSONGraphWriter {
       : JSONGraphWriter(os, graph, positions, origins), verifier_(verifier) {}
 
  protected:
-  std::optional<Type> GetType(Node* node) override {
+  base::Optional<Type> GetType(Node* node) override {
     return verifier_->GetType(node);
   }
 
@@ -1949,11 +1947,6 @@ class RepresentationSelector {
         if (flags & uint8_t(CTypeInfo::Flags::kEnforceRangeBit) ||
             flags & uint8_t(CTypeInfo::Flags::kClampBit)) {
           DCHECK(repr != CFunctionInfo::Int64Representation::kBigInt);
-          // If the parameter is marked as `kEnforceRange` or `kClampBit`, then
-          // special type conversion gets added explicitly to the generated
-          // code. Therefore it is sufficient here to only require here that the
-          // value is a Float64, even though the C++ signature actually asks for
-          // an `int32_t`.
           return UseInfo::CheckedNumberAsFloat64(kIdentifyZeros, feedback);
         }
         switch (type.GetType()) {
@@ -2055,55 +2048,7 @@ class RepresentationSelector {
 
     // Effect and Control.
     ProcessRemainingInputs<T>(node, value_input_count);
-    if (op_params.c_functions().empty()) {
-      SetOutput<T>(node, MachineRepresentation::kTagged);
-      return;
-    }
-
-    CTypeInfo return_type = op_params.c_functions()[0].signature->ReturnInfo();
-    switch (return_type.GetType()) {
-      case CTypeInfo::Type::kBool:
-        SetOutput<T>(node, MachineRepresentation::kBit);
-        return;
-      case CTypeInfo::Type::kFloat32:
-        SetOutput<T>(node, MachineRepresentation::kFloat32);
-        return;
-      case CTypeInfo::Type::kFloat64:
-        SetOutput<T>(node, MachineRepresentation::kFloat64);
-        return;
-      case CTypeInfo::Type::kInt32:
-        SetOutput<T>(node, MachineRepresentation::kWord32);
-        return;
-      case CTypeInfo::Type::kInt64:
-      case CTypeInfo::Type::kUint64:
-        if (c_signature->GetInt64Representation() ==
-            CFunctionInfo::Int64Representation::kBigInt) {
-          SetOutput<T>(node, MachineRepresentation::kWord64);
-          return;
-        }
-        DCHECK_EQ(c_signature->GetInt64Representation(),
-                  CFunctionInfo::Int64Representation::kNumber);
-        SetOutput<T>(node, MachineRepresentation::kFloat64);
-        return;
-      case CTypeInfo::Type::kSeqOneByteString:
-        SetOutput<T>(node, MachineRepresentation::kTagged);
-        return;
-      case CTypeInfo::Type::kUint32:
-        SetOutput<T>(node, MachineRepresentation::kWord32);
-        return;
-      case CTypeInfo::Type::kUint8:
-        SetOutput<T>(node, MachineRepresentation::kWord8);
-        return;
-      case CTypeInfo::Type::kAny:
-        // This type is only supposed to be used for parameters, not returns.
-        UNREACHABLE();
-      case CTypeInfo::Type::kPointer:
-      case CTypeInfo::Type::kApiObject:
-      case CTypeInfo::Type::kV8Value:
-      case CTypeInfo::Type::kVoid:
-        SetOutput<T>(node, MachineRepresentation::kTagged);
-        return;
-    }
+    SetOutput<T>(node, MachineRepresentation::kTagged);
   }
 
   template <Phase T>
@@ -2208,8 +2153,7 @@ class RepresentationSelector {
   }
 
 #if V8_ENABLE_WEBASSEMBLY
-  static MachineType MachineTypeForWasmReturnType(
-      wasm::CanonicalValueType type) {
+  static MachineType MachineTypeForWasmReturnType(wasm::ValueType type) {
     switch (type.kind()) {
       case wasm::kI32:
         return MachineType::Int32();
@@ -2227,8 +2171,7 @@ class RepresentationSelector {
     }
   }
 
-  UseInfo UseInfoForJSWasmCallArgument(Node* input,
-                                       wasm::CanonicalValueType type,
+  UseInfo UseInfoForJSWasmCallArgument(Node* input, wasm::ValueType type,
                                        FeedbackSource const& feedback) {
     // If the input type is a Number or Oddball, we can directly convert the
     // input into the Wasm native type of the argument. If not, we return
@@ -2262,7 +2205,7 @@ class RepresentationSelector {
     JSWasmCallNode n(node);
 
     JSWasmCallParameters const& params = n.Parameters();
-    const wasm::CanonicalSig* wasm_signature = params.signature();
+    const wasm::FunctionSig* wasm_signature = params.signature();
     int wasm_arg_count = static_cast<int>(wasm_signature->parameter_count());
     DCHECK_EQ(wasm_arg_count, n.ArgumentCount());
 
@@ -2408,8 +2351,6 @@ class RepresentationSelector {
         return;
       }
       case IrOpcode::kHeapConstant:
-        return VisitLeaf<T>(node, MachineRepresentation::kTaggedPointer);
-      case IrOpcode::kTrustedHeapConstant:
         return VisitLeaf<T>(node, MachineRepresentation::kTaggedPointer);
       case IrOpcode::kPointerConstant: {
         VisitLeaf<T>(node, MachineType::PointerRepresentation());

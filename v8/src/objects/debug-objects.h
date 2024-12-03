@@ -236,24 +236,6 @@ class StackFrameInfo
   TQ_OBJECT_CONSTRUCTORS(StackFrameInfo)
 };
 
-class StackTraceInfo
-    : public TorqueGeneratedStackTraceInfo<StackTraceInfo, Struct> {
- public:
-  NEVER_READ_ONLY_SPACE
-
-  // Access to the stack frames.
-  int length() const;
-  Tagged<StackFrameInfo> get(int index) const;
-
-  // Dispatched behavior.
-  DECL_VERIFIER(StackTraceInfo)
-
-  using BodyDescriptor = StructBodyDescriptor;
-
- private:
-  TQ_OBJECT_CONSTRUCTORS(StackTraceInfo)
-};
-
 class ErrorStackData
     : public TorqueGeneratedErrorStackData<ErrorStackData, Struct> {
  public:
@@ -262,7 +244,10 @@ class ErrorStackData
   inline bool HasFormattedStack() const;
   DECL_ACCESSORS(formatted_stack, Tagged<Object>)
   inline bool HasCallSiteInfos() const;
-  DECL_GETTER(call_site_infos, Tagged<FixedArray>)
+  DECL_ACCESSORS(call_site_infos, Tagged<FixedArray>)
+
+  static void EnsureStackFrameInfos(Isolate* isolate,
+                                    DirectHandle<ErrorStackData> error_stack);
 
   DECL_VERIFIER(ErrorStackData)
 

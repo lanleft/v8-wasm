@@ -4,8 +4,7 @@
 
 #include "src/compiler/property-access-builder.h"
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/compiler/access-builder.h"
 #include "src/compiler/access-info.h"
 #include "src/compiler/compilation-dependencies.h"
@@ -147,7 +146,7 @@ MachineRepresentation PropertyAccessBuilder::ConvertRepresentation(
   }
 }
 
-std::optional<Node*> PropertyAccessBuilder::FoldLoadDictPrototypeConstant(
+base::Optional<Node*> PropertyAccessBuilder::FoldLoadDictPrototypeConstant(
     PropertyAccessInfo const& access_info) {
   DCHECK(V8_DICT_PROPERTY_CONST_TRACKING_BOOL);
   DCHECK(access_info.IsDictionaryProtoDataConstant());
@@ -210,7 +209,7 @@ Node* PropertyAccessBuilder::TryFoldLoadConstantDataField(
   }
 
   if (access_info.field_representation().IsDouble()) {
-    std::optional<Float64> value = holder->GetOwnFastConstantDoubleProperty(
+    base::Optional<Float64> value = holder->GetOwnFastConstantDoubleProperty(
         broker(), access_info.field_index(), dependencies());
     return value.has_value() ? jsgraph()->ConstantNoHole(value->get_scalar())
                              : nullptr;

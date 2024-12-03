@@ -39,16 +39,9 @@
 #include "test/common/value-helper.h"
 #include "test/common/wasm/flag-utils.h"
 
-#if V8_ENABLE_DRUMBRAKE
-#include "src/wasm/interpreter/wasm-interpreter.h"
-#endif  // V8_ENABLE_DRUMBRAKE
-
 namespace v8::internal::wasm {
 
 enum class TestExecutionTier : int8_t {
-#if V8_ENABLE_DRUMBRAKE
-  kInterpreter = static_cast<int8_t>(ExecutionTier::kInterpreter),
-#endif  // V8_ENABLE_DRUMBRAKE
   kLiftoff = static_cast<int8_t>(ExecutionTier::kLiftoff),
   kTurbofan = static_cast<int8_t>(ExecutionTier::kTurbofan),
   kLiftoffForFuzzing
@@ -57,6 +50,8 @@ static_assert(
     std::is_same<std::underlying_type<ExecutionTier>::type,
                  std::underlying_type<TestExecutionTier>::type>::value,
     "enum types match");
+
+enum TestingModuleMemoryType { kMemory32, kMemory64 };
 
 using base::ReadLittleEndianValue;
 using base::WriteLittleEndianValue;
@@ -97,7 +92,6 @@ struct ManuallyImportedJSFunction {
 };
 
 // Helper Functions.
-bool IsSameNan(uint16_t expected, uint16_t actual);
 bool IsSameNan(float expected, float actual);
 bool IsSameNan(double expected, double actual);
 
@@ -111,15 +105,15 @@ class TestingModuleBuilder {
   ~TestingModuleBuilder();
 
   uint8_t* AddMemory(uint32_t size, SharedFlag shared = SharedFlag::kNotShared,
-                     AddressType address_type = wasm::AddressType::kI32,
+                     TestingModuleMemoryType = kMemory32,
                      std::optional<size_t> max_size = {});
 
   size_t CodeTableLength() const { return native_module_->num_functions(); }
 
   template <typename T>
   T* AddMemoryElems(uint32_t count,
-                    AddressType address_type = wasm::AddressType::kI32) {
-    AddMemory(count * sizeof(T), SharedFlag::kNotShared, address_type);
+                    TestingModuleMemoryType mem_type = kMemory32) {
+    AddMemory(count * sizeof(T), SharedFlag::kNotShared, mem_type);
     return raw_mem_start<T>();
   }
 
@@ -130,18 +124,17 @@ class TestingModuleBuilder {
   }
 
   // TODO(14034): Allow selecting type finality.
-  ModuleTypeIndex AddSignature(const FunctionSig* sig) {
+  uint8_t AddSignature(const FunctionSig* sig) {
     const bool is_final = true;
     const bool is_shared = false;
     test_module_->AddSignatureForTesting(sig, kNoSuperType, is_final,
                                          is_shared);
     GetTypeCanonicalizer()->AddRecursiveGroup(test_module_.get(), 1);
+    trusted_instance_data_->set_isorecursive_canonical_types(
+        test_module_->isorecursive_canonical_type_ids.data());
     size_t size = test_module_->types.size();
-    // The {ModuleTypeIndex} can handle more, but users of this class
-    // often assume that each generated index fits into a byte, so
-    // ensure that here.
     CHECK_GT(127, size);
-    return ModuleTypeIndex{static_cast<uint32_t>(size - 1)};
+    return static_cast<uint8_t>(size - 1);
   }
 
   uint32_t mem_size() const {
@@ -259,10 +252,6 @@ class TestingModuleBuilder {
 
   ExecutionTier execution_tier() const {
     switch (execution_tier_) {
-#if V8_ENABLE_DRUMBRAKE
-      case TestExecutionTier::kInterpreter:
-        return ExecutionTier::kInterpreter;
-#endif  // V8_ENABLE_DRUMBRAKE
       case TestExecutionTier::kTurbofan:
         return ExecutionTier::kTurbofan;
       case TestExecutionTier::kLiftoff:
@@ -320,7 +309,7 @@ class WasmFunctionCompiler {
 
   Isolate* isolate() { return builder_->isolate(); }
   uint32_t function_index() { return function_->func_index; }
-  ModuleTypeIndex sig_index() { return function_->sig_index; }
+  uint32_t sig_index() { return function_->sig_index; }
 
   void Build(std::initializer_list<const uint8_t> bytes) {
     Build(base::VectorOf(bytes));
@@ -334,9 +323,7 @@ class WasmFunctionCompiler {
     return result;
   }
 
-  void SetSigIndex(ModuleTypeIndex sig_index) {
-    function_->sig_index = sig_index;
-  }
+  void SetSigIndex(int sig_index) { function_->sig_index = sig_index; }
 
  private:
   friend class WasmRunnerBase;
@@ -390,7 +377,7 @@ class WasmRunnerBase : public InitializedHandleScope {
                                     const char* name = nullptr) {
     functions_.emplace_back(
         new WasmFunctionCompiler(&zone_, sig, &builder_, name));
-    ModuleTypeIndex sig_index = builder().AddSignature(sig);
+    uint8_t sig_index = builder().AddSignature(sig);
     functions_.back()->SetSigIndex(sig_index);
     return *functions_.back();
   }
@@ -408,14 +395,8 @@ class WasmRunnerBase : public InitializedHandleScope {
   void SwitchToDebug() { builder_.SwitchToDebug(); }
 
   template <typename ReturnType, typename... ParamTypes>
-  const FunctionSig* CreateSig() {
+  FunctionSig* CreateSig() {
     return WasmRunnerBase::CreateSig<ReturnType, ParamTypes...>(&zone_);
-  }
-
-  static const CanonicalSig* CanonicalizeSig(const FunctionSig* sig) {
-    // TODO(clemensb): Make this a single function call.
-    CanonicalTypeIndex sig_id = GetTypeCanonicalizer()->AddRecursiveGroup(sig);
-    return GetTypeCanonicalizer()->LookupFunctionSignature(sig_id);
   }
 
   template <typename ReturnType, typename... ParamTypes>
@@ -602,24 +583,12 @@ class WasmRunner : public WasmRunnerBase {
 };
 
 // A macro to define tests that run in different engine configurations.
-#if V8_ENABLE_DRUMBRAKE
-#define TEST_IF_DRUMBRAKE(name)                      \
-  TEST(RunWasmInterpreter_##name) {                  \
-    FLAG_SCOPE(wasm_jitless);                        \
-    WasmInterpreterThread::Initialize();             \
-    RunWasm_##name(TestExecutionTier::kInterpreter); \
-    WasmInterpreterThread::Terminate();              \
-  }
-#else
-#define TEST_IF_DRUMBRAKE(name)
-#endif  // V8_ENABLE_DRUMBRAKE
 #define WASM_EXEC_TEST(name)                                                   \
   void RunWasm_##name(TestExecutionTier execution_tier);                       \
   TEST(RunWasmTurbofan_##name) {                                               \
     RunWasm_##name(TestExecutionTier::kTurbofan);                              \
   }                                                                            \
   TEST(RunWasmLiftoff_##name) { RunWasm_##name(TestExecutionTier::kLiftoff); } \
-  TEST_IF_DRUMBRAKE(name)                                                      \
   void RunWasm_##name(TestExecutionTier execution_tier)
 
 #define UNINITIALIZED_WASM_EXEC_TEST(name)               \

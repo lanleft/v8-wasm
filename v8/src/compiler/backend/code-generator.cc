@@ -4,8 +4,6 @@
 
 #include "src/compiler/backend/code-generator.h"
 
-#include <optional>
-
 #include "src/base/bounds.h"
 #include "src/base/iterator.h"
 #include "src/codegen/assembler-inl.h"
@@ -35,23 +33,25 @@ namespace compiler {
 
 class CodeGenerator::JumpTable final : public ZoneObject {
  public:
-  JumpTable(JumpTable* next, const base::Vector<Label*>& targets)
-      : next_(next), targets_(targets) {}
+  JumpTable(JumpTable* next, Label** targets, size_t target_count)
+      : next_(next), targets_(targets), target_count_(target_count) {}
 
   Label* label() { return &label_; }
   JumpTable* next() const { return next_; }
-  const base::Vector<Label*>& targets() const { return targets_; }
+  Label** targets() const { return targets_; }
+  size_t target_count() const { return target_count_; }
 
  private:
   Label label_;
   JumpTable* const next_;
-  base::Vector<Label*> const targets_;
+  Label** const targets_;
+  size_t const target_count_;
 };
 
 CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
                              InstructionSequence* instructions,
                              OptimizedCompilationInfo* info, Isolate* isolate,
-                             std::optional<OsrHelper> osr_helper,
+                             base::Optional<OsrHelper> osr_helper,
                              int start_source_position,
                              JumpOptimizationInfo* jump_opt,
                              const AssemblerOptions& options, Builtin builtin,
@@ -70,7 +70,7 @@ CodeGenerator::CodeGenerator(Zone* codegen_zone, Frame* frame, Linkage* linkage,
       current_block_(RpoNumber::Invalid()),
       start_source_position_(start_source_position),
       current_source_position_(SourcePosition::Unknown()),
-      masm_(isolate, codegen_zone, options, CodeObjectRequired::kNo,
+      masm_(isolate, options, CodeObjectRequired::kNo,
             std::unique_ptr<AssemblerBuffer>{}),
       resolver_(this),
       safepoints_(codegen_zone),
@@ -233,24 +233,14 @@ void CodeGenerator::AssembleCode() {
     AssembleCodeStartRegisterCheck();
   }
 
-#ifdef V8_ENABLE_LEAPTIERING
-  // Check that {kJavaScriptCallDispatchHandleRegister} has been set correctly.
-  if (v8_flags.debug_code && call_descriptor->IsJSFunctionCall()) {
-    masm()->RecordComment("-- Prologue: check dispatch handle register --");
-    AssembleDispatchHandleRegisterCheck();
-  }
-#endif
-
 #if V8_ENABLE_WEBASSEMBLY
   if (info->code_kind() == CodeKind::WASM_TO_JS_FUNCTION ||
-      info->builtin() == Builtin::kWasmToJsWrapperCSA ||
-      wasm::BuiltinLookup::IsWasmBuiltinId(info->builtin())) {
+      info->builtin() == Builtin::kWasmToJsWrapperCSA) {
     // By default the code generator can convert slot IDs to SP-relative memory
-    // operands depending on the offset if the encoding is more efficient.
-    // However the SP may switch to the central stack for wasm-to-js wrappers
-    // and wasm builtins, so disable this optimization there.
-    // TODO(thibaudm): Disable this more selectively, only wasm builtins that
-    // call JS builtins can switch, and only around the call site.
+    // operands depending on the offset. However, the SP may switch to the
+    // central stack at the beginning of the wrapper if the caller is on a
+    // secondary stack, and switch back at the end. So for the whole duration
+    // of the wrapper, only FP-relative addressing is valid.
     frame_access_state()->SetFPRelativeOnly(true);
   }
 #endif
@@ -336,12 +326,6 @@ void CodeGenerator::AssembleCode() {
     frame_access_state()->MarkHasFrame(block->needs_frame());
 
     masm()->bind(GetLabel(current_block_));
-
-#ifdef V8_ENABLE_CONTROL_FLOW_INTEGRITY
-    if (block->IsSwitchTarget()) {
-      masm()->JumpTarget();
-    }
-#endif
 
     if (block->must_construct_frame()) {
       AssembleConstructFrame();
@@ -448,7 +432,7 @@ void CodeGenerator::AssembleCode() {
     masm()->Align(kSystemPointerSize);
     for (JumpTable* table = jump_tables_; table; table = table->next()) {
       masm()->bind(table->label());
-      AssembleJumpTable(table->targets());
+      AssembleJumpTable(table->targets(), table->target_count());
     }
   }
 
@@ -552,14 +536,9 @@ MaybeHandle<Code> CodeGenerator::FinalizeCode() {
       .set_profiler_data(info()->profiler_data())
       .set_osr_offset(info()->osr_offset());
 
-  if (info()->function_context_specializing()) {
-    builder.set_is_context_specialized();
-  }
-
   if (CodeKindUsesDeoptimizationData(info()->code_kind())) {
     builder.set_deoptimization_data(GenerateDeoptimizationData());
-    DCHECK(info()->has_bytecode_array() ||
-           info()->code_kind() == CodeKind::WASM_FUNCTION);
+    DCHECK(info()->has_bytecode_array());
   }
 
   MaybeHandle<Code> maybe_code = builder.TryBuild();
@@ -954,12 +933,10 @@ bool CodeGenerator::GetSlotAboveSPBeforeTailCall(Instruction* instr,
 StubCallMode CodeGenerator::DetermineStubCallMode() const {
 #if V8_ENABLE_WEBASSEMBLY
   CodeKind code_kind = info()->code_kind();
-  if (code_kind == CodeKind::WASM_FUNCTION) {
-    return StubCallMode::kCallWasmRuntimeStub;
-  }
-  if (code_kind == CodeKind::WASM_TO_CAPI_FUNCTION ||
+  if (code_kind == CodeKind::WASM_FUNCTION ||
+      code_kind == CodeKind::WASM_TO_CAPI_FUNCTION ||
       code_kind == CodeKind::WASM_TO_JS_FUNCTION) {
-    return StubCallMode::kCallBuiltinPointer;
+    return StubCallMode::kCallWasmRuntimeStub;
   }
 #endif  // V8_ENABLE_WEBASSEMBLY
   return StubCallMode::kCallCodeObject;
@@ -1017,9 +994,9 @@ Handle<DeoptimizationData> CodeGenerator::GenerateDeoptimizationData() {
   if (info->has_shared_info()) {
     DirectHandle<SharedFunctionInfoWrapper> sfi_wrapper =
         isolate()->factory()->NewSharedFunctionInfoWrapper(info->shared_info());
-    data->SetWrappedSharedFunctionInfo(*sfi_wrapper);
+    data->SetSharedFunctionInfoWrapper(*sfi_wrapper);
   } else {
-    data->SetWrappedSharedFunctionInfo(Smi::zero());
+    data->SetSharedFunctionInfoWrapper(Smi::zero());
   }
 
   DirectHandle<DeoptimizationLiteralArray> literals =
@@ -1120,16 +1097,10 @@ base::OwnedVector<uint8_t> CodeGenerator::GenerateWasmDeoptimizationData() {
 }
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-Label* CodeGenerator::AddJumpTable(base::Vector<Label*> targets) {
-  jump_tables_ = zone()->New<JumpTable>(jump_tables_, targets);
+Label* CodeGenerator::AddJumpTable(Label** targets, size_t target_count) {
+  jump_tables_ = zone()->New<JumpTable>(jump_tables_, targets, target_count);
   return jump_tables_->label();
 }
-
-#ifndef V8_TARGET_ARCH_X64
-void CodeGenerator::AssemblePlaceHolderForLazyDeopt(Instruction* instr) {
-  UNREACHABLE();
-}
-#endif
 
 void CodeGenerator::RecordCallPosition(Instruction* instr) {
   const bool needs_frame_state =
@@ -1559,12 +1530,8 @@ void CodeGenerator::AddTranslationForOperand(Instruction* instr,
       case Constant::kFloat64:
         DCHECK(type.representation() == MachineRepresentation::kFloat64 ||
                type.representation() == MachineRepresentation::kTagged);
-        if (type == MachineType::HoleyFloat64() &&
-            constant.ToFloat64().AsUint64() == kHoleNanInt64) {
-          literal = DeoptimizationLiteral::HoleNaN();
-        } else {
-          literal = DeoptimizationLiteral(constant.ToFloat64().value());
-        }
+        DCHECK_NE(type, MachineType::HoleyFloat64());
+        literal = DeoptimizationLiteral(constant.ToFloat64().value());
         break;
       case Constant::kHeapObject:
         DCHECK_EQ(MachineRepresentation::kTagged, type.representation());

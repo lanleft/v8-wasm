@@ -4,9 +4,8 @@
 
 #include "src/compiler/backend/instruction-scheduler.h"
 
-#include <optional>
-
 #include "src/base/iterator.h"
+#include "src/base/optional.h"
 #include "src/base/utils/random-number-generator.h"
 #include "src/compiler/backend/instruction-codes.h"
 
@@ -86,7 +85,7 @@ InstructionScheduler::InstructionScheduler(Zone* zone,
       operands_map_(zone) {
   if (v8_flags.turbo_stress_instruction_scheduling) {
     random_number_generator_ =
-        std::optional<base::RandomNumberGenerator>(v8_flags.random_seed);
+        base::Optional<base::RandomNumberGenerator>(v8_flags.random_seed);
   }
 }
 

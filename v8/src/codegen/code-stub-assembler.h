@@ -6,7 +6,6 @@
 #define V8_CODEGEN_CODE_STUB_ASSEMBLER_H_
 
 #include <functional>
-#include <optional>
 
 #include "src/base/macros.h"
 #include "src/codegen/bailout-reason.h"
@@ -48,8 +47,6 @@
 namespace v8 {
 namespace internal {
 
-#include "src/codegen/define-code-stub-assembler-macros.inc"
-
 class CallInterfaceDescriptor;
 class CodeStubArguments;
 class CodeStubAssembler;
@@ -57,6 +54,102 @@ class StatsCounter;
 class StubCache;
 
 enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
+
+#ifdef DEBUG
+#define CSA_CHECK(csa, x) \
+  (csa)->Check([&]() -> TNode<BoolT> { return x; }, #x, __FILE__, __LINE__)
+#else
+#define CSA_CHECK(csa, x) (csa)->FastCheck(x)
+#endif
+
+#define CSA_CHECK_WITH_ABORT(csa, x) \
+  (csa)->Check([&]() -> TNode<BoolT> { return x; }, #x, __FILE__, __LINE__)
+
+// This is a check that always calls into the runtime if it aborts.
+// This also exits silently when --hole-fuzzing is enabled.
+#define CSA_HOLE_SECURITY_CHECK(csa, x) CSA_CHECK_WITH_ABORT(csa, x)
+
+#ifdef DEBUG
+// CSA_DCHECK_ARGS generates an
+// std::initializer_list<CodeStubAssembler::ExtraNode> from __VA_ARGS__. It
+// currently supports between 0 and 2 arguments.
+
+// clang-format off
+#define CSA_DCHECK_0_ARGS(...) {}
+#define CSA_DCHECK_1_ARG(a, ...) {{a, #a}}
+#define CSA_DCHECK_2_ARGS(a, b, ...) {{a, #a}, {b, #b}}
+// clang-format on
+#define SWITCH_CSA_DCHECK_ARGS(dummy, a, b, FUNC, ...) FUNC(a, b)
+#define CSA_DCHECK_ARGS(...)                                        \
+  CALL(SWITCH_CSA_DCHECK_ARGS, (, ##__VA_ARGS__, CSA_DCHECK_2_ARGS, \
+                                CSA_DCHECK_1_ARG, CSA_DCHECK_0_ARGS))
+// Workaround for MSVC to skip comma in empty __VA_ARGS__.
+#define CALL(x, y) x y
+
+// CSA_DCHECK(csa, <condition>, <extra values to print...>)
+
+#define CSA_DCHECK(csa, condition_node, ...)                         \
+  (csa)->Dcheck(condition_node, #condition_node, __FILE__, __LINE__, \
+                CSA_DCHECK_ARGS(__VA_ARGS__))
+
+// CSA_DCHECK_BRANCH(csa, [](Label* ok, Label* not_ok) {...},
+//     <extra values to print...>)
+
+#define CSA_DCHECK_BRANCH(csa, gen, ...) \
+  (csa)->Dcheck(gen, #gen, __FILE__, __LINE__, CSA_DCHECK_ARGS(__VA_ARGS__))
+
+#define CSA_DCHECK_JS_ARGC_OP(csa, Op, op, expected)                           \
+  (csa)->Dcheck(                                                               \
+      [&]() -> TNode<BoolT> {                                                  \
+        const TNode<Word32T> argc = (csa)->UncheckedParameter<Word32T>(        \
+            Descriptor::kJSActualArgumentsCount);                              \
+        return (csa)->Op(argc,                                                 \
+                         (csa)->Int32Constant(i::JSParameterCount(expected))); \
+      },                                                                       \
+      "argc " #op " " #expected, __FILE__, __LINE__,                           \
+      {{SmiFromInt32((csa)->UncheckedParameter<Int32T>(                        \
+            Descriptor::kJSActualArgumentsCount)),                             \
+        "argc"}})
+
+#define CSA_DCHECK_JS_ARGC_EQ(csa, expected) \
+  CSA_DCHECK_JS_ARGC_OP(csa, Word32Equal, ==, expected)
+
+#define CSA_DEBUG_INFO(name) \
+  { #name, __FILE__, __LINE__ }
+#define BIND(label) Bind(label, CSA_DEBUG_INFO(label))
+#define TYPED_VARIABLE_DEF(type, name, ...) \
+  TVariable<type> name(CSA_DEBUG_INFO(name), __VA_ARGS__)
+#define TYPED_VARIABLE_CONSTRUCTOR(name, ...) \
+  name(CSA_DEBUG_INFO(name), __VA_ARGS__)
+#else  // DEBUG
+#define CSA_DCHECK(csa, ...) ((void)0)
+#define CSA_DCHECK_BRANCH(csa, ...) ((void)0)
+#define CSA_DCHECK_JS_ARGC_EQ(csa, expected) ((void)0)
+#define BIND(label) Bind(label)
+#define TYPED_VARIABLE_DEF(type, name, ...) TVariable<type> name(__VA_ARGS__)
+#define TYPED_VARIABLE_CONSTRUCTOR(name, ...) name(__VA_ARGS__)
+#endif  // DEBUG
+
+#define TVARIABLE(...) EXPAND(TYPED_VARIABLE_DEF(__VA_ARGS__, this))
+#define TVARIABLE_CONSTRUCTOR(...) \
+  EXPAND(TYPED_VARIABLE_CONSTRUCTOR(__VA_ARGS__, this))
+
+#ifdef ENABLE_SLOW_DCHECKS
+#define CSA_SLOW_DCHECK(csa, ...)     \
+  if (v8_flags.enable_slow_asserts) { \
+    CSA_DCHECK(csa, __VA_ARGS__);     \
+  }
+#else
+#define CSA_SLOW_DCHECK(csa, ...) ((void)0)
+#endif
+
+// Similar to SBXCHECK in C++, these become a CSA_CHECK in sandbox-enabled
+// builds, otherwise a CSA_DCHECK.
+#ifdef V8_ENABLE_SANDBOX
+#define CSA_SBXCHECK(csa, ...) CSA_CHECK(csa, __VA_ARGS__)
+#else
+#define CSA_SBXCHECK(csa, ...) CSA_DCHECK(csa, __VA_ARGS__)
+#endif
 
 // Provides JavaScript-specific "macro-assembler" functionality on top of the
 // CodeAssembler. By factoring the JavaScript-isms out of the CodeAssembler,
@@ -643,8 +736,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void DCheckReceiver(ConvertReceiverMode mode, TNode<Object> receiver);
 
   // The following Call wrappers call an object according to the semantics that
-  // one finds in the ECMAScript spec, operating on a Callable (e.g. a
-  // JSFunction or proxy) rather than an InstructionStream object.
+  // one finds in the EcmaScript spec, operating on an Callable (e.g. a
+  // JSFunction or proxy) rather than a InstructionStream object.
   template <typename TCallable, class... TArgs>
   inline TNode<Object> Call(TNode<Context> context, TNode<TCallable> callable,
                             ConvertReceiverMode mode, TNode<Object> receiver,
@@ -693,8 +786,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                         TNode<JSReceiver> target,
                                         TNode<JSReceiver> new_target,
                                         TArgs... args) {
-    return CAST(ConstructJS(Builtin::kConstruct, context, target, new_target,
-                            implicit_cast<TNode<Object>>(args)...));
+    return CAST(ConstructJSWithTarget(Builtin::kConstruct, context, target,
+                                      new_target,
+                                      implicit_cast<TNode<Object>>(args)...));
   }
   template <class... TArgs>
   TNode<JSReceiver> Construct(TNode<Context> context,
@@ -781,9 +875,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsInRange(TNode<Word32T> value, U lower_limit, U higher_limit) {
     DCHECK_LE(lower_limit, higher_limit);
     static_assert(sizeof(U) <= kInt32Size);
-    if (lower_limit == 0) {
-      return Uint32LessThanOrEqual(value, Int32Constant(higher_limit));
-    }
     return Uint32LessThanOrEqual(Int32Sub(value, Int32Constant(lower_limit)),
                                  Int32Constant(higher_limit - lower_limit));
   }
@@ -798,9 +889,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsInRange(TNode<WordT> value, intptr_t lower_limit,
                          intptr_t higher_limit) {
     DCHECK_LE(lower_limit, higher_limit);
-    if (lower_limit == 0) {
-      return UintPtrLessThanOrEqual(value, IntPtrConstant(higher_limit));
-    }
     return UintPtrLessThanOrEqual(IntPtrSub(value, IntPtrConstant(lower_limit)),
                                   IntPtrConstant(higher_limit - lower_limit));
   }
@@ -984,14 +1072,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<RawPtrT> LoadCodeEntrypointViaCodePointerField(TNode<HeapObject> object,
                                                        TNode<IntPtrT> offset,
                                                        CodeEntrypointTag tag);
-  TNode<RawPtrT> LoadCodeEntryFromIndirectPointerHandle(
-      TNode<IndirectPointerHandleT> handle, CodeEntrypointTag tag);
-
-  TNode<UintPtrT> ComputeJSDispatchTableEntryOffset(
-      TNode<JSDispatchHandleT> handle);
 #endif
-
-  TNode<JSDispatchHandleT> InvalidDispatchHandleConstant();
 
   TNode<Object> LoadProtectedPointerField(TNode<TrustedObject> object,
                                           TNode<IntPtrT> offset) {
@@ -1043,24 +1124,23 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
 #if V8_ENABLE_WEBASSEMBLY
   // Returns WasmTrustedInstanceData|Smi.
-  TNode<Object> LoadInstanceDataFromWasmImportData(
-      TNode<WasmImportData> import_data) {
+  TNode<Object> LoadInstanceDataFromWasmApiFunctionRef(
+      TNode<WasmApiFunctionRef> ref) {
     return LoadProtectedPointerField(
-        import_data, WasmImportData::kProtectedInstanceDataOffset);
+        ref, WasmApiFunctionRef::kProtectedInstanceDataOffset);
   }
 
-  // Returns WasmImportData or WasmTrustedInstanceData.
-  TNode<TrustedObject> LoadImplicitArgFromWasmInternalFunction(
+  // Returns WasmApiFunctionRef or WasmTrustedInstanceData.
+  TNode<TrustedObject> LoadRefFromWasmInternalFunction(
       TNode<WasmInternalFunction> object) {
     TNode<Object> obj = LoadProtectedPointerField(
-        object, WasmInternalFunction::kProtectedImplicitArgOffset);
+        object, WasmInternalFunction::kProtectedRefOffset);
     CSA_DCHECK(this, TaggedIsNotSmi(obj));
-    TNode<HeapObject> implicit_arg = CAST(obj);
-    CSA_DCHECK(
-        this,
-        Word32Or(HasInstanceType(implicit_arg, WASM_TRUSTED_INSTANCE_DATA_TYPE),
-                 HasInstanceType(implicit_arg, WASM_IMPORT_DATA_TYPE)));
-    return CAST(implicit_arg);
+    TNode<HeapObject> ref = CAST(obj);
+    CSA_DCHECK(this,
+               Word32Or(HasInstanceType(ref, WASM_TRUSTED_INSTANCE_DATA_TYPE),
+                        HasInstanceType(ref, WASM_API_FUNCTION_REF_TYPE)));
+    return CAST(ref);
   }
 
   TNode<RawPtrT> LoadWasmTypeInfoNativeTypePtr(TNode<WasmTypeInfo> object) {
@@ -1315,8 +1395,8 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Load the length of a fixed array base instance.
   TNode<Smi> LoadFixedArrayBaseLength(TNode<FixedArrayBase> array);
   template <typename Array>
-  TNode<Smi> LoadSmiArrayLength(TNode<Array> array) {
-    return LoadObjectField<Smi>(array, offsetof(Array, length_));
+  TNode<Smi> LoadArrayCapacity(TNode<Array> array) {
+    return LoadObjectField<Smi>(array, Array::Shape::kCapacityOffset);
   }
   // Load the length of a fixed array base instance.
   TNode<IntPtrT> LoadAndUntagFixedArrayBaseLength(TNode<FixedArrayBase> array);
@@ -1489,7 +1569,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<typename Array::Shape::ElementT> LoadArrayElement(
       TNode<Array> array, TNode<TIndex> index, int additional_offset = 0) {
     return LoadArrayElement<Array, TIndex, typename Array::Shape::ElementT>(
-        array, OFFSET_OF_DATA_START(Array), index, additional_offset);
+        array, Array::Shape::kHeaderSize, index, additional_offset);
   }
 
   template <typename TIndex>
@@ -1643,10 +1723,10 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Load the "code" property of a JSFunction.
   TNode<Code> LoadJSFunctionCode(TNode<JSFunction> function);
 
-  TNode<Object> LoadSharedFunctionInfoTrustedData(
-      TNode<SharedFunctionInfo> sfi);
-  TNode<Object> LoadSharedFunctionInfoUntrustedData(
-      TNode<SharedFunctionInfo> sfi);
+  // Load the data object associated with a SFI.
+  // If the (expected) data type is known, prefer using one of the specialized
+  // accessors (e.g. LoadSharedFunctionInfoBuiltinId).
+  TNode<Object> LoadSharedFunctionInfoData(TNode<SharedFunctionInfo> sfi);
 
   TNode<BoolT> SharedFunctionInfoHasBaselineCode(TNode<SharedFunctionInfo> sfi);
 
@@ -1654,15 +1734,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<BytecodeArray> LoadSharedFunctionInfoBytecodeArray(
       TNode<SharedFunctionInfo> sfi);
-
-#ifdef V8_ENABLE_WEBASSEMBLY
-  TNode<WasmFunctionData> LoadSharedFunctionInfoWasmFunctionData(
-      TNode<SharedFunctionInfo> sfi);
-  TNode<WasmExportedFunctionData>
-  LoadSharedFunctionInfoWasmExportedFunctionData(TNode<SharedFunctionInfo> sfi);
-  TNode<WasmJSFunctionData> LoadSharedFunctionInfoWasmJSFunctionData(
-      TNode<SharedFunctionInfo> sfi);
-#endif  // V8_ENABLE_WEBASSEMBLY
 
   TNode<Int32T> LoadBytecodeArrayParameterCount(
       TNode<BytecodeArray> bytecode_array);
@@ -1705,8 +1776,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void StoreTrustedPointerFieldNoWriteBarrier(
       TNode<HeapObject> object, int offset, IndirectPointerTag tag,
       TNode<ExposedTrustedObject> value);
-
-  void ClearTrustedPointerField(TNode<HeapObject> object, int offset);
 
   // Store a code pointer field.
   // These are special versions of trusted pointers that, when the sandbox is
@@ -1841,7 +1910,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
     // StoreFixedArrayOrPropertyArrayElement. We can make it more robust and
     // generic if needed.
     TNode<IntPtrT> offset = ElementOffsetFromIndex(index, PACKED_ELEMENTS,
-                                                   OFFSET_OF_DATA_START(Array));
+                                                   Array::Shape::kHeaderSize);
     if (barrier_mode == SKIP_WRITE_BARRIER) {
       StoreObjectFieldNoWriteBarrier(object, offset, value);
     } else if (barrier_mode == UPDATE_WRITE_BARRIER) {
@@ -2024,15 +2093,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   TNode<JSObject> AllocateJSObjectFromMap(
       TNode<Map> map,
-      std::optional<TNode<HeapObject>> properties = std::nullopt,
-      std::optional<TNode<FixedArray>> elements = std::nullopt,
+      base::Optional<TNode<HeapObject>> properties = base::nullopt,
+      base::Optional<TNode<FixedArray>> elements = base::nullopt,
       AllocationFlags flags = AllocationFlag::kNone,
       SlackTrackingMode slack_tracking_mode = kNoSlackTracking);
 
   void InitializeJSObjectFromMap(
       TNode<HeapObject> object, TNode<Map> map, TNode<IntPtrT> instance_size,
-      std::optional<TNode<HeapObject>> properties = std::nullopt,
-      std::optional<TNode<FixedArray>> elements = std::nullopt,
+      base::Optional<TNode<HeapObject>> properties = base::nullopt,
+      base::Optional<TNode<FixedArray>> elements = base::nullopt,
       SlackTrackingMode slack_tracking_mode = kNoSlackTracking);
 
   void InitializeJSObjectBodyWithSlackTracking(TNode<HeapObject> object,
@@ -2050,7 +2119,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   std::pair<TNode<JSArray>, TNode<FixedArrayBase>>
   AllocateUninitializedJSArrayWithElements(
       ElementsKind kind, TNode<Map> array_map, TNode<Smi> length,
-      std::optional<TNode<AllocationSite>> allocation_site,
+      base::Optional<TNode<AllocationSite>> allocation_site,
       TNode<IntPtrT> capacity,
       AllocationFlags allocation_flags = AllocationFlag::kNone,
       int array_header_size = JSArray::kHeaderSize);
@@ -2058,11 +2127,11 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // Allocate a JSArray and fill elements with the hole.
   TNode<JSArray> AllocateJSArray(
       ElementsKind kind, TNode<Map> array_map, TNode<IntPtrT> capacity,
-      TNode<Smi> length, std::optional<TNode<AllocationSite>> allocation_site,
+      TNode<Smi> length, base::Optional<TNode<AllocationSite>> allocation_site,
       AllocationFlags allocation_flags = AllocationFlag::kNone);
   TNode<JSArray> AllocateJSArray(
       ElementsKind kind, TNode<Map> array_map, TNode<Smi> capacity,
-      TNode<Smi> length, std::optional<TNode<AllocationSite>> allocation_site,
+      TNode<Smi> length, base::Optional<TNode<AllocationSite>> allocation_site,
       AllocationFlags allocation_flags = AllocationFlag::kNone) {
     return AllocateJSArray(kind, array_map, PositiveSmiUntag(capacity), length,
                            allocation_site, allocation_flags);
@@ -2072,20 +2141,20 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       TNode<Smi> length,
       AllocationFlags allocation_flags = AllocationFlag::kNone) {
     return AllocateJSArray(kind, array_map, PositiveSmiUntag(capacity), length,
-                           std::nullopt, allocation_flags);
+                           base::nullopt, allocation_flags);
   }
   TNode<JSArray> AllocateJSArray(
       ElementsKind kind, TNode<Map> array_map, TNode<IntPtrT> capacity,
       TNode<Smi> length,
       AllocationFlags allocation_flags = AllocationFlag::kNone) {
-    return AllocateJSArray(kind, array_map, capacity, length, std::nullopt,
+    return AllocateJSArray(kind, array_map, capacity, length, base::nullopt,
                            allocation_flags);
   }
 
   // Allocate a JSArray and initialize the header fields.
   TNode<JSArray> AllocateJSArray(
       TNode<Map> array_map, TNode<FixedArrayBase> elements, TNode<Smi> length,
-      std::optional<TNode<AllocationSite>> allocation_site = std::nullopt,
+      base::Optional<TNode<AllocationSite>> allocation_site = base::nullopt,
       int array_header_size = JSArray::kHeaderSize);
 
   enum class HoleConversionMode { kDontConvert, kConvertToUndefined };
@@ -2101,7 +2170,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // function generates significantly less code in this case.
   TNode<JSArray> CloneFastJSArray(
       TNode<Context> context, TNode<JSArray> array,
-      std::optional<TNode<AllocationSite>> allocation_site = std::nullopt,
+      base::Optional<TNode<AllocationSite>> allocation_site = base::nullopt,
       HoleConversionMode convert_holes = HoleConversionMode::kDontConvert);
 
   TNode<JSArray> ExtractFastJSArray(TNode<Context> context,
@@ -2112,13 +2181,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<FixedArrayBase> AllocateFixedArray(
       ElementsKind kind, TNode<TIndex> capacity,
       AllocationFlags flags = AllocationFlag::kNone,
-      std::optional<TNode<Map>> fixed_array_map = std::nullopt);
+      base::Optional<TNode<Map>> fixed_array_map = base::nullopt);
 
   template <typename Function>
   TNode<Object> FastCloneJSObject(TNode<HeapObject> source,
-                                  TNode<Map> source_map, TNode<Map> target_map,
-                                  const Function& materialize_target,
-                                  bool target_is_new);
+                                  TNode<IntPtrT> inobject_properties_start,
+                                  TNode<IntPtrT> inobject_properties_size,
+                                  bool target_has_same_offsets,
+                                  TNode<Map> target_map,
+                                  const Function& materialize_target);
 
   TNode<NativeContext> GetCreationContextFromMap(TNode<Map> map,
                                                  Label* if_bailout);
@@ -2397,13 +2468,13 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // can skip write barriers.
   template <typename TIndex>
   TNode<FixedArrayBase> ExtractFixedArray(
-      TNode<FixedArrayBase> source, std::optional<TNode<TIndex>> first,
-      std::optional<TNode<TIndex>> count = std::nullopt,
-      std::optional<TNode<TIndex>> capacity = std::nullopt,
+      TNode<FixedArrayBase> source, base::Optional<TNode<TIndex>> first,
+      base::Optional<TNode<TIndex>> count = base::nullopt,
+      base::Optional<TNode<TIndex>> capacity = base::nullopt,
       ExtractFixedArrayFlags extract_flags =
           ExtractFixedArrayFlag::kAllFixedArrays,
       TVariable<BoolT>* var_holes_converted = nullptr,
-      std::optional<TNode<Int32T>> source_elements_kind = std::nullopt);
+      base::Optional<TNode<Int32T>> source_elements_kind = base::nullopt);
 
   // Copy a portion of an existing FixedArray or FixedDoubleArray into a new
   // FixedArray, including special appropriate handling for COW arrays.
@@ -2437,7 +2508,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       AllocationFlags allocation_flags, ExtractFixedArrayFlags extract_flags,
       HoleConversionMode convert_holes,
       TVariable<BoolT>* var_holes_converted = nullptr,
-      std::optional<TNode<Int32T>> source_runtime_kind = std::nullopt);
+      base::Optional<TNode<Int32T>> source_runtime_kind = base::nullopt);
 
   // Attempt to copy a FixedDoubleArray to another FixedDoubleArray. In the case
   // where the source array has a hole, produce a FixedArray instead where holes
@@ -2654,15 +2725,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                           const char* method_name);
 
   void ThrowRangeError(TNode<Context> context, MessageTemplate message,
-                       std::optional<TNode<Object>> arg0 = std::nullopt,
-                       std::optional<TNode<Object>> arg1 = std::nullopt,
-                       std::optional<TNode<Object>> arg2 = std::nullopt);
+                       base::Optional<TNode<Object>> arg0 = base::nullopt,
+                       base::Optional<TNode<Object>> arg1 = base::nullopt,
+                       base::Optional<TNode<Object>> arg2 = base::nullopt);
   void ThrowTypeError(TNode<Context> context, MessageTemplate message,
                       char const* arg0 = nullptr, char const* arg1 = nullptr);
   void ThrowTypeError(TNode<Context> context, MessageTemplate message,
-                      std::optional<TNode<Object>> arg0,
-                      std::optional<TNode<Object>> arg1 = std::nullopt,
-                      std::optional<TNode<Object>> arg2 = std::nullopt);
+                      base::Optional<TNode<Object>> arg0,
+                      base::Optional<TNode<Object>> arg1 = base::nullopt,
+                      base::Optional<TNode<Object>> arg2 = base::nullopt);
 
   void TerminateExecution(TNode<Context> context);
 
@@ -2808,11 +2879,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   TNode<BoolT> IsString(TNode<HeapObject> object);
   TNode<Word32T> IsStringWrapper(TNode<HeapObject> object);
   TNode<BoolT> IsSeqOneByteString(TNode<HeapObject> object);
-
-  TNode<BoolT> IsSequentialStringMap(TNode<Map> map);
-  TNode<BoolT> IsExternalStringMap(TNode<Map> map);
-  TNode<BoolT> IsUncachedExternalStringMap(TNode<Map> map);
-  TNode<BoolT> IsOneByteStringMap(TNode<Map> map);
 
   TNode<BoolT> IsSymbolInstanceType(TNode<Int32T> instance_type);
   TNode<BoolT> IsInternalizedStringInstanceType(TNode<Int32T> instance_type);
@@ -3089,12 +3155,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   template <typename T>
   TNode<BoolT> IsSetWord32(TNode<Word32T> word32) {
     return IsSetWord32(word32, T::kMask);
-  }
-
-  // Returns true if none of the |T|'s bits in given |word32| are set.
-  template <typename T>
-  TNode<BoolT> IsNotSetWord32(TNode<Word32T> word32) {
-    return IsNotSetWord32(word32, T::kMask);
   }
 
   // Returns true if any of the mask's bits in given |word32| are set.
@@ -3412,7 +3472,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void AddToDictionary(
       TNode<Dictionary> dictionary, TNode<Name> key, TNode<Object> value,
       Label* bailout,
-      std::optional<TNode<IntPtrT>> insertion_index = std::nullopt);
+      base::Optional<TNode<IntPtrT>> insertion_index = base::nullopt);
 
   // Tries to check if {object} has own {unique_name} property.
   void TryHasOwnProperty(TNode<HeapObject> object, TNode<Map> map,
@@ -3768,38 +3828,44 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   using FastLoopBody = std::function<void(TNode<TIndex> index)>;
 
   template <typename TIndex>
-  void BuildFastLoop(const VariableList& vars, TVariable<TIndex>& var_index,
-                     TNode<TIndex> start_index, TNode<TIndex> end_index,
-                     const FastLoopBody<TIndex>& body, int increment,
-                     LoopUnrollingMode unrolling_mode,
-                     IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre);
+  TNode<TIndex> BuildFastLoop(
+      const VariableList& vars, TVariable<TIndex>& var_index,
+      TNode<TIndex> start_index, TNode<TIndex> end_index,
+      const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
+      IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre);
 
   template <typename TIndex>
-  void BuildFastLoop(TVariable<TIndex>& var_index, TNode<TIndex> start_index,
-                     TNode<TIndex> end_index, const FastLoopBody<TIndex>& body,
-                     int increment, LoopUnrollingMode unrolling_mode,
-                     IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
-    BuildFastLoop(VariableList(0, zone()), var_index, start_index, end_index,
-                  body, increment, unrolling_mode, advance_mode);
+  TNode<TIndex> BuildFastLoop(
+      TVariable<TIndex>& var_index, TNode<TIndex> start_index,
+      TNode<TIndex> end_index, const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
+      IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
+    return BuildFastLoop(VariableList(0, zone()), var_index, start_index,
+                         end_index, body, increment, unrolling_mode,
+                         advance_mode);
   }
 
   template <typename TIndex>
-  void BuildFastLoop(const VariableList& vars, TNode<TIndex> start_index,
-                     TNode<TIndex> end_index, const FastLoopBody<TIndex>& body,
-                     int increment, LoopUnrollingMode unrolling_mode,
-                     IndexAdvanceMode advance_mode) {
+  TNode<TIndex> BuildFastLoop(const VariableList& vars,
+                              TNode<TIndex> start_index,
+                              TNode<TIndex> end_index,
+                              const FastLoopBody<TIndex>& body, int increment,
+                              LoopUnrollingMode unrolling_mode,
+                              IndexAdvanceMode advance_mode) {
     TVARIABLE(TIndex, var_index);
-    BuildFastLoop(vars, var_index, start_index, end_index, body, increment,
-                  unrolling_mode, advance_mode);
+    return BuildFastLoop(vars, var_index, start_index, end_index, body,
+                         increment, unrolling_mode, advance_mode);
   }
 
   template <typename TIndex>
-  void BuildFastLoop(TNode<TIndex> start_index, TNode<TIndex> end_index,
-                     const FastLoopBody<TIndex>& body, int increment,
-                     LoopUnrollingMode unrolling_mode,
-                     IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
-    BuildFastLoop(VariableList(0, zone()), start_index, end_index, body,
-                  increment, unrolling_mode, advance_mode);
+  TNode<TIndex> BuildFastLoop(
+      TNode<TIndex> start_index, TNode<TIndex> end_index,
+      const FastLoopBody<TIndex>& body, int increment,
+      LoopUnrollingMode unrolling_mode,
+      IndexAdvanceMode advance_mode = IndexAdvanceMode::kPre) {
+    return BuildFastLoop(VariableList(0, zone()), start_index, end_index, body,
+                         increment, unrolling_mode, advance_mode);
   }
 
   enum class ForEachDirection { kForward, kReverse };
@@ -3824,8 +3890,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   template <typename TIndex>
   TNode<IntPtrT> GetFixedArrayAllocationSize(TNode<TIndex> element_count,
                                              ElementsKind kind) {
-    return GetArrayAllocationSize(element_count, kind,
-                                  OFFSET_OF_DATA_START(FixedArray));
+    return GetArrayAllocationSize(element_count, kind, FixedArray::kHeaderSize);
   }
 
   TNode<IntPtrT> GetPropertyArrayAllocationSize(TNode<IntPtrT> element_count) {
@@ -4065,9 +4130,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                         int base_size = 0);
   template <typename Array, typename TIndex>
   TNode<IntPtrT> OffsetOfElementAt(TNode<TIndex> index) {
-    static_assert(Array::kElementSize == kTaggedSize);
+    static_assert(Array::Shape::kElementSize == kTaggedSize);
     return ElementOffsetFromIndex(index, PACKED_ELEMENTS,
-                                  OFFSET_OF_DATA_START(Array) - kHeapObjectTag);
+                                  Array::kHeaderSize - kHeapObjectTag);
   }
 
   // Check that a field offset is within the bounds of the an object.
@@ -4077,18 +4142,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
 
   // Load a builtin's code from the builtin array in the isolate.
   TNode<Code> LoadBuiltin(TNode<Smi> builtin_id);
-
-#ifdef V8_ENABLE_LEAPTIERING
-  // Load a builtin's handle into the JSDispatchTable.
-  TNode<JSDispatchHandleT> LoadBuiltinDispatchHandle(
-      JSBuiltinDispatchHandleRoot::Idx dispatch_root_idx);
-  inline TNode<JSDispatchHandleT> LoadBuiltinDispatchHandle(RootIndex idx) {
-    return LoadBuiltinDispatchHandle(JSBuiltinDispatchHandleRoot::to_idx(idx));
-  }
-
-  // Load a Code object from the JSDispatchTable.
-  TNode<Code> ResolveJSDispatchHandle(TNode<JSDispatchHandleT> dispatch_handle);
-#endif
 
   // Figure out the SFI's code object using its data field.
   // If |data_type_out| is provided, the instance type of the function data will
@@ -4101,16 +4154,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
       TVariable<Uint16T>* data_type_out = nullptr,
       Label* if_compile_lazy = nullptr);
 
-  TNode<JSFunction> AllocateRootFunctionWithContext(
-      RootIndex function, TNode<Context> context,
-      std::optional<TNode<NativeContext>> maybe_native_context);
-  // Used from Torque because Torque
-  TNode<JSFunction> AllocateRootFunctionWithContext(
-      intptr_t function, TNode<Context> context,
-      TNode<NativeContext> native_context) {
-    return AllocateRootFunctionWithContext(static_cast<RootIndex>(function),
-                                           context, native_context);
-  }
+  TNode<JSFunction> AllocateFunctionWithMapAndContext(
+      TNode<Map> map, TNode<SharedFunctionInfo> shared_info,
+      TNode<Context> context);
 
   // Promise helpers
   TNode<Uint32T> PromiseHookFlags();
@@ -4501,6 +4547,15 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                               TNode<Uint8T> property_details,
                               Label* needs_resize);
 
+  // If the current code is running on a secondary stack, move the stack pointer
+  // to the central stack (but not the frame pointer) and adjust the stack
+  // limit. Returns the old stack pointer, or nullptr if no switch was
+  // performed.
+  TNode<RawPtrT> SwitchToTheCentralStackIfNeeded(TNode<Object> receiver);
+  // Switch the SP back to the secondary stack after switching to the central
+  // stack.
+  void SwitchFromTheCentralStack(TNode<RawPtrT> old_sp, TNode<Object> receiver);
+
   TNode<BoolT> IsMarked(TNode<Object> object);
 
   void GetMarkBit(TNode<IntPtrT> object, TNode<IntPtrT>* cell,
@@ -4513,14 +4568,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
              IntPtrConstant(MemoryChunkLayout::kFlagsOffset)));
     return WordNotEqual(WordAnd(flags, IntPtrConstant(mask)),
                         IntPtrConstant(0));
-  }
-
-  TNode<BoolT> IsPageFlagReset(TNode<IntPtrT> object, int mask) {
-    TNode<IntPtrT> header = MemoryChunkFromAddress(object);
-    TNode<IntPtrT> flags = UncheckedCast<IntPtrT>(
-        Load(MachineType::Pointer(), header,
-             IntPtrConstant(MemoryChunkLayout::kFlagsOffset)));
-    return WordEqual(WordAnd(flags, IntPtrConstant(mask)), IntPtrConstant(0));
   }
 
  private:
@@ -4549,7 +4596,7 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   // fields initialized.
   TNode<JSArray> AllocateUninitializedJSArray(
       TNode<Map> array_map, TNode<Smi> length,
-      std::optional<TNode<AllocationSite>> allocation_site,
+      base::Optional<TNode<AllocationSite>> allocation_site,
       TNode<IntPtrT> size_in_bytes);
 
   // Increases the provided capacity to the next valid value, if necessary.
@@ -4677,11 +4724,14 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
   void EmitElementStoreTypedArrayUpdateValue(
       TNode<Object> value, ElementsKind elements_kind,
       TNode<TValue> converted_value, TVariable<Object>* maybe_converted_value);
+
+  TNode<RawPtrT> SwitchToTheCentralStack(TNode<Object> receiver);
 };
 
 class V8_EXPORT_PRIVATE CodeStubArguments {
  public:
-  // |argc| specifies the number of arguments passed to the builtin.
+  // |argc| specifies the number of arguments passed to the builtin excluding
+  // the receiver. The arguments include the receiver.
   CodeStubArguments(CodeStubAssembler* assembler, TNode<IntPtrT> argc)
       : CodeStubArguments(assembler, argc, TNode<RawPtrT>()) {}
   CodeStubArguments(CodeStubAssembler* assembler, TNode<Int32T> argc)
@@ -4782,9 +4832,8 @@ class ToDirectStringAssembler : public CodeStubAssembler {
     return TryToSequential(PTR_TO_STRING, if_bailout);
   }
 
-  TNode<BoolT> IsOneByte();
-
   TNode<String> string() { return var_string_.value(); }
+  TNode<Int32T> instance_type() { return var_instance_type_.value(); }
   TNode<IntPtrT> offset() { return var_offset_.value(); }
   TNode<Word32T> is_external() { return var_is_external_.value(); }
 
@@ -4792,11 +4841,7 @@ class ToDirectStringAssembler : public CodeStubAssembler {
   TNode<RawPtrT> TryToSequential(StringPointerKind ptr_kind, Label* if_bailout);
 
   TVariable<String> var_string_;
-#if V8_STATIC_ROOTS_BOOL
-  TVariable<Map> var_map_;
-#else
   TVariable<Int32T> var_instance_type_;
-#endif
   // TODO(v8:9880): Use UintPtrT here.
   TVariable<IntPtrT> var_offset_;
   TVariable<Word32T> var_is_external_;
@@ -4853,12 +4898,9 @@ DEFINE_OPERATORS_FOR_FLAGS(CodeStubAssembler::AllocationFlags)
   inline TNode<Map> CodeStubAssembler::GetClassMapConstant<class_name>() { \
     return class_name##MapConstant();                                      \
   }
-UNIQUE_INSTANCE_TYPE_MAP_LIST_GENERATOR(CLASS_MAP_CONSTANT_ADAPTER, _)
-#undef CLASS_MAP_CONSTANT_ADAPTER
 
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
+UNIQUE_INSTANCE_TYPE_MAP_LIST_GENERATOR(CLASS_MAP_CONSTANT_ADAPTER, _)
 
 }  // namespace internal
 }  // namespace v8
-
 #endif  // V8_CODEGEN_CODE_STUB_ASSEMBLER_H_

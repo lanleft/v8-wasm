@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef V8_INTL_SUPPORT
+#error Internationalization is expected to be enabled.
+#endif  // V8_INTL_SUPPORT
+
 #include "src/objects/intl-objects.h"
 
 #include <algorithm>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -52,10 +55,6 @@
 #include "unicode/ustring.h"
 #include "unicode/uvernum.h"  // U_ICU_VERSION_MAJOR_NUM
 
-#ifndef V8_INTL_SUPPORT
-#error Internationalization is expected to be enabled.
-#endif  // V8_INTL_SUPPORT
-
 #define XSTR(s) STR(s)
 #define STR(s) #s
 static_assert(
@@ -64,7 +63,8 @@ static_assert(
 #undef STR
 #undef XSTR
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 namespace {
 
@@ -225,6 +225,7 @@ icu::UnicodeString Intl::ToICUUnicodeString(Isolate* isolate,
   // We read the length from the heap, so it may be untrusted (in the sandbox
   // attacker model) and we therefore need to use an unsigned int here when
   // comparing it against the kShortStringSize.
+  // TODO(saelo): consider using uint32_t for the size in String objects.
   uint32_t length = string->length();
   DCHECK_LE(offset, length);
   if (flat.IsOneByte() && length <= kShortStringSize) {
@@ -259,8 +260,8 @@ icu::StringPiece ToICUStringPiece(Isolate* isolate, DirectHandle<String> string,
 MaybeHandle<String> LocaleConvertCase(Isolate* isolate, DirectHandle<String> s,
                                       bool is_to_upper, const char* lang) {
   auto case_converter = is_to_upper ? u_strToUpper : u_strToLower;
-  uint32_t src_length = s->length();
-  uint32_t dest_length = src_length;
+  int32_t src_length = s->length();
+  int32_t dest_length = src_length;
   UErrorCode status;
   Handle<SeqTwoByteString> result;
   std::unique_ptr<base::uc16[]> sap;
@@ -496,9 +497,8 @@ MaybeHandle<String> Intl::ToString(Isolate* isolate,
 namespace {
 
 Handle<JSObject> InnerAddElement(Isolate* isolate, Handle<JSArray> array,
-                                 int index,
-                                 DirectHandle<String> field_type_string,
-                                 DirectHandle<String> value) {
+                                 int index, Handle<String> field_type_string,
+                                 Handle<String> value) {
   // let element = $array[$index] = {
   //   type: $field_type_string,
   //   value: $value
@@ -522,17 +522,15 @@ Handle<JSObject> InnerAddElement(Isolate* isolate, Handle<JSArray> array,
 }  // namespace
 
 void Intl::AddElement(Isolate* isolate, Handle<JSArray> array, int index,
-                      DirectHandle<String> field_type_string,
-                      DirectHandle<String> value) {
+                      Handle<String> field_type_string, Handle<String> value) {
   // Same as $array[$index] = {type: $field_type_string, value: $value};
   InnerAddElement(isolate, array, index, field_type_string, value);
 }
 
 void Intl::AddElement(Isolate* isolate, Handle<JSArray> array, int index,
-                      DirectHandle<String> field_type_string,
-                      DirectHandle<String> value,
+                      Handle<String> field_type_string, Handle<String> value,
                       Handle<String> additional_property_name,
-                      DirectHandle<String> additional_property_value) {
+                      Handle<String> additional_property_value) {
   // Same as $array[$index] = {
   //   type: $field_type_string, value: $value,
   //   $additional_property_name: $additional_property_value
@@ -986,7 +984,7 @@ template Intl::CompareStringsOptions Intl::CompareStringsOptionsFor(
 template Intl::CompareStringsOptions Intl::CompareStringsOptionsFor(
     LocalIsolate*, DirectHandle<Object>, DirectHandle<Object>);
 
-std::optional<int> Intl::StringLocaleCompare(
+base::Optional<int> Intl::StringLocaleCompare(
     Isolate* isolate, Handle<String> string1, Handle<String> string2,
     Handle<Object> locales, Handle<Object> options, const char* method_name) {
   // We only cache the instance when locales is a string/undefined and
@@ -1113,7 +1111,7 @@ struct FastCompareStringsData {
   int first_diff_at = 0;  // The first relevant diff (L1 if exists, else L3).
   bool has_diff = false;
 
-  std::optional<UCollationResult> FastCompareFailed(
+  base::Optional<UCollationResult> FastCompareFailed(
       int* processed_until_out) const {
     if (has_diff) {
       // Found some difference, continue there to ensure the generic algorithm
@@ -1355,7 +1353,7 @@ bool CollatorAllowsFastComparison(const icu::Collator& icu_collator) {
 //
 //   return UCOL_EQUAL;
 // }
-std::optional<UCollationResult> TryFastCompareStrings(
+base::Optional<UCollationResult> TryFastCompareStrings(
     Isolate* isolate, const icu::Collator& icu_collator,
     DirectHandle<String> string1, DirectHandle<String> string2,
     int* processed_until_out) {
@@ -1450,7 +1448,7 @@ int Intl::CompareStrings(Isolate* isolate, const icu::Collator& icu_collator,
 
   int processed_until = 0;
   if (compare_strings_options == CompareStringsOptions::kTryFastPath) {
-    std::optional<int> maybe_result = TryFastCompareStrings(
+    base::Optional<int> maybe_result = TryFastCompareStrings(
         isolate, icu_collator, string1, string2, &processed_until);
     if (maybe_result.has_value()) return maybe_result.value();
   }
@@ -2089,7 +2087,7 @@ MaybeHandle<JSArray> CreateArrayFromList(Isolate* isolate,
   for (uint32_t i = 0; i < length; i++) {
     // a. Let status be CreateDataProperty(array, ! ToString(n), e).
     const std::string& part = elements[i];
-    DirectHandle<String> value =
+    Handle<String> value =
         factory->NewStringFromUtf8(base::CStrVector(part.c_str()))
             .ToHandleChecked();
     MAYBE_RETURN(JSObject::AddDataElement(array, i, value, attr),
@@ -2631,7 +2629,7 @@ MaybeHandle<String> Intl::Normalize(Isolate* isolate, Handle<String> string,
     }
   }
 
-  uint32_t length = string->length();
+  int length = string->length();
   string = String::Flatten(isolate, string);
   icu::UnicodeString result;
   std::unique_ptr<base::uc16[]> sap;
@@ -2642,7 +2640,7 @@ MaybeHandle<String> Intl::Normalize(Isolate* isolate, Handle<String> string,
       icu::Normalizer2::getInstance(nullptr, form_name, form_mode, status);
   DCHECK(U_SUCCESS(status));
   DCHECK_NOT_NULL(normalizer);
-  uint32_t normalized_prefix_length =
+  int32_t normalized_prefix_length =
       normalizer->spanQuickCheckYes(input, status);
   // Quick return if the input is already normalized.
   if (length == normalized_prefix_length) return string;
@@ -3076,7 +3074,7 @@ const icu::BasicTimeZone* CreateBasicTimeZoneFromIndex(
 }
 
 // ICU only support TimeZone information in millisecond but Temporal require
-// nanosecond. For most of the case, we find an approximate millisecond by
+// nanosecond. For most of the case, we find a approximate millisecond by
 // floor to the millisecond just past the nanosecond_epoch. For negative epoch
 // value, the BigInt Divide will floor closer to zero so we need to minus 1 if
 // the remainder is not zero. For the case of finding previous transition, we
@@ -3226,4 +3224,5 @@ int64_t Intl::GetTimeZoneOffsetNanoseconds(Isolate* isolate,
   return static_cast<int64_t>(raw_offset + dst_offset) * 1000000;
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

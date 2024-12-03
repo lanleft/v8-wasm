@@ -84,8 +84,8 @@ class CompiledReplacement {
  public:
   // Return whether the replacement is simple.
   bool Compile(Isolate* isolate, DirectHandle<JSRegExp> regexp,
-               DirectHandle<RegExpData> regexp_data, Handle<String> replacement,
-               int capture_count, int subject_length);
+               Handle<String> replacement, int capture_count,
+               int subject_length);
 
   // Use Apply only if Compile returned false.
   void Apply(ReplacementStringBuilder* builder, int match_from, int match_to,
@@ -337,7 +337,6 @@ class CompiledReplacement {
 
 bool CompiledReplacement::Compile(Isolate* isolate,
                                   DirectHandle<JSRegExp> regexp,
-                                  DirectHandle<RegExpData> regexp_data,
                                   Handle<String> replacement, int capture_count,
                                   int subject_length) {
   {
@@ -347,12 +346,8 @@ bool CompiledReplacement::Compile(Isolate* isolate,
 
     Tagged<FixedArray> capture_name_map;
     if (capture_count > 0) {
-      // capture_count > 0 implies IrRegExpData. Since capture_count is in
-      // trusted space, this is not a SBXCHECK.
-      DCHECK(Is<IrRegExpData>(*regexp_data));
-      Tagged<IrRegExpData> re_data = Cast<IrRegExpData>(*regexp_data);
-
-      Tagged<Object> maybe_capture_name_map = re_data->capture_name_map();
+      DCHECK(JSRegExp::TypeSupportsCaptures(regexp->type_tag()));
+      Tagged<Object> maybe_capture_name_map = regexp->capture_name_map();
       if (IsFixedArray(maybe_capture_name_map)) {
         capture_name_map = Cast<FixedArray>(maybe_capture_name_map);
       }
@@ -564,14 +559,14 @@ V8_WARN_UNUSED_RESULT static Tagged<Object>
 StringReplaceGlobalAtomRegExpWithString(
     Isolate* isolate, DirectHandle<String> subject,
     DirectHandle<JSRegExp> pattern_regexp, DirectHandle<String> replacement,
-    Handle<RegExpMatchInfo> last_match_info,
-    DirectHandle<AtomRegExpData> regexp_data) {
+    Handle<RegExpMatchInfo> last_match_info) {
   DCHECK(subject->IsFlat());
   DCHECK(replacement->IsFlat());
 
   std::vector<int>* indices = GetRewoundRegexpIndicesList(isolate);
 
-  Tagged<String> pattern = regexp_data->pattern();
+  DCHECK_EQ(JSRegExp::ATOM, pattern_regexp->type_tag());
+  Tagged<String> pattern = pattern_regexp->atom_pattern();
   int subject_len = subject->length();
   int pattern_len = pattern->length();
   int replacement_len = replacement->length();
@@ -642,40 +637,36 @@ StringReplaceGlobalAtomRegExpWithString(
 }
 
 V8_WARN_UNUSED_RESULT static Tagged<Object> StringReplaceGlobalRegExpWithString(
-    Isolate* isolate, Handle<String> subject, DirectHandle<JSRegExp> regexp,
-    DirectHandle<RegExpData> regexp_data, Handle<String> replacement,
-    Handle<RegExpMatchInfo> last_match_info) {
+    Isolate* isolate, Handle<String> subject, Handle<JSRegExp> regexp,
+    Handle<String> replacement, Handle<RegExpMatchInfo> last_match_info) {
   DCHECK(subject->IsFlat());
   DCHECK(replacement->IsFlat());
 
-  int capture_count = regexp_data->capture_count();
+  int capture_count = regexp->capture_count();
   int subject_length = subject->length();
 
   // Ensure the RegExp is compiled so we can access the capture-name map.
-  if (!RegExp::EnsureFullyCompiled(isolate, regexp_data, subject)) {
+  if (!RegExp::EnsureFullyCompiled(isolate, regexp, subject)) {
     return ReadOnlyRoots(isolate).exception();
   }
 
   CompiledReplacement compiled_replacement;
   const bool simple_replace = compiled_replacement.Compile(
-      isolate, regexp, regexp_data, replacement, capture_count, subject_length);
+      isolate, regexp, replacement, capture_count, subject_length);
 
-  // Shortcut for simple non-regexp global replacements.
-  if (regexp_data->type_tag() == RegExpData::Type::ATOM && simple_replace) {
+  // Shortcut for simple non-regexp global replacements
+  if (regexp->type_tag() == JSRegExp::ATOM && simple_replace) {
     if (subject->IsOneByteRepresentation() &&
         replacement->IsOneByteRepresentation()) {
       return StringReplaceGlobalAtomRegExpWithString<SeqOneByteString>(
-          isolate, subject, regexp, replacement, last_match_info,
-          Cast<AtomRegExpData>(regexp_data));
+          isolate, subject, regexp, replacement, last_match_info);
     } else {
       return StringReplaceGlobalAtomRegExpWithString<SeqTwoByteString>(
-          isolate, subject, regexp, replacement, last_match_info,
-          Cast<AtomRegExpData>(regexp_data));
+          isolate, subject, regexp, replacement, last_match_info);
     }
   }
 
-  RegExpGlobalCache global_cache(handle(*regexp_data, isolate), subject,
-                                 isolate);
+  RegExpGlobalCache global_cache(regexp, subject, isolate);
   if (global_cache.HasException()) return ReadOnlyRoots(isolate).exception();
 
   int32_t* current_match = global_cache.FetchNext();
@@ -727,27 +718,23 @@ V8_WARN_UNUSED_RESULT static Tagged<Object> StringReplaceGlobalRegExpWithString(
 template <typename ResultSeqString>
 V8_WARN_UNUSED_RESULT static Tagged<Object>
 StringReplaceGlobalRegExpWithEmptyString(
-    Isolate* isolate, Handle<String> subject, DirectHandle<JSRegExp> regexp,
-    DirectHandle<RegExpData> regexp_data,
+    Isolate* isolate, Handle<String> subject, Handle<JSRegExp> regexp,
     Handle<RegExpMatchInfo> last_match_info) {
   DCHECK(subject->IsFlat());
 
-  // Shortcut for simple non-regexp global replacements.
-  if (regexp_data->type_tag() == RegExpData::Type::ATOM) {
+  // Shortcut for simple non-regexp global replacements
+  if (regexp->type_tag() == JSRegExp::ATOM) {
     DirectHandle<String> empty_string = isolate->factory()->empty_string();
     if (subject->IsOneByteRepresentation()) {
       return StringReplaceGlobalAtomRegExpWithString<SeqOneByteString>(
-          isolate, subject, regexp, empty_string, last_match_info,
-          Cast<AtomRegExpData>(regexp_data));
+          isolate, subject, regexp, empty_string, last_match_info);
     } else {
       return StringReplaceGlobalAtomRegExpWithString<SeqTwoByteString>(
-          isolate, subject, regexp, empty_string, last_match_info,
-          Cast<AtomRegExpData>(regexp_data));
+          isolate, subject, regexp, empty_string, last_match_info);
     }
   }
 
-  RegExpGlobalCache global_cache(handle(*regexp_data, isolate), subject,
-                                 isolate);
+  RegExpGlobalCache global_cache(regexp, subject, isolate);
   if (global_cache.HasException()) return ReadOnlyRoots(isolate).exception();
 
   int32_t* current_match = global_cache.FetchNext();
@@ -758,7 +745,7 @@ StringReplaceGlobalRegExpWithEmptyString(
 
   int start = current_match[0];
   int end = current_match[1];
-  int capture_count = regexp_data->capture_count();
+  int capture_count = regexp->capture_count();
   int subject_length = subject->length();
 
   int new_length = subject_length - (end - start);
@@ -912,7 +899,7 @@ RUNTIME_FUNCTION(Runtime_StringSplit) {
 
 namespace {
 
-MaybeHandle<Object> RegExpExec(Isolate* isolate, DirectHandle<JSRegExp> regexp,
+MaybeHandle<Object> RegExpExec(Isolate* isolate, Handle<JSRegExp> regexp,
                                Handle<String> subject, int32_t index,
                                Handle<RegExpMatchInfo> last_match_info,
                                RegExp::ExecQuirks exec_quirks) {
@@ -926,9 +913,9 @@ MaybeHandle<Object> RegExpExec(Isolate* isolate, DirectHandle<JSRegExp> regexp,
 }
 
 MaybeHandle<Object> ExperimentalOneshotExec(
-    Isolate* isolate, DirectHandle<JSRegExp> regexp,
-    DirectHandle<String> subject, int32_t index,
-    Handle<RegExpMatchInfo> last_match_info, RegExp::ExecQuirks exec_quirks) {
+    Isolate* isolate, Handle<JSRegExp> regexp, Handle<String> subject,
+    int32_t index, Handle<RegExpMatchInfo> last_match_info,
+    RegExp::ExecQuirks exec_quirks) {
   // Due to the way the JS calls are constructed this must be less than the
   // length of a string, i.e. it is always a Smi.  We check anyway for security.
   CHECK_LE(0, index);
@@ -943,7 +930,7 @@ MaybeHandle<Object> ExperimentalOneshotExec(
 RUNTIME_FUNCTION(Runtime_RegExpExec) {
   HandleScope scope(isolate);
   DCHECK_EQ(4, args.length());
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(0);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(0);
   Handle<String> subject = args.at<String>(1);
   int32_t index = 0;
   CHECK(Object::ToInt32(args[2], &index));
@@ -956,7 +943,7 @@ RUNTIME_FUNCTION(Runtime_RegExpExec) {
 RUNTIME_FUNCTION(Runtime_RegExpExecTreatMatchAtEndAsFailure) {
   HandleScope scope(isolate);
   DCHECK_EQ(4, args.length());
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(0);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(0);
   Handle<String> subject = args.at<String>(1);
   int32_t index = 0;
   CHECK(Object::ToInt32(args[2], &index));
@@ -969,8 +956,8 @@ RUNTIME_FUNCTION(Runtime_RegExpExecTreatMatchAtEndAsFailure) {
 RUNTIME_FUNCTION(Runtime_RegExpExperimentalOneshotExec) {
   HandleScope scope(isolate);
   DCHECK_EQ(4, args.length());
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(0);
-  DirectHandle<String> subject = args.at<String>(1);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(0);
+  Handle<String> subject = args.at<String>(1);
   int32_t index = 0;
   CHECK(Object::ToInt32(args[2], &index));
   Handle<RegExpMatchInfo> last_match_info = args.at<RegExpMatchInfo>(3);
@@ -984,8 +971,8 @@ RUNTIME_FUNCTION(
     Runtime_RegExpExperimentalOneshotExecTreatMatchAtEndAsFailure) {
   HandleScope scope(isolate);
   DCHECK_EQ(4, args.length());
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(0);
-  DirectHandle<String> subject = args.at<String>(1);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(0);
+  Handle<String> subject = args.at<String>(1);
   int32_t index = 0;
   CHECK(Object::ToInt32(args[2], &index));
   Handle<RegExpMatchInfo> last_match_info = args.at<RegExpMatchInfo>(3);
@@ -1013,15 +1000,13 @@ namespace {
 class MatchInfoBackedMatch : public String::Match {
  public:
   MatchInfoBackedMatch(Isolate* isolate, DirectHandle<JSRegExp> regexp,
-                       DirectHandle<RegExpData> regexp_data,
                        Handle<String> subject,
                        Handle<RegExpMatchInfo> match_info)
       : isolate_(isolate), match_info_(match_info) {
     subject_ = String::Flatten(isolate, subject);
 
-    if (RegExpData::TypeSupportsCaptures(regexp_data->type_tag())) {
-      DCHECK(Is<IrRegExpData>(*regexp_data));
-      Tagged<Object> o = Cast<IrRegExpData>(regexp_data)->capture_name_map();
+    if (JSRegExp::TypeSupportsCaptures(regexp->type_tag())) {
+      Tagged<Object> o = regexp->capture_name_map();
       has_named_captures_ = IsFixedArray(o);
       if (has_named_captures_) {
         capture_name_map_ = handle(Cast<FixedArray>(o), isolate);
@@ -1099,7 +1084,7 @@ class MatchInfoBackedMatch : public String::Match {
 class VectorBackedMatch : public String::Match {
  public:
   VectorBackedMatch(Isolate* isolate, Handle<String> subject,
-                    Handle<String> match, uint32_t match_position,
+                    Handle<String> match, int match_position,
                     base::Vector<Handle<Object>> captures,
                     Handle<Object> groups_obj)
       : isolate_(isolate),
@@ -1116,18 +1101,12 @@ class VectorBackedMatch : public String::Match {
   Handle<String> GetMatch() override { return match_; }
 
   Handle<String> GetPrefix() override {
-    // match_position_ and match_ are user-controlled, hence we manually clamp
-    // the index here.
-    uint32_t end = std::min(subject_->length(), match_position_);
-    return isolate_->factory()->NewSubString(subject_, 0, end);
+    return isolate_->factory()->NewSubString(subject_, 0, match_position_);
   }
 
   Handle<String> GetSuffix() override {
-    // match_position_ and match_ are user-controlled, hence we manually clamp
-    // the index here.
-    uint32_t start =
-        std::min(subject_->length(), match_position_ + match_->length());
-    return isolate_->factory()->NewSubString(subject_, start,
+    const int match_end_position = match_position_ + match_->length();
+    return isolate_->factory()->NewSubString(subject_, match_end_position,
                                              subject_->length());
   }
 
@@ -1175,7 +1154,7 @@ class VectorBackedMatch : public String::Match {
   Isolate* isolate_;
   Handle<String> subject_;
   Handle<String> match_;
-  const uint32_t match_position_;
+  const int match_position_;
   base::Vector<Handle<Object>> captures_;
 
   bool has_named_captures_;
@@ -1184,13 +1163,9 @@ class VectorBackedMatch : public String::Match {
 
 // Create the groups object (see also the RegExp result creation in
 // RegExpBuiltinsAssembler::ConstructNewResultFromMatchInfo).
-// TODO(42203211): We cannot simply pass a std::function here, as the closure
-// may contain direct handles and they cannot be stored off-stack.
-template <typename FunctionType,
-          typename = std::enable_if_t<std::is_function_v<Tagged<Object>(int)>>>
 Handle<JSObject> ConstructNamedCaptureGroupsObject(
     Isolate* isolate, DirectHandle<FixedArray> capture_map,
-    const FunctionType& f_get_capture) {
+    const std::function<Tagged<Object>(int)>& f_get_capture) {
   Handle<JSObject> groups = isolate->factory()->NewJSObjectWithNullProto();
 
   const int named_capture_count = capture_map->length() >> 1;
@@ -1229,12 +1204,10 @@ Handle<JSObject> ConstructNamedCaptureGroupsObject(
 // separate last match info.  See comment on that function.
 template <bool has_capture>
 static Tagged<Object> SearchRegExpMultiple(
-    Isolate* isolate, Handle<String> subject, DirectHandle<JSRegExp> regexp,
-    DirectHandle<RegExpData> regexp_data,
+    Isolate* isolate, Handle<String> subject, Handle<JSRegExp> regexp,
     Handle<RegExpMatchInfo> last_match_array) {
   DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp));
-  DCHECK_NE(has_capture, regexp_data->capture_count() == 0);
-  DCHECK_IMPLIES(has_capture, Is<IrRegExpData>(*regexp_data));
+  DCHECK_NE(has_capture, regexp->capture_count() == 0);
   DCHECK(subject->IsFlat());
 
   // Force tier up to native code for global replaces. The global replace is
@@ -1242,16 +1215,15 @@ static Tagged<Object> SearchRegExpMultiple(
   // native code expects an array to store all the matches, and the bytecode
   // matches one at a time, so it's easier to tier-up to native code from the
   // start.
-  if (v8_flags.regexp_tier_up &&
-      regexp_data->type_tag() == RegExpData::Type::IRREGEXP) {
-    Cast<IrRegExpData>(regexp_data)->MarkTierUpForNextExec();
+  if (v8_flags.regexp_tier_up && regexp->type_tag() == JSRegExp::IRREGEXP) {
+    regexp->MarkTierUpForNextExec();
     if (v8_flags.trace_regexp_tier_up) {
       PrintF("Forcing tier-up of JSRegExp object %p in SearchRegExpMultiple\n",
              reinterpret_cast<void*>(regexp->ptr()));
     }
   }
 
-  int capture_count = regexp_data->capture_count();
+  int capture_count = regexp->capture_count();
   int subject_length = subject->length();
 
   static const int kMinLengthToCache = 0x1000;
@@ -1259,7 +1231,7 @@ static Tagged<Object> SearchRegExpMultiple(
   if (subject_length > kMinLengthToCache) {
     Tagged<FixedArray> last_match_cache;
     Tagged<Object> cached_answer = RegExpResultsCache::Lookup(
-        isolate->heap(), *subject, regexp_data->wrapper(), &last_match_cache,
+        isolate->heap(), *subject, regexp->data(), &last_match_cache,
         RegExpResultsCache::REGEXP_MULTIPLE_INDICES);
     if (IsFixedArray(cached_answer)) {
       int capture_registers = JSRegExp::RegistersForCaptureCount(capture_count);
@@ -1280,8 +1252,7 @@ static Tagged<Object> SearchRegExpMultiple(
     }
   }
 
-  RegExpGlobalCache global_cache(handle(*regexp_data, isolate), subject,
-                                 isolate);
+  RegExpGlobalCache global_cache(regexp, subject, isolate);
   if (global_cache.HasException()) return ReadOnlyRoots(isolate).exception();
 
   FixedArrayBuilder builder = FixedArrayBuilder::Lazy(isolate);
@@ -1307,7 +1278,7 @@ static Tagged<Object> SearchRegExpMultiple(
     {
       // Avoid accumulating new handles inside loop.
       HandleScope temp_scope(isolate);
-      DirectHandle<String> match;
+      Handle<String> match;
       if (!first) {
         match = isolate->factory()->NewProperSubString(subject, match_start,
                                                        match_end);
@@ -1322,16 +1293,13 @@ static Tagged<Object> SearchRegExpMultiple(
         // subject, i.e., 3 + capture count in total. If the RegExp contains
         // named captures, they are also passed as the last argument.
 
-        // has_capture can only be true for IrRegExp.
-        Tagged<IrRegExpData> re_data = Cast<IrRegExpData>(*regexp_data);
-        Handle<Object> maybe_capture_map(re_data->capture_name_map(), isolate);
+        Handle<Object> maybe_capture_map(regexp->capture_name_map(), isolate);
         const bool has_named_captures = IsFixedArray(*maybe_capture_map);
 
         const int argc =
             has_named_captures ? 4 + capture_count : 3 + capture_count;
 
-        DirectHandle<FixedArray> elements =
-            isolate->factory()->NewFixedArray(argc);
+        Handle<FixedArray> elements = isolate->factory()->NewFixedArray(argc);
         int cursor = 0;
 
         elements->set(cursor++, *match);
@@ -1397,9 +1365,8 @@ static Tagged<Object> SearchRegExpMultiple(
           isolate->factory()->CopyFixedArrayWithMap(
               result_fixed_array, isolate->factory()->fixed_array_map());
       RegExpResultsCache::Enter(
-          isolate, subject, handle(regexp->data(isolate)->wrapper(), isolate),
-          copied_fixed_array, last_match_cache,
-          RegExpResultsCache::REGEXP_MULTIPLE_INDICES);
+          isolate, subject, handle(regexp->data(), isolate), copied_fixed_array,
+          last_match_cache, RegExpResultsCache::REGEXP_MULTIPLE_INDICES);
     }
     return *builder.array();
   } else {
@@ -1424,7 +1391,6 @@ V8_WARN_UNUSED_RESULT MaybeHandle<String> RegExpReplace(
   replace = String::Flatten(isolate, replace);
 
   Handle<RegExpMatchInfo> last_match_info = isolate->regexp_last_match_info();
-  DirectHandle<RegExpData> data = direct_handle(regexp->data(isolate), isolate);
 
   if (!global) {
     // Non-global regexp search, string replace.
@@ -1466,7 +1432,7 @@ V8_WARN_UNUSED_RESULT MaybeHandle<String> RegExpReplace(
     builder.AppendString(factory->NewSubString(string, 0, start_index));
 
     if (replace->length() > 0) {
-      MatchInfoBackedMatch m(isolate, regexp, data, string, match_indices);
+      MatchInfoBackedMatch m(isolate, regexp, string, match_indices);
       Handle<String> replacement;
       ASSIGN_RETURN_ON_EXCEPTION(isolate, replacement,
                                  String::GetSubstitution(isolate, &m, replace));
@@ -1486,9 +1452,8 @@ V8_WARN_UNUSED_RESULT MaybeHandle<String> RegExpReplace(
     // native code expects an array to store all the matches, and the bytecode
     // matches one at a time, so it's easier to tier-up to native code from the
     // start.
-    if (v8_flags.regexp_tier_up &&
-        data->type_tag() == RegExpData::Type::IRREGEXP) {
-      Cast<IrRegExpData>(data)->MarkTierUpForNextExec();
+    if (v8_flags.regexp_tier_up && regexp->type_tag() == JSRegExp::IRREGEXP) {
+      regexp->MarkTierUpForNextExec();
       if (v8_flags.trace_regexp_tier_up) {
         PrintF("Forcing tier-up of JSRegExp object %p in RegExpReplace\n",
                reinterpret_cast<void*>(regexp->ptr()));
@@ -1499,18 +1464,18 @@ V8_WARN_UNUSED_RESULT MaybeHandle<String> RegExpReplace(
       if (string->IsOneByteRepresentation()) {
         Tagged<Object> result =
             StringReplaceGlobalRegExpWithEmptyString<SeqOneByteString>(
-                isolate, string, regexp, data, last_match_info);
+                isolate, string, regexp, last_match_info);
         return handle(Cast<String>(result), isolate);
       } else {
         Tagged<Object> result =
             StringReplaceGlobalRegExpWithEmptyString<SeqTwoByteString>(
-                isolate, string, regexp, data, last_match_info);
+                isolate, string, regexp, last_match_info);
         return handle(Cast<String>(result), isolate);
       }
     }
 
     Tagged<Object> result = StringReplaceGlobalRegExpWithString(
-        isolate, string, regexp, data, replace, last_match_info);
+        isolate, string, regexp, replace, last_match_info);
     if (IsString(result)) {
       return handle(Cast<String>(result), isolate);
     } else {
@@ -1528,24 +1493,22 @@ RUNTIME_FUNCTION(Runtime_RegExpExecMultiple) {
   HandleScope handles(isolate);
   DCHECK_EQ(3, args.length());
 
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(0);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(0);
   Handle<String> subject = args.at<String>(1);
   Handle<RegExpMatchInfo> last_match_info = args.at<RegExpMatchInfo>(2);
 
   DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp));
-  DirectHandle<RegExpData> regexp_data =
-      direct_handle(regexp->data(isolate), isolate);
 
   subject = String::Flatten(isolate, subject);
   CHECK(regexp->flags() & JSRegExp::kGlobal);
 
   Tagged<Object> result;
-  if (regexp_data->capture_count() == 0) {
-    result = SearchRegExpMultiple<false>(isolate, subject, regexp, regexp_data,
-                                         last_match_info);
+  if (regexp->capture_count() == 0) {
+    result =
+        SearchRegExpMultiple<false>(isolate, subject, regexp, last_match_info);
   } else {
-    result = SearchRegExpMultiple<true>(isolate, subject, regexp, regexp_data,
-                                        last_match_info);
+    result =
+        SearchRegExpMultiple<true>(isolate, subject, regexp, last_match_info);
   }
   DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp));
   return result;
@@ -1555,7 +1518,7 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
   HandleScope scope(isolate);
   DCHECK_EQ(3, args.length());
   Handle<String> subject = args.at<String>(0);
-  DirectHandle<JSRegExp> regexp = args.at<JSRegExp>(1);
+  Handle<JSRegExp> regexp = args.at<JSRegExp>(1);
   Handle<JSReceiver> replace_obj = args.at<JSReceiver>(2);
 
   DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp));
@@ -1563,7 +1526,6 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
 
   Factory* factory = isolate->factory();
   Handle<RegExpMatchInfo> last_match_info = isolate->regexp_last_match_info();
-  DirectHandle<RegExpData> data = direct_handle(regexp->data(isolate), isolate);
 
   const int flags = regexp->flags();
   DCHECK_EQ(flags & JSRegExp::kGlobal, 0);
@@ -1615,15 +1577,14 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
   const int m = match_indices->number_of_capture_registers() / 2;
 
   bool has_named_captures = false;
-  DirectHandle<FixedArray> capture_map;
+  Handle<FixedArray> capture_map;
   if (m > 1) {
-    SBXCHECK(Is<IrRegExpData>(*data));
+    DCHECK(JSRegExp::TypeSupportsCaptures(regexp->type_tag()));
 
-    Tagged<Object> maybe_capture_map =
-        Cast<IrRegExpData>(data)->capture_name_map();
+    Tagged<Object> maybe_capture_map = regexp->capture_name_map();
     if (IsFixedArray(maybe_capture_map)) {
       has_named_captures = true;
-      capture_map = direct_handle(Cast<FixedArray>(maybe_capture_map), isolate);
+      capture_map = handle(Cast<FixedArray>(maybe_capture_map), isolate);
     }
   }
 
@@ -1632,10 +1593,7 @@ RUNTIME_FUNCTION(Runtime_StringReplaceNonGlobalRegExpWithFunction) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewRangeError(MessageTemplate::kTooManyArguments));
   }
-  // TODO(42203211): This vector ends up in InvokeParams which is potentially
-  // used by generated code. It will be replaced, when generated code starts
-  // using direct handles.
-  base::ScopedVector<IndirectHandle<Object>> argv(argc);
+  base::ScopedVector<Handle<Object>> argv(argc);
 
   int cursor = 0;
   for (int j = 0; j < m; j++) {
@@ -1743,13 +1701,16 @@ RUNTIME_FUNCTION(Runtime_RegExpSplit) {
 
   Handle<JSReceiver> splitter;
   {
-    constexpr int argc = 2;
-    std::array<Handle<Object>, argc> argv = {recv, new_flags};
+    const int argc = 2;
+
+    base::ScopedVector<Handle<Object>> argv(argc);
+    argv[0] = recv;
+    argv[1] = new_flags;
 
     Handle<Object> splitter_obj;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
         isolate, splitter_obj,
-        Execution::New(isolate, ctor, argc, argv.data()));
+        Execution::New(isolate, ctor, argc, argv.begin()));
 
     splitter = Cast<JSReceiver>(splitter_obj);
   }
@@ -2004,7 +1965,7 @@ RUNTIME_FUNCTION(Runtime_RegExpReplaceRT) {
             isolate, NewRangeError(MessageTemplate::kTooManyArguments));
       }
 
-      base::ScopedVector<IndirectHandle<Object>> argv(argc);
+      base::ScopedVector<Handle<Object>> argv(argc);
 
       int cursor = 0;
       for (uint32_t j = 0; j < captures_length; j++) {
@@ -2077,206 +2038,6 @@ RUNTIME_FUNCTION(Runtime_RegExpStringFromFlags) {
   DirectHandle<String> flags =
       JSRegExp::StringFromFlags(isolate, regexp->flags());
   return *flags;
-}
-
-namespace {
-
-template <typename SChar, typename PChar>
-inline void RegExpMatchGlobalAtom_OneCharPattern(
-    Isolate* isolate, base::Vector<const SChar> subject, const PChar pattern,
-    int start_index, int* number_of_matches, int* last_match_index,
-    const DisallowGarbageCollection& no_gc) {
-  for (int i = start_index; i < subject.length(); i++) {
-    // Subtle: the valid variants are {SChar,PChar} in:
-    // {uint8_t,uint8_t}, {uc16,uc16}, {uc16,uint8_t}. In the latter case,
-    // we cast the uint8_t pattern to uc16 for the comparison.
-    if (subject[i] != static_cast<const SChar>(pattern)) continue;
-    (*number_of_matches)++;
-    (*last_match_index) = i;
-  }
-}
-
-// Unimplemented.
-template <>
-inline void RegExpMatchGlobalAtom_OneCharPattern(
-    Isolate* isolate, base::Vector<const uint8_t> subject,
-    const base::uc16 pattern, int start_index, int* number_of_matches,
-    int* last_match_index, const DisallowGarbageCollection& no_gc) = delete;
-
-template <typename Char>
-inline int AdvanceStringIndex(base::Vector<const Char> subject, int index,
-                              bool is_unicode) {
-  // Taken from RegExpUtils::AdvanceStringIndex:
-
-  const int subject_length = subject.length();
-  if (is_unicode && index < subject_length) {
-    const uint16_t first = subject[index];
-    if (first >= 0xD800 && first <= 0xDBFF && index + 1 < subject_length) {
-      DCHECK_LT(index, std::numeric_limits<int>::max());
-      const uint16_t second = subject[index + 1];
-      if (second >= 0xDC00 && second <= 0xDFFF) {
-        return index + 2;
-      }
-    }
-  }
-
-  return index + 1;
-}
-
-template <typename SChar, typename PChar>
-inline void RegExpMatchGlobalAtom_Generic(
-    Isolate* isolate, base::Vector<const SChar> subject,
-    base::Vector<const PChar> pattern, bool is_unicode, int start_index,
-    int* number_of_matches, int* last_match_index,
-    const DisallowGarbageCollection& no_gc) {
-  const int pattern_length = pattern.length();
-  StringSearch<PChar, SChar> search(isolate, pattern);
-  int found_at_index;
-
-  while (true) {
-    found_at_index = search.Search(subject, start_index);
-    if (found_at_index == -1) return;
-
-    (*number_of_matches)++;
-    (*last_match_index) = found_at_index;
-    start_index = pattern_length > 0
-                      ? found_at_index + pattern_length
-                      : AdvanceStringIndex(subject, start_index, is_unicode);
-  }
-}
-
-inline void RegExpMatchGlobalAtom_Dispatch(
-    Isolate* isolate, const String::FlatContent& subject,
-    const String::FlatContent& pattern, bool is_unicode, int start_index,
-    int* number_of_matches, int* last_match_index,
-    const DisallowGarbageCollection& no_gc) {
-#define CALL_Generic()                                                    \
-  RegExpMatchGlobalAtom_Generic(isolate, sv, pv, is_unicode, start_index, \
-                                number_of_matches, last_match_index, no_gc);
-#define CALL_OneCharPattern()                                               \
-  RegExpMatchGlobalAtom_OneCharPattern(isolate, sv, pv[0], start_index,     \
-                                       number_of_matches, last_match_index, \
-                                       no_gc);
-  DCHECK_NOT_NULL(number_of_matches);
-  DCHECK_NOT_NULL(last_match_index);
-  if (pattern.IsOneByte()) {
-    auto pv = pattern.ToOneByteVector();
-    if (subject.IsOneByte()) {
-      auto sv = subject.ToOneByteVector();
-      if (pattern.length() == 1) {
-        CALL_OneCharPattern();
-      } else {
-        CALL_Generic();
-      }
-    } else {
-      auto sv = subject.ToUC16Vector();
-      if (pattern.length() == 1) {
-        CALL_OneCharPattern();
-      } else {
-        CALL_Generic();
-      }
-    }
-  } else {
-    auto pv = pattern.ToUC16Vector();
-    if (subject.IsOneByte()) {
-      auto sv = subject.ToOneByteVector();
-      CALL_Generic();
-    } else {
-      auto sv = subject.ToUC16Vector();
-      if (pattern.length() == 1) {
-        CALL_OneCharPattern();
-      } else {
-        CALL_Generic();
-      }
-    }
-  }
-#undef CALL_OneCharPattern
-#undef CALL_Generic
-}
-
-}  // namespace
-
-RUNTIME_FUNCTION(Runtime_RegExpMatchGlobalAtom) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(3, args.length());
-
-  Handle<JSRegExp> regexp_handle = args.at<JSRegExp>(0);
-  Handle<String> subject_handle = String::Flatten(isolate, args.at<String>(1));
-  Handle<AtomRegExpData> data_handle = args.at<AtomRegExpData>(2);
-
-  DCHECK(RegExpUtils::IsUnmodifiedRegExp(isolate, regexp_handle));
-  DCHECK(regexp_handle->flags() & JSRegExp::kGlobal);
-  DCHECK_EQ(data_handle->type_tag(), RegExpData::Type::ATOM);
-
-  // Initialized below.
-  Handle<String> pattern_handle;
-  int pattern_length;
-
-  int number_of_matches = 0;
-  int last_match_index = -1;
-
-  {
-    DisallowGarbageCollection no_gc;
-
-    Tagged<JSRegExp> regexp = *regexp_handle;
-    Tagged<String> subject = *subject_handle;
-    Tagged<String> pattern = data_handle->pattern();
-
-    DCHECK(pattern->IsFlat());
-    pattern_handle = handle(pattern, isolate);
-    pattern_length = pattern->length();
-
-    // Reset lastIndex (the final state after this call is always 0).
-    regexp->set_last_index(Smi::zero(), SKIP_WRITE_BARRIER);
-
-    // Caching.
-    int start_index = 0;  // Start matching at the beginning.
-    if (RegExpResultsCache_MatchGlobalAtom::TryGet(
-            isolate, subject, pattern, &number_of_matches, &last_match_index)) {
-      DCHECK_GT(number_of_matches, 0);
-      DCHECK_NE(last_match_index, -1);
-      start_index = last_match_index + pattern_length;
-    }
-
-    const bool is_unicode = (regexp->flags() & JSRegExp::kUnicode) != 0;
-    String::FlatContent subject_content = subject->GetFlatContent(no_gc);
-    String::FlatContent pattern_content = pattern->GetFlatContent(no_gc);
-    RegExpMatchGlobalAtom_Dispatch(isolate, subject_content, pattern_content,
-                                   is_unicode, start_index, &number_of_matches,
-                                   &last_match_index, no_gc);
-
-    if (last_match_index == -1) {
-      // Not matched.
-      return ReadOnlyRoots(isolate).null_value();
-    }
-
-    // Successfully matched at least once:
-    DCHECK_GE(last_match_index, 0);
-
-    // Caching.
-    RegExpResultsCache_MatchGlobalAtom::TryInsert(
-        isolate, subject, pattern, number_of_matches, last_match_index);
-  }
-
-  // Update the LastMatchInfo.
-  static constexpr int kNumberOfCaptures = 0;  // ATOM.
-  int32_t match_indices[] = {last_match_index,
-                             last_match_index + pattern_length};
-  Handle<RegExpMatchInfo> last_match_info = isolate->regexp_last_match_info();
-  RegExp::SetLastMatchInfo(isolate, last_match_info, subject_handle,
-                           kNumberOfCaptures, match_indices);
-
-  // Create the result array.
-  auto elems = isolate->factory()->NewFixedArray(number_of_matches);
-  ObjectSlot dst_slot = elems->RawFieldOfFirstElement();
-  MemsetTagged(dst_slot, *pattern_handle, number_of_matches);
-  if (!HeapLayout::InReadOnlySpace(*pattern_handle)) {
-    WriteBarrier::ForRange(isolate->heap(), *elems, dst_slot,
-                           dst_slot + number_of_matches);
-  }
-  Handle<JSArray> result = isolate->factory()->NewJSArrayWithElements(
-      elems, TERMINAL_FAST_ELEMENTS_KIND, number_of_matches);
-  return *result;
 }
 
 }  // namespace internal

@@ -6,21 +6,22 @@
 
 #include <atomic>
 #include <memory>
-#include <utility>
+#include <tuple>
 
-#include "array-buffer-sweeper.h"
 #include "src/base/logging.h"
 #include "src/heap/gc-tracer-inl.h"
 #include "src/heap/gc-tracer.h"
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap.h"
+#include "src/heap/remembered-set.h"
 #include "src/objects/js-array-buffer.h"
+#include "src/tasks/cancelable-task.h"
+#include "src/tasks/task-utils.h"
 
 namespace v8 {
 namespace internal {
 
-size_t ArrayBufferList::Append(ArrayBufferExtension* extension) {
+void ArrayBufferList::Append(ArrayBufferExtension* extension) {
   if (head_ == nullptr) {
     DCHECK_NULL(tail_);
     head_ = tail_ = extension;
@@ -29,17 +30,11 @@ size_t ArrayBufferList::Append(ArrayBufferExtension* extension) {
     tail_ = extension;
   }
 
-  const size_t accounting_length = [&] {
-    if (age_ == ArrayBufferExtension::Age::kOld) {
-      return extension->SetOld().accounting_length();
-    } else {
-      return extension->SetYoung().accounting_length();
-    }
-  }();
+  const size_t accounting_length = extension->accounting_length();
   DCHECK_GE(bytes_ + accounting_length, bytes_);
   bytes_ += accounting_length;
   extension->set_next(nullptr);
-  return accounting_length;
+  extension->set_age(age_);
 }
 
 void ArrayBufferList::Append(ArrayBufferList& list) {
@@ -103,27 +98,8 @@ class ArrayBufferSweeper::SweepingState final {
   }
 
   void MergeTo(ArrayBufferSweeper* sweeper) {
-    // the worker may see a difference between `young/old_bytes_accounted_` and
-    // `initial_young/old_bytes_` due to concurrent main thread adjustments
-    // (resizing).
-    sweeper->young_bytes_adjustment_while_sweeping_ +=
-        initial_young_bytes_ - young_bytes_accounted_;
-    sweeper->old_bytes_adjustment_while_sweeping_ +=
-        initial_old_bytes_ - old_bytes_accounted_;
-    DCHECK_GE(new_young_.bytes_ +
-                  sweeper->young_bytes_adjustment_while_sweeping_ +
-                  sweeper->young_.bytes_,
-              0);
-    DCHECK_GE(new_old_.bytes_ + sweeper->old_bytes_adjustment_while_sweeping_ +
-                  sweeper->old_.bytes_,
-              0);
     sweeper->young_.Append(new_young_);
     sweeper->old_.Append(new_old_);
-    // Apply pending adjustments from resizing and detaching.
-    sweeper->young_.bytes_ +=
-        std::exchange(sweeper->young_bytes_adjustment_while_sweeping_, 0);
-    sweeper->old_.bytes_ +=
-        std::exchange(sweeper->old_bytes_adjustment_while_sweeping_, 0);
     sweeper->DecrementExternalMemoryCounters(freed_bytes_);
   }
 
@@ -140,12 +116,6 @@ class ArrayBufferSweeper::SweepingState final {
   ArrayBufferList new_young_{ArrayBufferList::Age::kYoung};
   ArrayBufferList new_old_{ArrayBufferList::Age::kOld};
   size_t freed_bytes_{0};
-  const uint64_t initial_young_bytes_{0};
-  const uint64_t initial_old_bytes_{0};
-  // Track bytes accounted bytes during sweeping, including freed and promoted
-  // bytes. This is used to compute adjustment when sweeping finishes.
-  uint64_t young_bytes_accounted_{0};
-  uint64_t old_bytes_accounted_{0};
   std::unique_ptr<JobHandle> job_handle_;
 };
 
@@ -181,8 +151,7 @@ class ArrayBufferSweeper::SweepingState::SweepingJob final : public JobTask {
   // there are still array buffers left to sweep.
   bool SweepYoung(JobDelegate* delegate);
   bool SweepFull(JobDelegate* delegate);
-  bool SweepListFull(JobDelegate* delegate, ArrayBufferList& list,
-                     ArrayBufferExtension::Age age);
+  bool SweepListFull(JobDelegate* delegate, ArrayBufferList& list);
 
   Heap* const heap_;
   SweepingState& state_;
@@ -237,9 +206,7 @@ ArrayBufferSweeper::SweepingState::SweepingState(
     ArrayBufferSweeper::SweepingType type,
     ArrayBufferSweeper::TreatAllYoungAsPromoted treat_all_young_as_promoted,
     uint64_t trace_id)
-    : initial_young_bytes_(young.bytes_),
-      initial_old_bytes_(old.bytes_),
-      job_handle_(V8::GetCurrentPlatform()->CreateJob(
+    : job_handle_(V8::GetCurrentPlatform()->CreateJob(
           TaskPriority::kUserVisible,
           std::make_unique<SweepingJob>(
               heap, *this, std::move(young), std::move(old), type,
@@ -340,8 +307,6 @@ void ArrayBufferSweeper::ReleaseAll(ArrayBufferList* list) {
   ArrayBufferExtension* current = list->head_;
   while (current) {
     ArrayBufferExtension* next = current->next();
-    const size_t bytes = current->ClearAccountingLength().accounting_length();
-    DecrementExternalMemoryCounters(bytes);
     FinalizeAndDelete(current);
     current = next;
   }
@@ -357,7 +322,7 @@ void ArrayBufferSweeper::Append(Tagged<JSArrayBuffer> object,
   // `Heap::InYoungGeneration` during full GC with sticky markbits is generally
   // inaccurate. However, a full GC will sweep both lists and promote all to
   // old, so it doesn't matter which list initially holds the extension.
-  if (HeapLayout::InYoungGeneration(object)) {
+  if (Heap::InYoungGeneration(object)) {
     young_.Append(extension);
   } else {
     old_.Append(extension);
@@ -366,70 +331,49 @@ void ArrayBufferSweeper::Append(Tagged<JSArrayBuffer> object,
   IncrementExternalMemoryCounters(bytes);
 }
 
-void ArrayBufferSweeper::Resize(ArrayBufferExtension* extension,
-                                int64_t delta) {
-  FinishIfDone();
-
-  ArrayBufferExtension::AccountingState previous_value =
-      extension->UpdateAccountingLength(delta);
-
-  UpdateApproximateBytes(delta, previous_value.age());
-  if (delta > 0) {
-    IncrementExternalMemoryCounters(delta);
-  } else {
-    DecrementExternalMemoryCounters(-delta);
-  }
-}
-
 void ArrayBufferSweeper::Detach(ArrayBufferExtension* extension) {
   // Finish sweeping here first such that the code below is guaranteed to
   // observe the same sweeping state.
   FinishIfDone();
 
-  ArrayBufferExtension::AccountingState previous_value =
-      extension->ClearAccountingLength();
+  size_t bytes = extension->ClearAccountingLength();
 
   // We cannot free the extension eagerly here, since extensions are tracked in
   // a singly linked list. The next GC will remove it automatically.
 
-  UpdateApproximateBytes(-previous_value.accounting_length(),
-                         previous_value.age());
-  DecrementExternalMemoryCounters(previous_value.accounting_length());
-}
-
-void ArrayBufferSweeper::UpdateApproximateBytes(int64_t delta,
-                                                ArrayBufferExtension::Age age) {
-  switch (age) {
-    case ArrayBufferExtension::Age::kYoung:
-      if (!sweeping_in_progress()) {
-        DCHECK_GE(young_.bytes_, -delta);
-        young_.bytes_ += delta;
-      } else {
-        young_bytes_adjustment_while_sweeping_ += delta;
-      }
-      break;
-    case ArrayBufferExtension::Age::kOld:
-      if (!sweeping_in_progress()) {
-        DCHECK_GE(old_.bytes_, -delta);
-        old_.bytes_ += delta;
-      } else {
-        old_bytes_adjustment_while_sweeping_ += delta;
-      }
+  if (!sweeping_in_progress()) {
+    // If concurrent sweeping isn't running at the moment, we can also adjust
+    // the respective bytes in the corresponding ArrayBufferLists as they are
+    // only approximate.
+    switch (extension->age()) {
+      case ArrayBufferExtension::Age::kYoung:
+        DCHECK_GE(young_.bytes_, bytes);
+        young_.bytes_ -= bytes;
+        break;
+      case ArrayBufferExtension::Age::kOld:
+        DCHECK_GE(old_.bytes_, bytes);
+        old_.bytes_ -= bytes;
+    }
   }
+
+  DecrementExternalMemoryCounters(bytes);
 }
 
 void ArrayBufferSweeper::IncrementExternalMemoryCounters(size_t bytes) {
   if (bytes == 0) return;
   heap_->IncrementExternalBackingStoreBytes(
       ExternalBackingStoreType::kArrayBuffer, bytes);
-  external_memory_accounter_.Increase(heap_->isolate(), bytes);
+  reinterpret_cast<v8::Isolate*>(heap_->isolate())
+      ->AdjustAmountOfExternalAllocatedMemory(static_cast<int64_t>(bytes));
 }
 
 void ArrayBufferSweeper::DecrementExternalMemoryCounters(size_t bytes) {
   if (bytes == 0) return;
   heap_->DecrementExternalBackingStoreBytes(
       ExternalBackingStoreType::kArrayBuffer, bytes);
-  external_memory_accounter_.Decrease(heap_->isolate(), bytes);
+  // Unlike IncrementExternalMemoryCounters we don't use
+  // AdjustAmountOfExternalAllocatedMemory such that we never start a GC here.
+  heap_->update_external_memory(-static_cast<int64_t>(bytes));
 }
 
 void ArrayBufferSweeper::FinalizeAndDelete(ArrayBufferExtension* extension) {
@@ -461,14 +405,12 @@ void ArrayBufferSweeper::SweepingState::SweepingJob::Sweep(
 bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepFull(
     JobDelegate* delegate) {
   DCHECK_EQ(SweepingType::kFull, type_);
-  if (!SweepListFull(delegate, young_, ArrayBufferExtension::Age::kYoung))
-    return false;
-  return SweepListFull(delegate, old_, ArrayBufferExtension::Age::kOld);
+  if (!SweepListFull(delegate, young_)) return false;
+  return SweepListFull(delegate, old_);
 }
 
 bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepListFull(
-    JobDelegate* delegate, ArrayBufferList& list,
-    ArrayBufferExtension::Age age) {
+    JobDelegate* delegate, ArrayBufferList& list) {
   static constexpr size_t kYieldCheckInterval = 256;
   static_assert(base::bits::IsPowerOfTwo(kYieldCheckInterval),
                 "kYieldCheckInterval must be power of 2");
@@ -477,7 +419,6 @@ bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepListFull(
 
   ArrayBufferList& new_old = state_.new_old_;
   size_t freed_bytes = 0;
-  size_t accounted_bytes = 0;
   size_t swept_extensions = 0;
 
   while (current) {
@@ -487,23 +428,19 @@ bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepListFull(
     }
     ArrayBufferExtension* next = current->next();
 
+    const size_t bytes = current->accounting_length();
     if (!current->IsMarked()) {
-      freed_bytes += current->accounting_length();
       FinalizeAndDelete(current);
+      if (bytes) freed_bytes += bytes;
     } else {
       current->Unmark();
-      accounted_bytes += new_old.Append(current);
+      new_old.Append(current);
     }
 
     current = next;
   }
 
   state_.freed_bytes_ += freed_bytes;
-  if (age == ArrayBufferExtension::Age::kYoung) {
-    state_.young_bytes_accounted_ += (freed_bytes + accounted_bytes);
-  } else {
-    state_.old_bytes_accounted_ += (freed_bytes + accounted_bytes);
-  }
 
   list.head_ = current;
   return !current;
@@ -521,7 +458,6 @@ bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepYoung(
   ArrayBufferList& new_old = state_.new_old_;
   ArrayBufferList& new_young = state_.new_young_;
   size_t freed_bytes = 0;
-  size_t accounted_bytes = 0;
   size_t swept_extensions = 0;
 
   while (current) {
@@ -531,18 +467,18 @@ bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepYoung(
     }
     ArrayBufferExtension* next = current->next();
 
+    const size_t bytes = current->accounting_length();
     if (!current->IsYoungMarked()) {
-      const size_t bytes = current->accounting_length();
       FinalizeAndDelete(current);
       if (bytes) freed_bytes += bytes;
     } else {
       if ((treat_all_young_as_promoted_ == TreatAllYoungAsPromoted::kYes) ||
           current->IsYoungPromoted()) {
         current->YoungUnmark();
-        accounted_bytes += new_old.Append(current);
+        new_old.Append(current);
       } else {
         current->YoungUnmark();
-        accounted_bytes += new_young.Append(current);
+        new_young.Append(current);
       }
     }
 
@@ -550,10 +486,6 @@ bool ArrayBufferSweeper::SweepingState::SweepingJob::SweepYoung(
   }
 
   state_.freed_bytes_ += freed_bytes;
-  // Update young/old_bytes_accounted_; the worker may see a difference between
-  // this and `initial_young/old_bytes_` due to concurrent main thread
-  // adjustments.
-  state_.young_bytes_accounted_ += (freed_bytes + accounted_bytes);
 
   young_.head_ = current;
   return !current;

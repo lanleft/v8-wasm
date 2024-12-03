@@ -83,9 +83,11 @@ class Script : public TorqueGeneratedScript<Script, Struct> {
   // code from which eval was called, as negative integer.
   DECL_INT_ACCESSORS(eval_from_position)
 
-  // [infos]: weak fixed array containing all shared function infos and scope
-  // infos for eval created from this script.
-  DECL_ACCESSORS(infos, Tagged<WeakFixedArray>)
+  // [shared_function_infos]: weak fixed array containing all shared
+  // function infos created from this script.
+  DECL_ACCESSORS(shared_function_infos, Tagged<WeakFixedArray>)
+
+  inline int shared_function_info_count() const;
 
 #if V8_ENABLE_WEBASSEMBLY
   // [wasm_breakpoint_infos]: the list of {BreakPointInfo} objects describing
@@ -115,15 +117,9 @@ class Script : public TorqueGeneratedScript<Script, Struct> {
   bool ContainsAsmModule();
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-  // Read/write the raw 'flags' field. This uses relaxed atomic loads/stores
-  // because the flags are read by background compile threads and updated by the
-  // main thread.
-  inline uint32_t flags() const;
-  inline void set_flags(uint32_t new_flags);
-
   // [compilation_type]: how the the script was compiled. Encoded in the
   // 'flags' field.
-  inline CompilationType compilation_type() const;
+  inline CompilationType compilation_type();
   inline void set_compilation_type(CompilationType type);
 
   inline bool produce_compile_hints() const;
@@ -169,8 +165,6 @@ class Script : public TorqueGeneratedScript<Script, Struct> {
 
   // Retrieve source position from where eval was called.
   static int GetEvalPosition(Isolate* isolate, DirectHandle<Script> script);
-
-  Tagged<Script> inline GetEvalOrigin();
 
   // Initialize line_ends array with source code positions of line ends if
   // it doesn't exist yet.
@@ -237,9 +231,9 @@ class Script : public TorqueGeneratedScript<Script, Struct> {
   bool IsUserJavaScript() const;
 
   // Wrappers for GetPositionInfo
-  static int GetColumnNumber(DirectHandle<Script> script, int code_offset);
+  static int GetColumnNumber(Handle<Script> script, int code_offset);
   int GetColumnNumber(int code_pos) const;
-  V8_EXPORT_PRIVATE static int GetLineNumber(DirectHandle<Script> script,
+  V8_EXPORT_PRIVATE static int GetLineNumber(Handle<Script> script,
                                              int code_offset);
   int GetLineNumber(int code_pos) const;
 

@@ -11,8 +11,6 @@
 namespace v8 {
 namespace internal {
 
-#include "src/codegen/define-code-stub-assembler-macros.inc"
-
 // -----------------------------------------------------------------------------
 // ES6 section 20.1 Number Objects
 
@@ -120,9 +118,7 @@ DEF_BINOP_RHS_SMI(ShiftRightLogicalSmi_Baseline,
                                                                  \
     Return(result);                                              \
   }
-#ifndef V8_ENABLE_EXPERIMENTAL_TSA_BUILTINS
 DEF_UNOP(BitwiseNot_WithFeedback, Generate_BitwiseNotWithFeedback)
-#endif
 DEF_UNOP(Decrement_WithFeedback, Generate_DecrementWithFeedback)
 DEF_UNOP(Increment_WithFeedback, Generate_IncrementWithFeedback)
 DEF_UNOP(Negate_WithFeedback, Generate_NegateWithFeedback)
@@ -148,33 +144,21 @@ DEF_UNOP(Increment_Baseline, Generate_IncrementWithFeedback)
 DEF_UNOP(Negate_Baseline, Generate_NegateWithFeedback)
 #undef DEF_UNOP
 
-#define DEF_COMPARE(Name)                                                  \
-  TF_BUILTIN(Name##_WithFeedback, CodeStubAssembler) {                     \
-    auto lhs = Parameter<Object>(Descriptor::kLeft);                       \
-    auto rhs = Parameter<Object>(Descriptor::kRight);                      \
-    auto context = Parameter<Context>(Descriptor::kContext);               \
-    auto feedback_vector =                                                 \
-        Parameter<FeedbackVector>(Descriptor::kFeedbackVector);            \
-    auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);           \
-                                                                           \
-    TVARIABLE(Smi, var_type_feedback);                                     \
-    TVARIABLE(Object, var_exception);                                      \
-    Label if_exception(this, Label::kDeferred);                            \
-    TNode<Boolean> result;                                                 \
-    {                                                                      \
-      ScopedExceptionHandler handler(this, &if_exception, &var_exception); \
-      result = RelationalComparison(Operation::k##Name, lhs, rhs, context, \
-                                    &var_type_feedback);                   \
-    }                                                                      \
-    UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);      \
-                                                                           \
-    Return(result);                                                        \
-    BIND(&if_exception);                                                   \
-    {                                                                      \
-      UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);    \
-      CallRuntime(Runtime::kReThrow, context, var_exception.value());      \
-      Unreachable();                                                       \
-    }                                                                      \
+#define DEF_COMPARE(Name)                                                      \
+  TF_BUILTIN(Name##_WithFeedback, CodeStubAssembler) {                         \
+    auto lhs = Parameter<Object>(Descriptor::kLeft);                           \
+    auto rhs = Parameter<Object>(Descriptor::kRight);                          \
+    auto context = Parameter<Context>(Descriptor::kContext);                   \
+    auto feedback_vector =                                                     \
+        Parameter<FeedbackVector>(Descriptor::kFeedbackVector);                \
+    auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);               \
+                                                                               \
+    TVARIABLE(Smi, var_type_feedback);                                         \
+    TNode<Boolean> result = RelationalComparison(Operation::k##Name, lhs, rhs, \
+                                                 context, &var_type_feedback); \
+    UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);          \
+                                                                               \
+    Return(result);                                                            \
   }
 DEF_COMPARE(LessThan)
 DEF_COMPARE(LessThanOrEqual)
@@ -182,34 +166,20 @@ DEF_COMPARE(GreaterThan)
 DEF_COMPARE(GreaterThanOrEqual)
 #undef DEF_COMPARE
 
-#define DEF_COMPARE(Name)                                                   \
-  TF_BUILTIN(Name##_Baseline, CodeStubAssembler) {                          \
-    auto lhs = Parameter<Object>(Descriptor::kLeft);                        \
-    auto rhs = Parameter<Object>(Descriptor::kRight);                       \
-    auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);            \
-                                                                            \
-    TVARIABLE(Smi, var_type_feedback);                                      \
-    TVARIABLE(Object, var_exception);                                       \
-    Label if_exception(this, Label::kDeferred);                             \
-    TNode<Boolean> result;                                                  \
-    {                                                                       \
-      ScopedExceptionHandler handler(this, &if_exception, &var_exception);  \
-      result = RelationalComparison(                                        \
-          Operation::k##Name, lhs, rhs,                                     \
-          [&]() { return LoadContextFromBaseline(); }, &var_type_feedback); \
-    }                                                                       \
-    auto feedback_vector = LoadFeedbackVectorFromBaseline();                \
-    UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);       \
-                                                                            \
-    Return(result);                                                         \
-    BIND(&if_exception);                                                    \
-    {                                                                       \
-      auto feedback_vector = LoadFeedbackVectorFromBaseline();              \
-      UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);     \
-      CallRuntime(Runtime::kReThrow, LoadContextFromBaseline(),             \
-                  var_exception.value());                                   \
-      Unreachable();                                                        \
-    }                                                                       \
+#define DEF_COMPARE(Name)                                                 \
+  TF_BUILTIN(Name##_Baseline, CodeStubAssembler) {                        \
+    auto lhs = Parameter<Object>(Descriptor::kLeft);                      \
+    auto rhs = Parameter<Object>(Descriptor::kRight);                     \
+    auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);          \
+                                                                          \
+    TVARIABLE(Smi, var_type_feedback);                                    \
+    TNode<Boolean> result = RelationalComparison(                         \
+        Operation::k##Name, lhs, rhs,                                     \
+        [&]() { return LoadContextFromBaseline(); }, &var_type_feedback); \
+    auto feedback_vector = LoadFeedbackVectorFromBaseline();              \
+    UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);     \
+                                                                          \
+    Return(result);                                                       \
   }
 DEF_COMPARE(LessThan)
 DEF_COMPARE(LessThanOrEqual)
@@ -225,21 +195,11 @@ TF_BUILTIN(Equal_WithFeedback, CodeStubAssembler) {
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
 
   TVARIABLE(Smi, var_type_feedback);
-  TVARIABLE(Object, var_exception);
-  Label if_exception(this, Label::kDeferred);
-  TNode<Boolean> result;
-  {
-    ScopedExceptionHandler handler(this, &if_exception, &var_exception);
-    result = Equal(lhs, rhs, [&]() { return context; }, &var_type_feedback);
-  }
+  TNode<Boolean> result = Equal(
+      lhs, rhs, [&]() { return context; }, &var_type_feedback);
   UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);
-  Return(result);
 
-  BIND(&if_exception);
-  UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);
-  CallRuntime(Runtime::kReThrow, LoadContextFromBaseline(),
-              var_exception.value());
-  Unreachable();
+  Return(result);
 }
 
 TF_BUILTIN(StrictEqual_WithFeedback, CodeStubAssembler) {
@@ -261,27 +221,13 @@ TF_BUILTIN(Equal_Baseline, CodeStubAssembler) {
   auto slot = UncheckedParameter<UintPtrT>(Descriptor::kSlot);
 
   TVARIABLE(Smi, var_type_feedback);
-  TVARIABLE(Object, var_exception);
-  Label if_exception(this, Label::kDeferred);
-  TNode<Boolean> result;
-  {
-    ScopedExceptionHandler handler(this, &if_exception, &var_exception);
-    result = Equal(
-        lhs, rhs, [&]() { return LoadContextFromBaseline(); },
-        &var_type_feedback);
-  }
+  TNode<Boolean> result = Equal(
+      lhs, rhs, [&]() { return LoadContextFromBaseline(); },
+      &var_type_feedback);
   auto feedback_vector = LoadFeedbackVectorFromBaseline();
   UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);
-  Return(result);
 
-  BIND(&if_exception);
-  {
-    auto feedback_vector = LoadFeedbackVectorFromBaseline();
-    UpdateFeedback(var_type_feedback.value(), feedback_vector, slot);
-    CallRuntime(Runtime::kReThrow, LoadContextFromBaseline(),
-                var_exception.value());
-    Unreachable();
-  }
+  Return(result);
 }
 
 TF_BUILTIN(StrictEqual_Baseline, CodeStubAssembler) {
@@ -296,8 +242,6 @@ TF_BUILTIN(StrictEqual_Baseline, CodeStubAssembler) {
 
   Return(result);
 }
-
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace internal
 }  // namespace v8

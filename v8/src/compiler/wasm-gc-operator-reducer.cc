@@ -356,11 +356,9 @@ Reduction WasmGCOperatorReducer::ReduceTypeGuard(Node* node) {
   wasm::TypeInModule object_type =
       ObjectTypeFromContext(object, control, /* allow_non_wasm = */ true);
   if (object_type.type.is_uninhabited()) return NoChange();
-  Type guarded_type = TypeGuardTypeOf(node->op());
-  if (!guarded_type.IsWasm()) return NoChange();
+  wasm::TypeInModule guarded_type = TypeGuardTypeOf(node->op()).AsWasm();
 
-  wasm::TypeInModule new_type =
-      wasm::Intersection(object_type, guarded_type.AsWasm());
+  wasm::TypeInModule new_type = wasm::Intersection(object_type, guarded_type);
 
   return UpdateNodeAndAliasesTypes(node, GetState(control), node, new_type,
                                    false);

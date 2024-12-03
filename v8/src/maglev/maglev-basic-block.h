@@ -35,7 +35,7 @@ class BasicBlock {
         reload_hints_(0, zone),
         spill_hints_(0, zone) {}
 
-  NodeIdT first_id() const {
+  uint32_t first_id() const {
     if (has_phi()) return phis()->first()->id();
     if (nodes_.is_empty()) {
       return control_node()->id();
@@ -47,7 +47,7 @@ class BasicBlock {
     return node ? node->id() : control_node()->id();
   }
 
-  NodeIdT FirstNonGapMoveId() const {
+  uint32_t FirstNonGapMoveId() const {
     if (has_phi()) return phis()->first()->id();
     if (!nodes_.is_empty()) {
       for (const Node* node : nodes_) {
@@ -132,11 +132,6 @@ class BasicBlock {
   BasicBlock* predecessor_at(int i) const {
     DCHECK(has_state());
     return state_->predecessor_at(i);
-  }
-
-  BasicBlock* backedge_predecessor() const {
-    DCHECK(is_loop());
-    return predecessor_at(predecessor_count() - 1);
   }
 
   int predecessor_id() const {

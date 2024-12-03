@@ -4,7 +4,7 @@
 
 #include "src/compiler/backend/bitcast-elider.h"
 
-#include "src/compiler/turbofan-graph.h"
+#include "src/compiler/graph.h"
 
 namespace v8 {
 namespace internal {

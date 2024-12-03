@@ -56,17 +56,13 @@ namespace internal {
   V(MarkVisitRememberedSets)                \
   V(WeakContainerCallbacksProcessing)       \
   V(CustomCallbacksProcessing)              \
-  V(SweepEmptyPages)                        \
-  V(SweepFinish)                            \
-  V(SweepFinalizeEmptyPages)                \
-  V(SweepFinalizeSweptPages)                \
   V(SweepFinishIfOutOfWork)                 \
   V(SweepInvokePreFinalizers)               \
-  V(SweepInLowPriorityTask)                 \
+  V(SweepInIdleTask)                        \
   V(SweepInTask)                            \
   V(SweepInTaskForStatistics)               \
   V(SweepOnAllocation)                      \
-  V(SweepPages)
+  V(SweepFinalize)
 
 #define CPPGC_FOR_ALL_HISTOGRAM_CONCURRENT_SCOPES(V) \
   V(ConcurrentMark)                                  \
@@ -113,7 +109,7 @@ class V8_EXPORT_PRIVATE StatsCollector final {
     V8_EXPORT_PRIVATE explicit Event();
 
     v8::base::TimeDelta scope_data[kNumHistogramScopeIds];
-    v8::base::AtomicWord concurrent_scope_data[kNumHistogramConcurrentScopeIds]{
+    v8::base::Atomic32 concurrent_scope_data[kNumHistogramConcurrentScopeIds]{
         0};
 
     size_t epoch = -1;
@@ -434,14 +430,16 @@ void StatsCollector::InternalScope<trace_category, scope_category>::StartTrace(
                           ? static_cast<int>(kNumHistogramScopeIds)
                           : static_cast<int>(kNumHistogramConcurrentScopeIds)),
                  trace_category == StatsCollector::TraceCategory::kEnabled);
-  StartTraceImpl(args...);
+  if (trace_category == StatsCollector::TraceCategory::kEnabled)
+    StartTraceImpl(args...);
 }
 
 template <StatsCollector::TraceCategory trace_category,
           StatsCollector::ScopeContext scope_category>
 void StatsCollector::InternalScope<trace_category,
                                    scope_category>::StopTrace() {
-  StopTraceImpl();
+  if (trace_category == StatsCollector::TraceCategory::kEnabled)
+    StopTraceImpl();
 }
 
 template <StatsCollector::TraceCategory trace_category,
@@ -506,11 +504,12 @@ void StatsCollector::InternalScope<trace_category,
     return;
   }
   // scope_category == StatsCollector::ScopeContext::kConcurrentThread
-  using AtomicWord = v8::base::AtomicWord;
+  using Atomic32 = v8::base::Atomic32;
   const int64_t us = time.InMicroseconds();
+  DCHECK_LE(us, std::numeric_limits<Atomic32>::max());
   v8::base::Relaxed_AtomicIncrement(
       &stats_collector_->current_.concurrent_scope_data[scope_id_],
-      static_cast<AtomicWord>(us));
+      static_cast<Atomic32>(us));
 }
 
 }  // namespace internal

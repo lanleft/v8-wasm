@@ -113,7 +113,7 @@ class MjsunitNamesProvider {
     return memcmp(name.begin(), question.begin(), name.length()) == 0;
   }
 
-  void PrintTypeVariableName(StringBuilder& out, ModuleTypeIndex index) {
+  void PrintTypeVariableName(StringBuilder& out, uint32_t index) {
     // The name creation scheme must be in sync with {PrintStructType} etc.
     // below!
     if (module_->has_struct(index)) {
@@ -128,26 +128,22 @@ class MjsunitNamesProvider {
     }
   }
 
-  void PrintStructType(StringBuilder& out, ModuleTypeIndex index,
-                       OutputContext mode) {
+  void PrintStructType(StringBuilder& out, uint32_t index, OutputContext mode) {
     DCHECK(module_->has_struct(index));
     PrintMaybeLEB(out, "$struct", index, mode);
   }
 
-  void PrintArrayType(StringBuilder& out, ModuleTypeIndex index,
-                      OutputContext mode) {
+  void PrintArrayType(StringBuilder& out, uint32_t index, OutputContext mode) {
     DCHECK(module_->has_array(index));
     PrintMaybeLEB(out, "$array", index, mode);
   }
 
-  void PrintSigType(StringBuilder& out, ModuleTypeIndex index,
-                    OutputContext mode) {
+  void PrintSigType(StringBuilder& out, uint32_t index, OutputContext mode) {
     DCHECK(module_->has_signature(index));
     PrintMaybeLEB(out, "$sig", index, mode);
   }
 
-  void PrintTypeIndex(StringBuilder& out, ModuleTypeIndex index,
-                      OutputContext mode) {
+  void PrintTypeIndex(StringBuilder& out, uint32_t index, OutputContext mode) {
     if (module_->has_struct(index)) {
       PrintStructType(out, index, mode);
     } else if (module_->has_array(index)) {
@@ -295,7 +291,6 @@ class MjsunitNamesProvider {
       ABSTRACT_NN_TYPE_LIST(CASE)
 #undef CASE
       case HeapType::kBottom:
-      case HeapType::kTop:
         UNREACHABLE();
       default:
         PrintTypeIndex(out, type.ref_index(), mode);
@@ -309,7 +304,6 @@ class MjsunitNamesProvider {
       case kI16:  out << "kWasmI16";  return;
       case kI32:  out << "kWasmI32";  return;
       case kI64:  out << "kWasmI64";  return;
-      case kF16:  out << "kWasmF16";  return;
       case kF32:  out << "kWasmF32";  return;
       case kF64:  out << "kWasmF64";  return;
       case kS128: out << "kWasmS128"; return;
@@ -321,7 +315,6 @@ class MjsunitNamesProvider {
 #undef CASE
           return PrintHeapType(out, type.heap_type(), mode);
           case HeapType::kBottom:
-          case HeapType::kTop:
             UNREACHABLE();
           default:
             out << (mode == kEmitObjects ? "wasmRefNullType("
@@ -345,7 +338,6 @@ class MjsunitNamesProvider {
       case kBottom:
         out << "/*<bot>*/";
         return;
-      case kTop:
       case kRtt:
       case kVoid:
         UNREACHABLE();
@@ -451,9 +443,9 @@ class MjsunitNamesProvider {
     return true;
   }
 
-  void PrintMaybeLEB(StringBuilder& out, const char* prefix,
-                     ModuleTypeIndex index, OutputContext mode) {
-    if (index.index <= 0x3F || mode == kEmitObjects) {
+  void PrintMaybeLEB(StringBuilder& out, const char* prefix, uint32_t index,
+                     OutputContext mode) {
+    if (index <= 0x3F || mode == kEmitObjects) {
       out << prefix << index;
     } else {
       out << "...wasmSignedLeb(" << prefix << index << ")";
@@ -782,7 +774,7 @@ class MjsunitImmediatesPrinter {
 
   MjsunitNamesProvider* names() { return owner_->names_; }
 
-  void PrintSignature(ModuleTypeIndex sig_index) {
+  void PrintSignature(uint32_t sig_index) {
     out_ << " ";
     if (owner_->module_->has_signature(sig_index)) {
       names()->PrintSigType(out_, sig_index, kEmitWireBytes);
@@ -810,15 +802,9 @@ class MjsunitImmediatesPrinter {
     out_ << ",";
   }
 
+  // TODO(mliedtke): This is used for br_on_cast[_fail] and currently does not
+  // create a valid br_on_cast instruction.
   void ValueType(HeapTypeImmediate& imm, bool is_nullable) {
-    if (owner_->current_opcode_ == kExprBrOnCast ||
-        owner_->current_opcode_ == kExprBrOnCastFail) {
-      // We somewhat incorrectly use the {ValueType} callback rather than
-      // {HeapType()} for br_on_cast[_fail], because that's convenient
-      // for disassembling to the text format. For module builder output,
-      // fix that hack here, by dispatching back to {HeapType()}.
-      return HeapType(imm);
-    }
     out_ << " ";
     names()->PrintValueType(
         out_,
@@ -826,14 +812,6 @@ class MjsunitImmediatesPrinter {
                                 is_nullable ? kNullable : kNonNullable),
         kEmitWireBytes);
     out_ << ",";
-  }
-
-  void BrOnCastFlags(BrOnCastImmediate& flags) {
-    out_ << " 0b";
-    out_ << ((flags.raw_value & 2) ? "1" : "0");
-    out_ << ((flags.raw_value & 1) ? "1" : "0");
-    out_ << " /* " << (flags.flags.src_is_null ? "" : "non-") << "nullable -> "
-         << (flags.flags.res_is_null ? "" : "non-") << "nullable */,";
   }
 
   void BranchDepth(BranchDepthImmediate& imm) { WriteUnsignedLEB(imm.depth); }
@@ -908,7 +886,7 @@ class MjsunitImmediatesPrinter {
       WriteUnsignedLEB(align);
     }
     if (imm.mem_index < owner_->module_->memories.size() &&
-        owner_->module_->memories[imm.mem_index].is_memory64()) {
+        owner_->module_->memories[imm.mem_index].is_memory64) {
       WriteLEB64(imm.offset);
     } else {
       DCHECK_LE(imm.offset, std::numeric_limits<uint32_t>::max());
@@ -937,7 +915,7 @@ class MjsunitImmediatesPrinter {
     out_ << ",";
   }
 
-  void TypeIndex(TypeIndexImmediate& imm) {
+  void TypeIndex(IndexImmediate& imm) {
     out_ << " ";
     names()->PrintTypeIndex(out_, imm.index, kEmitWireBytes);
     out_ << ",";
@@ -1060,7 +1038,7 @@ class MjsunitImmediatesPrinter {
     out_ << ",";
   }
 
-  void ArrayCopy(TypeIndexImmediate& dst, TypeIndexImmediate& src) {
+  void ArrayCopy(IndexImmediate& dst, IndexImmediate& src) {
     out_ << " ";
     names()->PrintTypeIndex(out_, dst.index, kEmitWireBytes);
     out_ << ", ";
@@ -1132,7 +1110,7 @@ class MjsunitModuleDis {
             "that can be\n"
             "// found in the LICENSE file.\n"
             "\n"
-            "// Flags: --wasm-staging --wasm-inlining-call-indirect\n"
+            "// Flags: --wasm-staging\n"
             "\n"
             "d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');\n"
             "\n"
@@ -1156,20 +1134,20 @@ class MjsunitModuleDis {
       if (!vt.is_object_reference()) return;
       HeapType ht = vt.heap_type();
       if (!ht.is_index()) return;
-      if (ht.ref_index().index < here) return;
-      if (needed_at[ht.ref_index().index] < here) return;
-      needed_at[ht.ref_index().index] = here;
+      if (ht.ref_index() < here) return;
+      if (needed_at[ht.ref_index()] < here) return;
+      needed_at[ht.ref_index()] = here;
     };
     for (uint32_t i = 0; i < module_->types.size(); i++) {
-      if (module_->has_struct(ModuleTypeIndex{i})) {
+      if (module_->has_struct(i)) {
         const StructType* struct_type = module_->types[i].struct_type;
         for (uint32_t fi = 0; fi < struct_type->field_count(); fi++) {
           MarkAsNeededHere(struct_type->field(fi), i);
         }
-      } else if (module_->has_array(ModuleTypeIndex{i})) {
+      } else if (module_->has_array(i)) {
         MarkAsNeededHere(module_->types[i].array_type->element_type(), i);
       } else {
-        DCHECK(module_->has_signature(ModuleTypeIndex{i}));
+        DCHECK(module_->has_signature(i));
         const FunctionSig* sig = module_->types[i].function_sig;
         for (size_t pi = 0; pi < sig->parameter_count(); pi++) {
           MarkAsNeededHere(sig->GetParam(pi), i);
@@ -1199,14 +1177,11 @@ class MjsunitModuleDis {
           break;
         }
       }
-      uint32_t end_index =
-          recgroup.end_type_index != OffsetsProvider::RecGroup::kInvalid
-              ? recgroup.end_type_index
-              : i + 1;
-      for (uint32_t pre = i; pre < end_index; pre++) {
+      for (uint32_t pre = i; pre < std::min(recgroup.end_type_index, i + 1);
+           pre++) {
         if (needed_at[pre] == i) {
           out_ << "let ";
-          names()->PrintTypeVariableName(out_, ModuleTypeIndex{pre});
+          names()->PrintTypeVariableName(out_, pre);
           if (pre == i) {
             out_ << " = builder.nextTypeIndex();";
           } else {
@@ -1215,18 +1190,18 @@ class MjsunitModuleDis {
           out_.NextLine(0);
         }
       }
-      ModuleTypeIndex supertype = module_->types[i].supertype;
+      uint32_t supertype = module_->types[i].supertype;
       bool is_final = module_->types[i].is_final;
       if (needed_at[i] == kMaxUInt32) {
         out_ << "let ";
-        names()->PrintTypeVariableName(out_, ModuleTypeIndex{i});
+        names()->PrintTypeVariableName(out_, i);
         out_ << " = ";
       } else {
         out_ << "/* ";
-        names()->PrintTypeVariableName(out_, ModuleTypeIndex{i});
+        names()->PrintTypeVariableName(out_, i);
         out_ << " */ ";
       }
-      if (module_->has_struct(ModuleTypeIndex{i})) {
+      if (module_->has_struct(i)) {
         const StructType* struct_type = module_->types[i].struct_type;
         out_ << "builder.addStruct([";
         for (uint32_t fi = 0; fi < struct_type->field_count(); fi++) {
@@ -1244,7 +1219,7 @@ class MjsunitModuleDis {
         }
         out_ << ", " << (is_final ? "true" : "false") << ");";
         out_.NextLine(0);
-      } else if (module_->has_array(ModuleTypeIndex{i})) {
+      } else if (module_->has_array(i)) {
         const ArrayType* array_type = module_->types[i].array_type;
         out_ << "builder.addArray(";
         names()->PrintValueType(out_, array_type->element_type(), kEmitObjects);
@@ -1258,7 +1233,7 @@ class MjsunitModuleDis {
         out_ << ", " << (is_final ? "true" : "false") << ");";
         out_.NextLine(0);
       } else {
-        DCHECK(module_->has_signature(ModuleTypeIndex{i}));
+        DCHECK(module_->has_signature(i));
         const FunctionSig* sig = module_->types[i].function_sig;
         out_ << "builder.addType(";
         names()->PrintMakeSignature(out_, sig);
@@ -1340,7 +1315,7 @@ class MjsunitModuleDis {
             out_ << "undefined, ";
           }
           out_ << (memory.is_shared ? "true" : "false");
-          if (memory.is_memory64()) out_ << ", true";
+          if (memory.is_memory64) out_ << ", true";
           break;
         }
         case kExternalTag: {
@@ -1395,21 +1370,22 @@ class MjsunitModuleDis {
         out_ << "undefined";
       }
       out_ << ", ";
-      out_ << "$sig" << func.sig_index.index;
+      out_ << "$sig" << func.sig_index;
       out_ << ")";
       if (func.exported && !export_functions_late) {
         for (const WasmExport& ex : module_->export_table) {
           if (ex.kind != kExternalFunction || ex.index != index) continue;
           if (names()->FunctionNameEquals(index, ex.name)) {
-            out_ << ".exportFunc()";
+            out_ << ".exportFunc();";
           } else {
             out_ << ".exportAs('";
             PrintName(ex.name);
-            out_ << "')";
+            out_ << "');";
           }
         }
+      } else {
+        out_ << ";";
       }
-      out_ << ";";
       out_.NextLine(0);
     }
 
@@ -1426,7 +1402,7 @@ class MjsunitModuleDis {
       if (memory.imported) continue;
       out_ << "let ";
       names()->PrintMemoryName(out_, memory.index);
-      if (memory.is_memory64()) {
+      if (memory.is_memory64) {
         out_ << " = builder.addMemory64(";
       } else {
         out_ << " = builder.addMemory(";
@@ -1539,10 +1515,9 @@ class MjsunitModuleDis {
         out_ << " = builder.addDeclarativeElementSegment(";
       }
       out_ << "[";
-      WasmDetectedFeatures unused_detected_features;
-      ModuleDecoderImpl decoder(
-          WasmEnabledFeatures::All(), wire_bytes_.module_bytes(),
-          ModuleOrigin::kWasmOrigin, &unused_detected_features);
+      ModuleDecoderImpl decoder(WasmEnabledFeatures::All(),
+                                wire_bytes_.module_bytes(),
+                                ModuleOrigin::kWasmOrigin);
       // This implementation detail is load-bearing: if we simply let the
       // {decoder} start at this offset, it could produce WireBytesRefs that
       // start at offset 0, which violates DCHECK-guarded assumptions.
@@ -1601,7 +1576,7 @@ class MjsunitModuleDis {
           wire_bytes_.GetFunctionBytes(&func);
 
       // Locals and body.
-      bool shared = module_->type(func.sig_index).is_shared;
+      bool shared = module_->types[func.sig_index].is_shared;
       WasmDetectedFeatures detected;
       MjsunitFunctionDis d(&zone_, module_, index, shared, &detected, func.sig,
                            func_code.begin(), func_code.end(),

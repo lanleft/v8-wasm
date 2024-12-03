@@ -110,8 +110,7 @@ void BaselineAssembler::SmiUntag(Register output, Register value) {
 
 void BaselineAssembler::LoadFixedArrayElement(Register output, Register array,
                                               int32_t index) {
-  LoadTaggedField(output, array,
-                  OFFSET_OF_DATA_START(FixedArray) + index * kTaggedSize);
+  LoadTaggedField(output, array, FixedArray::kHeaderSize + index * kTaggedSize);
 }
 
 void BaselineAssembler::LoadPrototype(Register prototype, Register object) {

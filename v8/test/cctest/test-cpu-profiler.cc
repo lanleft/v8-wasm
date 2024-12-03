@@ -4150,7 +4150,8 @@ TEST(EmbedderStatePropagate) {
 TEST(EmbedderStatePropagateNativeContextMove) {
   // Reusing context addresses will cause this test to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking) {
+      i::v8_flags.stress_incremental_marking ||
+      i::v8_flags.enable_third_party_heap) {
     return;
   }
   // If no compaction is performed when a GC with stack is invoked (which
@@ -4222,6 +4223,7 @@ TEST(EmbedderStatePropagateNativeContextMove) {
 // Tests that when a native context that's being filtered is moved, we continue
 // to track its execution.
 TEST(ContextFilterMovedNativeContext) {
+  if (i::v8_flags.enable_third_party_heap) return;
   i::v8_flags.allow_natives_syntax = true;
   ManualGCScope manual_gc_scope;
   heap::ManualEvacuationCandidatesSelectionScope

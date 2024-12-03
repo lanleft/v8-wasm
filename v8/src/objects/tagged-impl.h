@@ -32,6 +32,11 @@ bool V8_EXPORT_PRIVATE CheckObjectComparisonAllowed(Address a, Address b);
 template <HeapObjectReferenceType kRefType, typename StorageType>
 class TaggedImpl {
  public:
+  // Compressed TaggedImpl are never used for external InstructionStream
+  // pointers, so we can use this shorter alias for calling decompression
+  // functions.
+  using CompressionScheme = V8HeapCompressionScheme;
+
   static_assert(std::is_same<StorageType, Address>::value ||
                     std::is_same<StorageType, Tagged_t>::value,
                 "StorageType must be either Address or Tagged_t");
@@ -160,17 +165,6 @@ class TaggedImpl {
     return kCanBeWeak && HAS_WEAK_HEAP_OBJECT_TAG(ptr_);
   }
 
-#ifdef V8_COMPRESS_POINTERS
-  // Returns true if this tagged value is a pointer to an object in the given
-  // cage base.
-  constexpr inline bool IsInMainCageBase() {
-    DCHECK(!IsSmi());
-    using S = V8HeapCompressionScheme;
-    return S::GetPtrComprCageBaseAddress(ptr_) ==
-           S::GetPtrComprCageBaseAddress(S::base());
-  }
-#endif  // V8_COMPRESS_POINTERS
-
   //
   // The following set of methods get HeapObject out of the tagged value
   // which may involve decompression in which case the isolate root is required.
@@ -235,10 +229,7 @@ class TaggedImpl {
 
  private:
   friend class CompressedObjectSlot;
-  friend class CompressedMaybeObjectSlot;
   friend class FullObjectSlot;
-  friend class FullMaybeObjectSlot;
-  friend class FullHeapObjectSlot;
 
   StorageType ptr_;
 };

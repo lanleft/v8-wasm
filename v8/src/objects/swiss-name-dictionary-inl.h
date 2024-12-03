@@ -6,9 +6,9 @@
 #define V8_OBJECTS_SWISS_NAME_DICTIONARY_INL_H_
 
 #include <algorithm>
-#include <optional>
 
 #include "src/base/macros.h"
+#include "src/base/optional.h"
 #include "src/execution/isolate-utils-inl.h"
 #include "src/heap/heap.h"
 #include "src/objects/fixed-array-inl.h"
@@ -22,7 +22,8 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 #include "torque-generated/src/objects/swiss-name-dictionary-tq-inl.inc"
 
@@ -307,7 +308,7 @@ Tagged<Object> SwissNameDictionary::ValueAt(InternalIndex entry) {
   return ValueAtRaw(entry.as_int());
 }
 
-std::optional<Tagged<Object>> SwissNameDictionary::TryValueAt(
+base::Optional<Tagged<Object>> SwissNameDictionary::TryValueAt(
     InternalIndex entry) {
 #if DEBUG
   Isolate* isolate;
@@ -668,7 +669,7 @@ int SwissNameDictionary::Hash() { return ReadField<int32_t>(PrefixOffset()); }
 // static
 constexpr int SwissNameDictionary::MaxCapacity() {
   int const_size =
-      DataTableStartOffset() + sizeof(ByteArray::Header) +
+      DataTableStartOffset() + ByteArray::kHeaderSize +
       // Size for present and deleted element count at max capacity:
       2 * sizeof(uint32_t);
   int per_entry_size =
@@ -759,7 +760,8 @@ ACCESSORS_CHECKED2(SwissNameDictionary, meta_table, Tagged<ByteArray>,
                    MetaTablePointerOffset(), true,
                    value->length() >= kMetaTableEnumerationDataStartIndex)
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"
 

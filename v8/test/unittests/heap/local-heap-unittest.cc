@@ -4,8 +4,6 @@
 
 #include "src/heap/local-heap.h"
 
-#include <optional>
-
 #include "src/base/platform/condition-variable.h"
 #include "src/base/platform/mutex.h"
 #include "src/heap/heap.h"
@@ -133,12 +131,12 @@ class BackgroundThreadForGCEpilogue final : public v8::base::Thread {
 
   void Run() override {
     LocalHeap lh(heap_, ThreadKind::kBackground);
-    std::optional<UnparkedScope> unparked_scope;
+    base::Optional<UnparkedScope> unparked_scope;
     if (!parked_) {
       unparked_scope.emplace(&lh);
     }
     {
-      std::optional<UnparkedScope> nested_unparked_scope;
+      base::Optional<UnparkedScope> nested_unparked_scope;
       if (parked_) nested_unparked_scope.emplace(&lh);
       lh.AddGCEpilogueCallback(&GCEpilogue::Callback, epilogue_);
     }
@@ -147,7 +145,7 @@ class BackgroundThreadForGCEpilogue final : public v8::base::Thread {
       lh.Safepoint();
     }
     {
-      std::optional<UnparkedScope> nested_unparked_scope;
+      base::Optional<UnparkedScope> nested_unparked_scope;
       if (parked_) nested_unparked_scope.emplace(&lh);
       lh.RemoveGCEpilogueCallback(&GCEpilogue::Callback, epilogue_);
     }

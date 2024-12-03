@@ -4,10 +4,9 @@
 
 // The test needs --no-liftoff because we can't serialize and deserialize
 // Liftoff code.
-// Flags: --allow-natives-syntax --expose-gc --no-liftoff
+// Flags: --expose-wasm --allow-natives-syntax --expose-gc --no-liftoff
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 const num_functions = 3;
 

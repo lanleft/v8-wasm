@@ -96,7 +96,7 @@ void Zone::Reset() {
 }
 
 #ifdef DEBUG
-bool Zone::Contains(const void* ptr) const {
+bool Zone::Contains(void* ptr) {
   Address address = reinterpret_cast<Address>(ptr);
   for (Segment* segment = segment_head_; segment != nullptr;
        segment = segment->next()) {

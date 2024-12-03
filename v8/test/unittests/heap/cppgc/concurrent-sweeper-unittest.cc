@@ -142,10 +142,8 @@ class ConcurrentSweeperTest : public testing::TestWithHeap {
   void MarkObject(void* payload) {
     HeapObjectHeader& header = HeapObjectHeader::FromObject(payload);
     header.TryMarkAtomic();
-    BasePage* page = BasePage::FromPayload(&header);
-    page->IncrementMarkedBytes(page->is_large()
-                                   ? LargePage::From(page)->PayloadSize()
-                                   : header.AllocatedSize());
+    BasePage::FromPayload(&header)->IncrementMarkedBytes(
+        header.AllocatedSize());
   }
 };
 
@@ -324,8 +322,7 @@ TEST_F(ConcurrentSweeperTest, IncrementalSweeping) {
   testing::TestPlatform::DisableBackgroundTasksScope disable_concurrent_sweeper(
       &GetPlatform());
 
-  auto task_runner =
-      GetPlatform().GetForegroundTaskRunner(TaskPriority::kUserBlocking);
+  auto task_runner = GetPlatform().GetForegroundTaskRunner();
 
   // Create two unmarked objects.
   MakeGarbageCollected<NormalFinalizable>(GetAllocationHandle());

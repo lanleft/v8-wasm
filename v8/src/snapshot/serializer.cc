@@ -21,7 +21,6 @@
 #include "src/objects/slots-inl.h"
 #include "src/objects/slots.h"
 #include "src/objects/smi.h"
-#include "src/sandbox/js-dispatch-table-inl.h"
 #include "src/snapshot/embedded/embedded-data.h"
 #include "src/snapshot/serializer-deserializer.h"
 #include "src/snapshot/serializer-inl.h"
@@ -288,7 +287,7 @@ void Serializer::PutRoot(RootIndex root) {
 
   // TODO(ulan): Check that it works with young large objects.
   if (root_index < kRootArrayConstantsCount &&
-      !HeapLayout::InYoungGeneration(object)) {
+      !Heap::InYoungGeneration(object)) {
     sink_.Put(RootArrayConstant::Encode(root), "RootConstant");
   } else {
     sink_.Put(kRootArray, "RootSerialization");
@@ -326,17 +325,13 @@ void Serializer::PutAttachedReference(SerializerReference reference) {
   sink_.PutUint30(reference.attached_reference_index(), "AttachedRefIndex");
 }
 
-void Serializer::PutRepeatRoot(int repeat_count, RootIndex root_index) {
-  if (repeat_count <= kLastEncodableFixedRepeatRootCount) {
-    sink_.Put(FixedRepeatRootWithCount::Encode(repeat_count),
-              "FixedRepeatRoot");
+void Serializer::PutRepeat(int repeat_count) {
+  if (repeat_count <= kLastEncodableFixedRepeatCount) {
+    sink_.Put(FixedRepeatWithCount::Encode(repeat_count), "FixedRepeat");
   } else {
-    sink_.Put(kVariableRepeatRoot, "VariableRepeatRoot");
-    sink_.PutUint30(VariableRepeatRootCount::Encode(repeat_count),
-                    "repeat count");
+    sink_.Put(kVariableRepeat, "VariableRepeat");
+    sink_.PutUint30(VariableRepeatCount::Encode(repeat_count), "repeat count");
   }
-  DCHECK_LE(static_cast<uint32_t>(root_index), UINT8_MAX);
-  sink_.Put(static_cast<uint8_t>(root_index), "root index");
 }
 
 void Serializer::PutPendingForwardReference(PendingObjectReferences& refs) {
@@ -706,7 +701,7 @@ void Serializer::ObjectSerializer::SerializeExternalStringAsSequentialString() {
   PtrComprCageBase cage_base(isolate());
   DCHECK(IsExternalString(*object_, cage_base));
   Handle<ExternalString> string = Cast<ExternalString>(object_);
-  uint32_t length = string->length();
+  int length = string->length();
   Tagged<Map> map;
   int content_size;
   int allocation_size;
@@ -860,7 +855,15 @@ void Serializer::ObjectSerializer::Serialize(SlotType slot_type) {
 
 namespace {
 SnapshotSpace GetSnapshotSpace(Tagged<HeapObject> object) {
-  if (ReadOnlyHeap::Contains(object)) {
+  if (V8_ENABLE_THIRD_PARTY_HEAP_BOOL) {
+    if (IsInstructionStream(object)) {
+      return SnapshotSpace::kCode;
+    } else if (ReadOnlyHeap::Contains(object)) {
+      return SnapshotSpace::kReadOnlyHeap;
+    } else {
+      return SnapshotSpace::kOld;
+    }
+  } else if (ReadOnlyHeap::Contains(object)) {
     return SnapshotSpace::kReadOnlyHeap;
   } else {
     AllocationSpace heap_space =
@@ -1003,18 +1006,14 @@ void Serializer::ObjectSerializer::VisitPointers(Tagged<HeapObject> host,
       RootIndex root_index;
       // Compute repeat count and write repeat prefix if applicable.
       // Repeats are not subject to the write barrier so we can only use
-      // immortal immovable root members. In practice we're most likely to only
-      // repeat smaller root indices, so we limit the root index to 256 to keep
-      // decoding simple.
-      static_assert(UINT8_MAX <=
-                    static_cast<int>(RootIndex::kLastImmortalImmovableRoot));
+      // immortal immovable root members.
       MaybeObjectSlot repeat_end = current + 1;
       if (repeat_end < end &&
           serializer_->root_index_map()->Lookup(*obj, &root_index) &&
-          static_cast<uint32_t>(root_index) <= UINT8_MAX &&
-          current.load(cage_base) == repeat_end.load(cage_base) &&
-          reference_type == HeapObjectReferenceType::STRONG) {
-        DCHECK(!HeapLayout::InYoungGeneration(*obj));
+          RootsTable::IsImmortalImmovable(root_index) &&
+          current.load(cage_base) == repeat_end.load(cage_base)) {
+        DCHECK_EQ(reference_type, HeapObjectReferenceType::STRONG);
+        DCHECK(!Heap::InYoungGeneration(*obj));
         while (repeat_end < end &&
                repeat_end.load(cage_base) == current.load(cage_base)) {
           repeat_end++;
@@ -1022,12 +1021,13 @@ void Serializer::ObjectSerializer::VisitPointers(Tagged<HeapObject> host,
         int repeat_count = static_cast<int>(repeat_end - current);
         current = repeat_end;
         bytes_processed_so_far_ += repeat_count * kTaggedSize;
-        serializer_->PutRepeatRoot(repeat_count, root_index);
+        serializer_->PutRepeat(repeat_count);
       } else {
         bytes_processed_so_far_ += kTaggedSize;
         ++current;
-        serializer_->SerializeObject(obj, SlotType::kAnySlot);
       }
+      // Now write the object itself.
+      serializer_->SerializeObject(obj, SlotType::kAnySlot);
     }
   }
 }
@@ -1256,34 +1256,6 @@ void Serializer::ObjectSerializer::VisitProtectedPointer(
   CHECK(!serializer_->SerializePendingObject(*object));
   sink_->Put(kProtectedPointerPrefix, "ProtectedPointer");
   serializer_->SerializeObject(object, SlotType::kAnySlot);
-}
-
-void Serializer::ObjectSerializer::VisitJSDispatchTableEntry(
-    Tagged<HeapObject> host, JSDispatchHandle handle) {
-#ifdef V8_ENABLE_LEAPTIERING
-  JSDispatchTable* jdt = GetProcessWideJSDispatchTable();
-  // If the slot is empty, we will skip it here and then just serialize the
-  // null handle as raw data.
-  if (handle == kNullJSDispatchHandle) return;
-
-  // TODO(saelo): we might want to call OutputRawData here, but for that we
-  // first need to pass the slot address to this method (e.g. as part of a
-  // JSDispatchHandleSlot struct).
-
-  bytes_processed_so_far_ += kJSDispatchHandleSize;
-
-  sink_->Put(kAllocateJSDispatchEntry, "AllocateJSDispatchEntry");
-  sink_->PutUint30(handle >> kJSDispatchHandleShift, "EntryID");
-  sink_->PutUint30(jdt->GetParameterCount(handle), "ParameterCount");
-
-  // Currently we cannot see pending objects here, but we may need to support
-  // them in the future. They should already be supported by the deserializer.
-  Handle<Code> code(jdt->GetCode(handle), isolate());
-  CHECK(!serializer_->SerializePendingObject(*code));
-  serializer_->SerializeObject(code, SlotType::kAnySlot);
-#else
-  UNREACHABLE();
-#endif  // V8_ENABLE_LEAPTIERING
 }
 namespace {
 

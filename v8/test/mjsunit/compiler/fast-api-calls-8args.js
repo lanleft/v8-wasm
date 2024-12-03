@@ -13,7 +13,6 @@
 // The test relies on optimizing/deoptimizing at predictable moments, so
 // it's not suitable for deoptimization fuzzing.
 // Flags: --deopt-every-n-times=0
-// Flags: --fast-api-allow-float-in-sim
 
 const add_all_32bit_int_arg1 = -42;
 const add_all_32bit_int_arg2 = 45;

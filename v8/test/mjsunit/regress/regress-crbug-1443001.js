@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --expose-async-hooks --strict-termination-checks
+// Flags: --expose-async-hooks --strict-termination-checks --no-fail
 
 try {
   let hook = async_hooks.createHook({

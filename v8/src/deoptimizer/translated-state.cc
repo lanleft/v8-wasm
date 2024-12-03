@@ -7,7 +7,6 @@
 #include <inttypes.h>
 
 #include <iomanip>
-#include <optional>
 
 #include "src/base/memory.h"
 #include "src/common/assert-scope.h"
@@ -109,8 +108,8 @@ void DeoptimizationFrameTranslationPrintSingleOpcode(
     }
 
     case TranslationOpcode::BUILTIN_CONTINUATION_FRAME:
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_FRAME:
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME: {
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME:
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME: {
       DCHECK_EQ(TranslationOpcodeOperandCount(opcode), 3);
       int bailout_id = iterator.NextOperand();
       int shared_info_id = iterator.NextOperand();
@@ -517,7 +516,7 @@ Float64 TranslatedValue::double_value() const {
 }
 
 Simd128 TranslatedValue::simd_value() const {
-  CHECK_EQ(kind(), kSimd128);
+  DCHECK_EQ(kind(), kSimd128);
   return simd128_value_;
 }
 
@@ -818,7 +817,7 @@ void TranslatedValue::Handlify() {
   }
 }
 
-TranslatedFrame TranslatedFrame::UnoptimizedJSFrame(
+TranslatedFrame TranslatedFrame::UnoptimizedFrame(
     BytecodeOffset bytecode_offset, Tagged<SharedFunctionInfo> shared_info,
     int height, int return_value_offset, int return_value_count) {
   TranslatedFrame frame(kUnoptimizedFunction, shared_info, height,
@@ -861,7 +860,7 @@ TranslatedFrame TranslatedFrame::WasmInlinedIntoJSFrame(
 
 TranslatedFrame TranslatedFrame::JSToWasmBuiltinContinuationFrame(
     BytecodeOffset bytecode_offset, Tagged<SharedFunctionInfo> shared_info,
-    int height, std::optional<wasm::ValueKind> return_kind) {
+    int height, base::Optional<wasm::ValueKind> return_kind) {
   TranslatedFrame frame(kJSToWasmBuiltinContinuation, shared_info, height);
   frame.bytecode_offset_ = bytecode_offset;
   frame.return_kind_ = return_kind;
@@ -1020,9 +1019,9 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
                bytecode_offset.ToInt(), arg_count, height, return_value_offset,
                return_value_count);
       }
-      return TranslatedFrame::UnoptimizedJSFrame(bytecode_offset, shared_info,
-                                                 height, return_value_offset,
-                                                 return_value_count);
+      return TranslatedFrame::UnoptimizedFrame(bytecode_offset, shared_info,
+                                               height, return_value_offset,
+                                               return_value_count);
     }
 
     case TranslationOpcode::INLINED_EXTRA_ARGUMENTS: {
@@ -1102,7 +1101,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
           literal_array.get_on_heap_literals()->get(iterator->NextOperand()));
       int height = iterator->NextOperand();
       int return_kind_code = iterator->NextOperand();
-      std::optional<wasm::ValueKind> return_kind;
+      base::Optional<wasm::ValueKind> return_kind;
       if (return_kind_code != kNoWasmReturnKind) {
         return_kind = static_cast<wasm::ValueKind>(return_kind_code);
       }
@@ -1133,7 +1132,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
     }
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_FRAME: {
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME: {
       BytecodeOffset bytecode_offset = BytecodeOffset(iterator->NextOperand());
       Tagged<SharedFunctionInfo> shared_info = Cast<SharedFunctionInfo>(
           literal_array.get_on_heap_literals()->get(iterator->NextOperand()));
@@ -1149,7 +1148,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
           bytecode_offset, shared_info, height);
     }
 
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME: {
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME: {
       BytecodeOffset bytecode_offset = BytecodeOffset(iterator->NextOperand());
       Tagged<SharedFunctionInfo> shared_info = Cast<SharedFunctionInfo>(
           literal_array.get_on_heap_literals()->get(iterator->NextOperand()));
@@ -1239,8 +1238,7 @@ void TranslatedState::CreateArgumentsElementsTranslatedValues(
 
   object_positions_.push_back({frame_index, value_index});
   frame.Add(TranslatedValue::NewDeferredObject(
-      this, length + OFFSET_OF_DATA_START(FixedArray) / kTaggedSize,
-      object_index));
+      this, length + FixedArray::kHeaderSize / kTaggedSize, object_index));
 
   ReadOnlyRoots roots(isolate_);
   frame.Add(TranslatedValue::NewTagged(this, roots.fixed_array_map()));
@@ -1301,8 +1299,8 @@ int TranslatedState::CreateNextTranslatedValue(
     case TranslationOpcode::INLINED_EXTRA_ARGUMENTS:
     case TranslationOpcode::CONSTRUCT_CREATE_STUB_FRAME:
     case TranslationOpcode::CONSTRUCT_INVOKE_STUB_FRAME:
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_FRAME:
-    case TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME:
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME:
+    case TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME:
     case TranslationOpcode::BUILTIN_CONTINUATION_FRAME:
 #if V8_ENABLE_WEBASSEMBLY
     case TranslationOpcode::WASM_INLINED_INTO_JS_FRAME:
@@ -1578,8 +1576,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::TAGGED_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       intptr_t value = *(reinterpret_cast<intptr_t*>(fp + slot_offset));
       Address uncompressed_value = DecompressIfNeeded(value);
       if (trace_file != nullptr) {
@@ -1595,8 +1593,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::INT32_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%d ; (int32) [fp %c %3d] ",
@@ -1609,8 +1607,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::INT64_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint64_t value = GetUInt64Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%" V8PRIdPTR " ; (int64) [fp %c %3d] ",
@@ -1623,8 +1621,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::SIGNED_BIGINT64_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint64_t value = GetUInt64Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%" V8PRIdPTR " ; (signed bigint64) [fp %c %3d] ",
@@ -1638,8 +1636,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::UNSIGNED_BIGINT64_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint64_t value = GetUInt64Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%" V8PRIdPTR " ; (unsigned bigint64) [fp %c %3d] ",
@@ -1653,8 +1651,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::UINT32_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%u ; (uint32) [fp %c %3d] ", value,
@@ -1667,8 +1665,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::BOOL_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%u ; (bool) [fp %c %3d] ", value,
@@ -1680,8 +1678,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::FLOAT_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       Float32 value = GetFloatSlot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; (float) [fp %c %3d] ", value.get_scalar(),
@@ -1693,8 +1691,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::DOUBLE_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       Float64 value = GetDoubleSlot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; (double) [fp %c %d] ", value.get_scalar(),
@@ -1707,8 +1705,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::SIMD128_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       Simd128 value = getSimd128Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         int8x16 val = value.to_i8x16();
@@ -1727,8 +1725,8 @@ int TranslatedState::CreateNextTranslatedValue(
     }
 
     case TranslationOpcode::HOLEY_DOUBLE_STACK_SLOT: {
-      int slot_offset = OptimizedJSFrame::StackSlotOffsetRelativeToFp(
-          iterator->NextOperand());
+      int slot_offset =
+          OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->NextOperand());
       Float64 value = GetDoubleSlot(fp, slot_offset);
       if (trace_file != nullptr) {
         if (value.is_hole_nan()) {
@@ -1823,7 +1821,7 @@ TranslatedState::TranslatedState(const JavaScriptFrame* frame)
   int deopt_index = SafepointEntry::kNoDeoptIndex;
   Tagged<Code> code = frame->LookupCode();
   Tagged<DeoptimizationData> data =
-      static_cast<const OptimizedJSFrame*>(frame)->GetDeoptimizationData(
+      static_cast<const OptimizedFrame*>(frame)->GetDeoptimizationData(
           code, &deopt_index);
   DCHECK(!data.is_null() && deopt_index != SafepointEntry::kNoDeoptIndex);
   DeoptimizationFrameTranslation::Iterator it(
@@ -2351,9 +2349,8 @@ void TranslatedState::EnsureJSObjectAllocated(TranslatedValue* slot,
     Representation representation = descriptors->GetDetails(i).representation();
     if (index.is_inobject() &&
         (representation.IsDouble() || representation.IsHeapObject())) {
-      CHECK_GE(index.index(), OFFSET_OF_DATA_START(FixedArray) / kTaggedSize);
-      int array_index =
-          index.index() * kTaggedSize - OFFSET_OF_DATA_START(FixedArray);
+      CHECK_GE(index.index(), FixedArray::kHeaderSize / kTaggedSize);
+      int array_index = index.index() * kTaggedSize - FixedArray::kHeaderSize;
       raw_object_storage->set(array_index, kStoreHeapObject);
     }
   }
@@ -2432,18 +2429,6 @@ void TranslatedState::InitializeJSObjectAt(
     int offset = i * kTaggedSize;
     uint8_t marker = object_storage->ReadField<uint8_t>(offset);
 #ifdef V8_ENABLE_SANDBOX
-#ifdef V8_ENABLE_LEAPTIERING
-    if (InstanceTypeChecker::IsJSFunction(map->instance_type()) &&
-        offset == JSFunction::kDispatchHandleOffset) {
-      // The JSDispatchHandle will be materialized as a number, but we need
-      // the raw value here. TODO(saelo): can we implement "proper" support
-      // for JSDispatchHandles in the deoptimizer?
-      DirectHandle<Object> field_value = slot->GetValue();
-      CHECK(IsNumber(*field_value));
-      JSDispatchHandle handle = Object::NumberValue(Cast<Number>(*field_value));
-      object_storage->WriteField<JSDispatchHandle>(
-          JSFunction::kDispatchHandleOffset, handle);
-#else
     if (InstanceTypeChecker::IsJSFunction(map->instance_type()) &&
         offset == JSFunction::kCodeOffset) {
       // We're materializing a JSFunction's reference to a Code object. This is
@@ -2457,25 +2442,6 @@ void TranslatedState::InitializeJSObjectAt(
           .Relaxed_Store(value);
       INDIRECT_POINTER_WRITE_BARRIER(*object_storage, offset,
                                      kCodeIndirectPointerTag, value);
-#endif  // V8_ENABLE_LEAPTIERING
-    } else if (InstanceTypeChecker::IsJSRegExp(map->instance_type()) &&
-               offset == JSRegExp::kDataOffset) {
-      DirectHandle<HeapObject> field_value = slot->storage();
-      // If the value comes from the DeoptimizationLiteralArray, it is a
-      // RegExpDataWrapper as we can't store TrustedSpace values in a FixedArray
-      // directly.
-      Tagged<RegExpData> value;
-      if (Is<RegExpDataWrapper>(*field_value)) {
-        value = Cast<RegExpDataWrapper>(*field_value)->data(isolate());
-      } else {
-        CHECK(IsRegExpData(*field_value));
-        value = Cast<RegExpData>(*field_value);
-      }
-      object_storage
-          ->RawIndirectPointerField(offset, kRegExpDataIndirectPointerTag)
-          .Relaxed_Store(value);
-      INDIRECT_POINTER_WRITE_BARRIER(*object_storage, offset,
-                                     kRegExpDataIndirectPointerTag, value);
     } else if (marker == kStoreHeapObject) {
 #else
     if (marker == kStoreHeapObject) {
@@ -2492,7 +2458,7 @@ void TranslatedState::InitializeJSObjectAt(
       WRITE_BARRIER(*object_storage, offset, *field_value);
     }
   }
-  object_storage->set_map(isolate(), *map, kReleaseStore);
+  object_storage->set_map(*map, kReleaseStore);
 }
 
 void TranslatedState::InitializeObjectWithTaggedFieldsAt(
@@ -2532,7 +2498,7 @@ void TranslatedState::InitializeObjectWithTaggedFieldsAt(
     slot = GetResolvedSlotAndAdvance(frame, value_index);
     int offset = i * kTaggedSize;
     uint8_t marker = object_storage->ReadField<uint8_t>(offset);
-    DirectHandle<Object> field_value;
+    Handle<Object> field_value;
     if (i > 1 && marker == kStoreHeapObject) {
       field_value = slot->storage();
     } else {
@@ -2545,7 +2511,7 @@ void TranslatedState::InitializeObjectWithTaggedFieldsAt(
     WRITE_BARRIER(*object_storage, offset, *field_value);
   }
 
-  object_storage->set_map(isolate(), *map, kReleaseStore);
+  object_storage->set_map(*map, kReleaseStore);
 }
 
 TranslatedValue* TranslatedState::ResolveCapturedObject(TranslatedValue* slot) {
@@ -2740,7 +2706,7 @@ bool TranslatedState::DoUpdateFeedback() {
   if (!feedback_vector_handle_.is_null()) {
     CHECK(!feedback_slot_.IsInvalid());
     isolate()->CountUsage(v8::Isolate::kDeoptimizerDisableSpeculation);
-    FeedbackNexus nexus(isolate(), feedback_vector_handle_, feedback_slot_);
+    FeedbackNexus nexus(feedback_vector_handle_, feedback_slot_);
     nexus.SetSpeculationMode(SpeculationMode::kDisallowSpeculation);
     return true;
   }

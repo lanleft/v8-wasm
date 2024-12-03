@@ -6,7 +6,6 @@
 #define V8_TORQUE_UTILS_H_
 
 #include <algorithm>
-#include <optional>
 #include <ostream>
 #include <queue>
 #include <streambuf>
@@ -15,23 +14,26 @@
 
 #include "src/base/contextual.h"
 #include "src/base/functional.h"
+#include "src/base/optional.h"
 #include "src/torque/source-positions.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 std::string StringLiteralUnquote(const std::string& s);
 std::string StringLiteralQuote(const std::string& s);
 
 // Decodes "file://" URIs into file paths which can then be used
 // with the standard stream API.
-V8_EXPORT_PRIVATE std::optional<std::string> FileUriDecode(
+V8_EXPORT_PRIVATE base::Optional<std::string> FileUriDecode(
     const std::string& s);
 
 struct TorqueMessage {
   enum class Kind { kError, kLint };
 
   std::string message;
-  std::optional<SourcePosition> position;
+  base::Optional<SourcePosition> position;
   Kind kind;
 };
 
@@ -437,9 +439,9 @@ class ResidueClass {
 
   // If the modulus corresponds to the size of size_t, it represents a concrete
   // value.
-  std::optional<size_t> SingleValue() const {
+  base::Optional<size_t> SingleValue() const {
     if (modulus_log_2_ == kMaxModulusLog2) return value_;
-    return std::nullopt;
+    return base::nullopt;
   }
 
   friend ResidueClass operator+(const ResidueClass& a, const ResidueClass& b) {
@@ -533,6 +535,8 @@ std::vector<T> TransformVector(const std::vector<U>& v) {
   return TransformVector<T>(v, [](const U& x) -> T { return x; });
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TORQUE_UTILS_H_

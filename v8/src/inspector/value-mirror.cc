@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <optional>
 
 #include "include/v8-container.h"
 #include "include/v8-date.h"
@@ -17,6 +16,7 @@
 #include "include/v8-regexp.h"
 #include "include/v8-typed-array.h"
 #include "include/v8-wasm.h"
+#include "src/base/optional.h"
 #include "src/debug/debug-interface.h"
 #include "src/inspector/v8-debugger.h"
 #include "src/inspector/v8-deep-serializer.h"

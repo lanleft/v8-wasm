@@ -113,8 +113,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   ClassScope* AsClassScope();
   const ClassScope* AsClassScope() const;
 
-  bool is_reparsed() const { return !scope_info_.is_null(); }
-
   class Snapshot final {
    public:
     inline explicit Snapshot(Scope* scope);
@@ -159,8 +157,7 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
                                       Tagged<ScopeInfo> scope_info,
                                       DeclarationScope* script_scope,
                                       AstValueFactory* ast_value_factory,
-                                      DeserializationMode deserialization_mode,
-                                      ParseInfo* info = nullptr);
+                                      DeserializationMode deserialization_mode);
 
   template <typename IsolateT>
   EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
@@ -230,7 +227,7 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   VariableProxy* NewUnresolved(AstNodeFactory* factory,
                                const AstRawString* name, int start_pos,
                                VariableKind kind = NORMAL_VARIABLE) {
-    DCHECK_IMPLIES(already_resolved_, reparsing_for_class_initializer_);
+    DCHECK(!already_resolved_);
     DCHECK_EQ(factory->zone(), zone());
     VariableProxy* proxy = factory->NewVariableProxy(name, kind, start_pos);
     AddUnresolved(proxy);
@@ -342,10 +339,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   bool is_hidden() const { return is_hidden_; }
   void set_is_hidden() { is_hidden_ = true; }
 
-  bool is_hidden_catch_scope() const {
-    return is_hidden() && scope_type() == CATCH_SCOPE;
-  }
-
   void ForceContextAllocationForParameters() {
     DCHECK(!already_resolved_);
     force_context_allocation_for_parameters_ = true;
@@ -393,15 +386,7 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   bool has_await_using_declaration() const {
     return has_await_using_declaration_;
   }
-
-  bool is_wrapped_function() const {
-    DCHECK_IMPLIES(is_wrapped_function_, is_function_scope());
-    return is_wrapped_function_;
-  }
-  void set_is_wrapped_function() {
-    DCHECK(is_function_scope());
-    is_wrapped_function_ = true;
-  }
+  bool eval_state() const { return eval_state_; }
 
 #if V8_ENABLE_WEBASSEMBLY
   bool IsAsmModule() const;
@@ -575,7 +560,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   // Find the innermost outer scope that needs a context.
   Scope* GetOuterScopeWithContext();
 
-  bool HasReceiverToDeserialize() const;
   bool HasThisReference() const;
   // Analyze() must have been called once to create the ScopeInfo.
   Handle<ScopeInfo> scope_info() const {
@@ -608,6 +592,12 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
   bool is_debug_evaluate_scope() const { return is_debug_evaluate_scope_; }
   bool IsSkippableFunctionScope();
   bool is_repl_mode_scope() const { return scope_type_ == REPL_MODE_SCOPE; }
+  void set_deserialized_scope_uses_external_cache() {
+    deserialized_scope_uses_external_cache_ = true;
+  }
+  bool deserialized_scope_uses_external_cache() const {
+    return deserialized_scope_uses_external_cache_;
+  }
 
   bool needs_home_object() const {
     DCHECK(is_home_object_scope());
@@ -751,6 +741,7 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
     inner_scope->sibling_ = inner_scope_;
     inner_scope_ = inner_scope;
     inner_scope->outer_scope_ = this;
+    inner_scope->eval_state_ = eval_state_;
   }
 
   void SetDefaults();
@@ -837,16 +828,33 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
 
   bool must_use_preparsed_scope_data_ : 1;
 
+  bool eval_state_ : 1;
+
+  // True if this is a deserialized scope which caches its lookups on another
+  // Scope's variable map. This will be true for every scope above the first
+  // non-eval declaration scope above the compilation entry point, e.g. for
+  //
+  //     function f() {
+  //       let g; // prevent sloppy block function hoisting.
+  //       with({}) {
+  //         function g() {
+  //           try { throw 0; }
+  //           catch { eval("f"); }
+  //         }
+  //         g();
+  //       }
+  //     }
+  //
+  // the compilation of the eval will have the "with" scope as the first scope
+  // with this flag enabled.
+  bool deserialized_scope_uses_external_cache_ : 1;
+
   bool needs_home_object_ : 1;
   bool is_block_scope_for_object_literal_ : 1;
 
   // If declarations include any `using` or `await using` declarations.
   bool has_using_declaration_ : 1;
   bool has_await_using_declaration_ : 1;
-
-  // If the scope was generated for wrapped function syntax, which will affect
-  // its UniqueIdInScript.
-  bool is_wrapped_function_ : 1;
 };
 
 class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
@@ -881,6 +889,8 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
     return is_function_scope() && IsArrowFunction(function_kind_);
   }
 
+  void set_eval_state();
+
   // Inform the scope and outer scopes that the corresponding code contains an
   // eval call.
   void RecordDeclarationScopeEvalCall() {
@@ -893,7 +903,7 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
     // so we don't care that it calls sloppy eval.
     if (is_script_scope()) return;
 
-    // Sloppy eval in an eval scope can only introduce variables into the outer
+    // Sloppy eval in a eval scope can only introduce variables into the outer
     // (non-eval) declaration scope, not into this eval scope.
     if (is_eval_scope()) {
 #ifdef DEBUG
@@ -1156,7 +1166,7 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
   // Does nothing if ScopeInfo is already allocated.
   template <typename IsolateT>
   V8_EXPORT_PRIVATE static void AllocateScopeInfos(ParseInfo* info,
-                                                   DirectHandle<Script> script,
+                                                   Handle<Script> script,
                                                    IsolateT* isolate);
 
   // Determine if we can use lazy compilation for this scope.
@@ -1414,6 +1424,8 @@ class V8_EXPORT_PRIVATE ClassScope : public Scope {
   Variable* DeclarePrivateName(const AstRawString* name, VariableMode mode,
                                IsStaticFlag is_static_flag, bool* was_added);
   Variable* RedeclareSyntheticContextVariable(const AstRawString* name);
+
+  bool is_reparsed() const { return !scope_info_.is_null(); }
 
   // Try resolving all unresolved private names found in the current scope.
   // Called from DeclarationScope::AllocateVariables() when reparsing a

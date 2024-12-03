@@ -7,13 +7,10 @@
 
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
-#include "src/handles/maybe-handles.h"
 #include "src/heap/factory.h"
 #include "src/objects/fixed-array-inl.h"
-#include "src/objects/heap-object.h"
 #include "src/objects/js-disposable-stack.h"
 #include "src/objects/objects-inl.h"
-#include "src/objects/objects.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
@@ -29,10 +26,6 @@ TQ_OBJECT_CONSTRUCTORS_IMPL(JSAsyncDisposableStack)
 
 BIT_FIELD_ACCESSORS(JSDisposableStackBase, status, state,
                     JSDisposableStackBase::StateBit)
-BIT_FIELD_ACCESSORS(JSDisposableStackBase, status, needsAwait,
-                    JSDisposableStackBase::NeedsAwaitBit)
-BIT_FIELD_ACCESSORS(JSDisposableStackBase, status, hasAwaited,
-                    JSDisposableStackBase::HasAwaitedBit)
 BIT_FIELD_ACCESSORS(JSDisposableStackBase, status, length,
                     JSDisposableStackBase::LengthBits)
 
@@ -59,24 +52,22 @@ inline void JSDisposableStackBase::Add(
 // https://arai-a.github.io/ecma262-compare/?pr=3000&id=sec-createdisposableresource
 inline MaybeHandle<Object> JSDisposableStackBase::CheckValueAndGetDisposeMethod(
     Isolate* isolate, Handle<Object> value, DisposeMethodHint hint) {
+  // 1. If method is not present, then
+  //   a. If V is either null or undefined, then
+  //    i. Set V to undefined.
+  //    ii. Set method to undefined.
+  // We has already returned from the caller if V is null or undefined.
+  DCHECK(!IsNullOrUndefined(*value));
+
+  //   b. Else,
+  //    i. If V is not an Object, throw a TypeError exception.
+  if (!IsJSReceiver(*value)) {
+    THROW_NEW_ERROR(isolate,
+                    NewTypeError(MessageTemplate::kExpectAnObjectWithUsing));
+  }
 
   Handle<Object> method;
   if (hint == DisposeMethodHint::kSyncDispose) {
-    // 1. If method is not present, then
-    //   a. If V is either null or undefined, then
-    //    i. Set V to undefined.
-    //    ii. Set method to undefined.
-    // We has already returned from the caller if V is null or undefined, when
-    // hint is `kSyncDispose`.
-    DCHECK(!IsNullOrUndefined(*value));
-
-    //   b. Else,
-    //    i. If V is not an Object, throw a TypeError exception.
-    if (!IsJSReceiver(*value)) {
-      THROW_NEW_ERROR(isolate,
-                      NewTypeError(MessageTemplate::kExpectAnObjectWithUsing));
-    }
-
     //   ii. Set method to ? GetDisposeMethod(V, hint).
     ASSIGN_RETURN_ON_EXCEPTION(
         isolate, method,
@@ -94,20 +85,6 @@ inline MaybeHandle<Object> JSDisposableStackBase::CheckValueAndGetDisposeMethod(
     //   It is already checked in step ii.
 
   } else if (hint == DisposeMethodHint::kAsyncDispose) {
-    // 1. If method is not present, then
-    //   a. If V is either null or undefined, then
-    //    i. Set V to undefined.
-    //    ii. Set method to undefined.
-    if (IsNullOrUndefined(*value)) {
-      return isolate->factory()->undefined_value();
-    }
-
-    //   b. Else,
-    //    i. If V is not an Object, throw a TypeError exception.
-    if (!IsJSReceiver(*value)) {
-      THROW_NEW_ERROR(isolate,
-                      NewTypeError(MessageTemplate::kExpectAnObjectWithUsing));
-    }
     // https://tc39.es/proposal-explicit-resource-management/#sec-getdisposemethod
     // 1. If hint is async-dispose, then
     //   a. Let method be ? GetMethod(V, @@asyncDispose).
@@ -177,15 +154,16 @@ inline MaybeHandle<Object> JSDisposableStackBase::CheckValueAndGetDisposeMethod(
   return method;
 }
 
-inline void JSDisposableStackBase::HandleErrorInDisposal(
-    Isolate* isolate, DirectHandle<JSDisposableStackBase> disposable_stack,
-    Handle<Object> current_error) {
-  DCHECK(isolate->is_catchable_by_javascript(*current_error));
+inline MaybeHandle<Object> HandleErrorInDisposal(
+    Isolate* isolate, MaybeHandle<Object> maybe_error) {
+  DCHECK(isolate->has_exception());
+  Handle<Object> current_error(isolate->exception(), isolate);
+  isolate->clear_internal_exception();
 
-  Handle<Object> maybe_error(disposable_stack->error(), isolate);
+  Handle<Object> existing_error;
 
   //   i. If completion is a throw completion, then
-  if (!IsUninitialized(*maybe_error)) {
+  if (maybe_error.ToHandle(&existing_error)) {
     //    1. Set result to result.[[Value]].
     //    2. Let suppressed be completion.[[Value]].
     //    3. Let error be a newly created SuppressedError object.
@@ -195,7 +173,7 @@ inline void JSDisposableStackBase::HandleErrorInDisposal(
     //    "suppressed", suppressed).
     //    6. Set completion to ThrowCompletion(error).
     maybe_error = isolate->factory()->NewSuppressedErrorAtDisposal(
-        isolate, current_error, maybe_error);
+        isolate, current_error, existing_error);
 
   } else {
     //   ii. Else,
@@ -203,7 +181,7 @@ inline void JSDisposableStackBase::HandleErrorInDisposal(
     maybe_error = current_error;
   }
 
-  disposable_stack->set_error(*maybe_error);
+  return maybe_error;
 }
 
 }  // namespace internal

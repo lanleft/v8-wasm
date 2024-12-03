@@ -59,10 +59,6 @@ uint16_t BytecodeArray::parameter_count() const {
   return ReadField<uint16_t>(kParameterSizeOffset);
 }
 
-uint16_t BytecodeArray::parameter_count_without_receiver() const {
-  return parameter_count() - 1;
-}
-
 void BytecodeArray::set_parameter_count(uint16_t number_of_parameters) {
   WriteField<uint16_t>(kParameterSizeOffset, number_of_parameters);
 }
@@ -163,7 +159,7 @@ DEF_GETTER(BytecodeArray, SizeIncludingMetadata, int) {
   int size = BytecodeArraySize();
   Tagged<Object> maybe_constant_pool = raw_constant_pool(cage_base);
   if (IsTrustedFixedArray(maybe_constant_pool)) {
-    size += Cast<TrustedFixedArray>(maybe_constant_pool)->Size();
+    size += Cast<TrustedFixedArray>(maybe_constant_pool)->Size(cage_base);
   } else {
     DCHECK_EQ(maybe_constant_pool, Smi::zero());
   }
@@ -184,6 +180,11 @@ OBJECT_CONSTRUCTORS_IMPL(BytecodeWrapper, Struct)
 
 TRUSTED_POINTER_ACCESSORS(BytecodeWrapper, bytecode, BytecodeArray,
                           kBytecodeOffset, kBytecodeArrayIndirectPointerTag)
+
+void BytecodeWrapper::clear_padding() {
+  WriteField<int32_t>(kPadding1Offset, 0);
+  WriteField<int32_t>(kPadding2Offset, 0);
+}
 
 }  // namespace internal
 }  // namespace v8

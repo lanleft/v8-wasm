@@ -27,7 +27,7 @@ ACCESSORS(JSRelativeTimeFormat, icu_formatter,
           Tagged<Managed<icu::RelativeDateTimeFormatter>>, kIcuFormatterOffset)
 
 inline void JSRelativeTimeFormat::set_numeric(Numeric numeric) {
-  DCHECK(NumericBit::is_valid(numeric));
+  DCHECK_GE(NumericBit::kMax, numeric);
   int hints = flags();
   hints = NumericBit::update(hints, numeric);
   set_flags(hints);

@@ -7,11 +7,9 @@
 
 #include "src/base/bit-field.h"
 #include "src/handles/handles.h"
-#include "src/handles/maybe-handles.h"
 #include "src/objects/contexts.h"
 #include "src/objects/heap-object.h"
 #include "src/objects/js-objects.h"
-#include "src/objects/js-promise.h"
 #include "torque-generated/bit-fields.h"
 
 // Has to be the last include (doesn't have include guards):
@@ -53,13 +51,11 @@ class JSDisposableStackBase
   DEFINE_TORQUE_GENERATED_DISPOSABLE_STACK_STATUS()
   inline DisposableStackState state() const;
   inline void set_state(DisposableStackState value);
-  DECL_BOOLEAN_ACCESSORS(needsAwait)
-  DECL_BOOLEAN_ACCESSORS(hasAwaited)
   DECL_INT_ACCESSORS(length)
 
   enum class AsyncDisposableStackContextSlots {
     kStack = Context::MIN_CONTEXT_SLOTS,
-    kOuterPromise,
+    kError,
     kLength,
   };
 
@@ -78,13 +74,11 @@ class JSDisposableStackBase
       Isolate* isolate, Handle<Object> value, DisposeMethodHint hint);
   static MaybeHandle<Object> DisposeResources(
       Isolate* isolate, DirectHandle<JSDisposableStackBase> disposable_stack,
-      MaybeHandle<Object> maybe_continuation_error,
+      MaybeHandle<Object> maybe_error,
       DisposableStackResourcesType resources_type);
-  static MaybeHandle<JSReceiver> ResolveAPromiseWithValueAndReturnIt(
-      Isolate* isolate, Handle<Object> value);
-  static void HandleErrorInDisposal(
+  static Handle<JSReceiver> DisposeResourcesAwaitPoint(
       Isolate* isolate, DirectHandle<JSDisposableStackBase> disposable_stack,
-      Handle<Object> current_error);
+      int length, MaybeHandle<Object> result, MaybeHandle<Object> maybe_error);
 
   TQ_OBJECT_CONSTRUCTORS(JSDisposableStackBase)
 };
@@ -104,11 +98,6 @@ class JSAsyncDisposableStack
  public:
   DECL_PRINTER(JSAsyncDisposableStack)
   DECL_VERIFIER(JSAsyncDisposableStack)
-
-  static Maybe<bool> NextDisposeAsyncIteration(
-      Isolate* isolate,
-      DirectHandle<JSDisposableStackBase> async_disposable_stack,
-      Handle<JSPromise> outer_promise);
 
   TQ_OBJECT_CONSTRUCTORS(JSAsyncDisposableStack)
 };

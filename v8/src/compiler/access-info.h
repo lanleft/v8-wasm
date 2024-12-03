@@ -5,10 +5,8 @@
 #ifndef V8_COMPILER_ACCESS_INFO_H_
 #define V8_COMPILER_ACCESS_INFO_H_
 
-#include <optional>
-
 #include "src/compiler/heap-refs.h"
-#include "src/compiler/turbofan-types.h"
+#include "src/compiler/types.h"
 #include "src/zone/zone-containers.h"
 
 namespace v8 {
@@ -226,7 +224,7 @@ class AccessInfoFactory final {
  public:
   AccessInfoFactory(JSHeapBroker* broker, Zone* zone);
 
-  std::optional<ElementAccessInfo> ComputeElementAccessInfo(
+  base::Optional<ElementAccessInfo> ComputeElementAccessInfo(
       MapRef map, AccessMode access_mode) const;
   bool ComputeElementAccessInfos(
       ElementAccessFeedback const& feedback,
@@ -255,7 +253,7 @@ class AccessInfoFactory final {
       ZoneVector<PropertyAccessInfo> infos, AccessMode access_mode) const;
 
  private:
-  std::optional<ElementAccessInfo> ConsolidateElementLoad(
+  base::Optional<ElementAccessInfo> ConsolidateElementLoad(
       ElementAccessFeedback const& feedback) const;
   PropertyAccessInfo LookupSpecialFieldAccessor(MapRef map, NameRef name) const;
   PropertyAccessInfo LookupTransition(MapRef map, NameRef name,

@@ -228,9 +228,8 @@ class MainAllocator {
 
   V8_EXPORT_PRIVATE void MakeLinearAllocationAreaIterable();
 
-  V8_EXPORT_PRIVATE void MarkLinearAllocationAreaBlack();
-  V8_EXPORT_PRIVATE void UnmarkLinearAllocationArea();
-  V8_EXPORT_PRIVATE void FreeLinearAllocationAreaAndResetFreeList();
+  void MarkLinearAllocationAreaBlack();
+  void UnmarkLinearAllocationArea();
 
   V8_EXPORT_PRIVATE Address AlignTopForTesting(AllocationAlignment alignment,
                                                int offset);
@@ -249,7 +248,7 @@ class MainAllocator {
 #endif  // DEBUG
 
   // Checks whether the LAB is currently in use.
-  V8_INLINE bool IsLabValid() const {
+  V8_INLINE bool IsLabValid() {
     return allocation_info_->top() != kNullAddress;
   }
 

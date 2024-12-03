@@ -4,8 +4,6 @@
 
 #include "src/compiler/js-inlining.h"
 
-#include <optional>
-
 #include "src/codegen/optimized-compilation-info.h"
 #include "src/codegen/tick-counter.h"
 #include "src/compiler/access-builder.h"
@@ -140,10 +138,6 @@ Reduction JSInliner::InlineCall(Node* call, Node* new_target, Node* context,
           // The projection is requesting the inlinee function context.
           Replace(use, context);
         } else {
-#ifdef V8_ENABLE_LEAPTIERING
-          // Using the dispatch handle here isn't currently supported.
-          DCHECK_NE(index, start.DispatchHandleOutputIndex());
-#endif
           // Call has fewer arguments than required, fill with undefined.
           Replace(use, jsgraph()->UndefinedConstant());
         }
@@ -329,7 +323,7 @@ OptionalSharedFunctionInfoRef JSInliner::DetermineCallTarget(Node* node) {
 
     // The function might have not been called yet.
     if (!function.feedback_vector(broker()).has_value()) {
-      return std::nullopt;
+      return base::nullopt;
     }
 
     // Disallow cross native-context inlining for now. This means that all parts
@@ -342,7 +336,7 @@ OptionalSharedFunctionInfoRef JSInliner::DetermineCallTarget(Node* node) {
     // in the same graph in a compositional way.
     if (!function.native_context(broker()).equals(
             broker()->target_native_context())) {
-      return std::nullopt;
+      return base::nullopt;
     }
 
     return function.shared(broker());
@@ -362,7 +356,7 @@ OptionalSharedFunctionInfoRef JSInliner::DetermineCallTarget(Node* node) {
     return cell.shared_function_info(broker());
   }
 
-  return std::nullopt;
+  return base::nullopt;
 }
 
 // Determines statically known information about the call target (assuming that
@@ -414,6 +408,14 @@ FeedbackCellRef JSInliner::DetermineCallContext(Node* node,
 }
 
 #if V8_ENABLE_WEBASSEMBLY
+static std::string WasmFunctionNameForTrace(wasm::NativeModule* native_module,
+                                            int fct_index) {
+  wasm::StringBuilder builder;
+  native_module->GetNamesProvider()->PrintFunctionName(builder, fct_index);
+  if (builder.length() == 0) return "<no name>";
+  return {builder.start(), builder.length()};
+}
+
 JSInliner::WasmInlineResult JSInliner::TryWasmInlining(
     const JSWasmCallNode& call_node) {
   const JSWasmCallParameters& wasm_call_params = call_node.Parameters();
@@ -439,7 +441,7 @@ JSInliner::WasmInlineResult JSInliner::TryWasmInlining(
     return {};
   }
 
-  const wasm::FunctionSig* sig = wasm_module_->functions[fct_index].sig;
+  const wasm::FunctionSig* sig = wasm_call_params.signature();
   Graph::SubgraphScope graph_scope(graph());
   WasmGraphBuilder builder(nullptr, zone(), jsgraph(), sig, source_positions_,
                            WasmGraphBuilder::kJSFunctionAbiMode, isolate(),
@@ -464,7 +466,7 @@ Reduction JSInliner::ReduceJSWasmCall(Node* node) {
   const JSWasmCallParameters& wasm_call_params = call_node.Parameters();
   int fct_index = wasm_call_params.function_index();
   wasm::NativeModule* native_module = wasm_call_params.native_module();
-  const wasm::CanonicalSig* sig = wasm_call_params.signature();
+  const wasm::FunctionSig* sig = wasm_call_params.signature();
 
   // Try "full" inlining of very simple wasm functions (mainly getters / setters
   // for wasm gc objects).
@@ -497,16 +499,11 @@ Reduction JSInliner::ReduceJSWasmCall(Node* node) {
     // surrounding exception handler, if present.
     subgraph_min_node_id = graph()->NodeCount();
 
-    // If we inline the body with Turboshaft later (instead of with TurboFan
-    // here), we don't know yet whether we can inline the body or not. Hence,
-    // don't set the thread-in-wasm flag now, and instead do that if _not_
-    // inlining later in Turboshaft.
-    bool set_in_wasm_flag = !(inline_result.can_inline_body ||
-                              v8_flags.turboshaft_wasm_in_js_inlining);
-    BuildInlinedJSToWasmWrapper(graph()->zone(), jsgraph(), sig, isolate(),
-                                source_positions_,
-                                wasm::WasmEnabledFeatures::FromFlags(),
-                                continuation_frame_state, set_in_wasm_flag);
+    bool set_in_wasm_flag = !inline_result.can_inline_body;
+    BuildInlinedJSToWasmWrapper(
+        graph()->zone(), jsgraph(), sig, wasm_call_params.module(), isolate(),
+        source_positions_, wasm::WasmEnabledFeatures::FromFlags(),
+        continuation_frame_state, set_in_wasm_flag);
 
     // Extract the inlinee start/end nodes.
     wrapper_start_node = graph()->start();
@@ -543,8 +540,7 @@ Reduction JSInliner::ReduceJSWasmCall(Node* node) {
   // given JavaScript function (due to the WasmGCLowering being dependent on
   // module-specific type indices).
   Node* wasm_fct_call = nullptr;
-  if (inline_result.can_inline_body ||
-      v8_flags.turboshaft_wasm_in_js_inlining) {
+  if (inline_result.can_inline_body) {
     AllNodes inlined_nodes(local_zone_, wrapper_end_node, graph());
     for (Node* subnode : inlined_nodes.reachable) {
       // Ignore nodes that are not part of the inlinee.
@@ -557,16 +553,7 @@ Reduction JSInliner::ReduceJSWasmCall(Node* node) {
         break;
       }
     }
-    DCHECK_IMPLIES(inline_result.can_inline_body, wasm_fct_call != nullptr);
-
-    // Attach information about Wasm call target for Turboshaft Wasm-in-JS-
-    // inlining (see https://crbug.com/353475584) in sidetable.
-    if (v8_flags.turboshaft_wasm_in_js_inlining && wasm_fct_call) {
-      auto [it, inserted] = js_wasm_calls_sidetable_->insert(
-          {wasm_fct_call->id(), &wasm_call_params});
-      USE(it);
-      DCHECK(inserted);
-    }
+    DCHECK(wasm_fct_call != nullptr);
   }
 
   Node* context = NodeProperties::GetContextInput(node);
@@ -943,9 +930,8 @@ Reduction JSInliner::ReduceJSCall(Node* node) {
 
   // Insert inlined extra arguments if required. The callees formal parameter
   // count have to match the number of arguments passed to the call.
-  int parameter_count = bytecode_array.parameter_count_without_receiver();
-  DCHECK_EQ(parameter_count,
-            shared_info->internal_formal_parameter_count_without_receiver());
+  int parameter_count =
+      shared_info->internal_formal_parameter_count_without_receiver();
   DCHECK_EQ(parameter_count, start.FormalParameterCountWithoutReceiver());
   if (call.argument_count() != parameter_count) {
     frame_state = CreateArtificialFrameState(

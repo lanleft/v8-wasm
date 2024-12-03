@@ -5,8 +5,7 @@
 #ifndef V8_BUILTINS_BUILTINS_REGEXP_GEN_H_
 #define V8_BUILTINS_BUILTINS_REGEXP_GEN_H_
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/codegen/code-stub-assembler.h"
 #include "src/common/message-template.h"
 #include "src/objects/string.h"
@@ -95,7 +94,7 @@ class RegExpBuiltinsAssembler : public CodeStubAssembler {
   void BranchIfFastRegExp(
       TNode<Context> context, TNode<HeapObject> object, TNode<Map> map,
       PrototypeCheckAssembler::Flags prototype_check_flags,
-      std::optional<DescriptorIndexNameValue> additional_property_to_check,
+      base::Optional<DescriptorIndexNameValue> additional_property_to_check,
       Label* if_isunmodified, Label* if_ismodified);
 
   void BranchIfFastRegExpForSearch(TNode<Context> context,

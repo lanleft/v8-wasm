@@ -297,7 +297,7 @@ RUNTIME_FUNCTION(Runtime_AddPrivateBrand) {
   DCHECK_EQ(args.length(), 4);
   Handle<JSReceiver> receiver = args.at<JSReceiver>(0);
   Handle<Symbol> brand = args.at<Symbol>(1);
-  DirectHandle<Context> context = args.at<Context>(2);
+  Handle<Context> context = args.at<Context>(2);
   int depth = args.smi_value_at(3);
   DCHECK(brand->is_private_name());
 
@@ -364,14 +364,10 @@ RUNTIME_FUNCTION(Runtime_ObjectCreate) {
 }
 
 MaybeHandle<Object> Runtime::SetObjectProperty(
-    Isolate* isolate, Handle<Object> lookup_start_obj, Handle<Object> key,
-    Handle<Object> value, MaybeHandle<Object> maybe_receiver,
-    StoreOrigin store_origin, Maybe<ShouldThrow> should_throw) {
-  Handle<Object> receiver;
-  if (!maybe_receiver.ToHandle(&receiver)) {
-    receiver = lookup_start_obj;
-  }
-  if (IsNullOrUndefined(*lookup_start_obj, isolate)) {
+    Isolate* isolate, Handle<Object> object, Handle<Object> key,
+    Handle<Object> value, StoreOrigin store_origin,
+    Maybe<ShouldThrow> should_throw) {
+  if (IsNullOrUndefined(*object, isolate)) {
     MaybeDirectHandle<String> maybe_property =
         Object::NoSideEffectsToMaybeString(isolate, key);
     DirectHandle<String> property_name;
@@ -379,11 +375,11 @@ MaybeHandle<Object> Runtime::SetObjectProperty(
       THROW_NEW_ERROR(
           isolate,
           NewTypeError(MessageTemplate::kNonObjectPropertyStoreWithProperty,
-                       lookup_start_obj, property_name));
+                       object, property_name));
     } else {
-      THROW_NEW_ERROR(isolate,
-                      NewTypeError(MessageTemplate::kNonObjectPropertyStore,
-                                   lookup_start_obj));
+      THROW_NEW_ERROR(
+          isolate,
+          NewTypeError(MessageTemplate::kNonObjectPropertyStore, object));
     }
   }
 
@@ -391,7 +387,7 @@ MaybeHandle<Object> Runtime::SetObjectProperty(
   bool success = false;
   PropertyKey lookup_key(isolate, key, &success);
   if (!success) return MaybeHandle<Object>();
-  LookupIterator it(isolate, receiver, lookup_key, lookup_start_obj);
+  LookupIterator it(isolate, object, lookup_key);
   if (IsSymbol(*key) && Cast<Symbol>(*key)->is_private_name()) {
     Maybe<bool> can_store = JSReceiver::CheckPrivateNameStore(&it, false);
     MAYBE_RETURN_NULL(can_store);
@@ -404,14 +400,6 @@ MaybeHandle<Object> Runtime::SetObjectProperty(
       Object::SetProperty(&it, value, store_origin, should_throw));
 
   return value;
-}
-
-MaybeHandle<Object> Runtime::SetObjectProperty(
-    Isolate* isolate, Handle<Object> object, Handle<Object> key,
-    Handle<Object> value, StoreOrigin store_origin,
-    Maybe<ShouldThrow> should_throw) {
-  return SetObjectProperty(isolate, object, key, value, object, store_origin,
-                           should_throw);
 }
 
 MaybeHandle<Object> Runtime::DefineObjectOwnProperty(Isolate* isolate,
@@ -474,7 +462,7 @@ RUNTIME_FUNCTION(Runtime_InternalSetPrototype) {
 RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
-  DirectHandle<JSObject> object = args.at<JSObject>(0);
+  Handle<JSObject> object = args.at<JSObject>(0);
   int properties = args.smi_value_at(1);
   // Conservative upper limit to prevent fuzz tests from going OOM.
   if (properties > 100000) return isolate->ThrowIllegalOperation();
@@ -704,8 +692,8 @@ RUNTIME_FUNCTION(Runtime_GetProperty) {
   } else if (IsString(*lookup_start_obj) && IsSmi(*key_obj)) {
     // Fast case for string indexing using [] with a smi index.
     Handle<String> str = Cast<String>(lookup_start_obj);
-    uint32_t smi_index = Cast<Smi>(*key_obj).value();
-    if (smi_index < str->length()) {
+    int smi_index = Cast<Smi>(*key_obj).value();
+    if (smi_index >= 0 && smi_index < str->length()) {
       Factory* factory = isolate->factory();
       return *factory->LookupSingleCharacterStringFromCode(
           String::Flatten(isolate, str)->Get(smi_index));
@@ -898,7 +886,7 @@ RUNTIME_FUNCTION(Runtime_CompleteInobjectSlackTrackingForMap) {
 RUNTIME_FUNCTION(Runtime_TryMigrateInstance) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
-  DirectHandle<JSObject> js_object = args.at<JSObject>(0);
+  Handle<JSObject> js_object = args.at<JSObject>(0);
   // It could have been a DCHECK but we call this function directly from tests.
   if (!js_object->map()->is_deprecated()) return Smi::zero();
   // This call must not cause lazy deopts, because it's called from deferred
@@ -925,9 +913,9 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
   Handle<JSObject> obj = args.at<JSObject>(0);
   CHECK(!IsNull(*obj, isolate));
   Handle<Name> name = args.at<Name>(1);
-  DirectHandle<Object> getter = args.at(2);
+  Handle<Object> getter = args.at(2);
   CHECK(IsValidAccessor(isolate, getter));
-  DirectHandle<Object> setter = args.at(3);
+  Handle<Object> setter = args.at(3);
   CHECK(IsValidAccessor(isolate, setter));
   auto attrs = PropertyAttributesFromInt(args.smi_value_at(4));
 
@@ -970,7 +958,7 @@ RUNTIME_FUNCTION(Runtime_DefineKeyedOwnPropertyInLiteral) {
     DCHECK(IsName(*name));
     DCHECK(IsFeedbackVector(*maybe_vector));
     Handle<FeedbackVector> vector = Cast<FeedbackVector>(maybe_vector);
-    FeedbackNexus nexus(isolate, vector, FeedbackVector::ToSlot(index));
+    FeedbackNexus nexus(vector, FeedbackVector::ToSlot(index));
     if (nexus.ic_state() == InlineCacheState::UNINITIALIZED) {
       if (IsUniqueName(*name)) {
         nexus.ConfigureMonomorphic(Cast<Name>(name),
@@ -1097,7 +1085,7 @@ RUNTIME_FUNCTION(Runtime_CopyDataProperties) {
   MAYBE_RETURN(
       JSReceiver::SetOrCopyDataProperties(
           isolate, target, source,
-          PropertiesEnumerationMode::kPropertyAdditionOrder, {}, false),
+          PropertiesEnumerationMode::kPropertyAdditionOrder, nullptr, false),
       ReadOnlyRoots(isolate).exception());
   return ReadOnlyRoots(isolate).undefined_value();
 }
@@ -1125,7 +1113,7 @@ void CheckExcludedPropertiesAreOnCallerStack(Isolate* isolate, Address base,
   // ... and for the first JS frame, make sure the _first_ property address is
   // after that stack frame's start.
   for (; !it.done(); it.Advance()) {
-    if (it.frame()->is_javascript()) {
+    if (it.frame()->is_java_script()) {
       DCHECK_LT(base, it.frame()->fp());
       return;
     }
@@ -1158,8 +1146,8 @@ RUNTIME_FUNCTION(Runtime_CopyDataPropertiesWithExcludedPropertiesOnStack) {
                                                     MaybeHandle<Object>());
   }
 
-  DirectHandleVector<Object> excluded_properties(isolate,
-                                                 excluded_property_count);
+  base::ScopedVector<Handle<Object>> excluded_properties(
+      excluded_property_count);
   for (int i = 0; i < excluded_property_count; i++) {
     // Because the excluded properties on stack is from high address
     // to low address, so we need to use sub
@@ -1179,12 +1167,11 @@ RUNTIME_FUNCTION(Runtime_CopyDataPropertiesWithExcludedPropertiesOnStack) {
 
   Handle<JSObject> target =
       isolate->factory()->NewJSObject(isolate->object_function());
-  MAYBE_RETURN(
-      JSReceiver::SetOrCopyDataProperties(
-          isolate, target, source,
-          PropertiesEnumerationMode::kPropertyAdditionOrder,
-          {excluded_properties.data(), excluded_properties.size()}, false),
-      ReadOnlyRoots(isolate).exception());
+  MAYBE_RETURN(JSReceiver::SetOrCopyDataProperties(
+                   isolate, target, source,
+                   PropertiesEnumerationMode::kPropertyAdditionOrder,
+                   &excluded_properties, false),
+               ReadOnlyRoots(isolate).exception());
   return *target;
 }
 

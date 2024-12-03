@@ -581,9 +581,10 @@ class PreParserFactory {
   }
   PreParserExpression NewCall(PreParserExpression expression,
                               const PreParserExpressionList& arguments, int pos,
-                              bool has_spread, int eval_scope_info_index = 0,
+                              bool has_spread,
+                              Call::PossiblyEval possibly_eval = Call::NOT_EVAL,
                               bool optional_chain = false) {
-    if (eval_scope_info_index > 0) {
+    if (possibly_eval == Call::IS_POSSIBLY_EVAL) {
       DCHECK(expression.IsIdentifier() && expression.AsIdentifier().IsEval());
       DCHECK(!optional_chain);
       return PreParserExpression::CallEval();
@@ -860,13 +861,9 @@ class PreParser : public ParserBase<PreParser> {
             PendingCompilationErrorHandler* pending_error_handler,
             RuntimeCallStats* runtime_call_stats, V8FileLogger* v8_file_logger,
             UnoptimizedCompileFlags flags, bool parsing_on_main_thread = true)
-      // Set compile_hints_magic_enabled = false, since we cannot have eager
-      // functions inside lazy functions (when we're already using the
-      // PreParser).
       : ParserBase<PreParser>(zone, scanner, stack_limit, ast_value_factory,
                               pending_error_handler, runtime_call_stats,
-                              v8_file_logger, flags, parsing_on_main_thread,
-                              /*compile_hints_magic_enabled=*/false),
+                              v8_file_logger, flags, parsing_on_main_thread),
         use_counts_(nullptr),
         preparse_data_builder_(nullptr),
         preparse_data_builder_buffer_() {
@@ -978,6 +975,9 @@ class PreParser : public ParserBase<PreParser> {
   V8_INLINE void SetAsmModule() {}
 
   V8_INLINE void PrepareGeneratorVariables() {}
+  V8_INLINE void RewriteAsyncFunctionBody(
+      const PreParserScopedStatementList* body, PreParserStatement block,
+      const PreParserExpression& return_value) {}
 
   V8_INLINE PreParserStatement
   RewriteSwitchStatement(PreParserStatement switch_statement, Scope* scope) {
@@ -1050,11 +1050,11 @@ class PreParser : public ParserBase<PreParser> {
       MessageTemplate message = MessageTemplate::kUnexpectedToken) {
     ReportUnidentifiableError();
   }
-  V8_INLINE void ParseGeneratorFunctionBody(
+  V8_INLINE void ParseAndRewriteGeneratorFunctionBody(
       int pos, FunctionKind kind, PreParserScopedStatementList* body) {
     ParseStatementList(body, Token::kRightBrace);
   }
-  V8_INLINE void ParseAsyncGeneratorFunctionBody(
+  V8_INLINE void ParseAndRewriteAsyncGeneratorFunctionBody(
       int pos, FunctionKind kind, PreParserScopedStatementList* body) {
     ParseStatementList(body, Token::kRightBrace);
   }
@@ -1123,10 +1123,6 @@ class PreParser : public ParserBase<PreParser> {
                                           const PreParserExpression& property,
                                           bool is_constructor,
                                           ClassInfo* class_info) {}
-
-  V8_INLINE void AddInstanceFieldOrStaticElement(
-      const PreParserExpression& property, ClassInfo* class_info,
-      bool is_static) {}
   V8_INLINE void DeclarePublicClassField(ClassScope* scope,
                                          const PreParserExpression& property,
                                          bool is_static, bool is_computed_name,
@@ -1162,30 +1158,26 @@ class PreParser : public ParserBase<PreParser> {
     DCHECK(class_info->has_static_elements());
   }
 
-  V8_INLINE void AddSyntheticFunctionDeclaration(FunctionKind kind, int pos) {
-    // Creating and disposing of a FunctionState makes tracking of
-    // next_function_is_likely_called match what Parser does. TODO(marja):
-    // Make the lazy function + next_function_is_likely_called + default ctor
-    // logic less surprising. Default ctors shouldn't affect the laziness of
-    // functions.
-    DeclarationScope* function_scope = NewFunctionScope(kind);
-    SetLanguageMode(function_scope, LanguageMode::kStrict);
-    function_scope->set_start_position(pos);
-    function_scope->set_end_position(pos);
-    FunctionState function_state(&function_state_, &scope_, function_scope);
-    GetNextInfoId();
-  }
-
   V8_INLINE PreParserExpression
   RewriteClassLiteral(ClassScope* scope, const PreParserIdentifier& name,
                       ClassInfo* class_info, int pos) {
     bool has_default_constructor = !class_info->has_seen_constructor;
     // Account for the default constructor.
     if (has_default_constructor) {
+      // Creating and disposing of a FunctionState makes tracking of
+      // next_function_is_likely_called match what Parser does. TODO(marja):
+      // Make the lazy function + next_function_is_likely_called + default ctor
+      // logic less surprising. Default ctors shouldn't affect the laziness of
+      // functions.
       bool has_extends = class_info->extends.IsNull();
       FunctionKind kind = has_extends ? FunctionKind::kDefaultDerivedConstructor
                                       : FunctionKind::kDefaultBaseConstructor;
-      AddSyntheticFunctionDeclaration(kind, pos);
+      DeclarationScope* function_scope = NewFunctionScope(kind);
+      SetLanguageMode(function_scope, LanguageMode::kStrict);
+      function_scope->set_start_position(pos);
+      function_scope->set_end_position(pos);
+      FunctionState function_state(&function_state_, &scope_, function_scope);
+      GetNextFunctionLiteralId();
     }
     return PreParserExpression::Default();
   }
@@ -1194,6 +1186,9 @@ class PreParser : public ParserBase<PreParser> {
                                              int pos) {
     return PreParserStatement::Default();
   }
+
+  V8_INLINE void QueueDestructuringAssignmentForRewriting(
+      PreParserExpression assignment) {}
 
   // Helper functions for recursive descent.
   V8_INLINE bool IsEval(const PreParserIdentifier& identifier) const {
@@ -1284,9 +1279,9 @@ class PreParser : public ParserBase<PreParser> {
   V8_INLINE static void CheckAssigningFunctionLiteralToProperty(
       const PreParserExpression& left, const PreParserExpression& right) {}
 
-  V8_INLINE bool ShortcutLiteralBinaryExpression(PreParserExpression* x,
-                                                 const PreParserExpression& y,
-                                                 Token::Value op, int pos) {
+  V8_INLINE bool ShortcutNumericLiteralBinaryExpression(
+      PreParserExpression* x, const PreParserExpression& y, Token::Value op,
+      int pos) {
     return false;
   }
 
@@ -1355,6 +1350,11 @@ class PreParser : public ParserBase<PreParser> {
 
   PreParserBlock BuildParameterInitializationBlock(
       const PreParserFormalParameters& parameters);
+
+  V8_INLINE PreParserBlock
+  BuildRejectPromiseOnException(PreParserStatement init_block) {
+    return PreParserBlock::Default();
+  }
 
   V8_INLINE void InsertSloppyBlockFunctionVarBindings(DeclarationScope* scope) {
     scope->HoistSloppyBlockFunctions(nullptr);
@@ -1518,29 +1518,6 @@ class PreParser : public ParserBase<PreParser> {
     return PreParserStatementList();
   }
 
-  V8_INLINE PreParserExpression NewClassLiteralPropertyWithAccessorInfo(
-      ClassScope* scope, ClassInfo* class_info, const PreParserIdentifier& name,
-      const PreParserExpression& key, const PreParserExpression& value,
-      bool is_static, bool is_computed_name, bool is_private, int pos) {
-    // Declare the accessor storage name variable and generated getter and
-    // setter.
-    bool was_added;
-    DeclareVariableName(
-        AutoAccessorVariableName(ast_value_factory(),
-                                 class_info->autoaccessor_count++),
-        VariableMode::kConst, scope, &was_added);
-    DCHECK(was_added);
-    FunctionKind kind = is_static ? FunctionKind::kGetterFunction
-                                  : FunctionKind::kStaticGetterFunction;
-    AddSyntheticFunctionDeclaration(kind, pos + 1);
-    kind = is_static ? FunctionKind::kSetterFunction
-                     : FunctionKind::kStaticSetterFunction;
-    AddSyntheticFunctionDeclaration(kind, pos + 2);
-    return factory()->NewClassLiteralProperty(
-        key, value, ClassLiteralProperty::Kind::AUTO_ACCESSOR, is_static,
-        is_computed_name, is_private);
-  }
-
   V8_INLINE PreParserExpression
   NewV8Intrinsic(const PreParserIdentifier& name,
                  const PreParserExpressionList& arguments, int pos) {
@@ -1564,8 +1541,6 @@ class PreParser : public ParserBase<PreParser> {
 
   V8_INLINE void ReindexArrowFunctionFormalParameters(
       PreParserFormalParameters* parameters) {}
-  V8_INLINE void ReindexComputedMemberName(
-      const PreParserExpression& expression) {}
   V8_INLINE void DeclareFormalParameters(
       const PreParserFormalParameters* parameters) {
     if (!parameters->is_simple) parameters->scope->SetHasNonSimpleParameters();

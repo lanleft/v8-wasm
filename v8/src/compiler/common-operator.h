@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_COMMON_OPERATOR_H_
 #define V8_COMPILER_COMMON_OPERATOR_H_
 
-#include <optional>
-
 #include "src/base/compiler-specific.h"
 #include "src/codegen/machine-type.h"
 #include "src/codegen/reloc-info.h"
@@ -481,17 +479,17 @@ const char* StaticAssertSourceOf(const Operator* op);
 class SLVerifierHintParameters final {
  public:
   explicit SLVerifierHintParameters(const Operator* semantics,
-                                    std::optional<Type> override_output_type)
+                                    base::Optional<Type> override_output_type)
       : semantics_(semantics), override_output_type_(override_output_type) {}
 
   const Operator* semantics() const { return semantics_; }
-  const std::optional<Type>& override_output_type() const {
+  const base::Optional<Type>& override_output_type() const {
     return override_output_type_;
   }
 
  private:
   const Operator* semantics_;
-  std::optional<Type> override_output_type_;
+  base::Optional<Type> override_output_type_;
 };
 
 V8_EXPORT_PRIVATE bool operator==(const SLVerifierHintParameters& p1,
@@ -564,7 +562,7 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   // are removed at the end of SimplifiedLowering after verification.
   const Operator* SLVerifierHint(
       const Operator* semantics,
-      const std::optional<Type>& override_output_type);
+      const base::Optional<Type>& override_output_type);
   const Operator* End(size_t control_input_count);
   // TODO(nicohartmann@): Remove the default argument for {semantics} once all
   // uses are updated.
@@ -614,7 +612,6 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   const Operator* PointerConstant(intptr_t);
   const Operator* HeapConstant(const Handle<HeapObject>&);
   const Operator* CompressedHeapConstant(const Handle<HeapObject>&);
-  const Operator* TrustedHeapConstant(const Handle<HeapObject>&);
   const Operator* ObjectId(uint32_t);
 
   const Operator* RelocatableInt32Constant(int32_t value,
@@ -665,7 +662,7 @@ class V8_EXPORT_PRIVATE CommonOperatorBuilder final
   const FrameStateFunctionInfo* CreateJSToWasmFrameStateFunctionInfo(
       FrameStateType type, uint16_t parameter_count, int local_count,
       Handle<SharedFunctionInfo> shared_info,
-      const wasm::CanonicalSig* signature);
+      const wasm::FunctionSig* signature);
 #endif  // V8_ENABLE_WEBASSEMBLY
 
  private:
@@ -763,7 +760,7 @@ class StartNode final : public CommonNodeWrapperBase {
   // The receiver is counted as part of formal parameters.
   static constexpr int kReceiverOutputCount = 1;
   // These outputs are in addition to formal parameters.
-  static constexpr int kExtraOutputCount = 4 + V8_ENABLE_LEAPTIERING_BOOL;
+  static constexpr int kExtraOutputCount = 4;
 
   // Takes the formal parameter count of the current function (including
   // receiver) and returns the number of value outputs of the start node.
@@ -771,24 +768,16 @@ class StartNode final : public CommonNodeWrapperBase {
     constexpr int kClosure = 1;
     constexpr int kNewTarget = 1;
     constexpr int kArgCount = 1;
-    constexpr int kDispatchHandle = V8_ENABLE_LEAPTIERING_BOOL ? 1 : 0;
     constexpr int kContext = 1;
-    static_assert(kClosure + kNewTarget + kArgCount + kDispatchHandle +
-                      kContext ==
+    static_assert(kClosure + kNewTarget + kArgCount + kContext ==
                   kExtraOutputCount);
     // Checking related linkage methods here since they rely on Start node
     // layout.
     DCHECK_EQ(-1, Linkage::kJSCallClosureParamIndex);
     DCHECK_EQ(argc + 0, Linkage::GetJSCallNewTargetParamIndex(argc));
     DCHECK_EQ(argc + 1, Linkage::GetJSCallArgCountParamIndex(argc));
-#ifdef V8_ENABLE_LEAPTIERING
-    DCHECK_EQ(argc + 2, Linkage::GetJSCallDispatchHandleParamIndex(argc));
-    DCHECK_EQ(argc + 3, Linkage::GetJSCallContextParamIndex(argc));
-#else
     DCHECK_EQ(argc + 2, Linkage::GetJSCallContextParamIndex(argc));
-#endif
-    return argc + kClosure + kNewTarget + kArgCount + kDispatchHandle +
-           kContext;
+    return argc + kClosure + kNewTarget + kArgCount + kContext;
   }
 
   int FormalParameterCount() const {
@@ -813,11 +802,6 @@ class StartNode final : public CommonNodeWrapperBase {
   int ArgCountParameterIndex() const {
     return Linkage::GetJSCallArgCountParamIndex(FormalParameterCount());
   }
-#ifdef V8_ENABLE_LEAPTIERING
-  int DispatchHandleOutputIndex() const {
-    return Linkage::GetJSCallDispatchHandleParamIndex(FormalParameterCount());
-  }
-#endif
   int ContextParameterIndex() const {
     return Linkage::GetJSCallContextParamIndex(FormalParameterCount());
   }
@@ -846,18 +830,27 @@ class StartNode final : public CommonNodeWrapperBase {
   // output indices (and not the index assigned to a Parameter).
   int NewTargetOutputIndex() const {
     // Indices assigned to parameters are off-by-one (Parameters indices start
-    // at -1). TODO(jgruber): Consider starting at 0.
-    return Linkage::GetJSCallNewTargetParamIndex(FormalParameterCount()) + 1;
+    // at -1).
+    // TODO(jgruber): Consider starting at 0.
+    DCHECK_EQ(Linkage::GetJSCallNewTargetParamIndex(FormalParameterCount()) + 1,
+              node()->op()->ValueOutputCount() - 3);
+    return node()->op()->ValueOutputCount() - 3;
   }
   int ArgCountOutputIndex() const {
     // Indices assigned to parameters are off-by-one (Parameters indices start
-    // at -1). TODO(jgruber): Consider starting at 0.
-    return Linkage::GetJSCallArgCountParamIndex(FormalParameterCount()) + 1;
+    // at -1).
+    // TODO(jgruber): Consider starting at 0.
+    DCHECK_EQ(Linkage::GetJSCallArgCountParamIndex(FormalParameterCount()) + 1,
+              node()->op()->ValueOutputCount() - 2);
+    return node()->op()->ValueOutputCount() - 2;
   }
   int ContextOutputIndex() const {
     // Indices assigned to parameters are off-by-one (Parameters indices start
-    // at -1). TODO(jgruber): Consider starting at 0.
-    return Linkage::GetJSCallContextParamIndex(FormalParameterCount()) + 1;
+    // at -1).
+    // TODO(jgruber): Consider starting at 0.
+    DCHECK_EQ(Linkage::GetJSCallContextParamIndex(FormalParameterCount()) + 1,
+              node()->op()->ValueOutputCount() - 1);
+    return node()->op()->ValueOutputCount() - 1;
   }
   int LastOutputIndex() const { return ContextOutputIndex(); }
 };

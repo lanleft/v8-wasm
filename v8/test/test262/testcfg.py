@@ -42,6 +42,7 @@ from testrunner.outproc import test262
 #
 # Multiple flags are allowed, separated by space.
 FEATURE_FLAGS = {
+    'Intl.DurationFormat': '--harmony-intl-duration-format',
     'Intl.Locale-info': '--harmony-intl-locale-info-func',
     'FinalizationRegistry': '--harmony-weak-refs-with-cleanup-some',
     'WeakRef': '--harmony-weak-refs-with-cleanup-some',
@@ -57,6 +58,8 @@ FEATURE_FLAGS = {
     'json-parse-with-source': '--harmony-json-parse-with-source',
     'iterator-helpers': '--harmony-iterator-helpers',
     'set-methods': '--harmony-set-methods',
+    'promise-with-resolvers': '--js-promise-withresolvers',
+    'Array.fromAsync': '--harmony-array-from-async',
     'import-attributes': '--harmony-import-attributes',
     'regexp-duplicate-named-groups': '--js-regexp-duplicate-named-groups',
     'regexp-modifiers': '--js-regexp-modifiers',
@@ -64,8 +67,6 @@ FEATURE_FLAGS = {
     'explicit-resource-management': '--js_explicit_resource_management',
     'decorators': '--js-decorators',
     'promise-try': '--js-promise-try',
-    'Atomics.pause': '--js-atomics-pause',
-    'source-phase-imports': '--js-source-phase-imports --allow-natives-syntax',
 }
 
 SKIPPED_FEATURES = set([])
@@ -220,14 +221,10 @@ class TestCase(testcase.D8TestCase):
     harness_args = []
     if "raw" not in self.test_record.get("flags", []):
       harness_args = list(self.suite.harness)
-    return (harness_args +
-            ([self.suite.root /
-              "harness-agent.js"] if self.__needs_harness_agent() else []) +
+    return (harness_args + ([self.suite.root / "harness-agent.js"]
+                            if self.__needs_harness_agent() else []) +
             ([self.suite.root / "harness-ishtmldda.js"]
              if "IsHTMLDDA" in self.test_record.get("features", []) else []) +
-            ([self.suite.root /
-              "harness-abstractmodulesource.js"] if "source-phase-imports"
-             in self.test_record.get("features", []) else []) +
             ([self.suite.root / "harness-adapt-donotevaluate.js"]
              if self.fail_phase_only and not self._fail_phase_reverse else []) +
             ([self.suite.root / "harness-done.js"]

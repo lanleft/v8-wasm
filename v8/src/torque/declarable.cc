@@ -6,14 +6,15 @@
 
 #include <fstream>
 #include <iostream>
-#include <optional>
 
 #include "src/torque/ast.h"
 #include "src/torque/global-context.h"
 #include "src/torque/type-inference.h"
 #include "src/torque/type-visitor.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 QualifiedName QualifiedName::Parse(std::string qualified_name) {
   std::vector<std::string> qualifications;
@@ -24,7 +25,7 @@ QualifiedName QualifiedName::Parse(std::string qualified_name) {
         qualified_name.substr(0, namespace_delimiter_index));
     qualified_name = qualified_name.substr(namespace_delimiter_index + 2);
   }
-  return QualifiedName(std::move(qualifications), qualified_name);
+  return QualifiedName(qualifications, qualified_name);
 }
 
 std::ostream& operator<<(std::ostream& os, const QualifiedName& name) {
@@ -103,7 +104,7 @@ std::vector<Declarable*> Scope::Lookup(const QualifiedName& name) {
   return result;
 }
 
-std::optional<std::string> TypeConstraint::IsViolated(const Type* type) const {
+base::Optional<std::string> TypeConstraint::IsViolated(const Type* type) const {
   if (upper_bound && !type->IsSubtypeOf(*upper_bound)) {
     if (type->IsTopType()) {
       return TopType::cast(type)->reason();
@@ -112,10 +113,10 @@ std::optional<std::string> TypeConstraint::IsViolated(const Type* type) const {
           ToString("expected ", *type, " to be a subtype of ", **upper_bound)};
     }
   }
-  return std::nullopt;
+  return base::nullopt;
 }
 
-std::optional<std::string> FindConstraintViolation(
+base::Optional<std::string> FindConstraintViolation(
     const std::vector<const Type*>& types,
     const std::vector<TypeConstraint>& constraints) {
   DCHECK_EQ(constraints.size(), types.size());
@@ -124,7 +125,7 @@ std::optional<std::string> FindConstraintViolation(
       return {"Could not instantiate generic, " + *violation + "."};
     }
   }
-  return std::nullopt;
+  return base::nullopt;
 }
 
 std::vector<TypeConstraint> ComputeConstraints(
@@ -144,7 +145,7 @@ std::vector<TypeConstraint> ComputeConstraints(
 
 TypeArgumentInference GenericCallable::InferSpecializationTypes(
     const TypeVector& explicit_specialization_types,
-    const std::vector<std::optional<const Type*>>& arguments) {
+    const std::vector<base::Optional<const Type*>>& arguments) {
   const std::vector<TypeExpression*>& parameters =
       declaration()->parameters.types;
   CurrentScope::Scope generic_scope(ParentScope());
@@ -160,14 +161,14 @@ TypeArgumentInference GenericCallable::InferSpecializationTypes(
   return inference;
 }
 
-std::optional<Statement*> GenericCallable::CallableBody() {
+base::Optional<Statement*> GenericCallable::CallableBody() {
   if (auto* macro_decl = TorqueMacroDeclaration::DynamicCast(declaration())) {
     return macro_decl->body;
   } else if (auto* builtin_decl =
                  TorqueBuiltinDeclaration::DynamicCast(declaration())) {
     return builtin_decl->body;
   } else {
-    return std::nullopt;
+    return base::nullopt;
   }
 }
 
@@ -193,4 +194,6 @@ const Type* TypeAlias::Resolve() const {
   return *type_;
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8

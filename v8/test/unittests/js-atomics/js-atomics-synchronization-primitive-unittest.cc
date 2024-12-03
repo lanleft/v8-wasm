@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/base/platform/platform.h"
 #include "src/base/platform/time.h"
 #include "src/heap/parked-scope-inl.h"
@@ -11,9 +9,7 @@
 #include "test/unittests/test-utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-// In multi-cage mode we create one cage per isolate
-// and we don't share objects between cages.
-#if V8_CAN_CREATE_SHARED_HEAP_BOOL && !COMPRESS_POINTERS_IN_MULTIPLE_CAGES_BOOL
+#if V8_CAN_CREATE_SHARED_HEAP_BOOL
 
 namespace v8 {
 namespace internal {
@@ -26,7 +22,7 @@ namespace {
 class LockingThread : public ParkingThread {
  public:
   LockingThread(Handle<JSAtomicsMutex> mutex,
-                std::optional<base::TimeDelta> timeout,
+                base::Optional<base::TimeDelta> timeout,
                 ParkingSemaphore* sema_ready,
                 ParkingSemaphore* sema_execute_start,
                 ParkingSemaphore* sema_execute_complete)
@@ -67,7 +63,7 @@ class LockingThread : public ParkingThread {
   }
 
   Handle<JSAtomicsMutex> mutex_;
-  std::optional<base::TimeDelta> timeout_;
+  base::Optional<base::TimeDelta> timeout_;
   ParkingSemaphore* sema_ready_;
   ParkingSemaphore* sema_execute_start_;
   ParkingSemaphore* sema_execute_complete_;
@@ -76,7 +72,7 @@ class LockingThread : public ParkingThread {
 class BlockingLockingThread final : public LockingThread {
  public:
   BlockingLockingThread(Handle<JSAtomicsMutex> mutex,
-                        std::optional<base::TimeDelta> timeout,
+                        base::Optional<base::TimeDelta> timeout,
                         ParkingSemaphore* sema_ready,
                         ParkingSemaphore* sema_execute_start,
                         ParkingSemaphore* sema_execute_complete)
@@ -126,7 +122,7 @@ TEST_F(JSAtomicsMutexTest, Contention) {
   std::vector<std::unique_ptr<LockingThread>> threads;
   for (int i = 0; i < kThreads; i++) {
     auto thread = std::make_unique<LockingThread>(
-        contended_mutex, std::nullopt, &sema_ready, &sema_execute_start,
+        contended_mutex, base::nullopt, &sema_ready, &sema_execute_start,
         &sema_execute_complete);
     CHECK(thread->Start());
     threads.push_back(std::move(thread));
@@ -156,7 +152,7 @@ TEST_F(JSAtomicsMutexTest, Timeout) {
   ParkingSemaphore sema_execute_start(0);
   ParkingSemaphore sema_execute_complete(0);
   std::unique_ptr<BlockingLockingThread> blocking_thread =
-      std::make_unique<BlockingLockingThread>(contended_mutex, std::nullopt,
+      std::make_unique<BlockingLockingThread>(contended_mutex, base::nullopt,
                                               &sema_ready, &sema_execute_start,
                                               &sema_execute_complete);
 
@@ -217,7 +213,7 @@ class WaitOnConditionThread final : public ParkingThread {
     while (keep_waiting) {
       (*waiting_threads_count_)++;
       EXPECT_TRUE(JSAtomicsCondition::WaitFor(isolate, condition_, mutex_,
-                                              std::nullopt));
+                                              base::nullopt));
       (*waiting_threads_count_)--;
     }
     mutex_->Unlock(isolate);

@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 function assertMemoryIsValid(memory, shared) {
   assertSame(WebAssembly.Memory.prototype, memory.__proto__);
@@ -122,7 +121,10 @@ function assertMemoryIsValid(memory, shared) {
       throw new Error(`Should not call [[HasProperty]] with ${x}`);
     },
     get(o, x) {
-      return x === 'address' ? 'i32' : 0;
+      if (x === "index") {
+        return "i32";
+      }
+      return 0;
     },
   });
   new WebAssembly.Memory(proxy);

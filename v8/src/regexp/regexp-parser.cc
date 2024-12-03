@@ -2382,7 +2382,7 @@ base::uc32 RegExpParserImpl<CharT>::ParseCharacterEscape(
       if (IsUnicodeMode()) {
         // With /u or /v, decimal escape is not interpreted as octal character
         // code.
-        ReportError(RegExpError::kInvalidDecimalEscape);
+        ReportError(RegExpError::kInvalidClassEscape);
         return 0;
       }
       return ParseOctalLiteral();
@@ -3047,8 +3047,7 @@ RegExpTree* RegExpParserImpl<CharT>::ParseCharacterClass(
         if (Next() == '-') {
           if (operand == nullptr) {
             if (operand_type == ClassSetOperandType::kClassSetCharacter) {
-              AddMaybeSimpleCaseFoldedRange(
-                  ranges, CharacterRange::Singleton(character));
+              ranges->Add(CharacterRange::Singleton(character), zone());
             }
             operand =
                 zone()->template New<RegExpClassSetOperand>(ranges, strings);
@@ -3062,8 +3061,7 @@ RegExpTree* RegExpParserImpl<CharT>::ParseCharacterClass(
         if (Next() == '&') {
           if (operand == nullptr) {
             if (operand_type == ClassSetOperandType::kClassSetCharacter) {
-              AddMaybeSimpleCaseFoldedRange(
-                  ranges, CharacterRange::Singleton(character));
+              ranges->Add(CharacterRange::Singleton(character), zone());
             }
             operand =
                 zone()->template New<RegExpClassSetOperand>(ranges, strings);

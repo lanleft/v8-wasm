@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_TURBOSHAFT_MEMORY_OPTIMIZATION_REDUCER_H_
 #define V8_COMPILER_TURBOSHAFT_MEMORY_OPTIMIZATION_REDUCER_H_
 
-#include <optional>
-
 #include "src/base/template-utils.h"
 #include "src/builtins/builtins.h"
 #include "src/codegen/external-reference.h"
@@ -102,14 +100,14 @@ struct MemoryAnalyzer {
 
   struct BlockState {
     const AllocateOp* last_allocation = nullptr;
-    std::optional<uint32_t> reserved_size = std::nullopt;
+    base::Optional<uint32_t> reserved_size = base::nullopt;
 
     bool operator!=(const BlockState& other) {
       return last_allocation != other.last_allocation ||
              reserved_size != other.reserved_size;
     }
   };
-  FixedBlockSidetable<std::optional<BlockState>> block_states{
+  FixedBlockSidetable<base::Optional<BlockState>> block_states{
       input_graph.block_count(), phase_zone};
   ZoneAbslFlatHashMap<const AllocateOp*, const AllocateOp*> folded_into{
       phase_zone};
@@ -158,13 +156,13 @@ struct MemoryAnalyzer {
         input_graph.Get(op).template TryCast<AllocateOp>());
   }
 
-  std::optional<uint32_t> ReservedSize(V<AnyOrNone> alloc) {
+  base::Optional<uint32_t> ReservedSize(V<AnyOrNone> alloc) {
     if (auto it = reserved_size.find(
             input_graph.Get(alloc).template TryCast<AllocateOp>());
         it != reserved_size.end()) {
       return it->second;
     }
-    return std::nullopt;
+    return base::nullopt;
   }
 
   void Run();
@@ -238,13 +236,13 @@ class MemoryOptimizationReducer : public Next {
       // Wasm mode: producing isolate-independent code, loading the isolate
       // address at runtime.
 #if V8_ENABLE_WEBASSEMBLY
-      V<WasmTrustedInstanceData> instance_data = __ WasmInstanceDataParameter();
+      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceParameter();
       int top_address_offset =
           type == AllocationType::kYoung
               ? WasmTrustedInstanceData::kNewAllocationTopAddressOffset
               : WasmTrustedInstanceData::kOldAllocationTopAddressOffset;
       top_address =
-          __ Load(instance_data, LoadOp::Kind::TaggedBase().Immutable(),
+          __ Load(instance_node, LoadOp::Kind::TaggedBase().Immutable(),
                   MemoryRepresentation::UintPtr(), top_address_offset);
 #else
       UNREACHABLE();
@@ -448,10 +446,10 @@ class MemoryOptimizationReducer : public Next {
   }
 
  private:
-  std::optional<MemoryAnalyzer> analyzer_;
+  base::Optional<MemoryAnalyzer> analyzer_;
   Isolate* isolate_ = __ data() -> isolate();
   const TSCallDescriptor* allocate_builtin_descriptor_ = nullptr;
-  std::optional<Variable> top_[2];
+  base::Optional<Variable> top_[2];
 
   static_assert(static_cast<int>(AllocationType::kYoung) == 0);
   static_assert(static_cast<int>(AllocationType::kOld) == 1);
@@ -484,7 +482,7 @@ class MemoryOptimizationReducer : public Next {
       // Wasm mode: producing isolate-independent code, loading the isolate
       // address at runtime.
 #if V8_ENABLE_WEBASSEMBLY
-      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceDataParameter();
+      V<WasmTrustedInstanceData> instance_node = __ WasmInstanceParameter();
       int limit_address_offset =
           type == AllocationType::kYoung
               ? WasmTrustedInstanceData::kNewAllocationLimitAddressOffset

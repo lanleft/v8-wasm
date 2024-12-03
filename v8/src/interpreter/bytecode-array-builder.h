@@ -5,8 +5,6 @@
 #ifndef V8_INTERPRETER_BYTECODE_ARRAY_BUILDER_H_
 #define V8_INTERPRETER_BYTECODE_ARRAY_BUILDER_H_
 
-#include <optional>
-
 #include "src/ast/ast.h"
 #include "src/base/export-template.h"
 #include "src/common/globals.h"
@@ -90,7 +88,6 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
   BytecodeArrayBuilder& LoadLiteral(Tagged<Smi> value);
   BytecodeArrayBuilder& LoadLiteral(double value);
   BytecodeArrayBuilder& LoadLiteral(const AstRawString* raw_string);
-  BytecodeArrayBuilder& LoadLiteral(const AstConsString* cons_string);
   BytecodeArrayBuilder& LoadLiteral(const Scope* scope);
   BytecodeArrayBuilder& LoadLiteral(AstBigInt bigint);
   BytecodeArrayBuilder& LoadUndefined();
@@ -513,7 +510,6 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
 
   // Gets a constant pool entry.
   size_t GetConstantPoolEntry(const AstRawString* raw_string);
-  size_t GetConstantPoolEntry(const AstConsString* cons_string);
   size_t GetConstantPoolEntry(AstBigInt bigint);
   size_t GetConstantPoolEntry(const Scope* scope);
   size_t GetConstantPoolEntry(double number);
@@ -532,10 +528,10 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
     SetStatementPosition(stmt->position());
   }
 
-  std::optional<BytecodeSourceInfo> MaybePopSourcePosition(int scope_start) {
+  base::Optional<BytecodeSourceInfo> MaybePopSourcePosition(int scope_start) {
     if (!latest_source_info_.is_valid() ||
         latest_source_info_.source_position() < scope_start) {
-      return std::nullopt;
+      return base::nullopt;
     }
     BytecodeSourceInfo source_info = latest_source_info_;
     latest_source_info_.set_invalid();
@@ -617,7 +613,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
   V8_INLINE void Output##Name(Operands... operands);               \
   template <typename... Operands>                                  \
   V8_INLINE void Output##Name(BytecodeLabel* label, Operands... operands);
-  BYTECODE_LIST(DECLARE_BYTECODE_OUTPUT, DECLARE_BYTECODE_OUTPUT)
+  BYTECODE_LIST(DECLARE_BYTECODE_OUTPUT)
 #undef DECLARE_OPERAND_TYPE_INFO
 
   V8_INLINE void OutputJumpLoop(BytecodeLoopHeader* loop_header, int loop_depth,

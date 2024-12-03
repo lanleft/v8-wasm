@@ -28,7 +28,6 @@ Handle<LoadHandler> CreateLoadHandlerForTest(
 }
 
 TEST(WeakReferencesBasic) {
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -38,19 +37,19 @@ TEST(WeakReferencesBasic) {
 
   IndirectHandle<LoadHandler> lh = CreateLoadHandlerForTest(factory);
 
-  if (!v8_flags.single_generation) CHECK(HeapLayout::InYoungGeneration(*lh));
+  if (!v8_flags.single_generation) CHECK(Heap::InYoungGeneration(*lh));
 
   Tagged<MaybeObject> code_object = lh->data1();
   CHECK(IsSmi(code_object));
   heap::InvokeMajorGC(CcTest::heap());
-  CHECK(!HeapLayout::InYoungGeneration(*lh));
+  CHECK(!Heap::InYoungGeneration(*lh));
   CHECK_EQ(code_object, lh->data1());
 
   {
     HandleScope inner_scope(isolate);
 
     // Create a new Code.
-    Assembler assm(isolate->allocator(), AssemblerOptions{});
+    Assembler assm(AssemblerOptions{});
     assm.nop();  // supported on all architectures
     CodeDesc desc;
     assm.GetCode(isolate, &desc);
@@ -77,6 +76,7 @@ TEST(WeakReferencesBasic) {
 }
 
 TEST(WeakReferencesOldToOld) {
+  if (v8_flags.enable_third_party_heap) return;
   // Like WeakReferencesBasic, but the updated weak slot is in the old space,
   // and referring to an old space object.
   ManualGCScope manual_gc_scope;
@@ -112,7 +112,6 @@ TEST(WeakReferencesOldToNew) {
   // Like WeakReferencesBasic, but the updated weak slot is in the old space,
   // and referring to an new space object.
   if (v8_flags.single_generation) return;
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -125,7 +124,7 @@ TEST(WeakReferencesOldToNew) {
 
   // Create a new FixedArray which the LoadHandler will point to.
   DirectHandle<FixedArray> fixed_array = factory->NewFixedArray(1);
-  CHECK(HeapLayout::InYoungGeneration(*fixed_array));
+  CHECK(Heap::InYoungGeneration(*fixed_array));
   lh->set_data1(MakeWeak(*fixed_array));
 
   heap::InvokeMajorGC(heap);
@@ -139,7 +138,6 @@ TEST(WeakReferencesOldToNewScavenged) {
   if (v8_flags.single_generation) return;
   // Like WeakReferencesBasic, but the updated weak slot is in the old space,
   // and referring to an new space object, which is then scavenged.
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -152,7 +150,7 @@ TEST(WeakReferencesOldToNewScavenged) {
 
   // Create a new FixedArray which the LoadHandler will point to.
   DirectHandle<FixedArray> fixed_array = factory->NewFixedArray(1);
-  CHECK(HeapLayout::InYoungGeneration(*fixed_array));
+  CHECK(Heap::InYoungGeneration(*fixed_array));
   lh->set_data1(MakeWeak(*fixed_array));
 
   heap::InvokeMinorGC(heap);
@@ -203,7 +201,7 @@ TEST(ObjectMovesBeforeClearingWeakField) {
     HandleScope inner_scope(isolate);
     // Create a new FixedArray which the LoadHandler will point to.
     IndirectHandle<FixedArray> fixed_array = factory->NewFixedArray(1);
-    CHECK(HeapLayout::InYoungGeneration(*fixed_array));
+    CHECK(Heap::InYoungGeneration(*fixed_array));
     lh->set_data1(MakeWeak(*fixed_array));
     // inner_scope will go out of scope, so when marking the next time,
     // *fixed_array will stay white.
@@ -261,7 +259,6 @@ TEST(ObjectWithWeakFieldDies) {
 
 TEST(ObjectWithWeakReferencePromoted) {
   if (v8_flags.single_generation) return;
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -269,11 +266,11 @@ TEST(ObjectWithWeakReferencePromoted) {
 
   HandleScope outer_scope(isolate);
   DirectHandle<LoadHandler> lh = CreateLoadHandlerForTest(factory);
-  CHECK(HeapLayout::InYoungGeneration(*lh));
+  CHECK(Heap::InYoungGeneration(*lh));
 
   // Create a new FixedArray which the LoadHandler will point to.
   DirectHandle<FixedArray> fixed_array = factory->NewFixedArray(1);
-  CHECK(HeapLayout::InYoungGeneration(*fixed_array));
+  CHECK(Heap::InYoungGeneration(*fixed_array));
   lh->set_data1(MakeWeak(*fixed_array));
 
   heap::EmptyNewSpaceUsingGC(heap);
@@ -287,7 +284,6 @@ TEST(ObjectWithWeakReferencePromoted) {
 
 TEST(ObjectWithClearedWeakReferencePromoted) {
   if (v8_flags.single_generation || v8_flags.stress_incremental_marking) return;
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -295,7 +291,7 @@ TEST(ObjectWithClearedWeakReferencePromoted) {
 
   HandleScope outer_scope(isolate);
   DirectHandle<LoadHandler> lh = CreateLoadHandlerForTest(factory);
-  CHECK(HeapLayout::InYoungGeneration(*lh));
+  CHECK(Heap::InYoungGeneration(*lh));
 
   lh->set_data1(ClearedValue(isolate));
 
@@ -375,7 +371,7 @@ TEST(WeakArraysBasic) {
   CHECK(!IsFixedArray(*array));
   CHECK_EQ(array->length(), length);
 
-  CHECK(HeapLayout::InYoungGeneration(*array));
+  CHECK(Heap::InYoungGeneration(*array));
 
   for (int i = 0; i < length; ++i) {
     Tagged<HeapObject> heap_object;

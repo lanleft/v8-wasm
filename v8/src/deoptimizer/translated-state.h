@@ -5,7 +5,6 @@
 #ifndef V8_DEOPTIMIZER_TRANSLATED_STATE_H_
 #define V8_DEOPTIMIZER_TRANSLATED_STATE_H_
 
-#include <optional>
 #include <stack>
 #include <vector>
 
@@ -284,7 +283,7 @@ class TranslatedFrame {
 
 #if V8_ENABLE_WEBASSEMBLY
   // Only for Kind == kJSToWasmBuiltinContinuation
-  std::optional<wasm::ValueKind> wasm_call_return_kind() const {
+  base::Optional<wasm::ValueKind> wasm_call_return_kind() const {
     DCHECK_EQ(kind(), kJSToWasmBuiltinContinuation);
     return return_kind_;
   }
@@ -300,7 +299,7 @@ class TranslatedFrame {
   friend class Deoptimizer;
 
   // Constructor static methods.
-  static TranslatedFrame UnoptimizedJSFrame(
+  static TranslatedFrame UnoptimizedFrame(
       BytecodeOffset bytecode_offset, Tagged<SharedFunctionInfo> shared_info,
       int height, int return_value_offset, int return_value_count);
   static TranslatedFrame AccessorFrame(Kind kind,
@@ -320,7 +319,7 @@ class TranslatedFrame {
       int height);
   static TranslatedFrame JSToWasmBuiltinContinuationFrame(
       BytecodeOffset bailout_id, Tagged<SharedFunctionInfo> shared_info,
-      int height, std::optional<wasm::ValueKind> return_type);
+      int height, base::Optional<wasm::ValueKind> return_type);
   static TranslatedFrame LiftoffFrame(BytecodeOffset bailout_id, int height,
                                       int function_index);
 #endif  // V8_ENABLE_WEBASSEMBLY
@@ -364,7 +363,7 @@ class TranslatedFrame {
 
 #if V8_ENABLE_WEBASSEMBLY
   // Only for Kind == kJSToWasmBuiltinContinuation
-  std::optional<wasm::ValueKind> return_kind_;
+  base::Optional<wasm::ValueKind> return_kind_;
   // Only for Kind == kLiftOffFunction
   int wasm_function_index_ = -1;
 #endif  // V8_ENABLE_WEBASSEMBLY

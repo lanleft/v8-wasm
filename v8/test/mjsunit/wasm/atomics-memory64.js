@@ -4,8 +4,7 @@
 
 // Flags: --experimental-wasm-memory64 --allow-natives-syntax
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 function allowOOM(fn) {
   try {
@@ -153,8 +152,7 @@ function TestWasmAtomicsInWorkers(OFFSET, INDEX, PAGES) {
   const numWorkers = 4;
 
   let workerScript = `onmessage = function({data:msg}) {
-    d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+    d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
     ${WasmI32AtomicWait.toString()}
     ${WasmI64AtomicWait.toString()}
     let id = msg.id;

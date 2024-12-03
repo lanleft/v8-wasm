@@ -139,7 +139,7 @@ class JSArray : public TorqueGeneratedJSArray<JSArray, JSObject> {
   static const uint32_t kMinJoinStackSize = 2;
 
   static const int kInitialMaxFastElementArray =
-      (kMaxRegularHeapObjectSize - sizeof(FixedArray) - kHeaderSize -
+      (kMaxRegularHeapObjectSize - FixedArray::kHeaderSize - kHeaderSize -
        AllocationMemento::kSize) >>
       kDoubleSizeLog2;
 

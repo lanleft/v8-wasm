@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <array>
-#include <optional>
 
 #include "src/base/small-vector.h"
 #include "src/base/utils/random-number-generator.h"
@@ -17,9 +16,8 @@
 
 // This whole compilation unit should only be included in non-official builds to
 // reduce binary size (it's a testing-only implementation which lives in src/ so
-// that the GenerateRandomWasmModule runtime function can use it).  We normally
-// disable V8_WASM_RANDOM_FUZZERS in official builds.
-#ifndef V8_WASM_RANDOM_FUZZERS
+// that the GenerateRandomWasmModule runtime function can use it).
+#ifdef OFFICIAL_BUILD
 #error Exclude this compilation unit in official builds.
 #endif
 
@@ -65,8 +63,8 @@ struct StringImports {
   uint32_t decodeStringFromUTF8Array;
 
   // These aren't imports, but closely related, so store them here as well:
-  ModuleTypeIndex array_i16;
-  ModuleTypeIndex array_i8;
+  uint32_t array_i16;
+  uint32_t array_i8;
 };
 
 // Creates an array out of the arguments without hardcoding the exact number of
@@ -290,8 +288,7 @@ ValueType GetValueTypeHelper(DataRange* data, uint32_t num_nullable_types,
   if (chosen_id >= types.size()) {
     // Return user-defined type.
     return ValueType::RefMaybeNull(
-        ModuleTypeIndex{chosen_id - static_cast<uint32_t>(types.size())},
-        nullability);
+        chosen_id - static_cast<uint32_t>(types.size()), nullability);
   }
   // If returning a reference type, fix its nullability according to {nullable}.
   if (types[chosen_id].is_reference()) {
@@ -330,7 +327,7 @@ uint32_t GenerateRefTypeElementSegment(DataRange* range,
   for (size_t i = 0; i < element_count; ++i) {
     segment.entries.emplace_back(
         WasmModuleBuilder::WasmElemSegment::Entry::kRefNullEntry,
-        element_type.ref_index().index);
+        element_type.ref_index());
   }
   return builder->AddElementSegment(std::move(segment));
 }
@@ -356,7 +353,7 @@ FunctionSig* CreateSignature(Zone* zone,
   for (auto& type : return_types) {
     builder.AddReturn(type);
   }
-  return builder.Get();
+  return builder.Build();
 }
 
 template <WasmModuleGenerationOptions options>
@@ -397,10 +394,9 @@ class BodyGen {
         DCHECK_NE(type, kWasmVoid);
         builder.AddReturn(type);
       }
-      FunctionSig* sig = builder.Get();
+      FunctionSig* sig = builder.Build();
       const bool is_final = true;
-      ModuleTypeIndex sig_id =
-          gen->builder_->builder()->AddSignature(sig, is_final);
+      int sig_id = gen->builder_->builder()->AddSignature(sig, is_final);
       gen->builder_->EmitI32V(sig_id);
     }
 
@@ -543,8 +539,11 @@ class BodyGen {
     catch_blocks_.push_back(control_depth);
     for (int i = 0; i < num_catch; ++i) {
       const FunctionSig* exception_type = builder_->builder()->GetTagType(i);
+      auto exception_type_vec =
+          base::VectorOf(exception_type->parameters().begin(),
+                         exception_type->parameter_count());
       builder_->EmitWithU32V(kExprCatch, i);
-      ConsumeAndGenerate(exception_type->parameters(), return_type_vec, data);
+      ConsumeAndGenerate(exception_type_vec, return_type_vec, data);
     }
     if (has_catch_all) {
       builder_->Emit(kExprCatchAll);
@@ -581,7 +580,7 @@ class BodyGen {
       builder_->Emit(kExprTryTable);
       blocks_.emplace_back(return_types.begin(), return_types.end());
       const bool is_final = true;
-      ModuleTypeIndex try_sig_index = builder_->builder()->AddSignature(
+      uint32_t try_sig_index = builder_->builder()->AddSignature(
           CreateSignature(builder_->builder()->zone(), param_types,
                           return_types),
           is_final);
@@ -624,7 +623,7 @@ class BodyGen {
     if (has_ref) block_returns.last() = kWasmExnRef;
     {
       BlockScope block(this, kExprBlock, param_types, block_returns,
-                       block_returns);
+                       base::VectorOf(block_returns));
       try_table_rec(param_types, return_types, catch_cases, i + 1, data);
     }
     // Catch label. Consume the unpacked values and exnref (if any), produce
@@ -688,9 +687,9 @@ class BodyGen {
     // There is always at least the block representing the function body.
     DCHECK(!blocks_.empty());
     const uint32_t target_block = data->get<uint8_t>() % blocks_.size();
-    const auto break_types = base::VectorOf(blocks_[target_block]);
+    const auto break_types = blocks_[target_block];
 
-    Generate(break_types, data);
+    Generate(base::VectorOf(break_types), data);
     builder_->EmitWithI32V(
         kExprBr, static_cast<uint32_t>(blocks_.size()) - 1 - target_block);
   }
@@ -749,7 +748,7 @@ class BodyGen {
         kExprBrOnNonNull,
         static_cast<uint32_t>(blocks_.size()) - 1 - target_block);
     ConsumeAndGenerate(
-        break_types.SubVector(0, break_types.size() - 1),
+        base::VectorOf(break_types.data(), break_types.size() - 1),
         wanted_kind == kVoid
             ? base::Vector<ValueType>{}
             : base::VectorOf({ValueType::Primitive(wanted_kind)}),
@@ -808,7 +807,7 @@ class BodyGen {
 
   void return_op(DataRange* data) {
     auto returns = builder_->signature()->returns();
-    Generate(returns, data);
+    Generate(base::VectorOf(returns.begin(), returns.size()), data);
     builder_->Emit(kExprReturn);
   }
 
@@ -1065,7 +1064,7 @@ class BodyGen {
   void call(DataRange* data, ValueType wanted_kind, CallKind call_kind) {
     uint8_t random_byte = data->get<uint8_t>();
     int func_index = random_byte % functions_.size();
-    ModuleTypeIndex sig_index = functions_[func_index];
+    uint32_t sig_index = functions_[func_index];
     const FunctionSig* sig = builder_->builder()->GetSignature(sig_index);
     // Generate arguments.
     for (size_t i = 0; i < sig->parameter_count(); ++i) {
@@ -1120,9 +1119,11 @@ class BodyGen {
       }
       return;
     }
+    auto return_types =
+        base::VectorOf(sig->returns().begin(), sig->return_count());
     auto wanted_types =
         base::VectorOf(&wanted_kind, wanted_kind == kWasmVoid ? 0 : 1);
-    ConsumeAndGenerate(sig->returns(), wanted_types, data);
+    ConsumeAndGenerate(return_types, wanted_types, data);
   }
 
   struct Var {
@@ -1251,7 +1252,10 @@ class BodyGen {
     } else {
       int tag = data->get<uint8_t>() % builder_->builder()->NumTags();
       const FunctionSig* exception_sig = builder_->builder()->GetTagType(tag);
-      Generate(exception_sig->parameters(), data);
+      base::Vector<const ValueType> exception_types(
+          exception_sig->parameters().begin(),
+          exception_sig->parameter_count());
+      Generate(exception_types, data);
       builder_->EmitWithU32V(kExprThrow, tag);
     }
   }
@@ -1313,7 +1317,7 @@ class BodyGen {
   bool new_object(HeapType type, DataRange* data, Nullability nullable) {
     DCHECK(type.is_index());
 
-    ModuleTypeIndex index = type.ref_index();
+    uint32_t index = type.ref_index();
     bool new_default = data->get<bool>();
 
     if (builder_->builder()->IsStructType(index)) {
@@ -1416,7 +1420,7 @@ class BodyGen {
       // function from among those matching the signature (consider function
       // subtyping?).
       uint32_t declared_func_index =
-          index.index - static_cast<uint32_t>(arrays_.size() + structs_.size());
+          index - static_cast<uint32_t>(arrays_.size() + structs_.size());
       size_t num_functions = builder_->builder()->NumDeclaredFunctions();
       const FunctionSig* sig = builder_->builder()->GetSignature(index);
       for (size_t i = 0; i < num_functions; ++i) {
@@ -1431,7 +1435,7 @@ class BodyGen {
         declared_func_index = (declared_func_index + 1) % num_functions;
       }
       // We did not find a function matching the requested signature.
-      builder_->EmitWithI32V(kExprRefNull, index.index);
+      builder_->EmitWithI32V(kExprRefNull, index);
       if (!nullable) {
         builder_->Emit(kExprRefAsNonNull);
       }
@@ -1517,9 +1521,9 @@ class BodyGen {
 
   bool array_get_helper(ValueType value_type, DataRange* data) {
     WasmModuleBuilder* builder = builder_->builder();
-    ZoneVector<ModuleTypeIndex> array_indices(builder->zone());
+    ZoneVector<uint32_t> array_indices(builder->zone());
 
-    for (ModuleTypeIndex i : arrays_) {
+    for (uint32_t i : arrays_) {
       DCHECK(builder->IsArrayType(i));
       if (builder->GetArrayType(i)->element_type().Unpacked() == value_type) {
         array_indices.push_back(i);
@@ -1579,8 +1583,7 @@ class BodyGen {
     // TODO(14034): The source element type only has to be a subtype of the
     // destination element type. Currently this only generates copy from same
     // typed arrays.
-    ModuleTypeIndex array_index =
-        arrays_[data->get<uint8_t>() % arrays_.size()];
+    uint32_t array_index = arrays_[data->get<uint8_t>() % arrays_.size()];
     DCHECK(builder_->builder()->IsArrayType(array_index));
     GenerateRef(HeapType(array_index), data);  // destination
     Generate(kWasmI32, data);                  // destination index
@@ -1594,8 +1597,7 @@ class BodyGen {
 
   void array_fill(DataRange* data) {
     DCHECK_NE(0, arrays_.size());  // We always emit at least one array type.
-    ModuleTypeIndex array_index =
-        arrays_[data->get<uint8_t>() % arrays_.size()];
+    int array_index = arrays_[data->get<uint8_t>() % arrays_.size()];
     DCHECK(builder_->builder()->IsArrayType(array_index));
     ValueType element_type = builder_->builder()
                                  ->GetArrayType(array_index)
@@ -1611,8 +1613,7 @@ class BodyGen {
 
   void array_init_data(DataRange* data) {
     DCHECK_NE(0, arrays_.size());  // We always emit at least one array type.
-    ModuleTypeIndex array_index =
-        arrays_[data->get<uint8_t>() % arrays_.size()];
+    int array_index = arrays_[data->get<uint8_t>() % arrays_.size()];
     DCHECK(builder_->builder()->IsArrayType(array_index));
     const ArrayType* array_type =
         builder_->builder()->GetArrayType(array_index);
@@ -1638,8 +1639,7 @@ class BodyGen {
 
   void array_init_elem(DataRange* data) {
     DCHECK_NE(0, arrays_.size());  // We always emit at least one array type.
-    ModuleTypeIndex array_index =
-        arrays_[data->get<uint8_t>() % arrays_.size()];
+    int array_index = arrays_[data->get<uint8_t>() % arrays_.size()];
     DCHECK(builder_->builder()->IsArrayType(array_index));
     const ArrayType* array_type =
         builder_->builder()->GetArrayType(array_index);
@@ -1669,8 +1669,8 @@ class BodyGen {
 
   void array_set(DataRange* data) {
     WasmModuleBuilder* builder = builder_->builder();
-    ZoneVector<ModuleTypeIndex> array_indices(builder->zone());
-    for (ModuleTypeIndex i : arrays_) {
+    ZoneVector<uint32_t> array_indices(builder->zone());
+    for (uint32_t i : arrays_) {
       DCHECK(builder->IsArrayType(i));
       if (builder->GetArrayType(i)->mutability()) {
         array_indices.push_back(i);
@@ -1694,8 +1694,8 @@ class BodyGen {
   bool struct_get_helper(ValueType value_type, DataRange* data) {
     WasmModuleBuilder* builder = builder_->builder();
     ZoneVector<uint32_t> field_index(builder->zone());
-    ZoneVector<ModuleTypeIndex> struct_index(builder->zone());
-    for (ModuleTypeIndex i : structs_) {
+    ZoneVector<uint32_t> struct_index(builder->zone());
+    for (uint32_t i : structs_) {
       DCHECK(builder->IsStructType(i));
       int field_count = builder->GetStructType(i)->field_count();
       for (int index = 0; index < field_count; index++) {
@@ -1852,11 +1852,11 @@ class BodyGen {
         }
         // Collect all (direct) sub types.
         // TODO(14034): Also collect indirect sub types.
-        std::vector<ModuleTypeIndex> subtypes;
+        std::vector<uint32_t> subtypes;
         uint32_t type_count = builder_->builder()->NumTypes();
         for (uint32_t i = 0; i < type_count; ++i) {
           if (builder_->builder()->GetSuperType(i) == type.ref_index()) {
-            subtypes.push_back(ModuleTypeIndex{i});
+            subtypes.push_back(i);
           }
         }
         return subtypes.empty()
@@ -1879,7 +1879,7 @@ class BodyGen {
       return false;
     }
 
-    Generate(break_types.SubVector(0, break_types.size() - 1), data);
+    Generate(base::VectorOf(break_types.data(), break_types.size() - 1), data);
     if (data->get<bool>()) {
       // br_on_cast
       HeapType source_type = top_type(break_type.heap_type());
@@ -1896,7 +1896,8 @@ class BodyGen {
       // Fallthrough: The type has been up-cast to the source type of the
       // br_on_cast instruction! (If the type on the stack was more specific,
       // this loses type information.)
-      base::SmallVector<ValueType, 32> fallthrough_types(break_types);
+      base::SmallVector<ValueType, 32> fallthrough_types(
+          base::VectorOf(break_types));
       fallthrough_types.back() = ValueType::RefMaybeNull(
           source_type, source_is_nullable ? kNullable : kNonNullable);
       ConsumeAndGenerate(base::VectorOf(fallthrough_types), {}, data);
@@ -1919,7 +1920,8 @@ class BodyGen {
       builder_->EmitI32V(source_type.code());
       builder_->EmitI32V(target_type.code());
       // Fallthrough: The type has been cast to the target type.
-      base::SmallVector<ValueType, 32> fallthrough_types(break_types);
+      base::SmallVector<ValueType, 32> fallthrough_types(
+          base::VectorOf(break_types));
       fallthrough_types.back() = ValueType::RefMaybeNull(
           target_type, target_is_nullable ? kNullable : kNonNullable);
       ConsumeAndGenerate(base::VectorOf(fallthrough_types), {}, data);
@@ -1951,8 +1953,7 @@ class BodyGen {
   void struct_set(DataRange* data) {
     WasmModuleBuilder* builder = builder_->builder();
     DCHECK_NE(0, structs_.size());  // We always emit at least one struct type.
-    ModuleTypeIndex struct_index =
-        structs_[data->get<uint8_t>() % structs_.size()];
+    int struct_index = structs_[data->get<uint8_t>() % structs_.size()];
     DCHECK(builder->IsStructType(struct_index));
     const StructType* struct_type = builder->GetStructType(struct_index);
     ZoneVector<uint32_t> field_indices(builder->zone());
@@ -2173,20 +2174,20 @@ class BodyGen {
   };
 
  public:
-  BodyGen(WasmFunctionBuilder* fn,
-          const std::vector<ModuleTypeIndex>& functions,
+  BodyGen(WasmFunctionBuilder* fn, const std::vector<uint32_t>& functions,
           const std::vector<ValueType>& globals,
           const std::vector<uint8_t>& mutable_globals,
-          const std::vector<ModuleTypeIndex>& structs,
-          const std::vector<ModuleTypeIndex>& arrays,
-          const StringImports& strings, DataRange* data)
+          const std::vector<uint32_t>& structs,
+          const std::vector<uint32_t>& arrays, const StringImports& strings,
+          DataRange* data)
       : builder_(fn),
         functions_(functions),
         globals_(globals),
         mutable_globals_(mutable_globals),
         structs_(structs),
         arrays_(arrays),
-        string_imports_(strings) {
+        string_imports_(strings),
+        locals_initialized_(false) {
     const FunctionSig* sig = fn->signature();
     blocks_.emplace_back();
     for (size_t i = 0; i < sig->return_count(); ++i) {
@@ -3064,7 +3065,7 @@ class BodyGen {
 
   void GenerateRef(HeapType type, DataRange* data,
                    Nullability nullability = kNullable) {
-    std::optional<GeneratorRecursionScope> rec_scope;
+    base::Optional<GeneratorRecursionScope> rec_scope;
     if (nullability) {
       rec_scope.emplace(this);
     }
@@ -3149,7 +3150,7 @@ class BodyGen {
             return;
           random = data->get<uint8_t>() % arrays_.size();
         }
-        ModuleTypeIndex index = arrays_[random];
+        uint32_t index = arrays_[random];
         DCHECK(builder_->builder()->IsArrayType(index));
         GenerateRef(HeapType(index), data, nullability);
         return;
@@ -3166,7 +3167,7 @@ class BodyGen {
           }
           random = data->get<uint8_t>() % structs_.size();
         }
-        ModuleTypeIndex index = structs_[random];
+        uint32_t index = structs_[random];
         DCHECK(builder_->builder()->IsStructType(index));
         GenerateRef(HeapType(index), data, nullability);
         return;
@@ -3190,7 +3191,7 @@ class BodyGen {
           // and array types come before signatures.
           DCHECK(builder_->builder()->IsArrayType(random) ||
                  builder_->builder()->IsStructType(random));
-          GenerateRef(HeapType(ModuleTypeIndex{random}), data, nullability);
+          GenerateRef(HeapType(random), data, nullability);
         } else {
           GenerateRef(HeapType(HeapType::kI31), data, nullability);
         }
@@ -3206,7 +3207,7 @@ class BodyGen {
           }
           random = data->get<uint8_t>() % functions_.size();
         }
-        ModuleTypeIndex signature_index = functions_[random];
+        uint32_t signature_index = functions_[random];
         DCHECK(builder_->builder()->IsSignature(signature_index));
         GenerateRef(HeapType(signature_index), data, nullability);
         return;
@@ -3437,17 +3438,17 @@ class BodyGen {
  private:
   WasmFunctionBuilder* builder_;
   std::vector<std::vector<ValueType>> blocks_;
-  const std::vector<ModuleTypeIndex>& functions_;
+  const std::vector<uint32_t>& functions_;
   std::vector<ValueType> locals_;
   std::vector<ValueType> globals_;
   std::vector<uint8_t> mutable_globals_;  // indexes into {globals_}.
   uint32_t recursion_depth = 0;
   std::vector<int> catch_blocks_;
-  bool has_simd_ = false;
-  const std::vector<ModuleTypeIndex>& structs_;
-  const std::vector<ModuleTypeIndex>& arrays_;
+  bool has_simd_;
+  const std::vector<uint32_t>& structs_;
+  const std::vector<uint32_t>& arrays_;
   const StringImports& string_imports_;
-  bool locals_initialized_ = false;
+  bool locals_initialized_;
 
   bool recursion_limit_reached() {
     return recursion_depth >= kMaxRecursionDepth;
@@ -3456,8 +3457,8 @@ class BodyGen {
 
 WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
                               WasmModuleBuilder* builder, ValueType type,
-                              const std::vector<ModuleTypeIndex>& structs,
-                              const std::vector<ModuleTypeIndex>& arrays,
+                              const std::vector<uint32_t>& structs,
+                              const std::vector<uint32_t>& arrays,
                               uint32_t recursion_depth);
 
 template <WasmModuleGenerationOptions options>
@@ -3531,7 +3532,7 @@ class ModuleGen {
   // Generates and adds random struct types.
   void GenerateRandomStructs(
       const std::map<uint8_t, uint8_t>& explicit_rec_groups,
-      std::vector<ModuleTypeIndex>& struct_types, uint8_t& current_type_index,
+      std::vector<uint32_t>& struct_types, uint8_t& current_type_index,
       uint8_t kNumDefaultArrayTypes) {
     uint8_t last_struct_type_index = current_type_index + num_structs_;
     for (; current_type_index < last_struct_type_index; current_type_index++) {
@@ -3540,16 +3541,15 @@ class ModuleGen {
                                           ? rec_group->second
                                           : current_type_index;
 
-      ModuleTypeIndex supertype = kNoSuperType;
+      uint32_t supertype = kNoSuperType;
       uint8_t num_fields =
           module_range_->get<uint8_t>() % (kMaxStructFields + 1);
 
-      uint32_t existing_struct_types =
+      uint8_t existing_struct_types =
           current_type_index - kNumDefaultArrayTypes;
       if (existing_struct_types > 0 && module_range_->get<bool>()) {
-        supertype = ModuleTypeIndex{module_range_->get<uint8_t>() %
-                                        existing_struct_types +
-                                    kNumDefaultArrayTypes};
+        supertype = module_range_->get<uint8_t>() % existing_struct_types +
+                    kNumDefaultArrayTypes;
         num_fields += builder_->GetStructType(supertype)->field_count();
       }
       StructType::Builder struct_builder(zone_, num_fields);
@@ -3586,8 +3586,7 @@ class ModuleGen {
       }
       StructType* struct_fuz = struct_builder.Build();
       // TODO(14034): Generate some final types too.
-      ModuleTypeIndex index =
-          builder_->AddStructType(struct_fuz, false, supertype);
+      uint32_t index = builder_->AddStructType(struct_fuz, false, supertype);
       struct_types.push_back(index);
     }
   }
@@ -3595,8 +3594,8 @@ class ModuleGen {
   // Creates and adds random array types.
   void GenerateRandomArrays(
       const std::map<uint8_t, uint8_t>& explicit_rec_groups,
-      std::vector<ModuleTypeIndex>& array_types, uint8_t& current_type_index) {
-    uint32_t last_struct_type_index = current_type_index + num_structs_;
+      std::vector<uint32_t>& array_types, uint8_t& current_type_index) {
+    uint8_t last_struct_type_index = current_type_index + num_structs_;
     for (; current_type_index < num_structs_ + num_arrays_;
          current_type_index++) {
       auto rec_group = explicit_rec_groups.find(current_type_index);
@@ -3606,23 +3605,21 @@ class ModuleGen {
       ValueType type = GetValueTypeHelper<options>(
           module_range_, current_rec_group_end + 1, current_type_index,
           kIncludeNumericTypes, kIncludePackedTypes, kExcludeSomeGenerics);
-      ModuleTypeIndex supertype = kNoSuperType;
+      uint32_t supertype = kNoSuperType;
       if (current_type_index > last_struct_type_index &&
           module_range_->get<bool>()) {
         // Do not include the default array types, because they are final.
         uint8_t existing_array_types =
             current_type_index - last_struct_type_index;
-        supertype = ModuleTypeIndex{
-            last_struct_type_index +
-            (module_range_->get<uint8_t>() % existing_array_types)};
+        supertype = last_struct_type_index +
+                    (module_range_->get<uint8_t>() % existing_array_types);
         // TODO(14034): This could also be any sub type of the supertype's
         // element type.
         type = builder_->GetArrayType(supertype)->element_type();
       }
       ArrayType* array_fuz = zone_->New<ArrayType>(type, true);
       // TODO(14034): Generate some final types too.
-      ModuleTypeIndex index =
-          builder_->AddArrayType(array_fuz, false, supertype);
+      uint32_t index = builder_->AddArrayType(array_fuz, false, supertype);
       array_types.push_back(index);
     }
   }
@@ -3644,14 +3641,14 @@ class ModuleGen {
     for (int i = 0; i < num_params; ++i) {
       builder.AddParam(GetValueType<options>(module_range_, num_types));
     }
-    return builder.Get();
+    return builder.Build();
   }
 
   // Creates and adds random function signatures.
   void GenerateRandomFunctionSigs(
       const std::map<uint8_t, uint8_t>& explicit_rec_groups,
-      std::vector<ModuleTypeIndex>& function_signatures,
-      uint8_t& current_type_index, bool kIsFinal) {
+      std::vector<uint32_t>& function_signatures, uint8_t& current_type_index,
+      bool kIsFinal) {
     // Recursive groups consist of recursive types that came with the WasmGC
     // proposal.
     DCHECK_IMPLIES(!ShouldGenerateWasmGC(options), explicit_rec_groups.empty());
@@ -3662,8 +3659,7 @@ class ModuleGen {
                                           ? rec_group->second
                                           : current_type_index;
       FunctionSig* sig = GenerateSig(kFunctionSig, current_rec_group_end + 1);
-      ModuleTypeIndex signature_index =
-          builder_->ForceAddSignature(sig, kIsFinal);
+      uint32_t signature_index = builder_->ForceAddSignature(sig, kIsFinal);
       function_signatures.push_back(signature_index);
     }
   }
@@ -3677,8 +3673,8 @@ class ModuleGen {
 
   // Adds the "wasm:js-string" imports to the module.
   StringImports AddImportedStringImports() {
-    static constexpr ModuleTypeIndex kArrayI8{0};
-    static constexpr ModuleTypeIndex kArrayI16{1};
+    static constexpr uint32_t kArrayI8 = 0;
+    static constexpr uint32_t kArrayI16 = 1;
     StringImports strings;
     strings.array_i8 = kArrayI8;
     strings.array_i16 = kArrayI16;
@@ -3756,8 +3752,8 @@ class ModuleGen {
   }
 
   // Creates and adds random tables.
-  void GenerateRandomTables(const std::vector<ModuleTypeIndex>& array_types,
-                            const std::vector<ModuleTypeIndex>& struct_types) {
+  void GenerateRandomTables(const std::vector<uint32_t>& array_types,
+                            const std::vector<uint32_t>& struct_types) {
     int num_tables = module_range_->get<uint8_t>() % kMaxTables + 1;
     for (int i = 0; i < num_tables; i++) {
       uint32_t min_size = i == 0
@@ -3806,8 +3802,8 @@ class ModuleGen {
 
   // Creates and adds random globals.
   std::tuple<std::vector<ValueType>, std::vector<uint8_t>>
-  GenerateRandomGlobals(const std::vector<ModuleTypeIndex>& array_types,
-                        const std::vector<ModuleTypeIndex>& struct_types) {
+  GenerateRandomGlobals(const std::vector<uint32_t>& array_types,
+                        const std::vector<uint32_t>& struct_types) {
     int num_globals = module_range_->get<uint8_t>() % (kMaxGlobals + 1);
     std::vector<ValueType> globals;
     std::vector<uint8_t> mutable_globals;
@@ -3839,10 +3835,12 @@ class ModuleGen {
   const uint16_t num_types_;
 };
 
-WasmInitExpr GenerateStructNewInitExpr(
-    Zone* zone, DataRange& range, WasmModuleBuilder* builder,
-    ModuleTypeIndex index, const std::vector<ModuleTypeIndex>& structs,
-    const std::vector<ModuleTypeIndex>& arrays, uint32_t recursion_depth) {
+WasmInitExpr GenerateStructNewInitExpr(Zone* zone, DataRange& range,
+                                       WasmModuleBuilder* builder,
+                                       uint32_t index,
+                                       const std::vector<uint32_t>& structs,
+                                       const std::vector<uint32_t>& arrays,
+                                       uint32_t recursion_depth) {
   const StructType* struct_type = builder->GetStructType(index);
   bool use_new_default =
       std::all_of(struct_type->fields().begin(), struct_type->fields().end(),
@@ -3865,10 +3863,9 @@ WasmInitExpr GenerateStructNewInitExpr(
 }
 
 WasmInitExpr GenerateArrayInitExpr(Zone* zone, DataRange& range,
-                                   WasmModuleBuilder* builder,
-                                   ModuleTypeIndex index,
-                                   const std::vector<ModuleTypeIndex>& structs,
-                                   const std::vector<ModuleTypeIndex>& arrays,
+                                   WasmModuleBuilder* builder, uint32_t index,
+                                   const std::vector<uint32_t>& structs,
+                                   const std::vector<uint32_t>& arrays,
                                    uint32_t recursion_depth) {
   constexpr int kMaxArrayLength = 20;
   uint8_t choice = range.get<uint8_t>() % 3;
@@ -3904,8 +3901,8 @@ WasmInitExpr GenerateArrayInitExpr(Zone* zone, DataRange& range,
 
 WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
                               WasmModuleBuilder* builder, ValueType type,
-                              const std::vector<ModuleTypeIndex>& structs,
-                              const std::vector<ModuleTypeIndex>& arrays,
+                              const std::vector<uint32_t>& structs,
+                              const std::vector<uint32_t>& arrays,
                               uint32_t recursion_depth) {
   switch (type.kind()) {
     case kI8:
@@ -3969,7 +3966,6 @@ WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
                                recursion_depth + 1));
       }
     }
-    case kF16:
     case kF32:
       return WasmInitExpr(0.0f);
     case kF64:
@@ -3998,8 +3994,7 @@ WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
     case kRef: {
       switch (type.heap_representation()) {
         case HeapType::kStruct: {
-          ModuleTypeIndex index =
-              structs[range.get<uint8_t>() % structs.size()];
+          uint32_t index = structs[range.get<uint8_t>() % structs.size()];
           return GenerateStructNewInitExpr(zone, range, builder, index, structs,
                                            arrays, recursion_depth);
         }
@@ -4046,7 +4041,7 @@ WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
               zone, GenerateInitExpr(zone, range, builder, kWasmI32, structs,
                                      arrays, recursion_depth + 1));
         case HeapType::kArray: {
-          ModuleTypeIndex index = arrays[range.get<uint8_t>() % arrays.size()];
+          uint32_t index = arrays[range.get<uint8_t>() % arrays.size()];
           return GenerateArrayInitExpr(zone, range, builder, index, structs,
                                        arrays, recursion_depth);
         }
@@ -4055,7 +4050,7 @@ WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
         case HeapType::kNoExtern:
           UNREACHABLE();
         default: {
-          ModuleTypeIndex index = type.ref_index();
+          uint32_t index = type.ref_index();
           if (builder->IsStructType(index)) {
             return GenerateStructNewInitExpr(zone, range, builder, index,
                                              structs, arrays, recursion_depth);
@@ -4081,7 +4076,6 @@ WasmInitExpr GenerateInitExpr(Zone* zone, DataRange& range,
     }
     case kVoid:
     case kRtt:
-    case kTop:
     case kBottom:
       UNREACHABLE();
   }
@@ -4101,7 +4095,7 @@ base::Vector<uint8_t> GenerateRandomWasmModule(
   // uninteresting function bodies.
   DataRange module_range(data);
   DataRange functions_range = module_range.split();
-  std::vector<ModuleTypeIndex> function_signatures;
+  std::vector<uint32_t> function_signatures;
 
   static_assert(kMaxFunctions >= 1, "need min. 1 function");
   uint8_t num_functions = 1 + (module_range.get<uint8_t>() % kMaxFunctions);
@@ -4114,8 +4108,8 @@ base::Vector<uint8_t> GenerateRandomWasmModule(
   // Otherwise, for non-WasmGC we can't use structs/arrays.
   uint8_t num_structs = 0;
   uint8_t num_arrays = 0;
-  std::vector<ModuleTypeIndex> array_types;
-  std::vector<ModuleTypeIndex> struct_types;
+  std::vector<uint32_t> array_types;
+  std::vector<uint32_t> struct_types;
 
   // In case of WasmGC expressions:
   // We always add two default array types with mutable i8 and i16 elements,
@@ -4148,8 +4142,8 @@ base::Vector<uint8_t> GenerateRandomWasmModule(
         kNumDefaultArrayTypesForWasmGC);
 
     // Add default array types.
-    static constexpr ModuleTypeIndex kArrayI8{0};
-    static constexpr ModuleTypeIndex kArrayI16{1};
+    static constexpr uint32_t kArrayI8 = 0;
+    static constexpr uint32_t kArrayI16 = 1;
     {
       ArrayType* a8 = zone->New<ArrayType>(kWasmI8, 1);
       CHECK_EQ(kArrayI8, builder.AddArrayType(a8, true, kNoSuperType));
@@ -4158,7 +4152,7 @@ base::Vector<uint8_t> GenerateRandomWasmModule(
       CHECK_EQ(kArrayI16, builder.AddArrayType(a16, true, kNoSuperType));
       array_types.push_back(kArrayI16);
     }
-    static_assert(kNumDefaultArrayTypesForWasmGC == kArrayI16.index + 1);
+    static_assert(kNumDefaultArrayTypesForWasmGC == kArrayI16 + 1);
     current_type_index = kNumDefaultArrayTypesForWasmGC;
 
     // Add randomly generated structs.
@@ -4266,9 +4260,9 @@ base::Vector<uint8_t> GenerateWasmModuleForInitExpressions(
   WasmModuleBuilder builder(zone);
 
   DataRange module_range(data);
-  std::vector<ModuleTypeIndex> function_signatures;
-  std::vector<ModuleTypeIndex> array_types;
-  std::vector<ModuleTypeIndex> struct_types;
+  std::vector<uint32_t> function_signatures;
+  std::vector<uint32_t> array_types;
+  std::vector<uint32_t> struct_types;
 
   int num_globals = 1 + module_range.get<uint8_t>() % (kMaxGlobals + 1);
 
@@ -4286,13 +4280,12 @@ base::Vector<uint8_t> GenerateWasmModuleForInitExpressions(
   // Add random-generated types.
   uint8_t last_struct_type = current_type_index + num_structs;
   for (; current_type_index < last_struct_type; current_type_index++) {
-    ModuleTypeIndex supertype = kNoSuperType;
+    uint32_t supertype = kNoSuperType;
     uint8_t num_fields = module_range.get<uint8_t>() % (kMaxStructFields + 1);
 
-    uint32_t existing_struct_types = current_type_index;
+    uint8_t existing_struct_types = current_type_index;
     if (existing_struct_types > 0 && module_range.get<bool>()) {
-      supertype =
-          ModuleTypeIndex{module_range.get<uint8_t>() % existing_struct_types};
+      supertype = module_range.get<uint8_t>() % existing_struct_types;
       num_fields += builder.GetStructType(supertype)->field_count();
     }
     StructType::Builder struct_builder(zone, num_fields);
@@ -4315,7 +4308,7 @@ base::Vector<uint8_t> GenerateWasmModuleForInitExpressions(
       struct_builder.AddField(type, mutability);
     }
     StructType* struct_fuz = struct_builder.Build();
-    ModuleTypeIndex index = builder.AddStructType(struct_fuz, false, supertype);
+    uint32_t index = builder.AddStructType(struct_fuz, false, supertype);
     struct_types.push_back(index);
   }
 
@@ -4323,16 +4316,15 @@ base::Vector<uint8_t> GenerateWasmModuleForInitExpressions(
     ValueType type = GetValueTypeHelper<options>(
         &module_range, current_type_index, current_type_index,
         kIncludeNumericTypes, kIncludePackedTypes, kExcludeSomeGenerics);
-    ModuleTypeIndex supertype = kNoSuperType;
+    uint32_t supertype = kNoSuperType;
     if (current_type_index > last_struct_type && module_range.get<bool>()) {
-      uint32_t existing_array_types = current_type_index - last_struct_type;
-      supertype =
-          ModuleTypeIndex{last_struct_type +
-                          (module_range.get<uint8_t>() % existing_array_types)};
+      uint8_t existing_array_types = current_type_index - last_struct_type;
+      supertype = last_struct_type +
+                  (module_range.get<uint8_t>() % existing_array_types);
       type = builder.GetArrayType(supertype)->element_type();
     }
     ArrayType* array_fuz = zone->New<ArrayType>(type, true);
-    ModuleTypeIndex index = builder.AddArrayType(array_fuz, false, supertype);
+    uint32_t index = builder.AddArrayType(array_fuz, false, supertype);
     array_types.push_back(index);
   }
 
@@ -4349,8 +4341,8 @@ base::Vector<uint8_t> GenerateWasmModuleForInitExpressions(
     // used to compare against the initializer value of the global.
     FunctionSig::Builder sig_builder(zone, 1, 0);
     sig_builder.AddReturn(return_type);
-    ModuleTypeIndex signature_index =
-        builder.ForceAddSignature(sig_builder.Get(), kIsFinal);
+    uint32_t signature_index =
+        builder.ForceAddSignature(sig_builder.Build(), kIsFinal);
     function_signatures.push_back(signature_index);
   }
 
@@ -4409,19 +4401,11 @@ bool HasSameReturns(const FunctionSig* a, const FunctionSig* b) {
 template <WasmModuleGenerationOptions options>
 void EmitDeoptAndReturnValues(BodyGen<options> gen_body, WasmFunctionBuilder* f,
                               const FunctionSig* target_sig,
-                              ModuleTypeIndex target_sig_index,
-                              uint32_t global_index, uint32_t table_index,
-                              DataRange* data) {
-  base::Vector<const ValueType> return_types = f->signature()->returns();
-  // Split the return types randomly and generate some values before the
-  // deopting call and some afterwards. (This makes sure that we have deopts
-  // where there are values on the wasm value stack which are not used by the
-  // deopting call itself.)
-  uint32_t returns_split = data->get<uint8_t>() % (return_types.size() + 1);
-  if (returns_split) {
-    gen_body.Generate(return_types.SubVector(0, returns_split), data);
-  }
-  gen_body.Generate(target_sig->parameters(), data);
+                              uint32_t target_sig_index, uint32_t global_index,
+                              uint32_t table_index, DataRange* data) {
+  gen_body.Generate(base::VectorOf(target_sig->parameters().begin(),
+                                   target_sig->parameters().size()),
+                    data);
   f->EmitWithU32V(kExprGlobalGet, global_index);
   // Tail calls can only be emitted if the return types match.
   bool same_returns = HasSameReturns(target_sig, f->signature());
@@ -4456,8 +4440,11 @@ void EmitDeoptAndReturnValues(BodyGen<options> gen_body, WasmFunctionBuilder* f,
     default:
       UNREACHABLE();
   }
-  gen_body.ConsumeAndGenerate(target_sig->returns(),
-                              return_types.SubVectorFrom(returns_split), data);
+  gen_body.ConsumeAndGenerate(base::VectorOf(target_sig->returns().begin(),
+                                             target_sig->returns().size()),
+                              base::VectorOf(f->signature()->returns().begin(),
+                                             f->signature()->return_count()),
+                              data);
 }
 
 template <WasmModuleGenerationOptions options>
@@ -4467,15 +4454,9 @@ void EmitCallAndReturnValues(BodyGen<options> gen_body, WasmFunctionBuilder* f,
   const FunctionSig* callee_sig = callee->signature();
   uint32_t callee_index =
       callee->func_index() + gen_body.NumImportedFunctions();
-
-  base::Vector<const ValueType> return_types = f->signature()->returns();
-  // Split the return types randomly and generate some values before the
-  // deopting call and some afterwards to create more interesting test cases.
-  uint32_t returns_split = data->get<uint8_t>() % (return_types.size() + 1);
-  if (returns_split) {
-    gen_body.Generate(return_types.SubVector(0, returns_split), data);
-  }
-  gen_body.Generate(callee_sig->parameters(), data);
+  gen_body.Generate(base::VectorOf(callee_sig->parameters().begin(),
+                                   callee_sig->parameters().size()),
+                    data);
   // Tail calls can only be emitted if the return types match.
   bool same_returns = HasSameReturns(callee_sig, f->signature());
   size_t option_count = (same_returns + 1) * 3;
@@ -4511,8 +4492,11 @@ void EmitCallAndReturnValues(BodyGen<options> gen_body, WasmFunctionBuilder* f,
     default:
       UNREACHABLE();
   }
-  gen_body.ConsumeAndGenerate(callee_sig->returns(),
-                              return_types.SubVectorFrom(returns_split), data);
+  gen_body.ConsumeAndGenerate(base::VectorOf(callee_sig->returns().begin(),
+                                             callee_sig->returns().size()),
+                              base::VectorOf(f->signature()->returns().begin(),
+                                             f->signature()->return_count()),
+                              data);
 }
 }  // anonymous namespace
 
@@ -4525,9 +4509,9 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
   WasmModuleBuilder builder(zone);
 
   DataRange range(data);
-  std::vector<ModuleTypeIndex> function_signatures;
-  std::vector<ModuleTypeIndex> array_types;
-  std::vector<ModuleTypeIndex> struct_types;
+  std::vector<uint32_t> function_signatures;
+  std::vector<uint32_t> array_types;
+  std::vector<uint32_t> struct_types;
 
   const int kMaxCallTargets = 5;
   const int kMaxInlinees = 3;
@@ -4562,8 +4546,8 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
   std::map<uint8_t, uint8_t> explicit_rec_groups =
       gen_module.GenerateRandomRecursiveGroups(kNumDefaultArrayTypesForWasmGC);
   // Add default array types.
-  static constexpr ModuleTypeIndex kArrayI8{0};
-  static constexpr ModuleTypeIndex kArrayI16{1};
+  static constexpr uint32_t kArrayI8 = 0;
+  static constexpr uint32_t kArrayI16 = 1;
   {
     ArrayType* a8 = zone->New<ArrayType>(kWasmI8, 1);
     CHECK_EQ(kArrayI8, builder.AddArrayType(a8, true, kNoSuperType));
@@ -4572,7 +4556,7 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
     CHECK_EQ(kArrayI16, builder.AddArrayType(a16, true, kNoSuperType));
     array_types.push_back(kArrayI16);
   }
-  static_assert(kNumDefaultArrayTypesForWasmGC == kArrayI16.index + 1);
+  static_assert(kNumDefaultArrayTypesForWasmGC == kArrayI16 + 1);
   gen_module.GenerateRandomStructs(explicit_rec_groups, struct_types,
                                    current_type_index,
                                    kNumDefaultArrayTypesForWasmGC);
@@ -4588,8 +4572,7 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
   const FunctionSig* target_sig = CreateSignature(
       builder.zone(), base::VectorOf(GenerateTypes<options>(&range, num_types)),
       base::VectorOf(return_types));
-  ModuleTypeIndex target_sig_index =
-      builder.ForceAddSignature(target_sig, kIsFinal);
+  uint32_t target_sig_index = builder.ForceAddSignature(target_sig, kIsFinal);
 
   for (int i = 0; i < num_call_targets; ++i) {
     // Simplification: All call targets of a call_ref / call_indirect have the
@@ -4618,7 +4601,7 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
       builder.zone(), base::VectorOf({kWasmI32}), base::VectorOf({kWasmI32}));
   function_signatures.push_back(builder.ForceAddSignature(main_sig, kIsFinal));
 
-  DCHECK_EQ(function_signatures.back().index,
+  DCHECK_EQ(function_signatures.back(),
             num_structs + num_arrays + num_signatures - 1);
 
   // This needs to be done after the signatures are added.
@@ -4629,7 +4612,6 @@ base::Vector<uint8_t> GenerateWasmModuleForDeopt(
   // Add functions to module.
   std::vector<WasmFunctionBuilder*> functions;
   DCHECK_EQ(num_functions, function_signatures.size());
-  functions.reserve(num_functions);
   for (uint8_t i = 0; i < num_functions; i++) {
     functions.push_back(builder.AddFunction(function_signatures[i]));
   }

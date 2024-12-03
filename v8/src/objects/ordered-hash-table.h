@@ -262,6 +262,8 @@ class OrderedHashTable : public FixedArray {
     return set(RemovedHolesIndex() + index, Smi::FromInt(removed_index));
   }
 
+  OBJECT_CONSTRUCTORS(OrderedHashTable, FixedArray);
+
  private:
   friend class OrderedNameDictionaryHandler;
 };
@@ -296,6 +298,8 @@ class V8_EXPORT_PRIVATE OrderedHashSet
   static inline Handle<Map> GetMap(ReadOnlyRoots roots);
   static inline bool Is(DirectHandle<HeapObject> table);
   static const int kPrefixSize = 0;
+
+  OBJECT_CONSTRUCTORS(OrderedHashSet, OrderedHashTable<OrderedHashSet, 1>);
 };
 
 class V8_EXPORT_PRIVATE OrderedHashMap
@@ -340,6 +344,8 @@ class V8_EXPORT_PRIVATE OrderedHashMap
 
   static const int kValueOffset = 1;
   static const int kPrefixSize = 0;
+
+  OBJECT_CONSTRUCTORS(OrderedHashMap, OrderedHashTable<OrderedHashMap, 2>);
 };
 
 // This is similar to the OrderedHashTable, except for the memory
@@ -651,8 +657,7 @@ class SmallOrderedHashSet : public SmallOrderedHashTable<SmallOrderedHashSet> {
   // table is created. The original |table| is returned if there is
   // capacity to store |value| otherwise the new table is returned.
   V8_EXPORT_PRIVATE static MaybeHandle<SmallOrderedHashSet> Add(
-      Isolate* isolate, Handle<SmallOrderedHashSet> table,
-      DirectHandle<Object> key);
+      Isolate* isolate, Handle<SmallOrderedHashSet> table, Handle<Object> key);
   V8_EXPORT_PRIVATE static bool Delete(Isolate* isolate,
                                        Tagged<SmallOrderedHashSet> table,
                                        Tagged<Object> key);
@@ -684,8 +689,8 @@ class SmallOrderedHashMap : public SmallOrderedHashTable<SmallOrderedHashMap> {
   // table is created. The original |table| is returned if there is
   // capacity to store |value| otherwise the new table is returned.
   V8_EXPORT_PRIVATE static MaybeHandle<SmallOrderedHashMap> Add(
-      Isolate* isolate, Handle<SmallOrderedHashMap> table,
-      DirectHandle<Object> key, DirectHandle<Object> value);
+      Isolate* isolate, Handle<SmallOrderedHashMap> table, Handle<Object> key,
+      DirectHandle<Object> value);
   V8_EXPORT_PRIVATE static bool Delete(Isolate* isolate,
                                        Tagged<SmallOrderedHashMap> table,
                                        Tagged<Object> key);
@@ -731,7 +736,7 @@ class V8_EXPORT_PRIVATE OrderedHashMapHandler
     : public OrderedHashTableHandler<SmallOrderedHashMap, OrderedHashMap> {
  public:
   static MaybeHandle<HeapObject> Add(Isolate* isolate, Handle<HeapObject> table,
-                                     DirectHandle<Object> key,
+                                     Handle<Object> key,
                                      DirectHandle<Object> value);
   static MaybeHandle<OrderedHashMap> AdjustRepresentation(
       Isolate* isolate, DirectHandle<SmallOrderedHashMap> table);
@@ -744,7 +749,7 @@ class V8_EXPORT_PRIVATE OrderedHashSetHandler
     : public OrderedHashTableHandler<SmallOrderedHashSet, OrderedHashSet> {
  public:
   static MaybeHandle<HeapObject> Add(Isolate* isolate, Handle<HeapObject> table,
-                                     DirectHandle<Object> key);
+                                     Handle<Object> key);
   static MaybeHandle<OrderedHashSet> AdjustRepresentation(
       Isolate* isolate, DirectHandle<SmallOrderedHashSet> table);
 };
@@ -820,6 +825,9 @@ class V8_EXPORT_PRIVATE OrderedNameDictionary
   static constexpr int HashIndex() { return PrefixIndex(); }
 
   static const bool kIsOrderedDictionaryType = true;
+
+  OBJECT_CONSTRUCTORS(OrderedNameDictionary,
+                      OrderedHashTable<OrderedNameDictionary, 3>);
 };
 
 extern template class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)

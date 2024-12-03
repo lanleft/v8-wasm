@@ -32,7 +32,7 @@ extern runtime WasmThrowDataViewDetachedError(Context, Smi): never;
 extern runtime WasmThrow(Context, Object, FixedArray): JSAny;
 extern runtime WasmReThrow(Context, Object): JSAny;
 extern runtime WasmTriggerTierUp(Context, WasmTrustedInstanceData): JSAny;
-extern runtime WasmStackGuard(Context, Smi): JSAny;
+extern runtime WasmStackGuard(Context): JSAny;
 extern runtime ThrowWasmStackOverflow(Context): JSAny;
 extern runtime WasmTraceMemory(Context, Smi): JSAny;
 extern runtime WasmTraceEnter(Context): JSAny;
@@ -76,19 +76,12 @@ extern runtime WasmStringViewWtf8Slice(Context, ByteArray, Number, Number):
 extern runtime WasmStringFromCodePoint(Context, Number): String;
 extern runtime WasmStringHash(NoContext, String): Smi;
 extern runtime WasmSubstring(Context, String, Smi, Smi): String;
-extern runtime WasmJSToWasmObject(Context, JSAny, Smi): JSAny;
+extern runtime WasmJSToWasmObject(Context, JSAny, Smi, Smi): JSAny;
 extern runtime WasmLiftoffDeoptFinish(NoContext, WasmTrustedInstanceData):
     Undefined;
 
 extern runtime PropagateException(NoContext): JSAny;
 }
-
-extern operator '.wasm_exported_function_data' macro
-    LoadSharedFunctionInfoWasmExportedFunctionData(SharedFunctionInfo):
-        WasmExportedFunctionData;
-extern operator '.wasm_js_function_data' macro
-    LoadSharedFunctionInfoWasmJSFunctionData(SharedFunctionInfo):
-        WasmJSFunctionData;
 
 namespace unsafe {
 extern macro Allocate(intptr): HeapObject;
@@ -107,8 +100,6 @@ const kAnyType: constexpr int31
     generates 'wasm::kWasmAnyRef.raw_bit_field()';
 const kMaxPolymorphism:
     constexpr int31 generates 'wasm::kMaxPolymorphism';
-const kFixedFrameSizeAboveFp: constexpr int32
-    generates 'CommonFrameConstants::kFixedFrameSizeAboveFp';
 
 extern macro WasmBuiltinsAssembler::LoadTrustedDataFromInstance(
     WasmInstanceObject): WasmTrustedInstanceData;
@@ -136,9 +127,6 @@ extern macro WasmBuiltinsAssembler::StringToFloat64(String): float64;
 // This doesn't return, but the return type {never} confuses the CSA graph.
 extern macro WasmBuiltinsAssembler::SignatureCheckFail(
     WasmInternalFunction, uintptr): Smi;
-
-extern macro SwitchToTheCentralStackIfNeeded(): RawPtr;
-extern macro SwitchFromTheCentralStack(RawPtr): void;
 
 macro LoadContextFromFrame(): NativeContext {
   return LoadContextFromInstanceData(LoadInstanceDataFromFrame());
@@ -437,23 +425,14 @@ builtin WasmThrow(tag: Object, values: FixedArray): JSAny {
 }
 
 builtin WasmRethrow(exception: Object): JSAny {
-  // print exception 
-  Print('==== builtin WasmRethrow ====\n');
-  Print('exception: ', exception);
-  // breakpoint here
-  // Print('changing exception to kWasmNull');
-  // exception = kWasmNull;
   if (exception == Null) tail ThrowWasmTrapRethrowNull();
   tail runtime::WasmReThrow(LoadContextFromFrame(), exception);
-  // tail runtime::WasmReThrow(LoadContextFromFrame(), kWasmNull);
 }
 
 // We need this for frames that do not have the instance in the parameters.
 // Currently, this is CapiCallWrapper frames.
 builtin WasmRethrowExplicitContext(
     exception: Object, explicitContext: Context): JSAny {
-  Print('==== builtin WasmRethrowExplicitContext ====\n');
-  Print('exception: ', exception);
   if (exception == Null) tail ThrowWasmTrapRethrowNull();
   tail runtime::WasmReThrow(explicitContext, exception);
 }
@@ -463,18 +442,8 @@ builtin WasmTriggerTierUp(): JSAny {
   tail runtime::WasmTriggerTierUp(LoadContextFromFrame(), trustedData);
 }
 
-extern builtin WasmHandleStackOverflow(RawPtr, uint32): JSAny;
-
-// {paramSlotsSize} is the size of the incoming stack parameters of the
-// currently-executing function, which have to be copied along with its
-// stack frame if the stack needs to be grown.
-builtin WasmGrowableStackGuard(paramSlotsSize: intptr): JSAny {
-  tail WasmHandleStackOverflow(
-      LoadParentFramePointer() + paramSlotsSize + kFixedFrameSizeAboveFp, 0);
-}
-
 builtin WasmStackGuard(): JSAny {
-  tail runtime::WasmStackGuard(LoadContextFromFrame(), SmiConstant(0));
+  tail runtime::WasmStackGuard(LoadContextFromFrame());
 }
 
 builtin WasmStackOverflow(): JSAny {
@@ -655,17 +624,16 @@ builtin WasmI64AtomicWait(
 // This can lead to incorrect inlining decisions.
 macro UpdateCallRefOrIndirectIC(
     vector: FixedArray, index: intptr, target: Object): void {
-  const firstSlot = vector.objects[index];
-  const secondSlot = vector.objects[index + 1];
-  if (TaggedEqual(firstSlot, target)) {
+  const value = vector.objects[index];
+  if (TaggedEqual(value, target)) {
     // Monomorphic hit. Check for this case first to maximize its performance.
-    const count = UnsafeCast<Smi>(secondSlot) + SmiConstant(1);
+    const count = UnsafeCast<Smi>(vector.objects[index + 1]) + SmiConstant(1);
     vector.objects[index + 1] = count;
     return;
   }
   // Check for polymorphic hit; its performance is second-most-important.
-  if (Is<FixedArray>(firstSlot)) {
-    const entries = UnsafeCast<FixedArray>(firstSlot);
+  if (Is<FixedArray>(value)) {
+    const entries = UnsafeCast<FixedArray>(value);
     for (let i: intptr = 0; i < entries.length_intptr; i += 2) {
       if (TaggedEqual(entries.objects[i], target)) {
         // Polymorphic hit.
@@ -676,20 +644,14 @@ macro UpdateCallRefOrIndirectIC(
     }
   }
   // All other cases are some sort of miss.
-  if (TaggedEqual(secondSlot, SmiConstant(0))) {
+  if (TaggedEqual(value, SmiConstant(0))) {
     // Was uninitialized.
-    // Note that we inspect the second slot (the call count, see feedback vector
-    // layout in {TransitiveTypeFeedbackProcessor::ProcessFunction}) for
-    // determining whether the entry is uninitialized, not the first slot (the
-    // call target), since the target may genuinely be zero for `call_indirect`
-    // if the `WasmDispatchTable` happens to start at an address with many zero
-    // least significant bits.
-    dcheck(TaggedEqual(firstSlot, SmiConstant(0)));
+    dcheck(TaggedEqual(vector.objects[index + 1], SmiConstant(0)));
     vector.objects[index] = target;
     vector.objects[index + 1] = SmiConstant(1);
-  } else if (Is<FixedArray>(firstSlot)) {
+  } else if (Is<FixedArray>(value)) {
     // Polymorphic miss.
-    const entries = UnsafeCast<FixedArray>(firstSlot);
+    const entries = UnsafeCast<FixedArray>(value);
     const kMaxSlots = kMaxPolymorphism * 2;  // 2 slots per entry.
     if (entries.length == SmiConstant(kMaxSlots)) {
       // Polymorphic to megamorphic transition.
@@ -708,15 +670,15 @@ macro UpdateCallRefOrIndirectIC(
       newEntries.objects[newIndex + 1] = SmiConstant(1);
       vector.objects[index] = newEntries;
     }
-  } else if (firstSlot == ic::kMegamorphicSymbol) {
-    // The "ic::IsMegamorphic(firstSlot)" case doesn't need to do anything.
+  } else if (value == ic::kMegamorphicSymbol) {
+    // The "ic::IsMegamorphic(value)" case doesn't need to do anything.
   } else {
     // Monomorphic miss.
-    dcheck(Is<WasmFuncRef>(firstSlot) || Is<Smi>(firstSlot));
+    dcheck(Is<WasmFuncRef>(value) || Is<Smi>(value));
     const newEntries = UnsafeCast<FixedArray>(AllocateFixedArray(
         ElementsKind::PACKED_ELEMENTS, 4, AllocationFlag::kNone));
-    newEntries.objects[0] = firstSlot;
-    newEntries.objects[1] = secondSlot;
+    newEntries.objects[0] = value;
+    newEntries.objects[1] = vector.objects[index + 1];
     newEntries.objects[2] = target;
     newEntries.objects[3] = SmiConstant(1);
     vector.objects[index] = newEntries;
@@ -728,14 +690,14 @@ macro UpdateCallRefOrIndirectIC(
 
 // This is the return type of "CallRefIC" and "CallIndirectIC". The type is not
 // used anywhere else; Liftoff uses the two returned values directly.
-struct TargetAndImplicitArg {
-  target: WasmCodePointer;
-  implicit_arg: WasmTrustedInstanceData|WasmImportData;
+struct TargetAndRef {
+  target: RawPtr;
+  ref: WasmTrustedInstanceData|WasmApiFunctionRef;
 }
 
 builtin CallRefIC(
     vector: FixedArray, vectorIndex: int32, signatureHash: uintptr,
-    funcref: WasmFuncRef): TargetAndImplicitArg {
+    funcref: WasmFuncRef): TargetAndRef {
   dcheck(Is<WasmFuncRef>(funcref));
   UpdateCallRefOrIndirectIC(vector, Convert<intptr>(vectorIndex), funcref);
 
@@ -748,21 +710,17 @@ builtin CallRefIC(
   @ifnot(V8_ENABLE_SANDBOX) {
     dcheck(signatureHash == 0);  // Avoids "unused variable" warning.
   }
-  return TargetAndImplicitArg{
-    target: internal.call_target,
-    implicit_arg: internal.implicit_arg
-  };
+  return TargetAndRef{target: internal.call_target, ref: internal.ref};
 }
 
 builtin CallIndirectIC(
-    vector: FixedArray, vectorIndex: int32, target: WasmCodePointer,
-    implicitArg: WasmTrustedInstanceData|WasmImportData): TargetAndImplicitArg {
-  const truncatedTarget =
-      SmiTag(Signed(Convert<uintptr>(target) & kSmiMaxValue));
+    vector: FixedArray, vectorIndex: int32, target: RawPtr,
+    ref: WasmTrustedInstanceData|WasmApiFunctionRef): TargetAndRef {
+  const truncatedTarget = SmiTag(Signed(Unsigned(target) & kSmiMaxValue));
   UpdateCallRefOrIndirectIC(
       vector, Convert<intptr>(vectorIndex), truncatedTarget);
 
-  return TargetAndImplicitArg{target: target, implicit_arg: implicitArg};
+  return TargetAndRef{target: target, ref: ref};
 }
 
 extern macro TryHasOwnProperty(HeapObject, Map, InstanceType, Name): never
@@ -862,7 +820,6 @@ builtin ThrowWasmTrapNullDereference(): JSAny {
 }
 
 builtin ThrowWasmTrapIllegalCast(): JSAny {
-  Print('===ThrowWasmTrapIllegalCast===\n');
   tail WasmTrap(SmiConstant(MessageTemplate::kWasmTrapIllegalCast));
 }
 
@@ -1225,7 +1182,7 @@ builtin WasmStringAsWtf8(str: String): ByteArray {
 macro IsWtf8CodepointStart(view: ByteArray, pos: uint32): bool {
   // We're already at the start of a codepoint if the current byte
   // doesn't start with 0b10xxxxxx.
-  return (view.values[Convert<uintptr>(pos)] & 0xc0) != 0x80;
+  return (view.bytes[Convert<uintptr>(pos)] & 0xc0) != 0x80;
 }
 macro AlignWtf8PositionForward(view: ByteArray, pos: uint32): uint32 {
   const length = Unsigned(SmiToInt32(view.length));
@@ -1535,7 +1492,7 @@ builtin WasmAnyConvertExtern(externObject: JSAny): JSAny {
   const context = LoadContextFromInstanceData(trustedData);
 
   tail runtime::WasmJSToWasmObject(
-      context, externObject, SmiConstant(kAnyType));
+      context, externObject, SmiConstant(kAnyType), SmiConstant(0));
 }
 
 extern macro CallOrConstructBuiltinsAssembler::GetCompatibleReceiver(

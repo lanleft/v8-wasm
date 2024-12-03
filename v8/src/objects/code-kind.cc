@@ -26,7 +26,7 @@ const char* CodeKindToMarker(CodeKind kind) {
       return "^";
     case CodeKind::MAGLEV:
       return "+";
-    case CodeKind::TURBOFAN_JS:
+    case CodeKind::TURBOFAN:
       return "*";
     default:
       return "";

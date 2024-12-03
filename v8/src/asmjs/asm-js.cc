@@ -4,11 +4,10 @@
 
 #include "src/asmjs/asm-js.h"
 
-#include <optional>
-
 #include "src/asmjs/asm-names.h"
 #include "src/asmjs/asm-parser.h"
 #include "src/ast/ast.h"
+#include "src/base/optional.h"
 #include "src/base/platform/elapsed-timer.h"
 #include "src/base/vector.h"
 #include "src/codegen/compiler.h"
@@ -130,7 +129,8 @@ void Report(Handle<Script> script, int position, base::Vector<const char> text,
   DirectHandle<String> text_object =
       isolate->factory()->InternalizeUtf8String(text);
   DirectHandle<JSMessageObject> message = MessageHandler::MakeMessageObject(
-      isolate, message_template, &location, text_object);
+      isolate, message_template, &location, text_object,
+      Handle<FixedArray>::null());
   message->set_error_level(level);
   MessageHandler::ReportMessage(isolate, &location, message);
 }
@@ -235,7 +235,7 @@ UnoptimizedCompilationJob::Status AsmJsCompilationJob::ExecuteJobImpl() {
   Zone translate_zone(allocator_, ZONE_NAME);
 
   Utf16CharacterStream* stream = parse_info()->character_stream();
-  std::optional<AllowHandleDereference> allow_deref;
+  base::Optional<AllowHandleDereference> allow_deref;
   if (stream->can_access_heap()) {
     allow_deref.emplace();
   }
@@ -250,14 +250,6 @@ UnoptimizedCompilationJob::Status AsmJsCompilationJob::ExecuteJobImpl() {
   }
   module_ = compile_zone->New<wasm::ZoneBuffer>(compile_zone);
   parser.module_builder()->WriteTo(module_);
-  if (module_->size() > v8_flags.wasm_max_module_size) {
-    if (!v8_flags.suppress_asm_messages) {
-      ReportCompilationFailure(
-          parse_info(), parser.failure_location(),
-          "Module size exceeds engine's supported maximum");
-    }
-    return FAILED;
-  }
   asm_offsets_ = compile_zone->New<wasm::ZoneBuffer>(compile_zone);
   parser.module_builder()->WriteAsmJsOffsetTable(asm_offsets_);
   stdlib_uses_ = *parser.stdlib_uses();

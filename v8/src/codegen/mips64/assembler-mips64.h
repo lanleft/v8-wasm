@@ -150,10 +150,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // own buffer. Otherwise it takes ownership of the provided buffer.
   explicit Assembler(const AssemblerOptions&,
                      std::unique_ptr<AssemblerBuffer> = {});
-  // For compatibility with assemblers that require a zone.
-  Assembler(const MaybeAssemblerZone&, const AssemblerOptions& options,
-            std::unique_ptr<AssemblerBuffer> buffer = {})
-      : Assembler(options, std::move(buffer)) {}
 
   virtual ~Assembler() {}
 
@@ -288,12 +284,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   inline static void deserialization_set_target_internal_reference_at(
       Address pc, Address target,
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
-
-  // Read/modify the uint32 constant used at pc.
-  static inline uint32_t uint32_constant_at(Address pc, Address constant_pool);
-  static inline void set_uint32_constant_at(
-      Address pc, Address constant_pool, uint32_t new_constant,
-      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
 
   // Difference between address of current opcode and target address offset.
   static constexpr int kBranchPCOffset = kInstrSize;

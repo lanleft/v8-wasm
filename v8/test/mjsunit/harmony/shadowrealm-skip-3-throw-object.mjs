@@ -1,6 +1,2 @@
 export const foo = 'bar';
-
-function myFunc() {
-  throw { message: 'foobar' };
-}
-myFunc();
+throw { message: 'foobar' };

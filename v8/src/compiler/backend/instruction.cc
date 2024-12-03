@@ -16,9 +16,9 @@
 #include "src/compiler/backend/instruction-codes.h"
 #include "src/compiler/common-operator.h"
 #include "src/compiler/frame-states.h"
+#include "src/compiler/graph.h"
 #include "src/compiler/node.h"
 #include "src/compiler/schedule.h"
-#include "src/compiler/turbofan-graph.h"
 #include "src/compiler/turboshaft/graph.h"
 #include "src/compiler/turboshaft/loop-finder.h"
 #include "src/compiler/turboshaft/operations.h"
@@ -260,9 +260,6 @@ std::ostream& operator<<(std::ostream& os, const InstructionOperand& op) {
           break;
         case MachineRepresentation::kWord64:
           os << "|w64";
-          break;
-        case MachineRepresentation::kFloat16:
-          os << "|f16";
           break;
         case MachineRepresentation::kFloat32:
           os << "|f32";
@@ -604,17 +601,16 @@ Constant::Constant(RelocatablePtrConstantInfo info) {
   rmode_ = info.rmode();
 }
 
-IndirectHandle<HeapObject> Constant::ToHeapObject() const {
+Handle<HeapObject> Constant::ToHeapObject() const {
   DCHECK(kHeapObject == type() || kCompressedHeapObject == type());
-  IndirectHandle<HeapObject> value(
+  Handle<HeapObject> value(
       reinterpret_cast<Address*>(static_cast<intptr_t>(value_)));
   return value;
 }
 
-IndirectHandle<Code> Constant::ToCode() const {
+Handle<Code> Constant::ToCode() const {
   DCHECK_EQ(kHeapObject, type());
-  IndirectHandle<Code> value(
-      reinterpret_cast<Address*>(static_cast<intptr_t>(value_)));
+  Handle<Code> value(reinterpret_cast<Address*>(static_cast<intptr_t>(value_)));
   DCHECK(IsCode(*value));
   return value;
 }
@@ -1041,8 +1037,6 @@ static MachineRepresentation FilterRepresentation(MachineRepresentation rep) {
     case MachineRepresentation::kWord8:
     case MachineRepresentation::kWord16:
       return InstructionSequence::DefaultRepresentation();
-    case MachineRepresentation::kFloat16:
-      return MachineRepresentation::kFloat32;
     case MachineRepresentation::kWord32:
     case MachineRepresentation::kWord64:
     case MachineRepresentation::kTaggedSigned:
@@ -1225,7 +1219,7 @@ FrameStateDescriptor::FrameStateDescriptor(
     Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
     OutputFrameStateCombine state_combine, uint16_t parameters_count,
     uint16_t max_arguments, size_t locals_count, size_t stack_count,
-    MaybeIndirectHandle<SharedFunctionInfo> shared_info,
+    MaybeHandle<SharedFunctionInfo> shared_info,
     FrameStateDescriptor* outer_state, uint32_t wasm_liftoff_frame_size,
     uint32_t wasm_function_index)
     : type_(type),
@@ -1314,8 +1308,8 @@ JSToWasmFrameStateDescriptor::JSToWasmFrameStateDescriptor(
     Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
     OutputFrameStateCombine state_combine, uint16_t parameters_count,
     size_t locals_count, size_t stack_count,
-    MaybeIndirectHandle<SharedFunctionInfo> shared_info,
-    FrameStateDescriptor* outer_state, const wasm::CanonicalSig* wasm_signature)
+    MaybeHandle<SharedFunctionInfo> shared_info,
+    FrameStateDescriptor* outer_state, const wasm::FunctionSig* wasm_signature)
     : FrameStateDescriptor(zone, type, bailout_id, state_combine,
                            parameters_count, 0, locals_count, stack_count,
                            shared_info, outer_state),

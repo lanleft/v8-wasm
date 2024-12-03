@@ -5,12 +5,12 @@
 #ifndef V8_TORQUE_TYPE_VISITOR_H_
 #define V8_TORQUE_TYPE_VISITOR_H_
 
-#include <optional>
-
 #include "src/torque/ast.h"
 #include "src/torque/types.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 class Scope;
 
@@ -41,7 +41,7 @@ class TypeVisitor {
   friend class TypeOracle;
   static const Type* ComputeType(
       TypeDeclaration* decl,
-      MaybeSpecializationKey specialized_from = std::nullopt,
+      MaybeSpecializationKey specialized_from = base::nullopt,
       Scope* specialization_requester = nullptr);
   static const AbstractType* ComputeType(
       AbstractTypeDeclaration* decl, MaybeSpecializationKey specialized_from);
@@ -55,6 +55,8 @@ class TypeVisitor {
                                       MaybeSpecializationKey specialized_from);
 };
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TORQUE_TYPE_VISITOR_H_

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#if V8_TARGET_ARCH_S390X
+#if V8_TARGET_ARCH_S390
 
 #include "src/execution/s390/frame-constants-s390.h"
 
@@ -37,4 +37,4 @@ intptr_t MaglevFrame::StackGuardFrameSize(int register_input_count) {
 }  // namespace internal
 }  // namespace v8
 
-#endif  // V8_TARGET_ARCH_S390X
+#endif  // V8_TARGET_ARCH_S390

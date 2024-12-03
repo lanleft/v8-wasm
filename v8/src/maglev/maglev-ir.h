@@ -5,8 +5,6 @@
 #ifndef V8_MAGLEV_MAGLEV_IR_H_
 #define V8_MAGLEV_MAGLEV_IR_H_
 
-#include <optional>
-
 #include "src/base/bit-field.h"
 #include "src/base/bits.h"
 #include "src/base/bounds.h"
@@ -142,8 +140,7 @@ class ExceptionHandlerInfo;
   V(Uint32Constant)                 \
   V(RootConstant)                   \
   V(SmiConstant)                    \
-  V(TaggedIndexConstant)            \
-  V(TrustedConstant)
+  V(TaggedIndexConstant)
 
 #define INLINE_BUILTIN_NODE_LIST(V) \
   V(BuiltinStringFromCharCode)      \
@@ -168,6 +165,7 @@ class ExceptionHandlerInfo;
   V(Construct)                                      \
   V(CheckConstructResult)                           \
   V(CheckDerivedConstructResult)                    \
+  V(CheckNotHole)                                   \
   V(ConstructWithSpread)                            \
   V(ConvertReceiver)                                \
   V(ConvertHoleToUndefined)                         \
@@ -181,7 +179,6 @@ class ExceptionHandlerInfo;
   V(CreateRegExpLiteral)                            \
   V(DeleteProperty)                                 \
   V(EnsureWritableFastElements)                     \
-  V(ExtendPropertiesBackingStore)                   \
   V(InlinedAllocation)                              \
   V(ForInPrepare)                                   \
   V(ForInNext)                                      \
@@ -192,8 +189,6 @@ class ExceptionHandlerInfo;
   V(HasInPrototypeChain)                            \
   V(InitialValue)                                   \
   V(LoadTaggedField)                                \
-  V(LoadTaggedFieldForProperty)                     \
-  V(LoadTaggedFieldForContextSlot)                  \
   V(LoadDoubleField)                                \
   V(LoadTaggedFieldByFieldIndex)                    \
   V(LoadFixedArrayElement)                          \
@@ -291,64 +286,61 @@ class ExceptionHandlerInfo;
   V(ConstantGapMove)          \
   V(GapMove)
 
-#define NODE_LIST(V)                          \
-  V(AssertInt32)                              \
-  V(CheckConstTrackingLetCell)                \
-  V(CheckConstTrackingLetCellTagged)          \
-  V(CheckDynamicValue)                        \
-  V(CheckInt32IsSmi)                          \
-  V(CheckUint32IsSmi)                         \
-  V(CheckHoleyFloat64IsSmi)                   \
-  V(CheckHeapObject)                          \
-  V(CheckInt32Condition)                      \
-  V(CheckCacheIndicesNotCleared)              \
-  V(CheckFloat64IsNan)                        \
-  V(CheckJSDataViewBounds)                    \
-  V(CheckTypedArrayBounds)                    \
-  V(CheckTypedArrayNotDetached)               \
-  V(CheckMaps)                                \
-  V(CheckMapsWithMigration)                   \
-  V(CheckDetectableCallable)                  \
-  V(CheckNotHole)                             \
-  V(CheckNumber)                              \
-  V(CheckSmi)                                 \
-  V(CheckString)                              \
-  V(CheckSymbol)                              \
-  V(CheckValue)                               \
-  V(CheckValueEqualsInt32)                    \
-  V(CheckValueEqualsFloat64)                  \
-  V(CheckValueEqualsString)                   \
-  V(CheckInstanceType)                        \
-  V(Dead)                                     \
-  V(DebugBreak)                               \
-  V(FunctionEntryStackCheck)                  \
-  V(GeneratorStore)                           \
-  V(TryOnStackReplacement)                    \
-  V(StoreMap)                                 \
-  V(StoreDoubleField)                         \
-  V(StoreFixedArrayElementWithWriteBarrier)   \
-  V(StoreFixedArrayElementNoWriteBarrier)     \
-  V(StoreFixedDoubleArrayElement)             \
-  V(StoreFloat64)                             \
-  V(StoreIntTypedArrayElement)                \
-  V(StoreDoubleTypedArrayElement)             \
-  V(StoreSignedIntDataViewElement)            \
-  V(StoreDoubleDataViewElement)               \
-  V(StoreTaggedFieldNoWriteBarrier)           \
-  V(StoreTaggedFieldWithWriteBarrier)         \
-  V(StoreTrustedPointerFieldWithWriteBarrier) \
-  V(HandleNoHeapWritesInterrupt)              \
-  V(ReduceInterruptBudgetForLoop)             \
-  V(ReduceInterruptBudgetForReturn)           \
-  V(ThrowReferenceErrorIfHole)                \
-  V(ThrowSuperNotCalledIfHole)                \
-  V(ThrowSuperAlreadyCalledIfNotHole)         \
-  V(ThrowIfNotCallable)                       \
-  V(ThrowIfNotSuperConstructor)               \
-  V(TransitionElementsKind)                   \
-  V(TransitionElementsKindOrCheckMap)         \
-  V(SetContinuationPreservedEmbedderData)     \
-  GAP_MOVE_NODE_LIST(V)                       \
+#define NODE_LIST(V)                        \
+  V(AssertInt32)                            \
+  V(CheckConstTrackingLetCell)              \
+  V(CheckConstTrackingLetCellTagged)        \
+  V(CheckDynamicValue)                      \
+  V(CheckInt32IsSmi)                        \
+  V(CheckUint32IsSmi)                       \
+  V(CheckHoleyFloat64IsSmi)                 \
+  V(CheckHeapObject)                        \
+  V(CheckInt32Condition)                    \
+  V(CheckCacheIndicesNotCleared)            \
+  V(CheckFloat64IsNan)                      \
+  V(CheckJSDataViewBounds)                  \
+  V(CheckTypedArrayBounds)                  \
+  V(CheckTypedArrayNotDetached)             \
+  V(CheckMaps)                              \
+  V(CheckMapsWithMigration)                 \
+  V(CheckDetectableCallable)                \
+  V(CheckNumber)                            \
+  V(CheckSmi)                               \
+  V(CheckString)                            \
+  V(CheckSymbol)                            \
+  V(CheckValue)                             \
+  V(CheckValueEqualsInt32)                  \
+  V(CheckValueEqualsFloat64)                \
+  V(CheckValueEqualsString)                 \
+  V(CheckInstanceType)                      \
+  V(DebugBreak)                             \
+  V(FunctionEntryStackCheck)                \
+  V(GeneratorStore)                         \
+  V(TryOnStackReplacement)                  \
+  V(StoreMap)                               \
+  V(StoreDoubleField)                       \
+  V(StoreFixedArrayElementWithWriteBarrier) \
+  V(StoreFixedArrayElementNoWriteBarrier)   \
+  V(StoreFixedDoubleArrayElement)           \
+  V(StoreFloat64)                           \
+  V(StoreIntTypedArrayElement)              \
+  V(StoreDoubleTypedArrayElement)           \
+  V(StoreSignedIntDataViewElement)          \
+  V(StoreDoubleDataViewElement)             \
+  V(StoreTaggedFieldNoWriteBarrier)         \
+  V(StoreTaggedFieldWithWriteBarrier)       \
+  V(HandleNoHeapWritesInterrupt)            \
+  V(ReduceInterruptBudgetForLoop)           \
+  V(ReduceInterruptBudgetForReturn)         \
+  V(ThrowReferenceErrorIfHole)              \
+  V(ThrowSuperNotCalledIfHole)              \
+  V(ThrowSuperAlreadyCalledIfNotHole)       \
+  V(ThrowIfNotCallable)                     \
+  V(ThrowIfNotSuperConstructor)             \
+  V(TransitionElementsKind)                 \
+  V(TransitionElementsKindOrCheckMap)       \
+  V(SetContinuationPreservedEmbedderData)   \
+  GAP_MOVE_NODE_LIST(V)                     \
   VALUE_NODE_LIST(V)
 
 #define BRANCH_CONTROL_NODE_LIST(V) \
@@ -515,8 +507,7 @@ constexpr bool IsSimpleFieldStore(Opcode opcode) {
          opcode == Opcode::kUpdateJSArrayLength ||
          opcode == Opcode::kStoreFixedArrayElementWithWriteBarrier ||
          opcode == Opcode::kStoreFixedArrayElementNoWriteBarrier ||
-         opcode == Opcode::kStoreFixedDoubleArrayElement ||
-         opcode == Opcode::kStoreTrustedPointerFieldWithWriteBarrier;
+         opcode == Opcode::kStoreFixedDoubleArrayElement;
 }
 constexpr bool IsElementsArrayWrite(Opcode opcode) {
   return opcode == Opcode::kMaybeGrowFastElements ||
@@ -550,16 +541,6 @@ inline constexpr bool IsDoubleRepresentation(ValueRepresentation repr) {
          repr == ValueRepresentation::kHoleyFloat64;
 }
 
-inline constexpr bool IsZeroExtendedRepresentation(ValueRepresentation repr) {
-#if defined(V8_TARGET_ARCH_RISCV64)
-  // on RISC-V int32 are always sign-extended
-  return (repr == ValueRepresentation::kUint32);
-#else
-  return (repr == ValueRepresentation::kUint32 ||
-          repr == ValueRepresentation::kInt32);
-#endif
-}
-
 /*
  * The intersection (using `&`) of any two NodeTypes must be a valid NodeType
  * (possibly "kUnknown", modulo heap object bit).
@@ -570,35 +551,29 @@ inline constexpr bool IsZeroExtendedRepresentation(ValueRepresentation repr) {
  * Here is a diagram of the relations between the types, where (*) means that
  * they have the kAnyHeapObject bit set.
  *
- *      NumberOrOddball
- *       /     |      \
- *      /      |       NumberOrBoolean
- *      |      |   ___/  /
- *      |      \ /      /
- *      |       X      /         JSReceiver*                 Name*
- *     /       / \    |          /       \                  /    \
- *  Oddball*  /  Number      Callable* JSArray*     String*  Symbol*
- *    |      /   /    \                                |
+ *    NumberOrOddball           JSReceiver*                 Name*
+ *     /         \               /       \                  /    \
+ *  Oddball*     Number      Callable* JSArray*     String*  Symbol*
+ *    |          /    \                                |
  *  Boolean*    Smi   HeapNumber*              InternalizedString*
  *
  */
 
-#define NODE_TYPE_LIST(V)                                   \
-  V(Unknown, 0)                                             \
-  V(NumberOrOddball, (1 << 1))                              \
-  V(NumberOrBoolean, (1 << 2) | kNumberOrOddball)           \
-  V(Number, (1 << 3) | kNumberOrOddball | kNumberOrBoolean) \
-  V(Smi, (1 << 4) | kNumber)                                \
-  V(AnyHeapObject, (1 << 5))                                \
-  V(Oddball, (1 << 6) | kAnyHeapObject | kNumberOrOddball)  \
-  V(Boolean, (1 << 7) | kOddball | kNumberOrBoolean)        \
-  V(Name, (1 << 8) | kAnyHeapObject)                        \
-  V(String, (1 << 9) | kName)                               \
-  V(InternalizedString, (1 << 10) | kString)                \
-  V(Symbol, (1 << 11) | kName)                              \
-  V(JSReceiver, (1 << 12) | kAnyHeapObject)                 \
-  V(JSArray, (1 << 13) | kJSReceiver)                       \
-  V(Callable, (1 << 14) | kJSReceiver)                      \
+#define NODE_TYPE_LIST(V)                                  \
+  V(Unknown, 0)                                            \
+  V(NumberOrOddball, (1 << 1))                             \
+  V(Number, (1 << 2) | kNumberOrOddball)                   \
+  V(Smi, (1 << 4) | kNumber)                               \
+  V(AnyHeapObject, (1 << 5))                               \
+  V(Oddball, (1 << 6) | kAnyHeapObject | kNumberOrOddball) \
+  V(Boolean, (1 << 7) | kOddball)                          \
+  V(Name, (1 << 8) | kAnyHeapObject)                       \
+  V(String, (1 << 9) | kName)                              \
+  V(InternalizedString, (1 << 10) | kString)               \
+  V(Symbol, (1 << 11) | kName)                             \
+  V(JSReceiver, (1 << 12) | kAnyHeapObject)                \
+  V(JSArray, (1 << 13) | kJSReceiver)                      \
+  V(Callable, (1 << 14) | kJSReceiver)                     \
   V(HeapNumber, kAnyHeapObject | kNumber)
 
 enum class NodeType : uint32_t {
@@ -620,13 +595,11 @@ inline bool NodeTypeIs(NodeType type, NodeType to_check) {
   return (static_cast<int>(type) & right) == right;
 }
 
-inline NodeType StaticTypeForMap(compiler::MapRef map,
-                                 compiler::JSHeapBroker* broker) {
+inline NodeType StaticTypeForMap(compiler::MapRef map) {
   if (map.IsHeapNumberMap()) return NodeType::kHeapNumber;
   if (map.IsInternalizedStringMap()) return NodeType::kInternalizedString;
   if (map.IsStringMap()) return NodeType::kString;
   if (map.IsJSArrayMap()) return NodeType::kJSArray;
-  if (map.IsBooleanMap(broker)) return NodeType::kBoolean;
   if (map.IsOddballMap()) return NodeType::kOddball;
   if (map.IsJSReceiverMap()) return NodeType::kJSReceiver;
   return NodeType::kAnyHeapObject;
@@ -635,7 +608,7 @@ inline NodeType StaticTypeForMap(compiler::MapRef map,
 inline NodeType StaticTypeForConstant(compiler::JSHeapBroker* broker,
                                       compiler::ObjectRef ref) {
   if (ref.IsSmi()) return NodeType::kSmi;
-  return StaticTypeForMap(ref.AsHeapObject().map(broker), broker);
+  return StaticTypeForMap(ref.AsHeapObject().map(broker));
 }
 
 inline bool IsInstanceOfNodeType(compiler::MapRef map, NodeType type,
@@ -643,8 +616,6 @@ inline bool IsInstanceOfNodeType(compiler::MapRef map, NodeType type,
   switch (type) {
     case NodeType::kUnknown:
       return true;
-    case NodeType::kNumberOrBoolean:
-      return map.IsHeapNumberMap() || map.IsBooleanMap(broker);
     case NodeType::kNumberOrOddball:
       return map.IsHeapNumberMap() || map.IsOddballMap();
     case NodeType::kSmi:
@@ -657,7 +628,8 @@ inline bool IsInstanceOfNodeType(compiler::MapRef map, NodeType type,
     case NodeType::kOddball:
       return map.IsOddballMap();
     case NodeType::kBoolean:
-      return map.IsBooleanMap(broker);
+      return map.IsOddballMap() &&
+             map.oddball_type(broker) == compiler::OddballType::kBoolean;
     case NodeType::kName:
       return map.IsNameMap();
     case NodeType::kString:
@@ -723,7 +695,6 @@ inline bool NodeTypeMayBeNullOrUndefined(NodeType type) {
 
 enum class TaggedToFloat64ConversionType : uint8_t {
   kOnlyNumber,
-  kNumberOrBoolean,
   kNumberOrOddball,
 };
 
@@ -769,8 +740,6 @@ inline std::ostream& operator<<(
   switch (conversion_type) {
     case TaggedToFloat64ConversionType::kOnlyNumber:
       return os << "Number";
-    case TaggedToFloat64ConversionType::kNumberOrBoolean:
-      return os << "NumberOrBoolean";
     case TaggedToFloat64ConversionType::kNumberOrOddball:
       return os << "NumberOrOddball";
   }
@@ -823,8 +792,8 @@ NODE_BASE_LIST(DEF_FORWARD_DECLARATION)
 #undef DEF_FORWARD_DECLARATION
 
 using NodeIdT = uint32_t;
-static constexpr NodeIdT kInvalidNodeId = 0;
-static constexpr NodeIdT kFirstValidNodeId = 1;
+static constexpr uint32_t kInvalidNodeId = 0;
+static constexpr uint32_t kFirstValidNodeId = 1;
 
 // Represents either a direct BasicBlock pointer, or an entry in a list of
 // unresolved BasicBlockRefs which will be mutated (in place) at some point into
@@ -1064,10 +1033,6 @@ class OpProperties {
     return OpProperties(
         kValueRepresentationBits::encode(ValueRepresentation::kIntPtr));
   }
-  static constexpr OpProperties TrustedPointer() {
-    return OpProperties(
-        kValueRepresentationBits::encode(ValueRepresentation::kTagged));
-  }
   static constexpr OpProperties ConversionNode() {
     return OpProperties(kIsConversionBit::encode(true));
   }
@@ -1219,7 +1184,6 @@ class Input : public InputLocation {
  public:
   explicit Input(ValueNode* node) : node_(node) {}
   ValueNode* node() const { return node_; }
-  void clear();
 
  private:
   ValueNode* node_;
@@ -1502,17 +1466,10 @@ class DeoptInfo {
   int translation_index() const { return translation_index_; }
   void set_translation_index(int index) { translation_index_ = index; }
 
-#ifdef DEBUG
-  size_t input_location_count() { return input_location_count_; }
-#endif  // DEBUG
-
  private:
   DeoptFrame top_frame_;
   const compiler::FeedbackSource feedback_to_update_;
   InputLocation* const input_locations_;
-#ifdef DEBUG
-  size_t input_location_count_;
-#endif  // DEBUG
   Label deopt_entry_label_;
   int translation_index_ = -1;
 };
@@ -1827,14 +1784,23 @@ class NodeBase : public ZoneObject {
 
   template <typename RegisterT>
   RegListBase<RegisterT>& temporaries() {
-    return owner_or_temporaries_.temporaries<RegisterT>();
+    if constexpr (std::is_same_v<RegisterT, Register>) {
+      return temporaries_;
+    } else {
+      return double_temporaries_;
+    }
   }
-  RegList& general_temporaries() { return temporaries<Register>(); }
-  DoubleRegList& double_temporaries() { return temporaries<DoubleRegister>(); }
+
+  RegList& general_temporaries() { return temporaries_; }
+  DoubleRegList& double_temporaries() { return double_temporaries_; }
 
   template <typename RegisterT>
   void assign_temporaries(RegListBase<RegisterT> list) {
-    owner_or_temporaries_.temporaries<RegisterT>() = list;
+    if constexpr (std::is_same_v<RegisterT, Register>) {
+      temporaries_ = list;
+    } else {
+      double_temporaries_ = list;
+    }
   }
 
   enum class InputAllocationPolicy { kFixedRegister, kArbitraryRegister, kAny };
@@ -1916,7 +1882,7 @@ class NodeBase : public ZoneObject {
 
   void OverwriteWith(
       Opcode new_opcode,
-      std::optional<OpProperties> maybe_new_properties = std::nullopt) {
+      base::Optional<OpProperties> maybe_new_properties = base::nullopt) {
     OpProperties new_properties = maybe_new_properties.has_value()
                                       ? maybe_new_properties.value()
                                       : StaticPropertiesForOpcode(new_opcode);
@@ -1931,12 +1897,6 @@ class NodeBase : public ZoneObject {
 
   void ClearUnstableNodeAspects(KnownNodeAspects&);
   void ClearElementsProperties(KnownNodeAspects&);
-
-  void set_owner(BasicBlock* block) { owner_or_temporaries_ = block; }
-
-  BasicBlock* owner() const { return owner_or_temporaries_.owner(); }
-
-  void InitTemporaries() { owner_or_temporaries_.InitReglist(); }
 
  protected:
   explicit NodeBase(uint64_t bitfield) : bitfield_(bitfield) {}
@@ -1998,12 +1958,10 @@ class NodeBase : public ZoneObject {
 
   // Require that a specific register is free (and therefore clobberable) by the
   // entry into this node.
-  void RequireSpecificTemporary(Register reg) {
-    general_temporaries().set(reg);
-  }
+  void RequireSpecificTemporary(Register reg) { temporaries_.set(reg); }
 
   void RequireSpecificDoubleTemporary(DoubleRegister reg) {
-    double_temporaries().set(reg);
+    double_temporaries_.set(reg);
   }
 
  private:
@@ -2093,63 +2051,8 @@ class NodeBase : public ZoneObject {
 
   uint64_t bitfield_;
   NodeIdT id_ = kInvalidNodeId;
-
-  struct OwnerOrTemporaries {
-    BasicBlock* owner() const {
-      DCHECK_NE(store_.owner_, nullptr);
-      DCHECK_EQ(state_, State::kOwner);
-      return store_.owner_;
-    }
-
-    template <typename RegisterT>
-    RegListBase<RegisterT>& temporaries() {
-      DCHECK_EQ(state_, State::kReglist);
-      if constexpr (std::is_same_v<RegisterT, Register>) {
-        return store_.regs_.temporaries_;
-      } else {
-        return store_.regs_.double_temporaries_;
-      }
-    }
-
-    BasicBlock* operator=(BasicBlock* owner) {
-#ifdef DEBUG
-      DCHECK(state_ == State::kNull || state_ == State::kOwner);
-      state_ = State::kOwner;
-#endif
-      return store_.owner_ = owner;
-    }
-
-    void InitReglist() {
-#ifdef DEBUG
-      DCHECK(state_ == State::kNull || state_ == State::kOwner);
-      state_ = State::kReglist;
-#endif
-      store_.regs_.temporaries_ = RegList();
-      store_.regs_.double_temporaries_ = DoubleRegList();
-    }
-
-   private:
-    struct Regs {
-      RegList temporaries_;
-      DoubleRegList double_temporaries_;
-    };
-    union Store {
-      Store() : owner_(nullptr) {}
-      BasicBlock* owner_;
-      Regs regs_;
-    };
-    Store store_;
-#ifdef DEBUG
-    enum class State{
-        kNull,
-        kOwner,
-        kReglist,
-    };
-    State state_ = State::kNull;
-#endif
-  };
-
-  OwnerOrTemporaries owner_or_temporaries_;
+  RegList temporaries_;
+  DoubleRegList double_temporaries_;
 
   NodeBase() = delete;
   NodeBase(const NodeBase&) = delete;
@@ -3068,10 +2971,9 @@ DEF_FLOAT64_BINARY_NODE(Add)
 DEF_FLOAT64_BINARY_NODE(Subtract)
 DEF_FLOAT64_BINARY_NODE(Multiply)
 DEF_FLOAT64_BINARY_NODE(Divide)
-#if defined(V8_TARGET_ARCH_ARM64) || defined(V8_TARGET_ARCH_ARM) || \
-    defined(V8_TARGET_ARCH_RISCV64)
-// On Arm/Arm64/Riscv64, floating point modulus is implemented with a call to a
-// C++ function, while on x64, it's implemented natively without call.
+#if defined(V8_TARGET_ARCH_ARM64) || defined(V8_TARGET_ARCH_ARM)
+// On Arm/Arm64, floating point modulus is implemented with a call to a C++
+// function, while on x64, it's implemented natively without call.
 DEF_FLOAT64_BINARY_NODE_WITH_CALL(Modulus)
 #else
 DEF_FLOAT64_BINARY_NODE(Modulus)
@@ -3992,17 +3894,11 @@ class CheckedNumberOrOddballToFloat64
     return TaggedToFloat64ConversionTypeOffset::decode(bitfield());
   }
 
-  DeoptimizeReason deoptimize_reason() const {
-    return conversion_type() == TaggedToFloat64ConversionType::kNumberOrBoolean
-               ? DeoptimizeReason::kNotANumberOrBoolean
-               : DeoptimizeReason::kNotANumberOrOddball;
-  }
-
   auto options() const { return std::tuple{conversion_type()}; }
 
  private:
   using TaggedToFloat64ConversionTypeOffset =
-      NextBitField<TaggedToFloat64ConversionType, 2>;
+      NextBitField<TaggedToFloat64ConversionType, 1>;
 };
 
 class UncheckedNumberOrOddballToFloat64
@@ -4034,7 +3930,7 @@ class UncheckedNumberOrOddballToFloat64
 
  private:
   using TaggedToFloat64ConversionTypeOffset =
-      NextBitField<TaggedToFloat64ConversionType, 2>;
+      NextBitField<TaggedToFloat64ConversionType, 1>;
 };
 
 class CheckedHoleyFloat64ToFloat64
@@ -4121,7 +4017,7 @@ class TruncateNumberOrOddballToInt32
 
  private:
   using TaggedToFloat64ConversionTypeOffset =
-      NextBitField<TaggedToFloat64ConversionType, 2>;
+      NextBitField<TaggedToFloat64ConversionType, 1>;
 };
 
 class CheckedTruncateNumberOrOddballToInt32
@@ -4153,7 +4049,7 @@ class CheckedTruncateNumberOrOddballToInt32
 
  private:
   using TaggedToFloat64ConversionTypeOffset =
-      NextBitField<TaggedToFloat64ConversionType, 2>;
+      NextBitField<TaggedToFloat64ConversionType, 1>;
 };
 
 class LogicalNot : public FixedInputValueNodeT<1, LogicalNot> {
@@ -4921,35 +4817,6 @@ class RootConstant : public FixedInputValueNodeT<0, RootConstant> {
   const RootIndex index_;
 };
 
-class TrustedConstant : public FixedInputValueNodeT<0, TrustedConstant> {
-  using Base = FixedInputValueNodeT<0, TrustedConstant>;
-
- public:
-  using OutputRegister = Register;
-
-  explicit TrustedConstant(uint64_t bitfield, compiler::HeapObjectRef object,
-                           IndirectPointerTag tag)
-      : Base(bitfield), object_(object), tag_(tag) {}
-
-  static constexpr OpProperties kProperties = OpProperties::TrustedPointer();
-
-  bool ToBoolean(LocalIsolate* local_isolate) const { UNREACHABLE(); }
-
-  void SetValueLocationConstraints();
-  void GenerateCode(MaglevAssembler*, const ProcessingState&);
-  void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
-
-  compiler::HeapObjectRef object() const { return object_; }
-  IndirectPointerTag tag() const { return tag_; }
-
-  void DoLoadToRegister(MaglevAssembler*, OutputRegister);
-  Handle<Object> DoReify(LocalIsolate* isolate) const;
-
- private:
-  const compiler::HeapObjectRef object_;
-  const IndirectPointerTag tag_;
-};
-
 class CreateArrayLiteral : public FixedInputValueNodeT<0, CreateArrayLiteral> {
   using Base = FixedInputValueNodeT<0, CreateArrayLiteral>;
 
@@ -5103,28 +4970,22 @@ class VirtualObject : public FixedInputValueNodeT<0, VirtualObject> {
     kFixedDoubleArray,
   };
 
-  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map, int id,
+  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map,
                          uint32_t slot_count, ValueNode** slots)
       : Base(bitfield),
         map_(map),
-        id_(id),
         type_(kDefault),
         slots_({slot_count, slots}) {}
 
-  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map, int id,
+  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map,
                          Float64 number)
-      : Base(bitfield),
-        map_(map),
-        id_(id),
-        type_(kHeapNumber),
-        number_(number) {}
+      : Base(bitfield), map_(map), type_(kHeapNumber), number_(number) {}
 
-  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map, int id,
+  explicit VirtualObject(uint64_t bitfield, compiler::MapRef map,
                          uint32_t length,
                          compiler::FixedDoubleArrayRef elements)
       : Base(bitfield),
         map_(map),
-        id_(id),
         type_(kFixedDoubleArray),
         double_array_({length, elements}) {}
 
@@ -5132,11 +4993,10 @@ class VirtualObject : public FixedInputValueNodeT<0, VirtualObject> {
   void GenerateCode(MaglevAssembler*, const ProcessingState&) { UNREACHABLE(); }
   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
 
-  size_t InputLocationSizeNeeded(VirtualObject::List) const;
+  size_t InputLocationSizeNeeded() const;
 
   compiler::MapRef map() const { return map_; }
   Type type() const { return type_; }
-  uint32_t id() const { return id_; }
 
   size_t size() const {
     switch (type_) {
@@ -5233,7 +5093,6 @@ class VirtualObject : public FixedInputValueNodeT<0, VirtualObject> {
   };
 
   compiler::MapRef map_;
-  const int id_;
   Type type_;  // We need to cache the type. We cannot do map comparison in some
                // parts of the pipeline, because we would need to derefernece a
                // handle.
@@ -5274,10 +5133,6 @@ class VirtualObject::List {
     VirtualObject* entry_;
   };
 
-  bool operator==(const VirtualObject::List& other) const {
-    return head_ == other.head_;
-  }
-
   void Add(VirtualObject* object) {
     DCHECK_NOT_NULL(object);
     DCHECK_NULL(object->next_);
@@ -5287,7 +5142,7 @@ class VirtualObject::List {
 
   bool is_empty() const { return head_ == nullptr; }
 
-  VirtualObject* FindAllocatedWith(const InlinedAllocation* allocation) const {
+  VirtualObject* FindAllocatedWith(InlinedAllocation* allocation) const {
     VirtualObject* result = nullptr;
     for (VirtualObject* vo : *this) {
       if (vo->allocation() == allocation) {
@@ -5295,51 +5150,12 @@ class VirtualObject::List {
         break;
       }
     }
+    CHECK_NOT_NULL(result);
     return result;
   }
 
   void Print(std::ostream& os, const char* prefix,
              MaglevGraphLabeller* labeller) const;
-
-  // It iterates both list in reverse other of ids until a common point.
-  template <typename Function>
-  static VirtualObject* WalkUntilCommon(const VirtualObject::List& list1,
-                                        const VirtualObject::List& list2,
-                                        Function&& f) {
-    VirtualObject* vo1 = list1.head_;
-    VirtualObject* vo2 = list2.head_;
-    while (vo1 != nullptr && vo2 != nullptr && vo1 != vo2) {
-      DCHECK_NE(vo1->id(), vo2->id());
-      if (vo1->id() > vo2->id()) {
-        f(vo1, list1);
-        vo1 = vo1->next_;
-      } else {
-        f(vo2, list2);
-        vo2 = vo2->next_;
-      }
-    }
-    if (vo1 == vo2) return vo1;
-    return nullptr;
-  }
-
-  void Snapshot() const {
-    for (VirtualObject* vo : *this) {
-      if (vo->IsSnapshot()) {
-        // Stop processing once a snapshotted object is found, as all remaining
-        // objects must be snapshotted.
-        break;
-      }
-      vo->Snapshot();
-    }
-    SLOW_DCHECK(IsSnapshot());
-  }
-
-  bool IsSnapshot() const {
-    for (VirtualObject* vo : *this) {
-      if (!vo->IsSnapshot()) return false;
-    }
-    return true;
-  }
 
   Iterator begin() const { return Iterator(head_); }
   Iterator end() const { return Iterator(nullptr); }
@@ -5421,11 +5237,6 @@ class InlinedAllocation : public FixedInputValueNodeT<1, InlinedAllocation> {
   }
   bool HasBeenAnalysed() const {
     return escape_analysis_result_ != EscapeAnalysisResult::kUnknown;
-  }
-
-  void UpdateObject(VirtualObject* object) {
-    DCHECK_EQ(this, object->allocation());
-    object_ = object;
   }
 
  private:
@@ -5589,8 +5400,7 @@ class CreateFunctionContext
 
   // The implementation currently calls runtime.
   static constexpr OpProperties kProperties =
-      OpProperties::Call() | OpProperties::CanAllocate() |
-      OpProperties::LazyDeopt() | OpProperties::NotIdempotent();
+      OpProperties::GenericRuntimeOrBuiltinCall();
   static constexpr
       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
 
@@ -5761,9 +5571,6 @@ class AssertInt32 : public FixedInputNodeT<2, AssertInt32> {
   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
 
   auto options() const { return std::tuple{condition_, reason_}; }
-
-  AssertCondition condition() const { return condition_; }
-  AbortReason reason() const { return reason_; }
 
  private:
   AssertCondition condition_;
@@ -6460,20 +6267,6 @@ class DebugBreak : public FixedInputNodeT<0, DebugBreak> {
   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
 };
 
-class Dead : public NodeT<Dead> {
-  using Base = NodeT<Dead>;
-
- public:
-  void SetValueLocationConstraints() {}
-  void GenerateCode(MaglevAssembler*, const ProcessingState&) { UNREACHABLE(); }
-  void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
-  void VerifyInputs(MaglevGraphLabeller*) const {}
-  void MarkTaggedInputsAsDecompressing() { UNREACHABLE(); }
-
- private:
-  explicit Dead(uint64_t bitfield) : Base(bitfield) {}
-};
-
 class FunctionEntryStackCheck
     : public FixedInputNodeT<0, FunctionEntryStackCheck> {
   using Base = FixedInputNodeT<0, FunctionEntryStackCheck>;
@@ -6853,13 +6646,11 @@ class PolymorphicAccessInfo {
   };
 };
 
-template <typename Derived = LoadTaggedField>
-class AbstractLoadTaggedField : public FixedInputValueNodeT<1, Derived> {
-  using Base = FixedInputValueNodeT<1, Derived>;
-  using Base::result;
+class LoadTaggedField : public FixedInputValueNodeT<1, LoadTaggedField> {
+  using Base = FixedInputValueNodeT<1, LoadTaggedField>;
 
  public:
-  explicit AbstractLoadTaggedField(uint64_t bitfield, const int offset)
+  explicit LoadTaggedField(uint64_t bitfield, const int offset)
       : Base(bitfield), offset_(offset) {}
 
   static constexpr OpProperties kProperties = OpProperties::CanRead();
@@ -6868,7 +6659,6 @@ class AbstractLoadTaggedField : public FixedInputValueNodeT<1, Derived> {
 
   int offset() const { return offset_; }
 
-  using Base::input;
   static constexpr int kObjectIndex = 0;
   Input& object_input() { return input(kObjectIndex); }
 
@@ -6878,43 +6668,8 @@ class AbstractLoadTaggedField : public FixedInputValueNodeT<1, Derived> {
 
   auto options() const { return std::tuple{offset()}; }
 
-  using Base::decompresses_tagged_result;
-
  private:
   const int offset_;
-};
-
-class LoadTaggedField : public AbstractLoadTaggedField<LoadTaggedField> {
-  using Base = AbstractLoadTaggedField<LoadTaggedField>;
-
- public:
-  explicit LoadTaggedField(uint64_t bitfield, const int offset)
-      : Base(bitfield, offset) {}
-};
-
-class LoadTaggedFieldForProperty
-    : public AbstractLoadTaggedField<LoadTaggedFieldForProperty> {
-  using Base = AbstractLoadTaggedField<LoadTaggedFieldForProperty>;
-
- public:
-  explicit LoadTaggedFieldForProperty(uint64_t bitfield, const int offset,
-                                      compiler::NameRef name)
-      : Base(bitfield, offset), name_(name) {}
-  compiler::NameRef name() { return name_; }
-
-  auto options() const { return std::tuple{offset(), name_}; }
-
- private:
-  compiler::NameRef name_;
-};
-
-class LoadTaggedFieldForContextSlot
-    : public AbstractLoadTaggedField<LoadTaggedFieldForContextSlot> {
-  using Base = AbstractLoadTaggedField<LoadTaggedFieldForContextSlot>;
-
- public:
-  explicit LoadTaggedFieldForContextSlot(uint64_t bitfield, const int offset)
-      : Base(bitfield, offset) {}
 };
 
 class LoadDoubleField : public FixedInputValueNodeT<1, LoadDoubleField> {
@@ -7018,38 +6773,6 @@ class EnsureWritableFastElements
   void SetValueLocationConstraints();
   void GenerateCode(MaglevAssembler*, const ProcessingState&);
   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
-};
-
-class ExtendPropertiesBackingStore
-    : public FixedInputValueNodeT<2, ExtendPropertiesBackingStore> {
-  using Base = FixedInputValueNodeT<2, ExtendPropertiesBackingStore>;
-
- public:
-  explicit ExtendPropertiesBackingStore(uint64_t bitfield, int old_length)
-      : Base(bitfield), old_length_(old_length) {}
-
-  static constexpr OpProperties kProperties =
-      OpProperties::CanAllocate() | OpProperties::CanRead() |
-      OpProperties::CanWrite() | OpProperties::DeferredCall() |
-      OpProperties::EagerDeopt() | OpProperties::NotIdempotent();
-
-  static constexpr typename Base::InputTypes kInputTypes{
-      ValueRepresentation::kTagged, ValueRepresentation::kTagged};
-
-  static constexpr int kPropertyArrayIndex = 0;
-  static constexpr int kObjectIndex = 1;
-  Input& property_array_input() { return input(kPropertyArrayIndex); }
-  Input& object_input() { return input(kObjectIndex); }
-
-  int MaxCallStackArgs() const { return 0; }
-  void SetValueLocationConstraints();
-  void GenerateCode(MaglevAssembler*, const ProcessingState&);
-  void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
-
-  int old_length() const { return old_length_; }
-
- private:
-  const int old_length_;
 };
 
 class MaybeGrowFastElements
@@ -7684,55 +7407,6 @@ class StoreTaggedFieldWithWriteBarrier
   const int offset_;
 };
 
-class StoreTrustedPointerFieldWithWriteBarrier
-    : public FixedInputNodeT<2, StoreTrustedPointerFieldWithWriteBarrier> {
-  using Base = FixedInputNodeT<2, StoreTrustedPointerFieldWithWriteBarrier>;
-
- public:
-  explicit StoreTrustedPointerFieldWithWriteBarrier(uint64_t bitfield,
-                                                    int offset,
-                                                    IndirectPointerTag tag,
-                                                    StoreTaggedMode store_mode)
-      : Base(bitfield | InitializingOrTransitioningField::encode(
-                            IsInitializingOrTransitioning(store_mode))),
-        offset_(offset),
-        tag_(tag) {}
-
-  static constexpr OpProperties kProperties =
-      OpProperties::CanWrite() | OpProperties::DeferredCall();
-  static constexpr typename Base::InputTypes kInputTypes{
-      ValueRepresentation::kTagged, ValueRepresentation::kTagged};
-
-  int offset() const { return offset_; }
-  IndirectPointerTag tag() const { return tag_; }
-  bool initializing_or_transitioning() const {
-    return InitializingOrTransitioningField::decode(bitfield());
-  }
-
-  static constexpr int kObjectIndex = 0;
-  static constexpr int kValueIndex = 1;
-  Input& object_input() { return input(kObjectIndex); }
-  Input& value_input() { return input(kValueIndex); }
-
-#ifdef V8_COMPRESS_POINTERS
-  void MarkTaggedInputsAsDecompressing() {
-    object_input().node()->SetTaggedResultNeedsDecompress();
-    // value is never compressed.
-  }
-#endif
-
-  int MaxCallStackArgs() const;
-  void SetValueLocationConstraints();
-  void GenerateCode(MaglevAssembler*, const ProcessingState&);
-  void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
-
- private:
-  using InitializingOrTransitioningField = NextBitField<bool, 1>;
-
-  const int offset_;
-  const IndirectPointerTag tag_;
-};
-
 class LoadGlobal : public FixedInputValueNodeT<1, LoadGlobal> {
   using Base = FixedInputValueNodeT<1, LoadGlobal>;
 
@@ -8228,7 +7902,7 @@ class MergePointInterpreterFrameState;
 // ValueRepresentation doesn't distinguish between Int32 and TruncatedInt32:
 // both are Int32. For Phi untagging however, it's interesting to have a
 // difference between the 2, as a TruncatedInt32 would allow untagging to
-// Float64, whereas an Int32 use wouldn't (because it would require a deopting
+// Float64, whereas a Int32 use wouldn't (because it would require a deopting
 // Float64->Int32 conversion, whereas the truncating version of this conversion
 // cannot deopt). We thus use a UseRepresentation to record use hints for Phis.
 enum class UseRepresentation : uint8_t {
@@ -8637,7 +8311,7 @@ class CallBuiltin : public ValueNodeT<CallBuiltin> {
   void PushFeedbackAndArguments(MaglevAssembler*);
 
   Builtin builtin_;
-  std::optional<compiler::FeedbackSource> feedback_;
+  base::Optional<compiler::FeedbackSource> feedback_;
   FeedbackSlotType slot_type_ = kTaggedIndex;
 };
 
@@ -9257,8 +8931,8 @@ class CheckDerivedConstructResult
   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
 };
 
-class CheckNotHole : public FixedInputNodeT<1, CheckNotHole> {
-  using Base = FixedInputNodeT<1, CheckNotHole>;
+class CheckNotHole : public FixedInputValueNodeT<1, CheckNotHole> {
+  using Base = FixedInputValueNodeT<1, CheckNotHole>;
 
  public:
   explicit CheckNotHole(uint64_t bitfield) : Base(bitfield) {}
@@ -9856,7 +9530,7 @@ class Switch : public FixedInputNodeTMixin<1, ConditionalControlNode, Switch> {
   const int value_base_;
   BasicBlockRef* targets_;
   const int size_;
-  std::optional<BasicBlockRef> fallthrough_;
+  base::Optional<BasicBlockRef> fallthrough_;
 };
 
 class BranchIfSmi : public BranchControlNodeT<1, BranchIfSmi> {

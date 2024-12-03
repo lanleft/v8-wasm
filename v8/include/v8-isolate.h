@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include <memory>
-#include <string>
 #include <utility>
 
 #include "cppgc/common.h"
@@ -524,7 +523,7 @@ class V8_EXPORT Isolate {
     kDurationFormat = 117,
     kInvalidatedNumberStringNotRegexpLikeProtector = 118,
     kOBSOLETE_RegExpUnicodeSetIncompatibilitiesWithUnicodeMode = 119,
-    kOBSOLETE_ImportAssertionDeprecatedSyntax = 120,
+    kImportAssertionDeprecatedSyntax = 120,
     kLocaleInfoObsoletedGetters = 121,
     kLocaleInfoFunctions = 122,
     kCompileHintsMagicAll = 123,
@@ -548,7 +547,6 @@ class V8_EXPORT Isolate {
     kDocumentAllLegacyCall = 141,
     kDocumentAllLegacyConstruct = 142,
     kConsoleContext = 143,
-    kWasmImportedStringsUtf8 = 144,
 
     // If you add new values here, you'll also need to update Chromium's:
     // web_feature.mojom, use_counter_callback.cc, and enums.xml. V8 changes to
@@ -671,18 +669,6 @@ class V8_EXPORT Isolate {
    */
   void SetHostImportModuleDynamicallyCallback(
       HostImportModuleDynamicallyCallback callback);
-
-  /**
-   * This specifies the callback called by the upcoming dynamic
-   * import() and import.source() language feature to load modules.
-   *
-   * This API is experimental and is expected to be changed or removed in the
-   * future. The callback is currently only called when for source-phase
-   * imports. Evaluation-phase imports use the existing
-   * HostImportModuleDynamicallyCallback callback.
-   */
-  void SetHostImportModuleWithPhaseDynamicallyCallback(
-      HostImportModuleWithPhaseDynamicallyCallback callback);
 
   /**
    * This specifies the callback called by the upcoming import.meta
@@ -951,12 +937,6 @@ class V8_EXPORT Isolate {
   Local<Context> GetIncumbentContext();
 
   /**
-   * Returns the host defined options set for currently running script or
-   * module, if available.
-   */
-  MaybeLocal<Data> GetCurrentHostDefinedOptions();
-
-  /**
    * Schedules a v8::Exception::Error with the given message.
    * See ThrowException for more details. Templatized to provide compile-time
    * errors in case of too long strings (see v8::String::NewFromUtf8Literal).
@@ -974,14 +954,6 @@ class V8_EXPORT Isolate {
    * has been handled does it become legal to invoke JavaScript operations.
    */
   Local<Value> ThrowException(Local<Value> exception);
-
-  /**
-   * Returns true if an exception was thrown but not processed yet by an
-   * exception handler on JavaScript side or by v8::TryCatch handler.
-   *
-   * This is an experimental feature and may still change significantly.
-   */
-  bool HasPendingException();
 
   using GCCallback = void (*)(Isolate* isolate, GCType type,
                               GCCallbackFlags flags);
@@ -1447,28 +1419,12 @@ class V8_EXPORT Isolate {
    * This is an unfinished experimental feature. Semantics and implementation
    * may change frequently.
    */
-  V8_DEPRECATE_SOON("Use SetIsLoading instead")
   void SetRAILMode(RAILMode rail_mode);
 
   /**
    * Update load start time of the RAIL mode
    */
-  V8_DEPRECATE_SOON("Use SetIsLoading instead")
   void UpdateLoadStartTime();
-
-  /**
-   * Optional notification to tell V8 whether the embedder is currently loading
-   * resources. If the embedder uses this notification, it should call
-   * SetIsLoading(true) when loading starts and SetIsLoading(false) when it
-   * ends.
-   * It's valid to call SetIsLoading(true) again while loading, which will
-   * update the timestamp when V8 considers the load started. Calling
-   * SetIsLoading(false) while not loading does nothing.
-   * V8 uses these notifications to guide heuristics.
-   * This is an unfinished experimental feature. Semantics and implementation
-   * may change frequently.
-   */
-  void SetIsLoading(bool is_loading);
 
   /**
    * Optional notification to tell V8 the current isolate is used for debugging
@@ -1639,9 +1595,6 @@ class V8_EXPORT Isolate {
    * Register callback to control whether compile hints magic comments are
    * enabled.
    */
-  V8_DEPRECATED(
-      "Will be removed, use ScriptCompiler::CompileOptions for enabling the "
-      "compile hints magic comments")
   void SetJavaScriptCompileHintsMagicEnabledCallback(
       JavaScriptCompileHintsMagicEnabledCallback callback);
 
@@ -1761,12 +1714,6 @@ class V8_EXPORT Isolate {
    */
   void LocaleConfigurationChangeNotification();
 
-  /**
-   * Returns the default locale in a string if Intl support is enabled.
-   * Otherwise returns an empty string.
-   */
-  std::string GetDefaultLocale();
-
   Isolate() = delete;
   ~Isolate() = delete;
   Isolate(const Isolate&) = delete;
@@ -1782,9 +1729,8 @@ class V8_EXPORT Isolate {
   template <class K, class V, class Traits>
   friend class PersistentValueMapBase;
 
-  internal::ValueHelper::InternalRepresentationType GetDataFromSnapshotOnce(
-      size_t index);
-  void HandleExternalMemoryInterrupt();
+  internal::Address* GetDataFromSnapshotOnce(size_t index);
+  void ReportExternalAllocationLimitReached();
 };
 
 void Isolate::SetData(uint32_t slot, void* data) {
@@ -1804,10 +1750,10 @@ uint32_t Isolate::GetNumberOfDataSlots() {
 
 template <class T>
 MaybeLocal<T> Isolate::GetDataFromSnapshotOnce(size_t index) {
-  if (auto repr = GetDataFromSnapshotOnce(index);
-      repr != internal::ValueHelper::kEmpty) {
-    internal::PerformCastCheck(internal::ValueHelper::ReprAsValue<T>(repr));
-    return Local<T>::FromRepr(repr);
+  if (auto slot = GetDataFromSnapshotOnce(index); slot) {
+    internal::PerformCastCheck(
+        internal::ValueHelper::SlotAsValue<T, false>(slot));
+    return Local<T>::FromSlot(slot);
   }
   return {};
 }

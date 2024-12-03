@@ -12,7 +12,7 @@
 namespace v8 {
 namespace internal {
 
-class TrustedByteArray;
+class ByteArray;
 
 class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
  public:
@@ -27,7 +27,7 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
   // In case a StackOverflow occurs, a StackOverflowException is created and
   // EXCEPTION is returned.
   static Result MatchForCallFromRuntime(Isolate* isolate,
-                                        DirectHandle<IrRegExpData> regexp_data,
+                                        DirectHandle<JSRegExp> regexp,
                                         DirectHandle<String> subject_string,
                                         int* output_registers,
                                         int output_register_count,
@@ -50,10 +50,9 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
                                    int* output_registers,
                                    int32_t output_register_count,
                                    RegExp::CallOrigin call_origin,
-                                   Isolate* isolate, Address regexp_data);
+                                   Isolate* isolate, Address regexp);
 
-  static Result MatchInternal(Isolate* isolate,
-                              Tagged<TrustedByteArray> code_array,
+  static Result MatchInternal(Isolate* isolate, Tagged<ByteArray> code_array,
                               Tagged<String> subject_string,
                               int* output_registers, int output_register_count,
                               int total_register_count, int start_position,
@@ -61,7 +60,7 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
                               uint32_t backtrack_limit);
 
  private:
-  static Result Match(Isolate* isolate, Tagged<IrRegExpData> regexp_data,
+  static Result Match(Isolate* isolate, Tagged<JSRegExp> regexp,
                       Tagged<String> subject_string, int* output_registers,
                       int output_register_count, int start_position,
                       RegExp::CallOrigin call_origin);

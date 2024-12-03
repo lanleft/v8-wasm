@@ -7,7 +7,6 @@
 
 #include <deque>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -30,7 +29,8 @@
 #include "src/heap/reference-summarizer.h"
 #endif
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 class AllocationTraceNode;
 class HeapEntry;
@@ -556,7 +556,7 @@ class V8_EXPORT_PRIVATE V8HeapExplorer : public HeapEntriesAllocator {
       HeapEntry::ReferenceVerification verification = HeapEntry::kVerify);
   void SetWeakReference(HeapEntry* parent_entry, int index,
                         Tagged<Object> child_obj,
-                        std::optional<int> field_offset);
+                        base::Optional<int> field_offset);
   void SetPropertyReference(HeapEntry* parent_entry,
                             Tagged<Name> reference_name, Tagged<Object> child,
                             const char* name_format_string = nullptr,
@@ -573,7 +573,7 @@ class V8_EXPORT_PRIVATE V8HeapExplorer : public HeapEntriesAllocator {
                              Tagged<Object> child);
   const char* GetStrongGcSubrootName(Tagged<HeapObject> object);
   void TagObject(Tagged<Object> obj, const char* tag,
-                 std::optional<HeapEntry::Type> type = {},
+                 base::Optional<HeapEntry::Type> type = {},
                  bool overwrite_existing_name = false);
   void RecursivelyTagConstantPool(Tagged<Object> obj, const char* tag,
                                   HeapEntry::Type type, int recursion_limit);
@@ -770,20 +770,20 @@ class HeapSnapshotJSONSerializer {
   void SerializeLocations();
 
   static const int kEdgeFieldsCount;
-  static const int kNodeFieldsCountWithTraceNodeId;
-  static const int kNodeFieldsCountWithoutTraceNodeId;
+  static const int kNodeFieldsCount;
 
   HeapSnapshot* snapshot_;
   base::CustomMatcherHashMap strings_;
   int next_node_id_;
   int next_string_id_;
   OutputStreamWriter* writer_;
-  uint32_t trace_function_count_ = 0;
 
   friend class HeapSnapshotJSONSerializerEnumerator;
   friend class HeapSnapshotJSONSerializerIterator;
 };
 
-}  // namespace v8::internal
+
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_PROFILER_HEAP_SNAPSHOT_GENERATOR_H_

@@ -10,7 +10,6 @@
 #include "src/codegen/flush-instruction-cache.h"
 #include "src/codegen/x64/assembler-x64.h"
 #include "src/debug/debug.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/objects/objects-inl.h"
 
 namespace v8 {
@@ -198,13 +197,8 @@ Address Assembler::target_address_at(Address pc, Address constant_pool) {
 
 void Assembler::set_target_address_at(Address pc, Address constant_pool,
                                       Address target,
-                                      WritableJitAllocation* jit_allocation,
                                       ICacheFlushMode icache_flush_mode) {
-  if (jit_allocation) {
-    jit_allocation->WriteUnalignedValue(pc, relative_target_offset(target, pc));
-  } else {
-    WriteUnalignedValue(pc, relative_target_offset(target, pc));
-  }
+  WriteUnalignedValue(pc, relative_target_offset(target, pc));
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     FlushInstructionCache(pc, sizeof(int32_t));
   }
@@ -219,6 +213,13 @@ int32_t Assembler::relative_target_offset(Address target, Address pc) {
 void Assembler::deserialization_set_target_internal_reference_at(
     Address pc, Address target, RelocInfo::Mode mode) {
   WriteUnalignedValue(pc, target);
+}
+
+void Assembler::deserialization_set_special_target_at(
+    Address instruction_payload, Tagged<Code> code, Address target) {
+  set_target_address_at(instruction_payload,
+                        !code.is_null() ? code->constant_pool() : kNullAddress,
+                        target);
 }
 
 int Assembler::deserialization_special_target_size(
@@ -240,24 +241,6 @@ Builtin Assembler::target_builtin_at(Address pc) {
   return static_cast<Builtin>(builtin_id);
 }
 
-uint32_t Assembler::uint32_constant_at(Address pc, Address constant_pool) {
-  return ReadUnalignedValue<uint32_t>(pc);
-}
-
-void Assembler::set_uint32_constant_at(Address pc, Address constant_pool,
-                                       uint32_t new_constant,
-                                       WritableJitAllocation* jit_allocation,
-                                       ICacheFlushMode icache_flush_mode) {
-  if (jit_allocation) {
-    jit_allocation->WriteUnalignedValue<uint32_t>(pc, new_constant);
-  } else {
-    WriteUnalignedValue<uint32_t>(pc, new_constant);
-  }
-  if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    FlushInstructionCache(pc, sizeof(uint32_t));
-  }
-}
-
 // -----------------------------------------------------------------------------
 // Implementation of RelocInfo
 
@@ -265,12 +248,11 @@ void Assembler::set_uint32_constant_at(Address pc, Address constant_pool,
 void WritableRelocInfo::apply(intptr_t delta) {
   if (IsCodeTarget(rmode_) || IsNearBuiltinEntry(rmode_) ||
       IsWasmStubCall(rmode_)) {
-    jit_allocation_.WriteUnalignedValue(
+    WriteUnalignedValue(
         pc_, ReadUnalignedValue<int32_t>(pc_) - static_cast<int32_t>(delta));
   } else if (IsInternalReference(rmode_)) {
     // Absolute code pointer inside code object moves with the code object.
-    jit_allocation_.WriteUnalignedValue(
-        pc_, ReadUnalignedValue<Address>(pc_) + delta);
+    WriteUnalignedValue(pc_, ReadUnalignedValue<Address>(pc_) + delta);
   }
 }
 
@@ -332,21 +314,7 @@ Address RelocInfo::target_external_reference() {
 void WritableRelocInfo::set_target_external_reference(
     Address target, ICacheFlushMode icache_flush_mode) {
   DCHECK(rmode_ == RelocInfo::EXTERNAL_REFERENCE);
-  jit_allocation_.WriteUnalignedValue(pc_, target);
-  if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
-    FlushInstructionCache(pc_, sizeof(Address));
-  }
-}
-
-WasmCodePointer RelocInfo::wasm_indirect_call_target() const {
-  DCHECK(rmode_ == RelocInfo::WASM_INDIRECT_CALL_TARGET);
-  return ReadUnalignedValue<WasmCodePointer>(pc_);
-}
-
-void WritableRelocInfo::set_wasm_indirect_call_target(
-    WasmCodePointer target, ICacheFlushMode icache_flush_mode) {
-  DCHECK(rmode_ == RelocInfo::WASM_INDIRECT_CALL_TARGET);
-  jit_allocation_.WriteUnalignedValue(pc_, target);
+  WriteUnalignedValue(pc_, target);
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     FlushInstructionCache(pc_, sizeof(Address));
   }
@@ -370,14 +338,13 @@ void WritableRelocInfo::set_target_object(Tagged<HeapObject> target,
     // We must not compress pointers to objects outside of the main pointer
     // compression cage as we wouldn't be able to decompress them with the
     // correct cage base.
-    DCHECK_IMPLIES(V8_ENABLE_SANDBOX_BOOL, !HeapLayout::InTrustedSpace(target));
-    DCHECK_IMPLIES(V8_EXTERNAL_CODE_SPACE_BOOL,
-                   !HeapLayout::InCodeSpace(target));
+    DCHECK_IMPLIES(V8_ENABLE_SANDBOX_BOOL, !IsTrustedSpaceObject(target));
+    DCHECK_IMPLIES(V8_EXTERNAL_CODE_SPACE_BOOL, !IsCodeSpaceObject(target));
     Tagged_t tagged = V8HeapCompressionScheme::CompressObject(target.ptr());
-    jit_allocation_.WriteUnalignedValue(pc_, tagged);
+    WriteUnalignedValue(pc_, tagged);
   } else {
     DCHECK(IsFullEmbeddedObject(rmode_));
-    jit_allocation_.WriteUnalignedValue(pc_, target.ptr());
+    WriteUnalignedValue(pc_, target.ptr());
   }
   if (icache_flush_mode != SKIP_ICACHE_FLUSH) {
     FlushInstructionCache(pc_, sizeof(Address));

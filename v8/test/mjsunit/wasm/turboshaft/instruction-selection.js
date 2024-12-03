@@ -6,8 +6,7 @@
 // Flags: --turboshaft-wasm --turboshaft-wasm-instruction-selection-experimental
 // Flags: --turboshaft-wasm-instruction-selection-staged
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TrivialFunctions() {
   print(arguments.callee.name);

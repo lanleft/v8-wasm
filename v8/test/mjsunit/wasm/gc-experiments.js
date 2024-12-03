@@ -4,8 +4,7 @@
 
 // Flags: --experimental-wasm-ref-cast-nop
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestRefCastNop() {
   var builder = new WasmModuleBuilder();

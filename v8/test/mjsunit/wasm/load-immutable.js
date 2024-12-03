@@ -4,8 +4,7 @@
 
 // Flags: --no-liftoff
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Test that comparisons with array length in a loop get optimized away.
 (function ArrayLoopOptimizationTest() {

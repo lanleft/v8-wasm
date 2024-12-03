@@ -87,7 +87,6 @@ struct ExternalBufferTableEntry {
     static constexpr TagType kEvacuationEntryTag =
         kExternalBufferEvacuationEntryTag;
     static constexpr bool kSupportsEvacuation = true;
-    static constexpr bool kSupportsZapping = false;
   };
 
   using Payload = TaggedPayload<ExternalBufferTaggingScheme>;

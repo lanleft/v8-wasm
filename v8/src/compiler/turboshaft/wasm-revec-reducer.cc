@@ -4,8 +4,6 @@
 
 #include "src/compiler/turboshaft/wasm-revec-reducer.h"
 
-#include <optional>
-
 #include "src/base/logging.h"
 #include "src/compiler/turboshaft/opmasks.h"
 #include "src/wasm/simd-shuffle.h"
@@ -113,7 +111,7 @@ class StoreLoadInfo {
     index_ = change_input;
   }
 
-  std::optional<int> operator-(const StoreLoadInfo<Op>& rhs) const {
+  base::Optional<int> operator-(const StoreLoadInfo<Op>& rhs) const {
     DCHECK(IsValid() && rhs.IsValid());
     bool calculatable = base_ == rhs.base_ && index_ == rhs.index_;
 
@@ -247,6 +245,34 @@ PackNode* SLPTree::NewForcePackNode(const NodeGroup& node_group,
         node_group[0].id(), node_group[1].id());
   PackNode* pnode = NewPackNode(node_group);
   pnode->set_force_pack_type(type);
+  if (type == PackNode::ForcePackType::kGeneral) {
+    // Collect all the operations on right node's input tree, whose OpIndex is
+    // bigger than the left node. The traversal should be done in a BFS manner
+    // to make sure all inputs are emitted before the use.
+    DCHECK(pnode->force_pack_right_inputs().empty());
+    ZoneVector<OpIndex> idx_vec(phase_zone_);
+    const Operation& right_op = graph.Get(node_group[1]);
+    for (OpIndex input : right_op.inputs()) {
+      DCHECK_NE(input, node_group[0]);
+      DCHECK_LT(input, node_group[1]);
+      if (input > node_group[0]) {
+        idx_vec.push_back(input);
+      }
+    }
+    size_t idx = 0;
+    while (idx < idx_vec.size()) {
+      const Operation& op = graph.Get(idx_vec[idx]);
+      for (OpIndex input : op.inputs()) {
+        DCHECK_NE(input, node_group[0]);
+        DCHECK_LT(input, node_group[1]);
+        if (input > node_group[0]) {
+          idx_vec.push_back(input);
+        }
+      }
+      idx++;
+    }
+    pnode->force_pack_right_inputs().insert(idx_vec.begin(), idx_vec.end());
+  }
   return pnode;
 }
 
@@ -613,9 +639,11 @@ PackNode* SLPTree::BuildTreeRec(const NodeGroup& node_group,
       StoreLoadInfo<LoadOp> info1(&graph_, &load1);
       auto stride = info1 - info0;
       if (stride.has_value()) {
-        if (const int value = stride.value(); value == kSimd128Size) {
+        const int value = stride.value();
+        if (value == kSimd128Size) {
           // TODO(jiepan) Sort load
-          return NewPackNode(node_group);
+          PackNode* p = NewPackNode(node_group);
+          return p;
         } else if (value == 0) {
           return NewForcePackNode(node_group, PackNode::ForcePackType::kSplat,
                                   graph_);
@@ -1003,42 +1031,26 @@ bool WasmRevecAnalyzer::DecideVectorize() {
   int save = 0, cost = 0;
   ForEach(
       [&](PackNode const* pnode) {
-        const NodeGroup& nodes = pnode->nodes();
-        // An additional store is emitted in case of OOB trap at the higher
-        // 128-bit address. Thus no save if the store at lower address is
-        // executed first. Return directly as we dont need to check external use
-        // for stores.
-        if (graph_.Get(nodes[0]).opcode == Opcode::kStore) {
-          if (nodes[0] > nodes[1]) save++;
-          return;
-        }
-
-        if (pnode->is_force_pack()) {
-          cost++;
-          return;
-        }
-
+        const NodeGroup& nodes = pnode->Nodes();
         // Splat nodes will not cause a saving as it simply extends itself.
         if (!IsSplat(nodes)) {
           save++;
         }
 
-#ifdef V8_TARGET_ARCH_X64
-        // On x64 platform, we dont emit extract for lane 0 as the source ymm
-        // register is alias to the corresponding xmm register in lower 128-bit.
-        for (int i = 1; i < static_cast<int>(nodes.size()); i++) {
-          if (nodes[i] == nodes[0]) continue;
-#else
+        if (pnode->is_force_pack()) {
+          cost += 2;
+          return;
+        }
+
         for (int i = 0; i < static_cast<int>(nodes.size()); i++) {
           if (i > 0 && nodes[i] == nodes[0]) continue;
-#endif  // V8_TARGET_ARCH_X64
 
           for (auto use : use_map_->uses(nodes[i])) {
             if (!GetPackNode(use)) {
               TRACE("External use edge: (%d:%s) -> (%d:%s)\n", use.id(),
                     OpcodeName(graph_.Get(use).opcode), nodes[i].id(),
                     OpcodeName(graph_.Get(nodes[i]).opcode));
-              ++cost;
+              cost++;
 
               // We only need one Extract node and all other uses can share.
               break;

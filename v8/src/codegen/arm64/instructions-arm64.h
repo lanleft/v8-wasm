@@ -9,7 +9,6 @@
 #include "src/codegen/arm64/constants-arm64.h"
 #include "src/codegen/arm64/register-arm64.h"
 #include "src/codegen/arm64/utils-arm64.h"
-#include "src/common/code-memory-access.h"
 #include "src/common/globals.h"
 #include "src/utils/utils.h"
 
@@ -17,7 +16,6 @@ namespace v8 {
 namespace internal {
 
 struct AssemblerOptions;
-class Zone;
 
 // ISA constants. --------------------------------------------------------------
 
@@ -89,8 +87,10 @@ class Instruction {
     return base::ReadUnalignedValue<Instr>(reinterpret_cast<Address>(this));
   }
 
-  V8_EXPORT_PRIVATE void SetInstructionBits(
-      Instr new_instr, WritableJitAllocation* jit_allocation = nullptr);
+  V8_INLINE void SetInstructionBits(Instr new_instr) {
+    // Usually this is aligned, but when de/serializing that's not guaranteed.
+    base::WriteUnalignedValue(reinterpret_cast<Address>(this), new_instr);
+  }
 
   int Bit(int pos) const { return (InstructionBits() >> pos) & 1; }
 
@@ -425,10 +425,9 @@ class Instruction {
   bool IsTargetInImmPCOffsetRange(Instruction* target);
   // Patch a PC-relative offset to refer to 'target'. 'this' may be a branch or
   // a PC-relative addressing instruction.
-  void SetImmPCOffsetTarget(Zone* zone, AssemblerOptions options,
+  void SetImmPCOffsetTarget(const AssemblerOptions& options,
                             Instruction* target);
-  void SetUnresolvedInternalReferenceImmTarget(Zone* zone,
-                                               AssemblerOptions options,
+  void SetUnresolvedInternalReferenceImmTarget(const AssemblerOptions& options,
                                                Instruction* target);
   // Patch a literal load instruction to load from 'source'.
   void SetImmLLiteral(Instruction* source);
@@ -465,12 +464,10 @@ class Instruction {
 
   static const int ImmPCRelRangeBitwidth = 21;
   static bool IsValidPCRelOffset(ptrdiff_t offset) { return is_int21(offset); }
-  void SetPCRelImmTarget(Zone* zone, AssemblerOptions options,
-                         Instruction* target);
+  void SetPCRelImmTarget(const AssemblerOptions& options, Instruction* target);
 
   template <ImmBranchType branch_type>
-  void SetBranchImmTarget(Instruction* target,
-                          WritableJitAllocation* jit_allocation = nullptr) {
+  void SetBranchImmTarget(Instruction* target) {
     DCHECK(IsAligned(DistanceTo(target), kInstrSize));
     DCHECK(IsValidImmPCOffset(branch_type, DistanceTo(target)));
     int offset = static_cast<int>(DistanceTo(target) >> kInstrSizeLog2);
@@ -498,7 +495,7 @@ class Instruction {
       default:
         UNREACHABLE();
     }
-    SetInstructionBits(Mask(~imm_mask) | branch_imm, jit_allocation);
+    SetInstructionBits(Mask(~imm_mask) | branch_imm);
   }
 };
 

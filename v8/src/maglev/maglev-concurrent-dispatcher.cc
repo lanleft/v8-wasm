@@ -153,9 +153,7 @@ CompilationJob::Status MaglevCompilationJob::FinalizeJobImpl(Isolate* isolate) {
   // Functions with many inline candidates are sensitive to correct call
   // frequency feedback and should therefore not be tiered up early.
   if (v8_flags.profile_guided_optimization &&
-      info()->could_not_inline_all_candidates() &&
-      info()->toplevel_function()->shared()->cached_tiering_decision() !=
-          CachedTieringDecision::kDelayMaglev) {
+      info()->could_not_inline_all_candidates()) {
     info()->toplevel_function()->shared()->set_cached_tiering_decision(
         CachedTieringDecision::kNormal);
   }
@@ -180,15 +178,15 @@ void MaglevCompilationJob::DisposeOnMainThread(Isolate* isolate) {
   // Drop canonical handles on the main thread, to avoid (in the case of
   // background job destruction) needing to unpark the local isolate on the
   // background thread for unregistering the identity map's strong roots.
-  DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
+  DCHECK(isolate->IsCurrent());
   info()->DetachCanonicalHandles()->Clear();
 }
 
-MaybeIndirectHandle<Code> MaglevCompilationJob::code() const {
+MaybeHandle<Code> MaglevCompilationJob::code() const {
   return info_->get_code();
 }
 
-IndirectHandle<JSFunction> MaglevCompilationJob::function() const {
+Handle<JSFunction> MaglevCompilationJob::function() const {
   return info_->toplevel_function();
 }
 
@@ -319,6 +317,7 @@ class MaglevConcurrentDispatcher::JobTask final : public v8::JobTask {
   QueueT* destruction_queue() const { return &dispatcher_->destruction_queue_; }
 
   MaglevConcurrentDispatcher* const dispatcher_;
+  const Handle<JSFunction> function_;
 };
 
 MaglevConcurrentDispatcher::MaglevConcurrentDispatcher(Isolate* isolate)

@@ -6,8 +6,8 @@
 #define V8_MAGLEV_MAGLEV_COMPILATION_INFO_H_
 
 #include <memory>
-#include <optional>
 
+#include "src/base/optional.h"
 #include "src/handles/handles.h"
 #include "src/handles/maybe-handles.h"
 #include "src/utils/utils.h"
@@ -49,16 +49,16 @@ class MaglevCompilationInfo final {
  public:
   static std::unique_ptr<MaglevCompilationInfo> NewForTurboshaft(
       Isolate* isolate, compiler::JSHeapBroker* broker,
-      IndirectHandle<JSFunction> function, BytecodeOffset osr_offset,
+      Handle<JSFunction> function, BytecodeOffset osr_offset,
       bool specialize_to_function_context) {
     // Doesn't use make_unique due to the private ctor.
     return std::unique_ptr<MaglevCompilationInfo>(new MaglevCompilationInfo(
         isolate, function, osr_offset, broker, specialize_to_function_context,
         /*for_turboshaft_frontend*/ true));
   }
-  static std::unique_ptr<MaglevCompilationInfo> New(
-      Isolate* isolate, IndirectHandle<JSFunction> function,
-      BytecodeOffset osr_offset) {
+  static std::unique_ptr<MaglevCompilationInfo> New(Isolate* isolate,
+                                                    Handle<JSFunction> function,
+                                                    BytecodeOffset osr_offset) {
     // Doesn't use make_unique due to the private ctor.
     return std::unique_ptr<MaglevCompilationInfo>(
         new MaglevCompilationInfo(isolate, function, osr_offset));
@@ -70,16 +70,14 @@ class MaglevCompilationInfo final {
   MaglevCompilationUnit* toplevel_compilation_unit() const {
     return toplevel_compilation_unit_;
   }
-  IndirectHandle<JSFunction> toplevel_function() const {
-    return toplevel_function_;
-  }
+  Handle<JSFunction> toplevel_function() const { return toplevel_function_; }
   BytecodeOffset toplevel_osr_offset() const { return osr_offset_; }
   bool toplevel_is_osr() const { return osr_offset_ != BytecodeOffset::None(); }
-  void set_code(IndirectHandle<Code> code) {
+  void set_code(Handle<Code> code) {
     DCHECK(code_.is_null());
     code_ = code;
   }
-  MaybeIndirectHandle<Code> get_code() { return code_; }
+  MaybeHandle<Code> get_code() { return code_; }
 
   bool for_turboshaft_frontend() const { return for_turboshaft_frontend_; }
 
@@ -131,10 +129,9 @@ class MaglevCompilationInfo final {
 
  private:
   MaglevCompilationInfo(
-      Isolate* isolate, IndirectHandle<JSFunction> function,
-      BytecodeOffset osr_offset,
-      std::optional<compiler::JSHeapBroker*> broker = std::nullopt,
-      std::optional<bool> specialize_to_function_context = std::nullopt,
+      Isolate* isolate, Handle<JSFunction> function, BytecodeOffset osr_offset,
+      base::Optional<compiler::JSHeapBroker*> broker = base::nullopt,
+      base::Optional<bool> specialize_to_function_context = base::nullopt,
       bool for_turboshaft_frontend = false);
 
   // Storing the raw pointer to the CanonicalHandlesMap is generally not safe.
@@ -149,8 +146,8 @@ class MaglevCompilationInfo final {
   compiler::JSHeapBroker* broker_;
   // Must be initialized late since it requires an initialized heap broker.
   MaglevCompilationUnit* toplevel_compilation_unit_ = nullptr;
-  IndirectHandle<JSFunction> toplevel_function_;
-  IndirectHandle<Code> code_;
+  Handle<JSFunction> toplevel_function_;
+  Handle<Code> code_;
   BytecodeOffset osr_offset_;
 
   // True if this MaglevCompilationInfo owns its broker and false otherwise. In

@@ -5,10 +5,10 @@
 #include "src/objects/js-objects.h"
 
 #include <limits>
-#include <optional>
 
 #include "src/api/api-arguments-inl.h"
 #include "src/api/api-natives.h"
+#include "src/base/optional.h"
 #include "src/common/assert-scope.h"
 #include "src/common/globals.h"
 #include "src/date/date.h"
@@ -20,7 +20,6 @@
 #include "src/handles/maybe-handles.h"
 #include "src/heap/factory-inl.h"
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/mutable-page-metadata.h"
 #include "src/heap/pretenuring-handler-inl.h"
 #include "src/init/bootstrapper.h"
@@ -38,25 +37,47 @@
 #include "src/objects/js-array-buffer-inl.h"
 #include "src/objects/js-array-inl.h"
 #include "src/objects/js-atomics-synchronization.h"
+#include "src/objects/lookup.h"
+#include "src/objects/map-updater.h"
+#include "src/objects/objects-body-descriptors-inl.h"
+#include "src/objects/objects-inl.h"
+#include "src/objects/tagged.h"
+#ifdef V8_INTL_SUPPORT
+#include "src/objects/js-break-iterator.h"
+#include "src/objects/js-collator.h"
+#endif  // V8_INTL_SUPPORT
 #include "src/objects/js-collection.h"
+#ifdef V8_INTL_SUPPORT
+#include "src/objects/js-date-time-format.h"
+#include "src/objects/js-display-names.h"
+#include "src/objects/js-duration-format.h"
+#endif  // V8_INTL_SUPPORT
 #include "src/objects/js-disposable-stack.h"
 #include "src/objects/js-generator-inl.h"
 #include "src/objects/js-iterator-helpers-inl.h"
+#ifdef V8_INTL_SUPPORT
+#include "src/objects/js-list-format.h"
+#include "src/objects/js-locale.h"
+#include "src/objects/js-number-format.h"
+#include "src/objects/js-plural-rules.h"
+#endif  // V8_INTL_SUPPORT
 #include "src/objects/js-promise.h"
-#include "src/objects/js-raw-json-inl.h"
 #include "src/objects/js-regexp-inl.h"
 #include "src/objects/js-regexp-string-iterator.h"
 #include "src/objects/js-shadow-realm.h"
+#ifdef V8_INTL_SUPPORT
+#include "src/objects/js-relative-time-format.h"
+#include "src/objects/js-segment-iterator.h"
+#include "src/objects/js-segmenter.h"
+#include "src/objects/js-segments.h"
+#endif  // V8_INTL_SUPPORT
+#include "src/objects/js-raw-json-inl.h"
 #include "src/objects/js-shared-array-inl.h"
 #include "src/objects/js-struct-inl.h"
 #include "src/objects/js-temporal-objects-inl.h"
 #include "src/objects/js-weak-refs.h"
-#include "src/objects/lookup.h"
 #include "src/objects/map-inl.h"
-#include "src/objects/map-updater.h"
 #include "src/objects/module.h"
-#include "src/objects/objects-body-descriptors-inl.h"
-#include "src/objects/objects-inl.h"
 #include "src/objects/oddball.h"
 #include "src/objects/property-cell.h"
 #include "src/objects/property-descriptor.h"
@@ -65,7 +86,6 @@
 #include "src/objects/prototype.h"
 #include "src/objects/shared-function-info.h"
 #include "src/objects/swiss-name-dictionary-inl.h"
-#include "src/objects/tagged.h"
 #include "src/objects/transitions.h"
 #include "src/strings/string-builder-inl.h"
 #include "src/strings/string-stream.h"
@@ -76,23 +96,8 @@
 #include "src/wasm/wasm-objects.h"
 #endif  // V8_ENABLE_WEBASSEMBLY
 
-#ifdef V8_INTL_SUPPORT
-#include "src/objects/js-break-iterator.h"
-#include "src/objects/js-collator.h"
-#include "src/objects/js-date-time-format.h"
-#include "src/objects/js-display-names.h"
-#include "src/objects/js-duration-format.h"
-#include "src/objects/js-list-format.h"
-#include "src/objects/js-locale.h"
-#include "src/objects/js-number-format.h"
-#include "src/objects/js-plural-rules.h"
-#include "src/objects/js-relative-time-format.h"
-#include "src/objects/js-segment-iterator.h"
-#include "src/objects/js-segmenter.h"
-#include "src/objects/js-segments.h"
-#endif  // V8_INTL_SUPPORT
-
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 // static
 Maybe<bool> JSReceiver::HasProperty(LookupIterator* it) {
@@ -256,11 +261,12 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
 
 namespace {
 
-bool HasExcludedProperty(base::Vector<DirectHandle<Object>> excluded_properties,
-                         DirectHandle<Object> search_element) {
+bool HasExcludedProperty(
+    const base::ScopedVector<Handle<Object>>* excluded_properties,
+    DirectHandle<Object> search_element) {
   // TODO(gsathya): Change this to be a hashtable.
-  for (DirectHandle<Object> object : excluded_properties) {
-    if (Object::SameValue(*search_element, *object)) {
+  for (int i = 0; i < excluded_properties->length(); i++) {
+    if (Object::SameValue(*search_element, *excluded_properties->at(i))) {
       return true;
     }
   }
@@ -268,13 +274,11 @@ bool HasExcludedProperty(base::Vector<DirectHandle<Object>> excluded_properties,
   return false;
 }
 
-// If direct handles are enabled, it is the responsibility of the caller to
-// ensure that the memory pointed to by `excluded_properties` is scanned
-// during CSS, e.g., it comes from a `DirectHandleVector<Object>`.
 V8_WARN_UNUSED_RESULT Maybe<bool> FastAssign(
     Isolate* isolate, Handle<JSReceiver> target, Handle<Object> source,
     PropertiesEnumerationMode mode,
-    base::Vector<DirectHandle<Object>> excluded_properties, bool use_set) {
+    const base::ScopedVector<Handle<Object>>* excluded_properties,
+    bool use_set) {
   // Non-empty strings are the only non-JSReceivers that need to be handled
   // explicitly by Object.assign.
   if (!IsJSReceiver(*source)) {
@@ -379,7 +383,7 @@ V8_WARN_UNUSED_RESULT Maybe<bool> FastAssign(
       } else {
         // No element indexes should get here or the exclusion check may
         // yield false negatives for type mismatch.
-        if (!excluded_properties.empty() &&
+        if (excluded_properties != nullptr &&
             HasExcludedProperty(excluded_properties, next_key)) {
           continue;
         }
@@ -412,7 +416,8 @@ V8_WARN_UNUSED_RESULT Maybe<bool> FastAssign(
 Maybe<bool> JSReceiver::SetOrCopyDataProperties(
     Isolate* isolate, Handle<JSReceiver> target, Handle<Object> source,
     PropertiesEnumerationMode mode,
-    base::Vector<DirectHandle<Object>> excluded_properties, bool use_set) {
+    const base::ScopedVector<Handle<Object>>* excluded_properties,
+    bool use_set) {
   Maybe<bool> fast_assign =
       FastAssign(isolate, target, source, mode, excluded_properties, use_set);
   if (fast_assign.IsNothing()) return Nothing<bool>();
@@ -454,7 +459,7 @@ Maybe<bool> JSReceiver::SetOrCopyDataProperties(
   // 4. Repeat for each element nextKey of keys in List order,
   for (int i = 0; i < keys->length(); ++i) {
     Handle<Object> next_key(keys->get(i), isolate);
-    if (!excluded_properties.empty() &&
+    if (excluded_properties != nullptr &&
         HasExcludedProperty(excluded_properties, next_key)) {
       continue;
     }
@@ -573,7 +578,7 @@ std::pair<MaybeHandle<JSFunction>, Handle<String>> GetConstructorHelper(
         return std::make_pair(constructor, name);
       }
     } else if (IsFunctionTemplateInfo(*maybe_constructor)) {
-      DirectHandle<FunctionTemplateInfo> function_template =
+      Handle<FunctionTemplateInfo> function_template =
           Cast<FunctionTemplateInfo>(maybe_constructor);
       if (!IsUndefined(function_template->class_name(), isolate)) {
         return std::make_pair(
@@ -991,25 +996,25 @@ Maybe<bool> JSReceiver::DeleteProperty(LookupIterator* it,
   }
 }
 
-Maybe<bool> JSReceiver::DeleteElement(Isolate* isolate,
-                                      Handle<JSReceiver> object, uint32_t index,
+Maybe<bool> JSReceiver::DeleteElement(Handle<JSReceiver> object, uint32_t index,
                                       LanguageMode language_mode) {
-  LookupIterator it(isolate, object, index, object, LookupIterator::OWN);
+  LookupIterator it(object->GetIsolate(), object, index, object,
+                    LookupIterator::OWN);
   return DeleteProperty(&it, language_mode);
 }
 
-Maybe<bool> JSReceiver::DeleteProperty(Isolate* isolate,
-                                       Handle<JSReceiver> object,
+Maybe<bool> JSReceiver::DeleteProperty(Handle<JSReceiver> object,
                                        Handle<Name> name,
                                        LanguageMode language_mode) {
-  LookupIterator it(isolate, object, name, object, LookupIterator::OWN);
+  LookupIterator it(object->GetIsolate(), object, name, object,
+                    LookupIterator::OWN);
   return DeleteProperty(&it, language_mode);
 }
 
-Maybe<bool> JSReceiver::DeletePropertyOrElement(Isolate* isolate,
-                                                Handle<JSReceiver> object,
+Maybe<bool> JSReceiver::DeletePropertyOrElement(Handle<JSReceiver> object,
                                                 Handle<Name> name,
                                                 LanguageMode language_mode) {
+  Isolate* isolate = object->GetIsolate();
   PropertyKey key(isolate, name);
   LookupIterator it(isolate, object, key, object, LookupIterator::OWN);
   return DeleteProperty(&it, language_mode);
@@ -1511,10 +1516,10 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
       if (it != nullptr) {
         if (!desc->has_enumerable()) desc->set_enumerable(false);
         if (!desc->has_configurable()) desc->set_configurable(false);
-        DirectHandle<Object> getter(
+        Handle<Object> getter(
             desc->has_get() ? desc->get()
                             : Cast<Object>(isolate->factory()->null_value()));
-        DirectHandle<Object> setter(
+        Handle<Object> setter(
             desc->has_set() ? desc->set()
                             : Cast<Object>(isolate->factory()->null_value()));
         MaybeHandle<Object> result =
@@ -1695,12 +1700,12 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
       DCHECK(desc_is_accessor_descriptor ||
              (desc_is_generic_descriptor &&
               PropertyDescriptor::IsAccessorDescriptor(current)));
-      DirectHandle<Object> getter(
+      Handle<Object> getter(
           desc->has_get() ? desc->get()
           : current->has_get()
               ? current->get()
               : Cast<Object>(isolate->factory()->null_value()));
-      DirectHandle<Object> setter(
+      Handle<Object> setter(
           desc->has_set() ? desc->set()
           : current->has_set()
               ? current->set()
@@ -1826,7 +1831,7 @@ Maybe<bool> GetPropertyDescriptorWithInterceptor(LookupIterator* it,
                                                  PropertyDescriptor* desc) {
   Handle<InterceptorInfo> interceptor;
 
-  while (it->state() == LookupIterator::ACCESS_CHECK) {
+  if (it->state() == LookupIterator::ACCESS_CHECK) {
     if (it->HasAccess()) {
       it->Next();
     } else {
@@ -1836,7 +1841,6 @@ Maybe<bool> GetPropertyDescriptorWithInterceptor(LookupIterator* it,
         return Just(false);
       }
       CHECK(!interceptor.is_null());
-      break;
     }
   }
   if (it->state() == LookupIterator::INTERCEPTOR) {
@@ -2625,6 +2629,8 @@ int JSObject::GetHeaderSize(InstanceType type,
       return WasmMemoryObject::kHeaderSize;
     case WASM_MODULE_OBJECT_TYPE:
       return WasmModuleObject::kHeaderSize;
+    case WASM_SUSPENDER_OBJECT_TYPE:
+      return WasmSuspenderObject::kHeaderSize;
     case WASM_TABLE_OBJECT_TYPE:
       return WasmTableObject::kHeaderSize;
     case WASM_VALUE_OBJECT_TYPE:
@@ -2891,9 +2897,6 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
     case JS_SHARED_STRUCT_TYPE:
       accumulator->Add("<JSSharedStruct>");
       break;
-    case JS_ATOMICS_MUTEX_TYPE:
-      accumulator->Add("<JSAtomicsMutex>");
-      break;
     case JS_MESSAGE_OBJECT_TYPE:
       accumulator->Add("<JSMessageObject>");
       break;
@@ -2914,7 +2917,7 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
         if (IsJSFunction(constructor)) {
           Tagged<SharedFunctionInfo> sfi =
               Cast<JSFunction>(constructor)->shared();
-          if (!HeapLayout::InReadOnlySpace(sfi) && !heap->Contains(sfi)) {
+          if (!InReadOnlySpace(sfi) && !heap->Contains(sfi)) {
             accumulator->Add("!!!INVALID SHARED ON CONSTRUCTOR!!!");
           } else {
             Tagged<String> constructor_name = sfi->Name();
@@ -3027,7 +3030,7 @@ bool JSObject::IsUnmodifiedApiObject(FullObjectSlot o) {
 
 // static
 void JSObject::UpdatePrototypeUserRegistration(DirectHandle<Map> old_map,
-                                               DirectHandle<Map> new_map,
+                                               Handle<Map> new_map,
                                                Isolate* isolate) {
   DCHECK(old_map->is_prototype_map());
   DCHECK(new_map->is_prototype_map());
@@ -3052,8 +3055,8 @@ void JSObject::UpdatePrototypeUserRegistration(DirectHandle<Map> old_map,
 }
 
 // static
-void JSObject::NotifyMapChange(DirectHandle<Map> old_map,
-                               DirectHandle<Map> new_map, Isolate* isolate) {
+void JSObject::NotifyMapChange(Handle<Map> old_map, Handle<Map> new_map,
+                               Isolate* isolate) {
   if (!old_map->is_prototype_map()) return;
 
   InvalidatePrototypeChains(*old_map);
@@ -3091,14 +3094,14 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
     // If the map does not add named properties, simply set the map.
     if (old_map->NumberOfOwnDescriptors() ==
         new_map->NumberOfOwnDescriptors()) {
-      object->set_map(isolate, *new_map, kReleaseStore);
+      object->set_map(*new_map, kReleaseStore);
       return;
     }
 
     // If the map adds a new kDescriptor property, simply set the map.
     PropertyDetails details = new_map->GetLastDescriptorDetails(isolate);
     if (details.location() == PropertyLocation::kDescriptor) {
-      object->set_map(isolate, *new_map, kReleaseStore);
+      object->set_map(*new_map, kReleaseStore);
       return;
     }
 
@@ -3113,7 +3116,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
         auto value = isolate->factory()->NewHeapNumberWithHoleNaN();
         object->FastPropertyAtPut(index, *value);
       }
-      object->set_map(isolate, *new_map, kReleaseStore);
+      object->set_map(*new_map, kReleaseStore);
       return;
     }
 
@@ -3126,7 +3129,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
         isolate->factory()->CopyPropertyArrayAndGrow(old_storage, grow_by);
 
     // Properly initialize newly added property.
-    DirectHandle<Object> value;
+    Handle<Object> value;
     if (details.representation().IsDouble()) {
       value = isolate->factory()->NewHeapNumberWithHoleNaN();
     } else {
@@ -3142,7 +3145,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
 
     // Set the new property value and do the map transition.
     object->SetProperties(*new_storage);
-    object->set_map(isolate, *new_map, kReleaseStore);
+    object->set_map(*new_map, kReleaseStore);
     return;
   }
 
@@ -3156,7 +3159,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
   if (!old_map->InstancesNeedRewriting(*new_map, number_of_fields, inobject,
                                        unused, &old_number_of_fields,
                                        ConcurrencyMode::kSynchronous)) {
-    object->set_map(isolate, *new_map, kReleaseStore);
+    object->set_map(*new_map, kReleaseStore);
     return;
   }
 
@@ -3230,7 +3233,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
     PropertyDetails details = new_descriptors->GetDetails(i);
     if (details.location() != PropertyLocation::kField) continue;
     DCHECK_EQ(PropertyKind::kData, details.kind());
-    DirectHandle<Object> value;
+    Handle<Object> value;
     if (details.representation().IsDouble()) {
       value = isolate->factory()->NewHeapNumberWithHoleNaN();
     } else {
@@ -3273,7 +3276,7 @@ void MigrateFastToFast(Isolate* isolate, DirectHandle<JSObject> object,
 
   // We are storing the new map using release store after creating a filler for
   // the left-over space to avoid races with the sweeper thread.
-  object->set_map(isolate, *new_map, kReleaseStore);
+  object->set_map(*new_map, kReleaseStore);
 }
 
 void MigrateFastToSlow(Isolate* isolate, DirectHandle<JSObject> object,
@@ -3373,7 +3376,7 @@ void MigrateFastToSlow(Isolate* isolate, DirectHandle<JSObject> object,
 
   // We are storing the new map using release store after creating a filler for
   // the left-over space to avoid races with the sweeper thread.
-  object->set_map(isolate, *new_map, kReleaseStore);
+  object->set_map(*new_map, kReleaseStore);
 
   if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     object->SetProperties(*ord_dictionary);
@@ -3403,10 +3406,10 @@ void MigrateFastToSlow(Isolate* isolate, DirectHandle<JSObject> object,
 }  // namespace
 
 void JSObject::MigrateToMap(Isolate* isolate, DirectHandle<JSObject> object,
-                            DirectHandle<Map> new_map,
+                            Handle<Map> new_map,
                             int expected_additional_properties) {
   if (object->map(isolate) == *new_map) return;
-  DirectHandle<Map> old_map(object->map(isolate), isolate);
+  Handle<Map> old_map(object->map(isolate), isolate);
   NotifyMapChange(old_map, new_map, isolate);
 
   if (old_map->is_dictionary_map()) {
@@ -3415,7 +3418,7 @@ void JSObject::MigrateToMap(Isolate* isolate, DirectHandle<JSObject> object,
     CHECK(new_map->is_dictionary_map());
 
     // Slow-to-slow migration is trivial.
-    object->set_map(isolate, *new_map, kReleaseStore);
+    object->set_map(*new_map, kReleaseStore);
   } else if (!new_map->is_dictionary_map()) {
     MigrateFastToFast(isolate, object, new_map);
     if (old_map->is_prototype_map()) {
@@ -3451,7 +3454,7 @@ void JSObject::ForceSetPrototype(Isolate* isolate,
                                  Handle<HeapObject> proto) {
   // object.__proto__ = proto;
   Handle<Map> old_map = Handle<Map>(object->map(), isolate);
-  DirectHandle<Map> new_map = Map::Copy(isolate, old_map, "ForceSetPrototype");
+  Handle<Map> new_map = Map::Copy(isolate, old_map, "ForceSetPrototype");
   Map::SetPrototype(isolate, new_map, proto);
   JSObject::MigrateToMap(isolate, object, new_map);
 }
@@ -3523,13 +3526,13 @@ void JSObject::AllocateStorageForMap(Handle<JSObject> object, Handle<Map> map) {
     Tagged<Object> value = storage->get(i);
     object->FastPropertyAtPut(index, value);
   }
-  object->set_map(isolate, *map, kReleaseStore);
+  object->set_map(*map, kReleaseStore);
 }
 
 void JSObject::MigrateInstance(Isolate* isolate,
                                DirectHandle<JSObject> object) {
   Handle<Map> original_map(object->map(), isolate);
-  DirectHandle<Map> map = Map::Update(isolate, original_map);
+  Handle<Map> map = Map::Update(isolate, original_map);
   map->set_is_migration_target(true);
   JSObject::MigrateToMap(isolate, object, map);
   if (v8_flags.trace_migration) {
@@ -3596,7 +3599,7 @@ bool TryFastAddDataProperty(Isolate* isolate, DirectHandle<JSObject> object,
 }  // namespace
 
 void JSObject::AddProperty(Isolate* isolate, Handle<JSObject> object,
-                           Handle<Name> name, DirectHandle<Object> value,
+                           Handle<Name> name, Handle<Object> value,
                            PropertyAttributes attributes) {
   name = isolate->factory()->InternalizeName(name);
   if (TryFastAddDataProperty(isolate, object, name, value, attributes)) {
@@ -3623,7 +3626,7 @@ void JSObject::AddProperty(Isolate* isolate, Handle<JSObject> object,
 }
 
 void JSObject::AddProperty(Isolate* isolate, Handle<JSObject> object,
-                           const char* name, DirectHandle<Object> value,
+                           const char* name, Handle<Object> value,
                            PropertyAttributes attributes) {
   JSObject::AddProperty(isolate, object,
                         isolate->factory()->InternalizeUtf8String(name), value,
@@ -3822,7 +3825,7 @@ void JSObject::NormalizeProperties(Isolate* isolate,
   if (!object->HasFastProperties()) return;
 
   Handle<Map> map(object->map(), isolate);
-  DirectHandle<Map> new_map =
+  Handle<Map> new_map =
       Map::Normalize(isolate, map, map->elements_kind(), Handle<HeapObject>(),
                      mode, use_cache, reason);
 
@@ -3839,7 +3842,7 @@ void JSObject::MigrateSlowToFast(DirectHandle<JSObject> object,
   Factory* factory = isolate->factory();
 
   Handle<NameDictionary> dictionary;
-  DirectHandle<SwissNameDictionary> swiss_dictionary;
+  Handle<SwissNameDictionary> swiss_dictionary;
   int number_of_elements;
   if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     swiss_dictionary = handle(object->property_dictionary_swiss(), isolate);
@@ -3853,7 +3856,7 @@ void JSObject::MigrateSlowToFast(DirectHandle<JSObject> object,
   // descriptors.
   if (number_of_elements > kMaxNumberOfDescriptors) return;
 
-  DirectHandle<FixedArray> iteration_order;
+  Handle<FixedArray> iteration_order;
   int iteration_length;
   if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
     // |iteration_order| remains empty handle, we don't need it.
@@ -3907,7 +3910,7 @@ void JSObject::MigrateSlowToFast(DirectHandle<JSObject> object,
     DCHECK_LE(unused_property_fields, inobject_props);
     // Transform the object.
     new_map->SetInObjectUnusedPropertyFields(inobject_props);
-    object->set_map(isolate, *new_map, kReleaseStore);
+    object->set_map(*new_map, kReleaseStore);
     object->SetProperties(ReadOnlyRoots(isolate).empty_fixed_array());
     // Check that it really works.
     DCHECK(object->HasFastProperties());
@@ -4026,7 +4029,7 @@ void JSObject::MigrateSlowToFast(DirectHandle<JSObject> object,
     LOG(isolate, MapEvent("SlowToFast", old_map, new_map, reason));
   }
   // Transform the object.
-  object->set_map(isolate, *new_map, kReleaseStore);
+  object->set_map(*new_map, kReleaseStore);
 
   object->SetProperties(*fields);
   DCHECK(IsJSObject(*object));
@@ -4077,8 +4080,7 @@ Handle<NumberDictionary> JSObject::NormalizeElements(Handle<JSObject> object) {
       is_sloppy_arguments                      ? SLOW_SLOPPY_ARGUMENTS_ELEMENTS
       : object->HasFastStringWrapperElements() ? SLOW_STRING_WRAPPER_ELEMENTS
                                                : DICTIONARY_ELEMENTS;
-  DirectHandle<Map> new_map =
-      JSObject::GetElementsTransitionMap(object, target_kind);
+  Handle<Map> new_map = JSObject::GetElementsTransitionMap(object, target_kind);
   // Set the new map first to satify the elements type assert in set_elements().
   JSObject::MigrateToMap(isolate, object, new_map);
 
@@ -4216,7 +4218,7 @@ bool TestPropertiesIntegrityLevel(Tagged<JSObject> object,
   }
 }
 
-bool TestElementsIntegrityLevel(Isolate* isolate, Tagged<JSObject> object,
+bool TestElementsIntegrityLevel(Tagged<JSObject> object,
                                 PropertyAttributes level) {
   DCHECK(!object->HasSloppyArgumentsElements());
 
@@ -4240,15 +4242,14 @@ bool TestElementsIntegrityLevel(Isolate* isolate, Tagged<JSObject> object,
   ElementsAccessor* accessor = ElementsAccessor::ForKind(kind);
   // Only DICTIONARY_ELEMENTS and SLOW_SLOPPY_ARGUMENTS_ELEMENTS have
   // PropertyAttributes so just test if empty
-  return accessor->NumberOfElements(isolate, object) == 0;
+  return accessor->NumberOfElements(object) == 0;
 }
 
-bool FastTestIntegrityLevel(Isolate* isolate, Tagged<JSObject> object,
-                            PropertyAttributes level) {
+bool FastTestIntegrityLevel(Tagged<JSObject> object, PropertyAttributes level) {
   DCHECK(!IsCustomElementsReceiverMap(object->map()));
 
   return !object->map()->is_extensible() &&
-         TestElementsIntegrityLevel(isolate, object, level) &&
+         TestElementsIntegrityLevel(object, level) &&
          TestPropertiesIntegrityLevel(object, level);
 }
 
@@ -4259,7 +4260,7 @@ Maybe<bool> JSObject::TestIntegrityLevel(Isolate* isolate,
                                          IntegrityLevel level) {
   if (!IsCustomElementsReceiverMap(object->map()) &&
       !object->HasSloppyArgumentsElements()) {
-    return Just(FastTestIntegrityLevel(isolate, *object, level));
+    return Just(FastTestIntegrityLevel(*object, level));
   }
   return GenericTestIntegrityLevel(isolate, Cast<JSReceiver>(object), level);
 }
@@ -4308,7 +4309,7 @@ Maybe<bool> JSObject::PreventExtensions(Isolate* isolate,
   // Do a map transition, other objects with this map may still
   // be extensible.
   // TODO(adamk): Extend the NormalizedMapCache to handle non-extensible maps.
-  DirectHandle<Map> new_map =
+  Handle<Map> new_map =
       Map::Copy(isolate, handle(object->map(), isolate), "PreventExtensions");
 
   new_map->set_is_extensible(false);
@@ -4425,7 +4426,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
   // ordinary ECMAScript objects allow sealed to be upgraded to frozen. This
   // upgrade violates the fixed layout invariant and is disallowed.
   if (IsAlwaysSharedSpaceJSObject(*object)) {
-    DCHECK(FastTestIntegrityLevel(isolate, *object, SEALED));
+    DCHECK(FastTestIntegrityLevel(*object, SEALED));
     if (attrs != FROZEN) return Just(true);
     RETURN_FAILURE(isolate, should_throw,
                    NewTypeError(MessageTemplate::kCannotFreeze));
@@ -4487,9 +4488,9 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
   Handle<Map> old_map(object->map(), isolate);
   old_map = Map::Update(isolate, old_map);
   Handle<Map> transition_map;
-  MaybeHandle<Map> maybe_transition_map =
-      TransitionsAccessor::SearchSpecial(isolate, old_map, *transition_marker);
-  if (maybe_transition_map.ToHandle(&transition_map)) {
+  if (auto maybe_transition_map = TransitionsAccessor::SearchSpecial(
+          isolate, old_map, *transition_marker)) {
+    transition_map = *maybe_transition_map;
     DCHECK(transition_map->has_dictionary_elements() ||
            transition_map->has_typed_array_or_rab_gsab_typed_array_elements() ||
            transition_map->elements_kind() == SLOW_STRING_WRAPPER_ELEMENTS ||
@@ -4501,7 +4502,7 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
     JSObject::MigrateToMap(isolate, object, transition_map);
   } else if (TransitionsAccessor::CanHaveMoreTransitions(isolate, old_map)) {
     // Create a new descriptor array with the appropriate property attributes
-    DirectHandle<Map> new_map = Map::CopyForPreventExtensions(
+    Handle<Map> new_map = Map::CopyForPreventExtensions(
         isolate, old_map, attrs, transition_marker, "CopyForPreventExtensions");
     if (!new_map->has_any_nonextensible_elements()) {
       new_element_dictionary = CreateElementDictionary(isolate, object);
@@ -4515,9 +4516,8 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
 
     // Create a new map, since other objects with this map may be extensible.
     // TODO(adamk): Extend the NormalizedMapCache to handle non-extensible maps.
-    DirectHandle<Map> new_map =
-        Map::Copy(isolate, handle(object->map(), isolate),
-                  "SlowCopyForPreventExtensions");
+    Handle<Map> new_map = Map::Copy(isolate, handle(object->map(), isolate),
+                                    "SlowCopyForPreventExtensions");
     new_map->set_is_extensible(false);
     new_element_dictionary = CreateElementDictionary(isolate, object);
     if (!new_element_dictionary.is_null()) {
@@ -4619,14 +4619,14 @@ Handle<Object> JSObject::DictionaryPropertyAt(Isolate* isolate,
 }
 
 // static
-std::optional<Tagged<Object>> JSObject::DictionaryPropertyAt(
+base::Optional<Tagged<Object>> JSObject::DictionaryPropertyAt(
     DirectHandle<JSObject> object, InternalIndex dict_index, Heap* heap) {
   Tagged<Object> backing_store = object->raw_properties_or_hash(kRelaxedLoad);
   if (!IsHeapObject(backing_store)) return {};
   if (heap->IsPendingAllocation(Cast<HeapObject>(backing_store))) return {};
 
   if (!IsPropertyDictionary(backing_store)) return {};
-  std::optional<Tagged<Object>> maybe_obj =
+  base::Optional<Tagged<Object>> maybe_obj =
       Cast<PropertyDictionary>(backing_store)->TryValueAt(dict_index);
 
   if (!maybe_obj) return {};
@@ -4718,8 +4718,8 @@ bool JSObject::HasEnumerableElements() {
 }
 
 MaybeHandle<Object> JSObject::DefineOwnAccessorIgnoreAttributes(
-    Handle<JSObject> object, Handle<Name> name, DirectHandle<Object> getter,
-    DirectHandle<Object> setter, PropertyAttributes attributes) {
+    Handle<JSObject> object, Handle<Name> name, Handle<Object> getter,
+    Handle<Object> setter, PropertyAttributes attributes) {
   Isolate* isolate = object->GetIsolate();
 
   PropertyKey key(isolate, name);
@@ -4734,7 +4734,7 @@ MaybeHandle<Object> JSObject::DefineOwnAccessorIgnoreAttributes(
 
   it->UpdateProtector();
 
-  while (it->state() == LookupIterator::ACCESS_CHECK) {
+  if (it->state() == LookupIterator::ACCESS_CHECK) {
     if (!it->HasAccess()) {
       RETURN_ON_EXCEPTION(
           isolate, isolate->ReportFailedAccessCheck(it->GetHolder<JSObject>()));
@@ -4769,7 +4769,7 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
 
   // Duplicate ACCESS_CHECK outside of GetPropertyAttributes for the case that
   // the FailedAccessCheckCallbackFunction doesn't throw an exception.
-  while (it.state() == LookupIterator::ACCESS_CHECK) {
+  if (it.state() == LookupIterator::ACCESS_CHECK) {
     if (!it.HasAccess()) {
       RETURN_ON_EXCEPTION(isolate, isolate->ReportFailedAccessCheck(object));
       UNREACHABLE();
@@ -4879,7 +4879,7 @@ void JSObject::MakePrototypesFast(Handle<Object> receiver,
        !iter.IsAtEnd(); iter.Advance()) {
     Handle<Object> current = PrototypeIterator::GetCurrent(iter);
     if (!IsJSObjectThatCanBeTrackedAsPrototype(*current)) return;
-    DirectHandle<JSObject> current_obj = Cast<JSObject>(current);
+    Handle<JSObject> current_obj = Cast<JSObject>(current);
     Tagged<Map> current_map = current_obj->map();
     if (current_map->is_prototype_map()) {
       // If the map is already marked as should be fast, we're done. Its
@@ -4904,7 +4904,7 @@ static bool PrototypeBenefitsFromNormalization(Tagged<JSObject> object) {
 }
 
 // static
-void JSObject::OptimizeAsPrototype(DirectHandle<JSObject> object,
+void JSObject::OptimizeAsPrototype(Handle<JSObject> object,
                                    bool enable_setup_mode) {
   DCHECK(IsJSObjectThatCanBeTrackedAsPrototype(*object));
   if (IsJSGlobalObject(*object)) return;
@@ -4924,7 +4924,7 @@ void JSObject::OptimizeAsPrototype(DirectHandle<JSObject> object,
       JSObject::MigrateSlowToFast(object, 0, "OptimizeAsPrototype");
     }
   } else {
-    DirectHandle<Map> new_map;
+    Handle<Map> new_map;
     if (enable_setup_mode && PrototypeBenefitsFromNormalization(*object)) {
 #if DEBUG
       DirectHandle<Map> old_map(object->map(isolate), isolate);
@@ -4939,7 +4939,7 @@ void JSObject::OptimizeAsPrototype(DirectHandle<JSObject> object,
       // A new map was created.
       DCHECK_NE(*old_map, object->map(isolate));
 
-      new_map = direct_handle(object->map(isolate), isolate);
+      new_map = handle(object->map(isolate), isolate);
     } else {
       new_map =
           Map::Copy(isolate, handle(object->map(), isolate), "CopyAsPrototype");
@@ -5002,7 +5002,7 @@ void JSObject::OptimizeAsPrototype(DirectHandle<JSObject> object,
 }
 
 // static
-void JSObject::ReoptimizeIfPrototype(DirectHandle<JSObject> object) {
+void JSObject::ReoptimizeIfPrototype(Handle<JSObject> object) {
   {
     Tagged<Map> map = object->map();
     if (!map->is_prototype_map()) return;
@@ -5012,14 +5012,13 @@ void JSObject::ReoptimizeIfPrototype(DirectHandle<JSObject> object) {
 }
 
 // static
-void JSObject::LazyRegisterPrototypeUser(DirectHandle<Map> user,
-                                         Isolate* isolate) {
+void JSObject::LazyRegisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
   // Contract: In line with InvalidatePrototypeChains()'s requirements,
   // leaf maps don't need to register as users, only prototypes do.
   DCHECK(user->is_prototype_map());
 
-  DirectHandle<Map> current_user = user;
-  DirectHandle<PrototypeInfo> current_user_info =
+  Handle<Map> current_user = user;
+  Handle<PrototypeInfo> current_user_info =
       Map::GetOrCreatePrototypeInfo(user, isolate);
   for (PrototypeIterator iter(isolate, user); !iter.IsAtEnd(); iter.Advance()) {
     // Walk up the prototype chain as far as links haven't been registered yet.
@@ -5038,7 +5037,7 @@ void JSObject::LazyRegisterPrototypeUser(DirectHandle<Map> user,
     // threadsafe.
     if (!IsJSObjectThatCanBeTrackedAsPrototype(*maybe_proto)) continue;
     auto proto = Cast<JSObject>(maybe_proto);
-    DirectHandle<PrototypeInfo> proto_info =
+    Handle<PrototypeInfo> proto_info =
         Map::GetOrCreatePrototypeInfo(proto, isolate);
     Handle<Object> maybe_registry(proto_info->prototype_users(), isolate);
     Handle<WeakArrayList> registry =
@@ -5289,7 +5288,7 @@ Maybe<bool> JSObject::SetPrototype(Isolate* isolate, Handle<JSObject> object,
 
   isolate->UpdateProtectorsOnSetPrototype(real_receiver, value);
 
-  DirectHandle<Map> new_map =
+  Handle<Map> new_map =
       v8_flags.move_prototype_transitions_first
           ? MapUpdater(isolate, map)
                 .ApplyPrototypeTransition(Cast<HeapObject>(value))
@@ -5306,15 +5305,15 @@ Maybe<bool> JSObject::SetPrototype(Isolate* isolate, Handle<JSObject> object,
 }
 
 // static
-void JSObject::SetImmutableProto(Isolate* isolate,
-                                 DirectHandle<JSObject> object) {
-  Handle<Map> map(object->map(), isolate);
+void JSObject::SetImmutableProto(DirectHandle<JSObject> object) {
+  Handle<Map> map(object->map(), object->GetIsolate());
 
   // Nothing to do if prototype is already set.
   if (map->is_immutable_proto()) return;
 
-  DirectHandle<Map> new_map = Map::TransitionToImmutableProto(isolate, map);
-  object->set_map(isolate, *new_map, kReleaseStore);
+  DirectHandle<Map> new_map =
+      Map::TransitionToImmutableProto(object->GetIsolate(), map);
+  object->set_map(*new_map, kReleaseStore);
 }
 
 void JSObject::EnsureCanContainElements(Handle<JSObject> object,
@@ -5398,7 +5397,7 @@ static ElementsKind BestFittingFastElementsKind(Tagged<JSObject> object) {
 
 // static
 Maybe<bool> JSObject::AddDataElement(Handle<JSObject> object, uint32_t index,
-                                     DirectHandle<Object> value,
+                                     Handle<Object> value,
                                      PropertyAttributes attributes) {
   Isolate* isolate = object->GetIsolate();
 
@@ -5458,7 +5457,7 @@ bool JSObject::UpdateAllocationSite(DirectHandle<JSObject> object,
                                     ElementsKind to_kind) {
   if (!IsJSArray(*object)) return false;
 
-  if (!HeapLayout::InYoungGeneration(*object)) return false;
+  if (!Heap::InYoungGeneration(*object)) return false;
 
   if (Heap::IsLargeObject(*object)) return false;
 
@@ -5467,9 +5466,11 @@ bool JSObject::UpdateAllocationSite(DirectHandle<JSObject> object,
     DisallowGarbageCollection no_gc;
 
     Heap* heap = object->GetHeap();
+    PretenuringHandler* pretunring_handler = heap->pretenuring_handler();
     Tagged<AllocationMemento> memento =
-        PretenuringHandler::FindAllocationMemento<
-            PretenuringHandler::kForRuntime>(heap, object->map(), *object);
+        pretunring_handler
+            ->FindAllocationMemento<PretenuringHandler::kForRuntime>(
+                object->map(), *object);
     if (memento.is_null()) return false;
 
     // Walk through to the Allocation Site
@@ -5508,7 +5509,7 @@ void JSObject::TransitionElementsKind(Handle<JSObject> object,
       IsDoubleElementsKind(from_kind) == IsDoubleElementsKind(to_kind)) {
     // No change is needed to the elements() buffer, the transition
     // only requires a map change.
-    DirectHandle<Map> new_map = GetElementsTransitionMap(object, to_kind);
+    Handle<Map> new_map = GetElementsTransitionMap(object, to_kind);
     JSObject::MigrateToMap(isolate, object, new_map);
     if (v8_flags.trace_elements_transitions) {
       DirectHandle<FixedArrayBase> elms(object->elements(), isolate);
@@ -5623,7 +5624,7 @@ Tagged<Object> JSObject::RawFastPropertyAtCompareAndSwap(
     SeqCstAccessTag tag) {
   return HeapObject::SeqCst_CompareAndSwapField(
       expected, value,
-      [=, this](Tagged<Object> expected_value, Tagged<Object> new_value) {
+      [=](Tagged<Object> expected_value, Tagged<Object> new_value) {
         return RawFastPropertyAtCompareAndSwapInternal(index, expected_value,
                                                        new_value, tag);
       });
@@ -5918,4 +5919,5 @@ Handle<String> JSMessageObject::GetSourceLine() const {
   return isolate->factory()->NewSubString(src, info.line_start, info.line_end);
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

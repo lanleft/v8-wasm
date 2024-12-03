@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <optional>
 #include <utility>
 
 #include "src/base/iterator.h"
@@ -31,7 +30,7 @@
 
 namespace v8::internal::compiler::turboshaft {
 
-using MaybeVariable = std::optional<Variable>;
+using MaybeVariable = base::Optional<Variable>;
 
 V8_EXPORT_PRIVATE int CountDecimalDigits(uint32_t value);
 struct PaddingSpace {
@@ -495,7 +494,6 @@ class GraphVisitor : public OutputGraphAssembler<GraphVisitor<AfterNext>,
 
   template <bool trace_reduction>
   void VisitBlock(const Block* input_block) {
-    if (tick_counter_) tick_counter_->TickAndMaybeEnterSafepoint();
     Asm().SetCurrentOrigin(OpIndex::Invalid());
     current_block_needs_variables_ =
         blocks_needing_variables_.Contains(input_block->index().id());
@@ -968,8 +966,6 @@ class GraphVisitor : public OutputGraphAssembler<GraphVisitor<AfterNext>,
   }
 
   Graph& input_graph_;
-  OptimizedCompilationInfo* info_ = Asm().data()->info();
-  TickCounter* const tick_counter_ = info_ ? &info_->tick_counter() : nullptr;
 
   const Block* current_input_block_;
 

@@ -198,7 +198,7 @@ void DefaultPlatform::RunIdleTasks(v8::Isolate* isolate,
 }
 
 std::shared_ptr<TaskRunner> DefaultPlatform::GetForegroundTaskRunner(
-    v8::Isolate* isolate, TaskPriority priority) {
+    v8::Isolate* isolate) {
   base::MutexGuard guard(&lock_);
   if (foreground_task_runner_map_.find(isolate) ==
       foreground_task_runner_map_.end()) {

@@ -63,35 +63,36 @@ class V8_PLATFORM_EXPORT DefaultForegroundTaskRunner
 
   enum Nestability { kNestable, kNonNestable };
 
-  void WaitForTaskLocked();
+  void WaitForTaskLocked(const base::MutexGuard&);
 
   // The same as PostTask or PostNonNestableTask, but the lock is already held
-  // by the caller. If the task runner is already terminated, the task is
-  // returned (such that it can be deleted later, after releasing the lock).
-  // Otherwise, nullptr is returned.
-  std::unique_ptr<Task> PostTaskLocked(std::unique_ptr<Task> task,
-                                       Nestability nestability);
+  // by the caller. The {guard} parameter should make sure that the caller is
+  // holding the lock.
+  void PostTaskLocked(std::unique_ptr<Task> task, Nestability nestability,
+                      const base::MutexGuard&);
 
   // The same as PostDelayedTask or PostNonNestableDelayedTask, but the lock is
-  // already held by the caller.
+  // already held by the caller. The {guard} parameter should make sure that the
+  // caller is holding the lock.
   void PostDelayedTaskLocked(std::unique_ptr<Task> task,
-                             double delay_in_seconds, Nestability nestability);
+                             double delay_in_seconds, Nestability nestability,
+                             const base::MutexGuard&);
 
-  // A caller of this function has to hold {mutex_}.
-  std::unique_ptr<Task> PopTaskFromDelayedQueueLocked(Nestability* nestability);
+  // A caller of this function has to hold {lock_}. The {guard} parameter should
+  // make sure that the caller is holding the lock.
+  std::unique_ptr<Task> PopTaskFromDelayedQueueLocked(const base::MutexGuard&,
+                                                      Nestability* nestability);
 
   // A non-nestable task is poppable only if the task runner is not nested,
   // i.e. if a task is not being run from within a task. A nestable task is
   // always poppable.
   bool HasPoppableTaskInQueue() const;
 
-  // Move delayed tasks that hit their deadline to the main queue. Returns all
-  // tasks that expired but were not scheduled because the task runner was
-  // terminated.
-  std::vector<std::unique_ptr<Task>> MoveExpiredDelayedTasksLocked();
+  // Move delayed tasks that hit their deadline to the main queue.
+  void MoveExpiredDelayedTasks(const base::MutexGuard& guard);
 
   bool terminated_ = false;
-  base::Mutex mutex_;
+  base::Mutex lock_;
   base::ConditionVariable event_loop_control_;
   int nesting_depth_ = 0;
 

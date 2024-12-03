@@ -37,8 +37,8 @@ class PredictablePlatform final : public Platform {
   }
 
   std::shared_ptr<TaskRunner> GetForegroundTaskRunner(
-      v8::Isolate* isolate, TaskPriority priority) override {
-    return platform_->GetForegroundTaskRunner(isolate, priority);
+      v8::Isolate* isolate) override {
+    return platform_->GetForegroundTaskRunner(isolate);
   }
 
   int NumberOfWorkerThreads() override {
@@ -62,7 +62,7 @@ class PredictablePlatform final : public Platform {
     // the isolate but only uses it as the key in a HashMap.
     platform_
         ->GetForegroundTaskRunner(
-            kProcessGlobalPredictablePlatformWorkerTaskQueue, priority)
+            kProcessGlobalPredictablePlatformWorkerTaskQueue)
         ->PostTask(std::move(task));
   }
 
@@ -144,9 +144,9 @@ class DelayedTasksPlatform final : public Platform {
   }
 
   std::shared_ptr<TaskRunner> GetForegroundTaskRunner(
-      v8::Isolate* isolate, TaskPriority priority) override {
+      v8::Isolate* isolate) override {
     std::shared_ptr<TaskRunner> runner =
-        platform_->GetForegroundTaskRunner(isolate, priority);
+        platform_->GetForegroundTaskRunner(isolate);
 
     base::MutexGuard lock_guard(&mutex_);
     // Check if we can re-materialize the weak ptr in our map.

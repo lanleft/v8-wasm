@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "src/common/globals.h"
 #ifndef V8_INTL_SUPPORT
 #error Internationalization is expected to be enabled.
 #endif  // V8_INTL_SUPPORT
@@ -78,8 +77,8 @@ class JSRelativeTimeFormat
   // Bit positions in |flags|.
   DEFINE_TORQUE_GENERATED_JS_RELATIVE_TIME_FORMAT_FLAGS()
 
-  static_assert(NumericBit::is_valid(Numeric::AUTO));
-  static_assert(NumericBit::is_valid(Numeric::ALWAYS));
+  static_assert(Numeric::AUTO <= NumericBit::kMax);
+  static_assert(Numeric::ALWAYS <= NumericBit::kMax);
 
   DECL_PRINTER(JSRelativeTimeFormat)
 

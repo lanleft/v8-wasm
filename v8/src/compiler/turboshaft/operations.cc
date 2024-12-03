@@ -6,19 +6,19 @@
 
 #include <atomic>
 #include <iomanip>
-#include <optional>
 #include <sstream>
 
 #include "src/base/logging.h"
+#include "src/base/optional.h"
 #include "src/base/platform/mutex.h"
 #include "src/codegen/bailout-reason.h"
 #include "src/codegen/machine-type.h"
 #include "src/common/globals.h"
 #include "src/compiler/backend/instruction-selector.h"
 #include "src/compiler/frame-states.h"
+#include "src/compiler/graph-visualizer.h"
 #include "src/compiler/js-heap-broker.h"
 #include "src/compiler/machine-operator.h"
-#include "src/compiler/turbofan-graph-visualizer.h"
 #include "src/compiler/turboshaft/deopt-data.h"
 #include "src/compiler/turboshaft/graph.h"
 #include "src/handles/handles-inl.h"
@@ -42,13 +42,13 @@ void Operation::Print() const { std::cout << *this << "\n"; }
 
 Zone* get_zone(Graph* graph) { return graph->graph_zone(); }
 
-std::optional<Builtin> TryGetBuiltinId(const ConstantOp* target,
-                                       JSHeapBroker* broker) {
-  if (!target) return std::nullopt;
-  if (target->kind != ConstantOp::Kind::kHeapObject) return std::nullopt;
+base::Optional<Builtin> TryGetBuiltinId(const ConstantOp* target,
+                                        JSHeapBroker* broker) {
+  if (!target) return base::nullopt;
+  if (target->kind != ConstantOp::Kind::kHeapObject) return base::nullopt;
   // TODO(nicohartmann@): For builtin compilation we don't have a broker. We
   // could try to access the heap directly instead.
-  if (broker == nullptr) return std::nullopt;
+  if (broker == nullptr) return base::nullopt;
   UnparkedScopeIfNeeded scope(broker);
   AllowHandleDereference allow_handle_dereference;
   HeapObjectRef ref = MakeRef(broker, target->handle());
@@ -58,7 +58,7 @@ std::optional<Builtin> TryGetBuiltinId(const ConstantOp* target,
       return code.object()->builtin_id();
     }
   }
-  return std::nullopt;
+  return base::nullopt;
 }
 
 bool CallOp::IsStackCheck(const Graph& graph, JSHeapBroker* broker,
@@ -100,7 +100,7 @@ void TailCallOp::PrintOptions(std::ostream& os) const {
 bool ValidOpInputRep(
     const Graph& graph, OpIndex input,
     std::initializer_list<RegisterRepresentation> expected_reps,
-    std::optional<size_t> projection_index) {
+    base::Optional<size_t> projection_index) {
   base::Vector<const RegisterRepresentation> input_reps =
       graph.Get(input).outputs_rep();
   RegisterRepresentation input_rep;
@@ -135,13 +135,12 @@ bool ValidOpInputRep(
   std::cerr << "Expected " << (expected_reps.size() > 1 ? "one of " : "")
             << PrintCollection(expected_reps).WithoutBrackets() << " but found "
             << input_rep << ".\n";
-  std::cout << "Input: " << graph.Get(input) << "\n";
   return false;
 }
 
 bool ValidOpInputRep(const Graph& graph, OpIndex input,
                      RegisterRepresentation expected_rep,
-                     std::optional<size_t> projection_index) {
+                     base::Optional<size_t> projection_index) {
   return ValidOpInputRep(graph, input, {expected_rep}, projection_index);
 }
 #endif  // DEBUG
@@ -182,15 +181,6 @@ std::ostream& operator<<(std::ostream& os, GenericUnopOp::Kind kind) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, Word32SignHintOp::Sign sign) {
-  switch (sign) {
-    case Word32SignHintOp::Sign::kSigned:
-      return os << "Signed";
-    case Word32SignHintOp::Sign::kUnsigned:
-      return os << "Unsigned";
-  }
-}
-
 std::ostream& operator<<(std::ostream& os, WordUnaryOp::Kind kind) {
   switch (kind) {
     case WordUnaryOp::Kind::kReverseBytes:
@@ -205,13 +195,6 @@ std::ostream& operator<<(std::ostream& os, WordUnaryOp::Kind kind) {
       return os << "SignExtend8";
     case WordUnaryOp::Kind::kSignExtend16:
       return os << "SignExtend16";
-  }
-}
-
-std::ostream& operator<<(std::ostream& os, OverflowCheckedUnaryOp::Kind kind) {
-  switch (kind) {
-    case OverflowCheckedUnaryOp::Kind::kAbs:
-      return os << "kAbs";
   }
 }
 
@@ -538,23 +521,23 @@ void ConstantOp::PrintOptions(std::ostream& os) const {
       os << "smi: " << smi();
       break;
     case Kind::kNumber:
-      os << "number: " << number().get_scalar();
+      os << "number: " << number();
       break;
     case Kind::kTaggedIndex:
       os << "tagged index: " << tagged_index();
       break;
     case Kind::kFloat64:
-      os << "float64: " << float64().get_scalar();
-      if (float64().is_hole_nan()) {
-        os << " (hole nan: 0x" << std::hex << float64().get_bits() << std::dec
-           << ')';
-      } else if (float64().is_nan()) {
-        os << " (0x" << std::hex << float64().get_bits() << std::dec << ')';
+      os << "float64: " << float64();
+      if (std::isnan(float64())) {
+        // Do not use float64() here as it may alter the bit representation.
+        os << " (0x" << std::hex << base::bit_cast<uint64_t>(storage.float64)
+           << std::dec << ')';
       }
       break;
     case Kind::kFloat32:
-      os << "float32: " << float32().get_scalar();
-      if (float32().is_nan()) {
+      os << "float32: " << float32();
+      if (std::isnan(float32())) {
+        // Do not use float32() here as it may alter the bit representation.
         os << " (0x" << std::hex << base::bit_cast<uint32_t>(storage.float32)
            << std::dec << ')';
       }
@@ -568,9 +551,6 @@ void ConstantOp::PrintOptions(std::ostream& os) const {
     case Kind::kCompressedHeapObject:
       os << "compressed heap object: " << JSONEscaped(handle());
       break;
-    case Kind::kTrustedHeapObject:
-      os << "trusted heap object: " << JSONEscaped(handle());
-      break;
     case Kind::kRelocatableWasmCall:
       os << "relocatable wasm call: 0x"
          << reinterpret_cast<void*>(storage.integral);
@@ -578,14 +558,6 @@ void ConstantOp::PrintOptions(std::ostream& os) const {
     case Kind::kRelocatableWasmStubCall:
       os << "relocatable wasm stub call: 0x"
          << reinterpret_cast<void*>(storage.integral);
-      break;
-    case Kind::kRelocatableWasmCanonicalSignatureId:
-      os << "relocatable wasm canonical signature ID: "
-         << static_cast<int32_t>(storage.integral);
-      break;
-    case Kind::kRelocatableWasmIndirectCallTarget:
-      os << "relocatable wasm indirect call target: "
-         << static_cast<uint32_t>(storage.integral);
       break;
   }
   os << ']';
@@ -844,11 +816,6 @@ void DidntThrowOp::Validate(const Graph& graph) const {
       DCHECK_EQ(call_op.descriptor->out_reps, outputs_rep());
       break;
     }
-    case Opcode::kFastApiCall: {
-      auto& call_op = graph.Get(throwing_operation()).Cast<FastApiCallOp>();
-      DCHECK_EQ(call_op.out_reps, outputs_rep());
-      break;
-    }
 #define STATIC_OUTPUT_CASE(Name)                                           \
   case Opcode::k##Name: {                                                  \
     const Name##Op& op = graph.Get(throwing_operation()).Cast<Name##Op>(); \
@@ -1003,7 +970,7 @@ void WordBinopDeoptOnOverflowOp::PrintOptions(std::ostream& os) const {
       os << "unsigned mod, ";
       break;
   }
-  os << rep << ", " << mode;
+  os << rep;
   os << ']';
 }
 
@@ -1482,8 +1449,6 @@ std::ostream& operator<<(std::ostream& os, JSStackCheckOp::Kind kind) {
   switch (kind) {
     case JSStackCheckOp::Kind::kFunctionEntry:
       return os << "function-entry";
-    case JSStackCheckOp::Kind::kBuiltinEntry:
-      return os << "builtin-entry";
     case JSStackCheckOp::Kind::kLoop:
       return os << "loop";
   }
@@ -1512,7 +1477,6 @@ const RegisterRepresentation& RepresentationFor(wasm::ValueType type) {
       return kWord32;
     case wasm::kI64:
       return kWord64;
-    case wasm::kF16:
     case wasm::kF32:
       return kFloat32;
     case wasm::kF64:
@@ -1524,7 +1488,6 @@ const RegisterRepresentation& RepresentationFor(wasm::ValueType type) {
       return kSimd128;
     case wasm::kVoid:
     case wasm::kRtt:
-    case wasm::kTop:
     case wasm::kBottom:
       UNREACHABLE();
   }
@@ -1565,16 +1528,6 @@ std::ostream& operator<<(std::ostream& os, Simd128UnaryOp::Kind kind) {
   case Simd128UnaryOp::Kind::k##kind: \
     return os << #kind;
     FOREACH_SIMD_128_UNARY_OPCODE(PRINT_KIND)
-  }
-#undef PRINT_KIND
-}
-
-std::ostream& operator<<(std::ostream& os, Simd128ReduceOp::Kind kind) {
-  switch (kind) {
-#define PRINT_KIND(kind)               \
-  case Simd128ReduceOp::Kind::k##kind: \
-    return os << #kind;
-    FOREACH_SIMD_128_REDUCE_OPTIONAL_OPCODE(PRINT_KIND)
   }
 #undef PRINT_KIND
 }
@@ -1640,9 +1593,6 @@ void Simd128ExtractLaneOp::PrintOptions(std::ostream& os) const {
     case Kind::kI64x2:
       os << "I64x2";
       break;
-    case Kind::kF16x8:
-      os << "F16x8";
-      break;
     case Kind::kF32x4:
       os << "F32x4";
       break;
@@ -1667,9 +1617,6 @@ void Simd128ReplaceLaneOp::PrintOptions(std::ostream& os) const {
       break;
     case Kind::kI64x2:
       os << "I64x2";
-      break;
-    case Kind::kF16x8:
-      os << "F16x8";
       break;
     case Kind::kF32x4:
       os << "F32x4";

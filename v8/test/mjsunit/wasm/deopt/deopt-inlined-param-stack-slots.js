@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm --liftoff
-// Flags: --wasm-inlining --wasm-inlining-ignore-call-counts
+// Flags: --experimental-wasm-inlining --wasm-inlining-ignore-call-counts
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // This test case tests th scenario where the optimized function "main" doesn't
 // have any parameter stack slots while the inner-most inlined function
@@ -58,12 +57,8 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   %WasmTierUpFunction(wasm.main);
   // tierup.
   assertEquals(42, wasm.main(wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   // deopt.
   assertEquals(360, wasm.main(wasm.mul));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
 })();

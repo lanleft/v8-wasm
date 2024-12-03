@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
-// Flags: --wasm-inlining-call-indirect
+// Flags: --experimental-wasm-inlining-call-indirect
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestDeoptCallIndirect() {
   var builder = new WasmModuleBuilder();
@@ -44,14 +43,10 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   %WasmTierUpFunction(wasm.main);
   // Tier up.
   assertEquals(42, wasm.main(12, 30, add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   // Deopt.
   assertEquals(-360, wasm.main(12, -30, mul));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   assertEquals(42, wasm.main(12, 30, add));
   // Re-optimize.
   %WasmTierUpFunction(wasm.main);

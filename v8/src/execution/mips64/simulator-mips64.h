@@ -299,9 +299,9 @@ class Simulator : public SimulatorBase {
   // margin to prevent overflows (kAdditionalStackMargin).
   uintptr_t StackLimit(uintptr_t c_limit) const;
 
-  // Return central stack view, without additional safety margins.
+  // Return current stack view, without additional safety margins.
   // Users, for example wasm::StackMemory, can add their own.
-  base::Vector<uint8_t> GetCentralStackView() const;
+  base::Vector<uint8_t> GetCurrentStackView() const;
 
   // Executes MIPS instructions until the PC reaches end_sim_pc.
   void Execute();

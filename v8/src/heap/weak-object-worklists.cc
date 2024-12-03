@@ -5,7 +5,6 @@
 #include "src/heap/weak-object-worklists.h"
 
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/heap-object.h"
@@ -205,8 +204,6 @@ void WeakObjects::UpdateFlushedJSFunctions(
       });
 }
 
-#ifndef V8_ENABLE_LEAPTIERING
-
 // static
 void WeakObjects::UpdateBaselineFlushingCandidates(
     WeakObjectWorklist<Tagged<JSFunction>>& baseline_flush_candidates) {
@@ -223,8 +220,6 @@ void WeakObjects::UpdateBaselineFlushingCandidates(
       });
 }
 
-#endif  // !V8_ENABLE_LEAPTIERING
-
 #ifdef DEBUG
 // static
 template <typename Type>
@@ -232,7 +227,7 @@ bool WeakObjects::ContainsYoungObjects(
     WeakObjectWorklist<Tagged<Type>>& worklist) {
   bool result = false;
   worklist.Iterate([&result](Tagged<Type> candidate) {
-    if (HeapLayout::InYoungGeneration(candidate)) {
+    if (Heap::InYoungGeneration(candidate)) {
       result = true;
     }
   });

@@ -4,7 +4,6 @@
 
 #include "src/compiler/turboshaft/types.h"
 
-#include <optional>
 #include <sstream>
 #include <string_view>
 
@@ -144,8 +143,8 @@ Type Type::LeastUpperBound(const Type& lhs, const Type& rhs, Zone* zone) {
   }
 }
 
-std::optional<Type> Type::ParseFromString(const std::string_view& str,
-                                          Zone* zone) {
+base::Optional<Type> Type::ParseFromString(const std::string_view& str,
+                                           Zone* zone) {
   TypeParser parser(str, zone);
   return parser.Parse();
 }

@@ -4,8 +4,6 @@
 
 #include "src/json/json-parser.h"
 
-#include <optional>
-
 #include "src/base/strings.h"
 #include "src/builtins/builtins.h"
 #include "src/common/assert-scope.h"
@@ -253,19 +251,19 @@ MaybeHandle<Object> JsonParseInternalizer::InternalizeJsonProperty(
     }
   }
 
-  Handle<JSObject> context =
-      isolate_->factory()->NewJSObject(isolate_->object_function());
-  if (pass_source_to_reviver && IsString(*val_node)) {
-    JSReceiver::CreateDataProperty(isolate_, context,
-                                   isolate_->factory()->source_string(),
-                                   val_node, Just(kThrowOnError))
-        .Check();
-  }
-  Handle<Object> argv[] = {name, value, context};
-  Handle<Object> result;
-  ASSIGN_RETURN_ON_EXCEPTION(
-      isolate_, result, Execution::Call(isolate_, reviver_, holder, 3, argv));
-  return outer_scope.CloseAndEscape(result);
+    Handle<JSObject> context =
+        isolate_->factory()->NewJSObject(isolate_->object_function());
+    if (pass_source_to_reviver && IsString(*val_node)) {
+      JSReceiver::CreateDataProperty(isolate_, context,
+                                     isolate_->factory()->source_string(),
+                                     val_node, Just(kThrowOnError))
+          .Check();
+    }
+    Handle<Object> argv[] = {name, value, context};
+    Handle<Object> result;
+    ASSIGN_RETURN_ON_EXCEPTION(
+        isolate_, result, Execution::Call(isolate_, reviver_, holder, 3, argv));
+    return outer_scope.CloseAndEscape(result);
 }
 
 template <JsonParseInternalizer::WithOrWithoutSource with_source>
@@ -282,7 +280,7 @@ bool JsonParseInternalizer::RecurseAndApply(Handle<JSReceiver> holder,
       false);
   Maybe<bool> change_result = Nothing<bool>();
   if (IsUndefined(*result, isolate_)) {
-    change_result = JSReceiver::DeletePropertyOrElement(isolate_, holder, name,
+    change_result = JSReceiver::DeletePropertyOrElement(holder, name,
                                                         LanguageMode::kSloppy);
   } else {
     PropertyDescriptor desc;
@@ -359,7 +357,7 @@ bool JsonParser<Char>::IsSpecialString() {
 
 template <typename Char>
 MessageTemplate JsonParser<Char>::GetErrorMessageWithEllipses(
-    DirectHandle<Object>& arg, DirectHandle<Object>& arg2, int pos) {
+    Handle<Object>& arg, Handle<Object>& arg2, int pos) {
   MessageTemplate message;
   Factory* factory = this->factory();
   arg = factory->LookupSingleCharacterStringFromCode(*cursor_);
@@ -400,8 +398,7 @@ MessageTemplate JsonParser<Char>::GetErrorMessageWithEllipses(
 
 template <typename Char>
 MessageTemplate JsonParser<Char>::LookUpErrorMessageForJsonToken(
-    JsonToken token, DirectHandle<Object>& arg, DirectHandle<Object>& arg2,
-    int pos) {
+    JsonToken token, Handle<Object>& arg, Handle<Object>& arg2, int pos) {
   MessageTemplate message;
   switch (token) {
     case JsonToken::EOS:
@@ -427,8 +424,8 @@ MessageTemplate JsonParser<Char>::LookUpErrorMessageForJsonToken(
 }
 
 template <typename Char>
-void JsonParser<Char>::CalculateFileLocation(DirectHandle<Object>& line,
-                                             DirectHandle<Object>& column) {
+void JsonParser<Char>::CalculateFileLocation(Handle<Object>& line,
+                                             Handle<Object>& column) {
   // JSON allows only \r and \n as line terminators.
   // (See https://www.json.org/json-en.html - "whitespace")
   int line_number = 1;
@@ -452,13 +449,13 @@ void JsonParser<Char>::CalculateFileLocation(DirectHandle<Object>& line,
     }
   }
   int column_number = 1 + static_cast<int>(cursor - last_line_break);
-  line = direct_handle(Smi::FromInt(line_number), isolate());
-  column = direct_handle(Smi::FromInt(column_number), isolate());
+  line = handle(Smi::FromInt(line_number), isolate());
+  column = handle(Smi::FromInt(column_number), isolate());
 }
 
 template <typename Char>
 void JsonParser<Char>::ReportUnexpectedToken(
-    JsonToken token, std::optional<MessageTemplate> errorMessage) {
+    JsonToken token, base::Optional<MessageTemplate> errorMessage) {
   // Some exception (for example stack overflow) was already thrown.
   if (isolate_->has_exception()) return;
 
@@ -468,9 +465,9 @@ void JsonParser<Char>::ReportUnexpectedToken(
                    ? Cast<SlicedString>(*original_source_)->offset()
                    : 0;
   int pos = position() - offset;
-  DirectHandle<Object> arg(Smi::FromInt(pos), isolate());
-  DirectHandle<Object> arg2;
-  DirectHandle<Object> arg3;
+  Handle<Object> arg(Smi::FromInt(pos), isolate());
+  Handle<Object> arg2;
+  Handle<Object> arg3;
   CalculateFileLocation(arg2, arg3);
 
   MessageTemplate message =
@@ -683,7 +680,7 @@ class FoldedMutableHeapNumberAllocator {
     DCHECK_GE(mutable_double_address_,
               reinterpret_cast<Address>(raw_bytes_->begin()));
     Tagged<HeapObject> hn = HeapObject::FromAddress(mutable_double_address_);
-    hn->set_map_after_allocation(isolate_, roots.heap_number_map());
+    hn->set_map_after_allocation(roots.heap_number_map());
     Cast<HeapNumber>(hn)->set_value_as_bits(value.get_bits());
     mutable_double_address_ +=
         ALIGN_TO_ALLOCATION_ALIGNMENT(sizeof(HeapNumber));
@@ -719,9 +716,10 @@ class FoldedMutableHeapNumberAllocator {
 //      entry in the DescriptorArray of the final map; if yes, then we don't
 //      need to do any map transitions.
 //   2. When given a property key, it looks for whether there is exactly one
-//      transition away from the current map ("ExpectedTransition").
-//      The expected key is passed as a hint to the current property key
-//      getter, for e.g. faster internalised string materialisation.
+//      transition away from the current map ("ExpectedTransitionTarget").
+//      If yes, it tries to match against the key for this transition. The
+//      expected key is passed as a hint to the current property key getter,
+//      for e.g. faster internalised string materialisation.
 //   3. Otherwise, it searches for whether there is any transition in the
 //      current map that matches the key.
 //   4. For all of the above, it checks whether the field represntation of the
@@ -780,7 +778,6 @@ class JSDataObjectBuilder {
     for (; !it.Done(); it.Advance()) {
       Handle<String> property_key;
       if (!TryAddFastPropertyForValue(
-              it.GetKeyChars(),
               [&](Handle<String> expected_key) {
                 return property_key = it.GetKey(expected_key);
               },
@@ -815,17 +812,15 @@ class JSDataObjectBuilder {
     return object();
   }
 
-  template <typename Char, typename GetKeyFunction, typename GetValueFunction>
-  V8_INLINE bool TryAddFastPropertyForValue(base::Vector<const Char> key_chars,
-                                            GetKeyFunction&& get_key,
+  template <typename GetKeyFunction, typename GetValueFunction>
+  V8_INLINE bool TryAddFastPropertyForValue(GetKeyFunction&& get_key,
                                             GetValueFunction&& get_value) {
     // The fast path is only valid as long as we haven't allocated an object
     // yet.
     DCHECK(object_.is_null());
 
     Handle<String> key;
-    bool existing_map_found =
-        TryFastTransitionToPropertyKey(key_chars, get_key, &key);
+    bool existing_map_found = TryFastTransitionToPropertyKey(get_key, &key);
     // Unconditionally get the value after getting the transition result.
     DirectHandle<Object> value = get_value();
     if (existing_map_found) {
@@ -953,7 +948,7 @@ class JSDataObjectBuilder {
         PropertyDetails details = descriptors->GetDetails(descriptor_index);
         if (details.representation().IsDouble()) {
           value = hn_allocator.AllocateNext(
-              roots, Float64(Object::NumberValue(value)));
+              roots, Float64(static_cast<double>(Cast<Smi>(value).value())));
         }
       }
 
@@ -986,10 +981,9 @@ class JSDataObjectBuilder {
   }
 
  private:
-  template <typename Char, typename GetKeyFunction>
-  V8_INLINE bool TryFastTransitionToPropertyKey(
-      base::Vector<const Char> key_chars, GetKeyFunction&& get_key,
-      Handle<String>* key_out) {
+  template <typename GetKeyFunction>
+  V8_INLINE bool TryFastTransitionToPropertyKey(GetKeyFunction&& get_key,
+                                                Handle<String>* key_out) {
     Handle<String> expected_key;
     Handle<Map> target_map;
 
@@ -1003,19 +997,12 @@ class JSDataObjectBuilder {
       target_map = expected_final_map_;
     } else {
       TransitionsAccessor transitions(isolate_, *map_);
-      auto expected_transition = transitions.ExpectedTransition(key_chars);
-      if (!expected_transition.first.is_null()) {
+      expected_key = transitions.ExpectedTransitionKey();
+      if (!expected_key.is_null()) {
         // Directly read out the target while reading out the key, otherwise it
         // might die if `get_key` can allocate.
-        target_map = expected_transition.second;
-
-        // We were successful and we are done.
-        DCHECK_EQ(target_map->instance_descriptors()
-                      ->GetDetails(descriptor_index)
-                      .location(),
-                  PropertyLocation::kField);
-        map_ = target_map;
-        return true;
+        target_map =
+            TransitionsAccessor(isolate_, *map_).ExpectedTransitionTarget();
       }
     }
 
@@ -1259,9 +1246,6 @@ class JsonParser<Char>::NamedPropertyIterator {
     return it_ == end_;
   }
 
-  base::Vector<const Char> GetKeyChars() {
-    return parser_.GetKeyChars(it_->string);
-  }
   Handle<String> GetKey(Handle<String> expected_key_hint) {
     return parser_.MakeString(it_->string, expected_key_hint);
   }
@@ -1282,7 +1266,6 @@ class JsonParser<Char>::NamedPropertyIterator {
 };
 
 template <typename Char>
-template <bool should_track_json_source>
 Handle<JSObject> JsonParser<Char>::BuildJsonObject(const JsonContinuation& cont,
                                                    Handle<Map> feedback) {
   if (!feedback.is_null() && feedback->is_deprecated()) {
@@ -1334,15 +1317,9 @@ Handle<JSObject> JsonParser<Char>::BuildJsonObject(const JsonContinuation& cont,
     elements = factory()->empty_fixed_array();
   }
 
-  // When tracking JSON source with a reviver, do not use mutable HeapNumbers.
-  // In this mode, values are snapshotted at the beginning because the source is
-  // only passed to the reviver if the reviver does not muck with the original
-  // value. Mutable HeapNumbers would make the snapshot incorrect.
   JSDataObjectBuilder js_data_object_builder(
       isolate_, elements_kind, named_length, feedback,
-      should_track_json_source
-          ? JSDataObjectBuilder::kNormalHeapNumbers
-          : JSDataObjectBuilder::kHeapNumbersGuaranteedUniquelyOwned);
+      JSDataObjectBuilder::kHeapNumbersGuaranteedUniquelyOwned);
 
   NamedPropertyIterator it(*this, property_stack_.begin() + start,
                            property_stack_.end());
@@ -1505,7 +1482,7 @@ MaybeHandle<Object> JsonParser<Char>::ParseJsonObject(Handle<Map> feedback) {
   } while (Check(JsonToken::COMMA));
 
   Expect(JsonToken::RBRACE, MessageTemplate::kJsonParseExpectedCommaOrRBrace);
-  Handle<Object> result = BuildJsonObject<false>(cont, feedback);
+  Handle<Object> result = BuildJsonObject(cont, feedback);
   property_stack_.resize_no_init(cont.index);
   return cont.scope.CloseAndEscape(result);
 }
@@ -1788,7 +1765,7 @@ MaybeHandle<Object> JsonParser<Char>::ParseJsonValue() {
               feedback = handle(maybe_feedback, isolate_);
             }
           }
-          value = BuildJsonObject<should_track_json_source>(cont, feedback);
+          value = BuildJsonObject(cont, feedback);
           Expect(JsonToken::RBRACE,
                  MessageTemplate::kJsonParseExpectedCommaOrRBrace);
           // Return the object.
@@ -1971,9 +1948,10 @@ Handle<Object> JsonParser<Char>::ParseJsonNumber() {
     }
 
     base::Vector<const Char> chars(start, cursor_ - start);
-    number = StringToDouble(chars,
-                            NO_CONVERSION_FLAG,  // Hex, octal or trailing junk.
-                            std::numeric_limits<double>::quiet_NaN());
+    number =
+        StringToDouble(chars,
+                       NO_CONVERSION_FLAGS,  // Hex, octal or trailing junk.
+                       std::numeric_limits<double>::quiet_NaN());
 
     DCHECK(!std::isnan(number));
   }

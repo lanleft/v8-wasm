@@ -5,10 +5,7 @@
 #ifndef V8_OBJECTS_JS_OBJECTS_INL_H_
 #define V8_OBJECTS_JS_OBJECTS_INL_H_
 
-#include <optional>
-
 #include "src/common/globals.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap-write-barrier.h"
 #include "src/objects/dictionary.h"
 #include "src/objects/elements.h"
@@ -36,7 +33,8 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 #include "torque-generated/src/objects/js-objects-tq-inl.inc"
 
@@ -247,7 +245,7 @@ void JSObject::EnsureCanContainElements(Handle<JSObject> object,
 }
 
 void JSObject::SetMapAndElements(DirectHandle<JSObject> object,
-                                 DirectHandle<Map> new_map,
+                                 Handle<Map> new_map,
                                  DirectHandle<FixedArrayBase> value) {
   Isolate* isolate = object->GetIsolate();
   JSObject::MigrateToMap(isolate, object, new_map);
@@ -396,7 +394,7 @@ Tagged<JSAny> JSObject::RawFastPropertyAt(PtrComprCageBase cage_base,
   }
 }
 
-std::optional<Tagged<Object>> JSObject::RawInobjectPropertyAt(
+base::Optional<Tagged<Object>> JSObject::RawInobjectPropertyAt(
     PtrComprCageBase cage_base, Tagged<Map> original_map,
     FieldIndex index) const {
   CHECK(index.is_inobject());
@@ -645,11 +643,9 @@ void JSApiWrapper::SetCppHeapWrappable(IsolateForPointerCompression isolate,
   object_->WriteLazilyInitializedCppHeapPointerField<tag>(
       JSAPIObjectWithEmbedderSlots::kCppHeapWrappableOffset, isolate,
       reinterpret_cast<Address>(instance));
-  WriteBarrier::ForCppHeapPointer(
-      object_,
-      object_->RawCppHeapPointerField(
-          JSAPIObjectWithEmbedderSlots::kCppHeapWrappableOffset),
-      instance);
+  if (instance) {
+    WriteBarrier::CombinedBarrierForCppHeapPointer(object_, instance);
+  }
 }
 
 void JSApiWrapper::SetCppHeapWrappable(IsolateForPointerCompression isolate,
@@ -657,11 +653,9 @@ void JSApiWrapper::SetCppHeapWrappable(IsolateForPointerCompression isolate,
   object_->WriteLazilyInitializedCppHeapPointerField(
       JSAPIObjectWithEmbedderSlots::kCppHeapWrappableOffset, isolate,
       reinterpret_cast<Address>(instance), tag);
-  WriteBarrier::ForCppHeapPointer(
-      object_,
-      object_->RawCppHeapPointerField(
-          JSAPIObjectWithEmbedderSlots::kCppHeapWrappableOffset),
-      instance);
+  if (instance) {
+    WriteBarrier::CombinedBarrierForCppHeapPointer(object_, instance);
+  }
 }
 
 bool JSMessageObject::DidEnsureSourcePositionsAvailable() const {
@@ -714,21 +708,22 @@ DEF_GETTER(JSObject, GetElementsKind, ElementsKind) {
   // If a GC was caused while constructing this object, the elements
   // pointer may point to a one pointer filler map.
   if (ElementsAreSafeToExamine(cage_base)) {
-    Tagged<Map> map = fixed_array->map();
+    Tagged<Map> map = fixed_array->map(cage_base);
     if (IsSmiOrObjectElementsKind(kind)) {
-      CHECK(map == GetReadOnlyRoots(cage_base).fixed_array_map() ||
-            map == GetReadOnlyRoots(cage_base).fixed_cow_array_map());
+      DCHECK(map == GetReadOnlyRoots(cage_base).fixed_array_map() ||
+             map == GetReadOnlyRoots(cage_base).fixed_cow_array_map());
     } else if (IsDoubleElementsKind(kind)) {
-      CHECK(IsFixedDoubleArray(fixed_array, cage_base) ||
-            fixed_array == GetReadOnlyRoots(cage_base).empty_fixed_array());
+      DCHECK(IsFixedDoubleArray(fixed_array, cage_base) ||
+             fixed_array == GetReadOnlyRoots(cage_base).empty_fixed_array());
     } else if (kind == DICTIONARY_ELEMENTS) {
-      CHECK(IsFixedArray(fixed_array, cage_base));
-      CHECK(IsNumberDictionary(fixed_array, cage_base));
+      DCHECK(IsFixedArray(fixed_array, cage_base));
+      DCHECK(IsNumberDictionary(fixed_array, cage_base));
     } else {
-      CHECK(kind > DICTIONARY_ELEMENTS || IsAnyNonextensibleElementsKind(kind));
+      DCHECK(kind > DICTIONARY_ELEMENTS ||
+             IsAnyNonextensibleElementsKind(kind));
     }
-    CHECK_IMPLIES(IsSloppyArgumentsElementsKind(kind),
-                  IsSloppyArgumentsElements(elements(cage_base)));
+    DCHECK(!IsSloppyArgumentsElementsKind(kind) ||
+           IsSloppyArgumentsElements(elements(cage_base)));
   }
 #endif
   return kind;
@@ -849,10 +844,9 @@ DEF_GETTER(JSObject, element_dictionary, Tagged<NumberDictionary>) {
 
 void JSReceiver::initialize_properties(Isolate* isolate) {
   ReadOnlyRoots roots(isolate);
-  DCHECK(!HeapLayout::InYoungGeneration(roots.empty_fixed_array()));
-  DCHECK(!HeapLayout::InYoungGeneration(roots.empty_property_dictionary()));
-  DCHECK(!HeapLayout::InYoungGeneration(
-      roots.empty_ordered_property_dictionary()));
+  DCHECK(!ObjectInYoungGeneration(roots.empty_fixed_array()));
+  DCHECK(!ObjectInYoungGeneration(roots.empty_property_dictionary()));
+  DCHECK(!ObjectInYoungGeneration(roots.empty_ordered_property_dictionary()));
   if (map(isolate)->is_dictionary_map()) {
     if (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
       WRITE_FIELD(*this, kPropertiesOrHashOffset,
@@ -912,7 +906,7 @@ DEF_GETTER(JSReceiver, property_array, Tagged<PropertyArray>) {
   return Cast<PropertyArray>(prop);
 }
 
-std::optional<Tagged<NativeContext>> JSReceiver::GetCreationContext() {
+base::Optional<Tagged<NativeContext>> JSReceiver::GetCreationContext() {
   DisallowGarbageCollection no_gc;
   Tagged<Map> meta_map = map()->map();
   DCHECK(IsMapMap(meta_map));
@@ -924,7 +918,7 @@ std::optional<Tagged<NativeContext>> JSReceiver::GetCreationContext() {
 
 MaybeHandle<NativeContext> JSReceiver::GetCreationContext(Isolate* isolate) {
   DisallowGarbageCollection no_gc;
-  std::optional<Tagged<NativeContext>> maybe_context = GetCreationContext();
+  base::Optional<Tagged<NativeContext>> maybe_context = GetCreationContext();
   if (!maybe_context.has_value()) return {};
   return handle(maybe_context.value(), isolate);
 }
@@ -1040,14 +1034,15 @@ static inline bool ShouldConvertToSlowElements(Tagged<JSObject> object,
   DCHECK_LT(index, *new_capacity);
   if (*new_capacity <= JSObject::kMaxUncheckedOldFastElementsLength ||
       (*new_capacity <= JSObject::kMaxUncheckedFastElementsLength &&
-       HeapLayout::InYoungGeneration(object))) {
+       ObjectInYoungGeneration(object))) {
     return false;
   }
   return ShouldConvertToSlowElements(object->GetFastElementsUsage(),
                                      *new_capacity);
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"
 

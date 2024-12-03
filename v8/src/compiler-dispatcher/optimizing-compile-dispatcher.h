@@ -118,9 +118,10 @@ class V8_EXPORT_PRIVATE OptimizingCompileDispatcher {
   static constexpr TaskPriority kEfficiencyTaskPriority =
       TaskPriority::kBestEffort;
 
-  void FlushQueues(BlockingBehavior blocking_behavior);
+  void FlushQueues(BlockingBehavior blocking_behavior,
+                   bool restore_function_code);
   void FlushInputQueue();
-  void FlushOutputQueue();
+  void FlushOutputQueue(bool restore_function_code);
   void CompileNext(TurbofanCompilationJob* job, LocalIsolate* local_isolate);
   TurbofanCompilationJob* NextInput(LocalIsolate* local_isolate);
 

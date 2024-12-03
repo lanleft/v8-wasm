@@ -5,11 +5,11 @@
 #include "src/torque/ls/json-parser.h"
 
 #include <cctype>
-#include <optional>
-
 #include "src/torque/earley-parser.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 template <>
 V8_EXPORT_PRIVATE const ParseResultTypeId ParseResultHolder<ls::JsonValue>::id =
@@ -35,35 +35,37 @@ namespace ls {
 using JsonMember = std::pair<std::string, JsonValue>;
 
 template <bool value>
-std::optional<ParseResult> MakeBoolLiteral(ParseResultIterator* child_results) {
+base::Optional<ParseResult> MakeBoolLiteral(
+    ParseResultIterator* child_results) {
   return ParseResult{JsonValue::From(value)};
 }
 
-std::optional<ParseResult> MakeNullLiteral(ParseResultIterator* child_results) {
+base::Optional<ParseResult> MakeNullLiteral(
+    ParseResultIterator* child_results) {
   JsonValue result;
   result.tag = JsonValue::IS_NULL;
   return ParseResult{std::move(result)};
 }
 
-std::optional<ParseResult> MakeNumberLiteral(
+base::Optional<ParseResult> MakeNumberLiteral(
     ParseResultIterator* child_results) {
   auto number = child_results->NextAs<std::string>();
   double d = std::stod(number.c_str());
   return ParseResult{JsonValue::From(d)};
 }
 
-std::optional<ParseResult> MakeStringLiteral(
+base::Optional<ParseResult> MakeStringLiteral(
     ParseResultIterator* child_results) {
   std::string literal = child_results->NextAs<std::string>();
   return ParseResult{JsonValue::From(StringLiteralUnquote(literal))};
 }
 
-std::optional<ParseResult> MakeArray(ParseResultIterator* child_results) {
+base::Optional<ParseResult> MakeArray(ParseResultIterator* child_results) {
   JsonArray array = child_results->NextAs<JsonArray>();
   return ParseResult{JsonValue::From(std::move(array))};
 }
 
-std::optional<ParseResult> MakeMember(ParseResultIterator* child_results) {
+base::Optional<ParseResult> MakeMember(ParseResultIterator* child_results) {
   JsonMember result;
   std::string key = child_results->NextAs<std::string>();
   result.first = StringLiteralUnquote(key);
@@ -71,7 +73,7 @@ std::optional<ParseResult> MakeMember(ParseResultIterator* child_results) {
   return ParseResult{std::move(result)};
 }
 
-std::optional<ParseResult> MakeObject(ParseResultIterator* child_results) {
+base::Optional<ParseResult> MakeObject(ParseResultIterator* child_results) {
   using MemberList = std::vector<JsonMember>;
   MemberList members = child_results->NextAs<MemberList>();
 
@@ -180,7 +182,7 @@ class JsonGrammar : public Grammar {
 
 JsonParserResult ParseJson(const std::string& input) {
   // Torque needs a CurrentSourceFile scope during parsing.
-  // As JSON lives in memory only, an unknown file scope is created.
+  // As JSON lives in memory only, a unknown file scope is created.
   SourceFileMap::Scope source_map_scope("");
   TorqueMessages::Scope messages_scope;
   CurrentSourceFile::Scope unkown_file(SourceFileMap::AddSource("<json>"));
@@ -196,4 +198,6 @@ JsonParserResult ParseJson(const std::string& input) {
 }
 
 }  // namespace ls
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8

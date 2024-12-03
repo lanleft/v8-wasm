@@ -18,10 +18,6 @@
 #include "src/objects/oddball.h"
 #include "src/runtime/runtime.h"
 
-#if DEBUG && V8_ENABLE_WEBASSEMBLY
-#include "src/wasm/canonical-types.h"
-#endif
-
 namespace v8 {
 namespace internal {
 
@@ -845,7 +841,7 @@ const ForInParameters& ForInParametersOf(const Operator* op);
 class JSWasmCallParameters {
  public:
   explicit JSWasmCallParameters(const wasm::WasmModule* module,
-                                const wasm::CanonicalSig* signature,
+                                const wasm::FunctionSig* signature,
                                 int function_index,
                                 SharedFunctionInfoRef shared_fct_info,
                                 wasm::NativeModule* native_module,
@@ -857,11 +853,11 @@ class JSWasmCallParameters {
         native_module_(native_module),
         feedback_(feedback) {
     DCHECK_NOT_NULL(module);
-    DCHECK(wasm::GetTypeCanonicalizer()->Contains(signature));
+    DCHECK_NOT_NULL(signature);
   }
 
   const wasm::WasmModule* module() const { return module_; }
-  const wasm::CanonicalSig* signature() const { return signature_; }
+  const wasm::FunctionSig* signature() const { return signature_; }
   int function_index() const { return function_index_; }
   SharedFunctionInfoRef shared_fct_info() const { return shared_fct_info_; }
   wasm::NativeModule* native_module() const { return native_module_; }
@@ -871,7 +867,7 @@ class JSWasmCallParameters {
 
  private:
   const wasm::WasmModule* const module_;
-  const wasm::CanonicalSig* const signature_;
+  const wasm::FunctionSig* const signature_;
   int function_index_;
   SharedFunctionInfoRef shared_fct_info_;
   wasm::NativeModule* native_module_;
@@ -1010,7 +1006,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
 
 #if V8_ENABLE_WEBASSEMBLY
   const Operator* CallWasm(const wasm::WasmModule* wasm_module,
-                           const wasm::CanonicalSig* wasm_signature,
+                           const wasm::FunctionSig* wasm_signature,
                            int wasm_function_index,
                            SharedFunctionInfoRef shared_fct_info,
                            wasm::NativeModule* native_module,
@@ -1524,7 +1520,7 @@ class JSWasmCallNode final : public JSCallOrConstructNode {
     return Parameters().arity_without_implicit_args();
   }
 
-  static Type TypeForWasmReturnType(wasm::CanonicalValueType type);
+  static Type TypeForWasmReturnType(const wasm::ValueType& type);
 };
 #endif  // V8_ENABLE_WEBASSEMBLY
 

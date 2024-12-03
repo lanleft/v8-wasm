@@ -75,8 +75,8 @@ std::vector<SourcePositionInfo> SourcePosition::InliningStack(
     stack.push_back(SourcePositionInfo(isolate, pos, function));
     pos = inl.position;
   }
-  Handle<SharedFunctionInfo> function(deopt_data->GetSharedFunctionInfo(),
-                                      isolate);
+  Handle<SharedFunctionInfo> function(
+      Cast<SharedFunctionInfo>(deopt_data->SharedFunctionInfo()), isolate);
   stack.push_back(SourcePositionInfo(isolate, pos, function));
   return stack;
 }
@@ -94,8 +94,8 @@ SourcePositionInfo SourcePosition::FirstInfo(Isolate* isolate,
         deopt_data->GetInlinedFunction(inl.inlined_function_id), isolate);
     return SourcePositionInfo(isolate, pos, function);
   }
-  Handle<SharedFunctionInfo> function(deopt_data->GetSharedFunctionInfo(),
-                                      isolate);
+  Handle<SharedFunctionInfo> function(
+      Cast<SharedFunctionInfo>(deopt_data->SharedFunctionInfo()), isolate);
   return SourcePositionInfo(isolate, pos, function);
 }
 
@@ -134,7 +134,8 @@ void SourcePosition::Print(std::ostream& out, Tagged<Code> code) const {
   Tagged<DeoptimizationData> deopt_data =
       Cast<DeoptimizationData>(code->deoptimization_data());
   if (!isInlined()) {
-    Tagged<SharedFunctionInfo> function(deopt_data->GetSharedFunctionInfo());
+    Tagged<SharedFunctionInfo> function(
+        Cast<SharedFunctionInfo>(deopt_data->SharedFunctionInfo()));
     Print(out, function);
   } else {
     InliningPosition inl = deopt_data->InliningPositions()->get(InliningId());

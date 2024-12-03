@@ -72,17 +72,15 @@ FuzzerSupport::FuzzerSupport(int* argc, char*** argv) {
 FuzzerSupport::~FuzzerSupport() {
   {
     v8::Isolate::Scope isolate_scope(isolate_);
-    {
-      while (PumpMessageLoop()) {
-        // empty
-      }
-
-      v8::HandleScope handle_scope(isolate_);
-      context_.Reset();
+    while (PumpMessageLoop()) {
+      // empty
     }
 
-    isolate_->LowMemoryNotification();
+    v8::HandleScope handle_scope(isolate_);
+    context_.Reset();
   }
+
+  isolate_->LowMemoryNotification();
   isolate_->Dispose();
   isolate_ = nullptr;
 

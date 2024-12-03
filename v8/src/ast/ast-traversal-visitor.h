@@ -541,18 +541,6 @@ void AstTraversalVisitor<Subclass>::VisitInitializeClassStaticElementsStatement(
 }
 
 template <class Subclass>
-void AstTraversalVisitor<Subclass>::VisitAutoAccessorGetterBody(
-    AutoAccessorGetterBody* stmt) {
-  PROCESS_NODE(stmt);
-}
-
-template <class Subclass>
-void AstTraversalVisitor<Subclass>::VisitAutoAccessorSetterBody(
-    AutoAccessorSetterBody* stmt) {
-  PROCESS_NODE(stmt);
-}
-
-template <class Subclass>
 void AstTraversalVisitor<Subclass>::VisitSpread(Spread* expr) {
   PROCESS_EXPRESSION(expr);
   RECURSE_EXPRESSION(Visit(expr->expression()));

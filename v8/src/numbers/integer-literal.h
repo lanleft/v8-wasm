@@ -5,8 +5,7 @@
 #ifndef V8_NUMBERS_INTEGER_LITERAL_H_
 #define V8_NUMBERS_INTEGER_LITERAL_H_
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/common/globals.h"
 
 namespace v8 {
@@ -44,9 +43,9 @@ class IntegerLiteral {
   }
 
   template <typename T>
-  std::optional<T> TryTo() const {
+  base::Optional<T> TryTo() const {
     static_assert(std::is_integral<T>::value, "Integral type required");
-    if (!IsRepresentableAs<T>()) return std::nullopt;
+    if (!IsRepresentableAs<T>()) return base::nullopt;
     return To<T>();
   }
 

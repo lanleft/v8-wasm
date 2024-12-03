@@ -50,8 +50,8 @@ class TrustedObject : public HeapObject {
   inline void WriteProtectedPointerField(int offset,
                                          Tagged<TrustedObject> value,
                                          ReleaseStoreTag);
-  inline bool IsProtectedPointerFieldEmpty(int offset) const;
-  inline bool IsProtectedPointerFieldEmpty(int offset, AcquireLoadTag) const;
+  inline bool IsProtectedPointerFieldCleared(int offset) const;
+  inline bool IsProtectedPointerFieldCleared(int offset, AcquireLoadTag) const;
   inline void ClearProtectedPointerField(int offset);
   inline void ClearProtectedPointerField(int offset, ReleaseStoreTag);
 
@@ -65,11 +65,6 @@ class TrustedObject : public HeapObject {
 
   OBJECT_CONSTRUCTORS(TrustedObject, HeapObject);
 };
-
-V8_OBJECT class TrustedObjectLayout : public HeapObjectLayout {
- public:
-  DECL_VERIFIER(TrustedObject)
-} V8_OBJECT_END;
 
 // A trusted object that can safely be referenced from untrusted objects.
 //

@@ -260,45 +260,42 @@ TEST(MemoryAllocator) {
 }
 
 TEST(ComputeDiscardMemoryAreas) {
-  std::optional<base::AddressRegion> discard_area;
+  base::AddressRegion memory_area;
   size_t page_size = MemoryAllocator::GetCommitPageSize();
+  size_t free_header_size = FreeSpace::kSize;
 
-  discard_area = Sweeper::ComputeDiscardMemoryArea(0, 0);
-  CHECK(!discard_area);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(0, 0);
+  CHECK_EQ(memory_area.begin(), 0);
+  CHECK_EQ(memory_area.size(), 0);
 
-  discard_area = Sweeper::ComputeDiscardMemoryArea(0, page_size);
-  CHECK_EQ(discard_area->begin(), 0);
-  CHECK_EQ(discard_area->size(), page_size);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(
+      0, page_size + free_header_size);
+  CHECK_EQ(memory_area.begin(), 0);
+  CHECK_EQ(memory_area.size(), 0);
 
-  discard_area = Sweeper::ComputeDiscardMemoryArea(page_size, 2 * page_size);
-  CHECK_EQ(discard_area->begin(), page_size);
-  CHECK_EQ(discard_area->size(), page_size);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(
+      page_size - free_header_size, page_size + free_header_size);
+  CHECK_EQ(memory_area.begin(), page_size);
+  CHECK_EQ(memory_area.size(), page_size);
 
-  discard_area =
-      Sweeper::ComputeDiscardMemoryArea(page_size - kTaggedSize, 2 * page_size);
-  CHECK_EQ(discard_area->begin(), page_size);
-  CHECK_EQ(discard_area->size(), page_size);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(page_size, page_size);
+  CHECK_EQ(memory_area.begin(), 0);
+  CHECK_EQ(memory_area.size(), 0);
 
-  discard_area =
-      Sweeper::ComputeDiscardMemoryArea(page_size, 2 * page_size + kTaggedSize);
-  CHECK_EQ(discard_area->begin(), page_size);
-  CHECK_EQ(discard_area->size(), page_size);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(
+      page_size / 2, page_size + page_size / 2);
+  CHECK_EQ(memory_area.begin(), page_size);
+  CHECK_EQ(memory_area.size(), page_size);
 
-  discard_area = Sweeper::ComputeDiscardMemoryArea(page_size, page_size);
-  CHECK(!discard_area);
+  memory_area = MemoryAllocator::ComputeDiscardMemoryArea(
+      page_size / 2, page_size + page_size / 4);
+  CHECK_EQ(memory_area.begin(), 0);
+  CHECK_EQ(memory_area.size(), 0);
 
-  discard_area = Sweeper::ComputeDiscardMemoryArea(page_size / 2,
-                                                   page_size + page_size / 2);
-  CHECK(!discard_area);
-
-  discard_area = Sweeper::ComputeDiscardMemoryArea(page_size / 2,
-                                                   page_size + page_size / 4);
-  CHECK(!discard_area);
-
-  discard_area =
-      Sweeper::ComputeDiscardMemoryArea(page_size / 2, page_size * 3);
-  CHECK_EQ(discard_area->begin(), page_size);
-  CHECK_EQ(discard_area->size(), page_size * 2);
+  memory_area =
+      MemoryAllocator::ComputeDiscardMemoryArea(page_size / 2, page_size * 3);
+  CHECK_EQ(memory_area.begin(), page_size);
+  CHECK_EQ(memory_area.size(), page_size * 2);
 }
 
 TEST(SemiSpaceNewSpace) {
@@ -470,7 +467,7 @@ TEST(SizeOfInitialHeap) {
 // snapshot.
 // In PPC the page size is 64K, causing more internal fragmentation
 // hence requiring a larger limit.
-#if V8_OS_LINUX && V8_HOST_ARCH_PPC64
+#if V8_OS_LINUX && (V8_HOST_ARCH_PPC || V8_HOST_ARCH_PPC64)
   const size_t kMaxInitialSizePerSpace = 3 * MB;
 #else
   const size_t kMaxInitialSizePerSpace = 2 * MB;
@@ -738,7 +735,6 @@ class FailingPageAllocator : public v8::PageAllocator {
     return false;
   }
   bool DecommitPages(void* address, size_t length) override { return false; }
-  bool SealPages(void* address, size_t length) override { return false; }
 };
 }  // namespace
 

@@ -62,10 +62,6 @@ V8_EXPORT_PRIVATE void float64_to_int64_sat_wrapper(Address data);
 
 V8_EXPORT_PRIVATE void float64_to_uint64_sat_wrapper(Address data);
 
-V8_EXPORT_PRIVATE void float32_to_float16_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void float16_to_float32_wrapper(Address data);
-
 V8_EXPORT_PRIVATE int32_t int64_div_wrapper(Address data);
 
 V8_EXPORT_PRIVATE int32_t int64_mod_wrapper(Address data);
@@ -99,62 +95,6 @@ V8_EXPORT_PRIVATE void f32x4_floor_wrapper(Address data);
 V8_EXPORT_PRIVATE void f32x4_trunc_wrapper(Address data);
 
 V8_EXPORT_PRIVATE void f32x4_nearest_int_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_abs_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_neg_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_sqrt_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_ceil_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_floor_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_trunc_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_nearest_int_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_eq_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_ne_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_lt_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_le_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_add_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_sub_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_mul_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_div_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_min_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_max_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_pmin_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_pmax_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void i16x8_sconvert_f16x8_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void i16x8_uconvert_f16x8_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_sconvert_i16x8_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_uconvert_i16x8_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f32x4_promote_low_f16x8_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_demote_f32x4_zero_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_demote_f64x2_zero_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_qfma_wrapper(Address data);
-
-V8_EXPORT_PRIVATE void f16x8_qfms_wrapper(Address data);
 
 // The return type is {int32_t} instead of {bool} to enforce the compiler to
 // zero-extend the result in the return register.
@@ -195,12 +135,10 @@ void return_switch(Isolate* isolate, Address continuation);
 
 intptr_t switch_to_the_central_stack(Isolate* isolate, uintptr_t sp);
 void switch_from_the_central_stack(Isolate* isolate);
-intptr_t switch_to_the_central_stack_for_js(Isolate* isolate, Address fp);
-void switch_from_the_central_stack_for_js(Isolate* isolate);
-Address grow_stack(Isolate* isolate, void* current_sp, size_t frame_size,
-                   size_t gap, Address current_fp);
-Address shrink_stack(Isolate* isolate);
-Address load_old_fp(Isolate* isolate);
+intptr_t switch_to_the_central_stack_for_js(Address receiver,
+                                            uintptr_t* stack_limit_slot);
+void switch_from_the_central_stack_for_js(Address receiver,
+                                          uintptr_t stack_limit);
 
 }  // namespace wasm
 }  // namespace internal

@@ -37,6 +37,7 @@
 #include "include/v8-locker.h"
 #include "src/base/lazy-instance.h"
 #include "src/base/logging.h"
+#include "src/base/optional.h"
 #include "src/base/platform/condition-variable.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/semaphore.h"
@@ -300,7 +301,7 @@ i::Handle<i::JSFunction> Optimize(i::Handle<i::JSFunction> function,
   CHECK_NOT_NULL(zone);
 
   i::OptimizedCompilationInfo info(zone, isolate, shared, function,
-                                   i::CodeKind::TURBOFAN_JS);
+                                   i::CodeKind::TURBOFAN);
 
   if (flags & ~i::OptimizedCompilationInfo::kInlining) UNIMPLEMENTED();
   if (flags & i::OptimizedCompilationInfo::kInlining) {
@@ -313,7 +314,7 @@ i::Handle<i::JSFunction> Optimize(i::Handle<i::JSFunction> function,
   i::DirectHandle<i::Code> code =
       i::compiler::Pipeline::GenerateCodeForTesting(&info, isolate)
           .ToHandleChecked();
-  function->UpdateCode(*code);
+  function->set_code(*code, v8::kReleaseStore);
   return function;
 }
 #endif  // V8_ENABLE_TURBOFAN
@@ -423,8 +424,8 @@ int TestPlatform::NumberOfWorkerThreads() {
 }
 
 std::shared_ptr<v8::TaskRunner> TestPlatform::GetForegroundTaskRunner(
-    v8::Isolate* isolate, v8::TaskPriority priority) {
-  return CcTest::default_platform()->GetForegroundTaskRunner(isolate, priority);
+    v8::Isolate* isolate) {
+  return CcTest::default_platform()->GetForegroundTaskRunner(isolate);
 }
 
 void TestPlatform::PostTaskOnWorkerThreadImpl(

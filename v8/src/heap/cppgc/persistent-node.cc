@@ -10,7 +10,6 @@
 #include "include/cppgc/cross-thread-persistent.h"
 #include "include/cppgc/persistent.h"
 #include "src/base/platform/platform.h"
-#include "src/heap/cppgc/heap-base.h"
 #include "src/heap/cppgc/platform.h"
 #include "src/heap/cppgc/process-heap.h"
 
@@ -112,8 +111,14 @@ void PersistentRegionBase::Iterate(RootVisitor& root_visitor) {
                nodes_.end());
 }
 
+PersistentRegion::PersistentRegion(const FatalOutOfMemoryHandler& oom_handler)
+    : PersistentRegionBase(oom_handler),
+      creation_thread_id_(v8::base::OS::GetCurrentThreadId()) {
+  USE(creation_thread_id_);
+}
+
 bool PersistentRegion::IsCreationThread() {
-  return heap_.CurrentThreadIsHeapThread();
+  return creation_thread_id_ == v8::base::OS::GetCurrentThreadId();
 }
 
 PersistentRegionLock::PersistentRegionLock() {

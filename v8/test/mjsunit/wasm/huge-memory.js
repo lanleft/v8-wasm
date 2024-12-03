@@ -7,8 +7,7 @@
 // Flags: --multi-mapped-mock-allocator
 
 // This test makes sure things don't break once we support >2GB wasm memories.
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function testHugeMemory() {
   print(arguments.callee.name);

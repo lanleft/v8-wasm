@@ -20,7 +20,7 @@ namespace internal {
 class StringTableKey {
  public:
   virtual ~StringTableKey() = default;
-  inline StringTableKey(uint32_t raw_hash_field, uint32_t length);
+  inline StringTableKey(uint32_t raw_hash_field, int length);
 
   uint32_t raw_hash_field() const {
     DCHECK_NE(0, raw_hash_field_);
@@ -28,14 +28,14 @@ class StringTableKey {
   }
 
   inline uint32_t hash() const;
-  uint32_t length() const { return length_; }
+  int length() const { return length_; }
 
  protected:
   inline void set_raw_hash_field(uint32_t raw_hash_field);
 
  private:
   uint32_t raw_hash_field_ = 0;
-  uint32_t length_;
+  int length_;
 };
 
 class SeqOneByteString;

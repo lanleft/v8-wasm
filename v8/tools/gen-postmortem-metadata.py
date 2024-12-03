@@ -497,12 +497,13 @@ consts_misc = [
 # in this "extras_accessors" table.
 #
 extras_accessors = [
+    'JSFunction, code, Tagged<Code>, kCodeOffset',
     'JSFunction, context, Context, kContextOffset',
     'JSFunction, shared, SharedFunctionInfo, kSharedFunctionInfoOffset',
     'HeapObject, map, Map, kMapOffset',
     'JSObject, elements, Object, kElementsOffset',
     'JSObject, internal_fields, uintptr_t, kHeaderSize',
-    'FixedArray, data, uintptr_t, OFFSET_OF_DATA_START(FixedArray)',
+    'FixedArray, data, uintptr_t, kHeaderSize',
     'BytecodeArray, data, uintptr_t, kHeaderSize',
     'JSArrayBuffer, backing_store, uintptr_t, kBackingStoreOffset',
     'JSArrayBuffer, byte_length, size_t, kRawByteLengthOffset',

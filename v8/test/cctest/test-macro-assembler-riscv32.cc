@@ -1198,26 +1198,10 @@ TEST(Ctz32) {
   }
 }
 
-template <bool USE_SCRATCH>
-static void ByteSwapHelper() {
-  Func fn;
-  if (USE_SCRATCH) {
-    fn = [](MacroAssembler& masm) { __ ByteSwap(a0, a0, 4, t0); };
-  } else {
-    fn = [](MacroAssembler& masm) { __ ByteSwap(a0, a0, 4); };
-  }
-
-  CHECK_EQ((int32_t)0x89ab'cdef, GenAndRunTest<int32_t>(0xefcd'ab89, fn));
-}
-
 TEST(ByteSwap) {
   CcTest::InitializeVM();
-  ByteSwapHelper<true>();
-}
-
-TEST(ByteSwap_no_scratch) {
-  CcTest::InitializeVM();
-  ByteSwapHelper<false>();
+  auto fn0 = [](MacroAssembler& masm) { __ ByteSwap(a0, a0, 4, t0); };
+  CHECK_EQ((int32_t)0x89ab'cdef, GenAndRunTest<int32_t>(0xefcd'ab89, fn0));
 }
 
 TEST(Popcnt) {

@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/torque/utils.h"
 #include "test/unittests/test-utils.h"
 
@@ -12,10 +10,10 @@ namespace internal {
 namespace torque {
 
 TEST(TorqueUtils, FileUriDecodeIllegal) {
-  EXPECT_EQ(FileUriDecode("http://wrong.scheme"), std::nullopt);
-  EXPECT_EQ(FileUriDecode("file://wrong-escape%"), std::nullopt);
-  EXPECT_EQ(FileUriDecode("file://another-wrong-escape%a"), std::nullopt);
-  EXPECT_EQ(FileUriDecode("file://no-hex-escape%0g"), std::nullopt);
+  EXPECT_EQ(FileUriDecode("http://wrong.scheme"), base::nullopt);
+  EXPECT_EQ(FileUriDecode("file://wrong-escape%"), base::nullopt);
+  EXPECT_EQ(FileUriDecode("file://another-wrong-escape%a"), base::nullopt);
+  EXPECT_EQ(FileUriDecode("file://no-hex-escape%0g"), base::nullopt);
 }
 
 TEST(TorqueUtils, FileUriDecode) {

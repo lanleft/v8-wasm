@@ -3,15 +3,14 @@
 // found in the LICENSE file.
 
 #include "src/torque/declarations.h"
-
-#include <optional>
-
 #include "src/torque/declarable.h"
 #include "src/torque/global-context.h"
 #include "src/torque/server-data.h"
 #include "src/torque/type-oracle.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 namespace {
 
 template <class T>
@@ -77,10 +76,10 @@ const Type* Declarations::LookupType(const Identifier* name) {
   return alias->type();
 }
 
-std::optional<const Type*> Declarations::TryLookupType(
+base::Optional<const Type*> Declarations::TryLookupType(
     const QualifiedName& name) {
   auto decls = FilterDeclarables<TypeAlias>(TryLookup(name));
-  if (decls.empty()) return std::nullopt;
+  if (decls.empty()) return base::nullopt;
   return EnsureUnique(std::move(decls), name, "type")->type();
 }
 
@@ -121,10 +120,10 @@ Macro* Declarations::TryLookupMacro(const std::string& name,
   return nullptr;
 }
 
-std::optional<Builtin*> Declarations::TryLookupBuiltin(
+base::Optional<Builtin*> Declarations::TryLookupBuiltin(
     const QualifiedName& name) {
   std::vector<Builtin*> builtins = TryLookup<Builtin>(name);
-  if (builtins.empty()) return std::nullopt;
+  if (builtins.empty()) return base::nullopt;
   return EnsureUnique(builtins, name.name, "builtin");
 }
 
@@ -152,10 +151,10 @@ GenericType* Declarations::LookupGlobalUniqueGenericType(
       name, "generic type");
 }
 
-std::optional<GenericType*> Declarations::TryLookupGenericType(
+base::Optional<GenericType*> Declarations::TryLookupGenericType(
     const QualifiedName& name) {
   std::vector<GenericType*> results = TryLookup<GenericType>(name);
-  if (results.empty()) return std::nullopt;
+  if (results.empty()) return base::nullopt;
   return EnsureUnique(results, name.name, "generic type");
 }
 
@@ -178,9 +177,12 @@ TypeAlias* Declarations::PredeclareTypeAlias(const Identifier* name,
   return Declare(name->value, std::move(alias_ptr));
 }
 
-TorqueMacro* Declarations::CreateTorqueMacro(
-    std::string external_name, std::string readable_name, bool exported_to_csa,
-    Signature signature, std::optional<Statement*> body, bool is_user_defined) {
+TorqueMacro* Declarations::CreateTorqueMacro(std::string external_name,
+                                             std::string readable_name,
+                                             bool exported_to_csa,
+                                             Signature signature,
+                                             base::Optional<Statement*> body,
+                                             bool is_user_defined) {
   external_name = GlobalContext::MakeUniqueName(external_name);
   return RegisterDeclarable(std::unique_ptr<TorqueMacro>(new TorqueMacro(
       std::move(external_name), std::move(readable_name), std::move(signature),
@@ -197,9 +199,9 @@ ExternMacro* Declarations::CreateExternMacro(
 
 Macro* Declarations::DeclareMacro(
     const std::string& name, bool accessible_from_csa,
-    std::optional<std::string> external_assembler_name,
-    const Signature& signature, std::optional<Statement*> body,
-    std::optional<std::string> op, bool is_user_defined) {
+    base::Optional<std::string> external_assembler_name,
+    const Signature& signature, base::Optional<Statement*> body,
+    base::Optional<std::string> op, bool is_user_defined) {
   if (Macro* existing_macro =
           TryLookupMacro(name, signature.GetExplicitTypes())) {
     if (existing_macro->ParentScope() == CurrentScope::Get()) {
@@ -256,7 +258,7 @@ Builtin* Declarations::CreateBuiltin(std::string external_name,
                                      std::string readable_name,
                                      Builtin::Kind kind, Builtin::Flags flags,
                                      Signature signature,
-                                     std::optional<Statement*> body) {
+                                     base::Optional<Statement*> body) {
   return RegisterDeclarable(std::unique_ptr<Builtin>(
       new Builtin(std::move(external_name), std::move(readable_name), kind,
                   flags, std::move(signature), body)));
@@ -265,7 +267,7 @@ Builtin* Declarations::CreateBuiltin(std::string external_name,
 Builtin* Declarations::DeclareBuiltin(const std::string& name,
                                       Builtin::Kind kind, Builtin::Flags flags,
                                       const Signature& signature,
-                                      std::optional<Statement*> body) {
+                                      base::Optional<Statement*> body) {
   CheckAlreadyDeclared<Builtin>(name, "builtin");
   return Declare(name, CreateBuiltin(name, name, kind, flags, signature, body));
 }
@@ -323,4 +325,6 @@ Macro* Declarations::DeclareOperator(const std::string& name, Macro* m) {
   return m;
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8

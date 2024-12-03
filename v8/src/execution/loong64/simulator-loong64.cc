@@ -1963,13 +1963,12 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
   return stack_limit_ + kAdditionalStackMargin;
 }
 
-base::Vector<uint8_t> Simulator::GetCentralStackView() const {
+base::Vector<uint8_t> Simulator::GetCurrentStackView() const {
   // We do not add an additional safety margin as above in
   // Simulator::StackLimit, as users of this method are expected to add their
   // own margin.
-  return base::VectorOf(
-      reinterpret_cast<uint8_t*>(stack_) + kStackProtectionSize,
-      UsableStackSize());
+  return base::VectorOf(reinterpret_cast<uint8_t*>(stack_limit_),
+                        UsableStackSize());
 }
 
 // Unsupported instructions use Format to print an error and stop execution.
@@ -3906,7 +3905,10 @@ void Simulator::DecodeTypeOp17() {
                    FPURegisters::Name(fd_reg()), fd_float(),
                    FPURegisters::Name(fj_reg()), fj_float(),
                    FPURegisters::Name(fk_reg()), fk_float());
-      SetFPUFloatResult(fd_reg(), fj_float() - fk_float());
+      SetFPUFloatResult(
+          fd_reg(),
+          FPUCanonalizeOperation([](float lhs, float rhs) { return lhs - rhs; },
+                                 fj_float(), fk_float()));
       break;
     }
     case FSUB_D: {
@@ -3914,7 +3916,10 @@ void Simulator::DecodeTypeOp17() {
                    FPURegisters::Name(fd_reg()), fd_double(),
                    FPURegisters::Name(fj_reg()), fj_double(),
                    FPURegisters::Name(fk_reg()), fk_double());
-      SetFPUDoubleResult(fd_reg(), fj_double() - fk_double());
+      SetFPUDoubleResult(fd_reg(),
+                         FPUCanonalizeOperation(
+                             [](double lhs, double rhs) { return lhs - rhs; },
+                             fj_double(), fk_double()));
       break;
     }
     case FMUL_S: {

@@ -32,7 +32,8 @@ TargetArchitecture::TargetArchitecture(bool force_32bit)
                                      : kExternalPointerSlotSize),
       cppheap_ptr_size_(force_32bit ? sizeof(int32_t)
                                     : kCppHeapPointerSlotSize),
-      trusted_ptr_size_(force_32bit ? sizeof(int32_t) : kTrustedPointerSize) {}
+      indirect_ptr_size_(force_32bit ? sizeof(int32_t) : kIndirectPointerSize) {
+}
 
 }  // namespace torque
 }  // namespace internal

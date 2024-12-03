@@ -4,8 +4,7 @@
 
 // Flags: --experimental-wasm-stringref --expose-gc
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // This test case tests the loading an instance type for a string before a GC
 // is triggered which (in the case of thin strings) changes the instance type.

@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 const kSequenceLength = 8192;
 const kNumberOfWorkers = 4;
@@ -33,7 +32,7 @@ function makeWorkerCodeForOpcode(compareExchangeOpcode, size, functionName,
     }
     const kArgMemoryCell = 0; // target for atomic ops
     const kArgSequencePtr = 1; // address of sequence
-    const kArgSeqenceLength = 2; // length of sequence
+    const kArgSeqenceLength = 2; // lenght of sequence
     const kArgWorkerId = 3; // id of this worker
     const kArgBitMask = 4; // mask to extract worker id from value
     const kLocalCurrentOffset = 5; // current position in sequence in bytes

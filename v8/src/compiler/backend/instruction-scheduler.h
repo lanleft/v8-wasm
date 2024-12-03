@@ -5,8 +5,7 @@
 #ifndef V8_COMPILER_BACKEND_INSTRUCTION_SCHEDULER_H_
 #define V8_COMPILER_BACKEND_INSTRUCTION_SCHEDULER_H_
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/base/utils/random-number-generator.h"
 #include "src/compiler/backend/instruction.h"
 #include "src/zone/zone-containers.h"
@@ -244,7 +243,7 @@ class InstructionScheduler final : public ZoneObject {
   // record operand dependencies in the scheduling graph.
   ZoneMap<int32_t, ScheduleGraphNode*> operands_map_;
 
-  std::optional<base::RandomNumberGenerator> random_number_generator_;
+  base::Optional<base::RandomNumberGenerator> random_number_generator_;
 };
 
 }  // namespace compiler

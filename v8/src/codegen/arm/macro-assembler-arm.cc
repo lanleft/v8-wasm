@@ -97,8 +97,8 @@ void MacroAssembler::LoadFromConstantsTable(Register destination,
                                             int constant_index) {
   DCHECK(RootsTable::IsImmortalImmovable(RootIndex::kBuiltinsConstantsTable));
 
-  const uint32_t offset = OFFSET_OF_DATA_START(FixedArray) +
-                          constant_index * kPointerSize - kHeapObjectTag;
+  const uint32_t offset =
+      FixedArray::kHeaderSize + constant_index * kPointerSize - kHeapObjectTag;
 
   LoadRoot(destination, RootIndex::kBuiltinsConstantsTable);
   ldr(destination, MemOperand(destination, offset));
@@ -388,10 +388,7 @@ void MacroAssembler::JumpCodeObject(Register code_object, JumpMode jump_mode) {
   Jump(code_object);
 }
 
-void MacroAssembler::CallJSFunction(Register function_object,
-                                    uint16_t argument_count) {
-  DCHECK_WITH_MSG(!V8_ENABLE_LEAPTIERING_BOOL,
-                  "argument_count is only used with Leaptiering");
+void MacroAssembler::CallJSFunction(Register function_object) {
   Register code = kJavaScriptCallCodeStartRegister;
   ldr(code, FieldMemOperand(function_object, JSFunction::kCodeOffset));
   CallCodeObject(code);
@@ -1418,7 +1415,7 @@ void MacroAssembler::EnterFrame(StackFrame::Type type,
   }
   PushCommonFrame(scratch);
 #if V8_ENABLE_WEBASSEMBLY
-  if (type == StackFrame::WASM) Push(kWasmImplicitArgRegister);
+  if (type == StackFrame::WASM) Push(kWasmInstanceRegister);
 #endif  // V8_ENABLE_WEBASSEMBLY
 }
 
@@ -1728,10 +1725,9 @@ void MacroAssembler::InvokeFunctionCode(Register function, Register new_target,
   // We call indirectly through the code field in the function to
   // allow recompilation to take effect without changing any of the
   // call sites.
-  constexpr int unused_argument_count = 0;
   switch (type) {
     case InvokeType::kCall:
-      CallJSFunction(function, unused_argument_count);
+      CallJSFunction(function);
       break;
     case InvokeType::kJump:
       JumpJSFunction(function);
@@ -1829,26 +1825,19 @@ void MacroAssembler::CompareObjectType(Register object, Register map,
   CompareInstanceType(map, temp, type);
 }
 
-void MacroAssembler::CompareObjectTypeRange(Register object, Register map,
-                                            Register type_reg, Register scratch,
-                                            InstanceType lower_limit,
-                                            InstanceType upper_limit) {
-  ASM_CODE_COMMENT(this);
-  LoadMap(map, object);
-  CompareInstanceTypeRange(map, type_reg, scratch, lower_limit, upper_limit);
-}
-
 void MacroAssembler::CompareInstanceType(Register map, Register type_reg,
                                          InstanceType type) {
   ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
   cmp(type_reg, Operand(type));
 }
 
-void MacroAssembler::CompareRange(Register value, Register scratch,
-                                  unsigned lower_limit, unsigned higher_limit) {
+void MacroAssembler::CompareRange(Register value, unsigned lower_limit,
+                                  unsigned higher_limit) {
   ASM_CODE_COMMENT(this);
   DCHECK_LT(lower_limit, higher_limit);
   if (lower_limit != 0) {
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
     sub(scratch, value, Operand(lower_limit));
     cmp(scratch, Operand(higher_limit - lower_limit));
   } else {
@@ -1856,13 +1845,12 @@ void MacroAssembler::CompareRange(Register value, Register scratch,
   }
 }
 void MacroAssembler::CompareInstanceTypeRange(Register map, Register type_reg,
-                                              Register scratch,
                                               InstanceType lower_limit,
                                               InstanceType higher_limit) {
   ASM_CODE_COMMENT(this);
   DCHECK_LT(lower_limit, higher_limit);
   ldrh(type_reg, FieldMemOperand(map, Map::kInstanceTypeOffset));
-  CompareRange(type_reg, scratch, lower_limit, higher_limit);
+  CompareRange(type_reg, lower_limit, higher_limit);
 }
 
 void MacroAssembler::CompareTaggedRoot(Register obj, RootIndex index) {
@@ -1877,12 +1865,11 @@ void MacroAssembler::CompareRoot(Register obj, RootIndex index) {
   cmp(obj, scratch);
 }
 
-void MacroAssembler::JumpIfIsInRange(Register value, Register scratch,
-                                     unsigned lower_limit,
+void MacroAssembler::JumpIfIsInRange(Register value, unsigned lower_limit,
                                      unsigned higher_limit,
                                      Label* on_in_range) {
   ASM_CODE_COMMENT(this);
-  CompareRange(value, scratch, lower_limit, higher_limit);
+  CompareRange(value, lower_limit, higher_limit);
   b(ls, on_in_range);
 }
 
@@ -2232,7 +2219,7 @@ void MacroAssembler::AssertFunction(Register object) {
   Check(ne, AbortReason::kOperandIsASmiAndNotAFunction);
   push(object);
   LoadMap(object, object);
-  CompareInstanceTypeRange(object, object, object, FIRST_JS_FUNCTION_TYPE,
+  CompareInstanceTypeRange(object, object, FIRST_JS_FUNCTION_TYPE,
                            LAST_JS_FUNCTION_TYPE);
   pop(object);
   Check(ls, AbortReason::kOperandIsNotAFunction);
@@ -2246,8 +2233,7 @@ void MacroAssembler::AssertCallableFunction(Register object) {
   Check(ne, AbortReason::kOperandIsASmiAndNotAFunction);
   push(object);
   LoadMap(object, object);
-  CompareInstanceTypeRange(object, object, object,
-                           FIRST_CALLABLE_JS_FUNCTION_TYPE,
+  CompareInstanceTypeRange(object, object, FIRST_CALLABLE_JS_FUNCTION_TYPE,
                            LAST_CALLABLE_JS_FUNCTION_TYPE);
   pop(object);
   Check(ls, AbortReason::kOperandIsNotACallableFunction);
@@ -2277,9 +2263,8 @@ void MacroAssembler::AssertGeneratorObject(Register object) {
   LoadMap(map, object);
 
   // Check if JSGeneratorObject
-  Register scratch = object;
-  CompareInstanceTypeRange(map, scratch, scratch,
-                           FIRST_JS_GENERATOR_OBJECT_TYPE,
+  Register instance_type = object;
+  CompareInstanceTypeRange(map, instance_type, FIRST_JS_GENERATOR_OBJECT_TYPE,
                            LAST_JS_GENERATOR_OBJECT_TYPE);
   // Restore generator object to register and perform assertion
   pop(object);
@@ -3070,7 +3055,7 @@ void MacroAssembler::TryLoadOptimizedOsrCode(Register scratch_and_result,
 
     Register temp = temps.Acquire();
     JumpIfCodeIsMarkedForDeoptimization(scratch_and_result, temp, &clear_slot);
-    if (min_opt_level == CodeKind::TURBOFAN_JS) {
+    if (min_opt_level == CodeKind::TURBOFAN) {
       JumpIfCodeIsTurbofanned(scratch_and_result, temp, on_result);
       b(&fallthrough);
     } else {

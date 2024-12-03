@@ -60,7 +60,7 @@ class RegisterValues {
   Float64 double_registers_[DoubleRegister::kNumRegisters];
   Simd128 simd128_registers_[Simd128Register::kNumRegisters];
 #else
-  Simd128 simd128_registers_[Simd128Register::kNumRegisters];
+  Simd128 simd128_registers_[DoubleRegister::kNumRegisters];
 #endif
 };
 
@@ -160,7 +160,7 @@ class FrameDescription {
   void SetTop(intptr_t top) { top_ = top; }
 
   intptr_t GetPc() const { return pc_; }
-  void SetPc(intptr_t pc);
+  void SetPc(intptr_t pc, bool skip_validity_check = false);
 
   intptr_t GetFp() const { return fp_; }
   void SetFp(intptr_t fp) { fp_ = fp; }

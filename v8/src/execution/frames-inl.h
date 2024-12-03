@@ -5,8 +5,6 @@
 #ifndef V8_EXECUTION_FRAMES_INL_H_
 #define V8_EXECUTION_FRAMES_INL_H_
 
-#include <optional>
-
 #include "src/base/memory.h"
 #include "src/execution/frame-constants.h"
 #include "src/execution/frames.h"
@@ -21,7 +19,7 @@ class InnerPointerToCodeCache final {
  public:
   struct InnerPointerToCodeCacheEntry {
     Address inner_pointer;
-    std::optional<Tagged<GcSafeCode>> code;
+    base::Optional<Tagged<GcSafeCode>> code;
     union {
       SafepointEntry safepoint_entry;
       MaglevSafepointEntry maglev_safepoint_entry;
@@ -85,15 +83,13 @@ inline Address StackFrame::unauthenticated_pc(Address* pc_address) {
 }
 
 inline Address StackFrame::maybe_unauthenticated_pc() const {
-  if (!InFastCCall() && !is_profiler_entry_frame() && !is_stack_exit_frame()) {
+  if (!InFastCCall() && !is_profiler_entry_frame()) {
     // Here the pc_address() is on the stack and properly authenticated.
     return pc();
   } else {
     // For fast C calls pc_address() points into IsolateData and the pc in there
     // is unauthenticated. For the profiler, the pc_address of the first visited
     // frame is also not written by a call instruction.
-    // For wasm stacks, the exit frame's pc is stored in the jump buffer
-    // unsigned.
     return unauthenticated_pc(pc_address());
   }
 }
@@ -139,8 +135,17 @@ inline BuiltinExitFrame::BuiltinExitFrame(StackFrameIteratorBase* iterator)
     : ExitFrame(iterator) {}
 
 inline Tagged<Object> BuiltinExitFrame::receiver_slot_object() const {
-  return Tagged<Object>(
-      base::Memory<Address>(fp() + BuiltinExitFrameConstants::kReceiverOffset));
+  // The receiver is the first argument on the frame.
+  // fp[1]: return address.
+  // ------- fixed extra builtin arguments -------
+  // fp[2]: new target.
+  // fp[3]: target.
+  // fp[4]: argc.
+  // fp[5]: hole.
+  // ------- JS stack arguments ------
+  // fp[6]: receiver
+  const int receiverOffset = BuiltinExitFrameConstants::kFirstArgumentOffset;
+  return Tagged<Object>(base::Memory<Address>(fp() + receiverOffset));
 }
 
 inline Tagged<Object> BuiltinExitFrame::argc_slot_object() const {
@@ -280,7 +285,7 @@ inline void JavaScriptFrame::set_receiver(Tagged<Object> value) {
   base::Memory<Address>(GetParameterSlot(-1)) = value.ptr();
 }
 
-inline void UnoptimizedJSFrame::SetFeedbackVector(
+inline void UnoptimizedFrame::SetFeedbackVector(
     Tagged<FeedbackVector> feedback_vector) {
   const int offset = InterpreterFrameConstants::kFeedbackVectorFromFp;
   base::Memory<Address>(fp() + offset) = feedback_vector.ptr();
@@ -298,23 +303,23 @@ inline TurbofanStubWithContextFrame::TurbofanStubWithContextFrame(
 inline StubFrame::StubFrame(StackFrameIteratorBase* iterator)
     : TypedFrame(iterator) {}
 
-inline OptimizedJSFrame::OptimizedJSFrame(StackFrameIteratorBase* iterator)
+inline OptimizedFrame::OptimizedFrame(StackFrameIteratorBase* iterator)
     : JavaScriptFrame(iterator) {}
 
-inline UnoptimizedJSFrame::UnoptimizedJSFrame(StackFrameIteratorBase* iterator)
+inline UnoptimizedFrame::UnoptimizedFrame(StackFrameIteratorBase* iterator)
     : JavaScriptFrame(iterator) {}
 
 inline InterpretedFrame::InterpretedFrame(StackFrameIteratorBase* iterator)
-    : UnoptimizedJSFrame(iterator) {}
+    : UnoptimizedFrame(iterator) {}
 
 inline BaselineFrame::BaselineFrame(StackFrameIteratorBase* iterator)
-    : UnoptimizedJSFrame(iterator) {}
+    : UnoptimizedFrame(iterator) {}
 
 inline MaglevFrame::MaglevFrame(StackFrameIteratorBase* iterator)
-    : OptimizedJSFrame(iterator) {}
+    : OptimizedFrame(iterator) {}
 
-inline TurbofanJSFrame::TurbofanJSFrame(StackFrameIteratorBase* iterator)
-    : OptimizedJSFrame(iterator) {}
+inline TurbofanFrame::TurbofanFrame(StackFrameIteratorBase* iterator)
+    : OptimizedFrame(iterator) {}
 
 inline BuiltinFrame::BuiltinFrame(StackFrameIteratorBase* iterator)
     : TypedFrameWithJSLinkage(iterator) {}
@@ -323,18 +328,8 @@ inline BuiltinFrame::BuiltinFrame(StackFrameIteratorBase* iterator)
 inline WasmFrame::WasmFrame(StackFrameIteratorBase* iterator)
     : TypedFrame(iterator) {}
 
-inline WasmSegmentStartFrame::WasmSegmentStartFrame(
-    StackFrameIteratorBase* iterator)
-    : WasmFrame(iterator) {}
-
 inline WasmExitFrame::WasmExitFrame(StackFrameIteratorBase* iterator)
     : WasmFrame(iterator) {}
-
-#if V8_ENABLE_DRUMBRAKE
-inline WasmInterpreterEntryFrame::WasmInterpreterEntryFrame(
-    StackFrameIteratorBase* iterator)
-    : WasmFrame(iterator) {}
-#endif  // V8_ENABLE_DRUMBRAKE
 
 inline WasmDebugBreakFrame::WasmDebugBreakFrame(
     StackFrameIteratorBase* iterator)
@@ -389,9 +384,9 @@ inline IrregexpFrame::IrregexpFrame(StackFrameIteratorBase* iterator)
 inline CommonFrame* DebuggableStackFrameIterator::frame() const {
   StackFrame* frame = iterator_.frame();
 #if V8_ENABLE_WEBASSEMBLY
-  DCHECK(frame->is_javascript() || frame->is_wasm());
+  DCHECK(frame->is_java_script() || frame->is_wasm());
 #else
-  DCHECK(frame->is_javascript());
+  DCHECK(frame->is_java_script());
 #endif  // V8_ENABLE_WEBASSEMBLY
   return static_cast<CommonFrame*>(frame);
 }
@@ -402,20 +397,13 @@ inline CommonFrame* DebuggableStackFrameIterator::Reframe() {
 }
 
 bool DebuggableStackFrameIterator::is_javascript() const {
-  return frame()->is_javascript();
+  return frame()->is_java_script();
 }
 
 #if V8_ENABLE_WEBASSEMBLY
 bool DebuggableStackFrameIterator::is_wasm() const {
   return frame()->is_wasm();
 }
-
-#if V8_ENABLE_DRUMBRAKE
-bool DebuggableStackFrameIterator::is_wasm_interpreter_entry() const {
-  return frame()->is_wasm_interpreter_entry();
-}
-#endif  // V8_ENABLE_DRUMBRAKE
-
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 JavaScriptFrame* DebuggableStackFrameIterator::javascript_frame() const {
@@ -425,9 +413,6 @@ JavaScriptFrame* DebuggableStackFrameIterator::javascript_frame() const {
 // static
 inline bool StackFrameIteratorForProfiler::IsValidFrameType(
     StackFrame::Type type) {
-#if V8_ENABLE_WEBASSEMBLY
-  DCHECK_NE(type, StackFrame::C_WASM_ENTRY);
-#endif  // V8_ENABLE_WEBASSEMBLY
   return StackFrame::IsJavaScript(type) || type == StackFrame::EXIT ||
          type == StackFrame::BUILTIN_EXIT ||
          type == StackFrame::API_ACCESSOR_EXIT ||
@@ -435,10 +420,6 @@ inline bool StackFrameIteratorForProfiler::IsValidFrameType(
 #if V8_ENABLE_WEBASSEMBLY
          type == StackFrame::WASM || type == StackFrame::WASM_TO_JS ||
          type == StackFrame::JS_TO_WASM ||
-         type == StackFrame::WASM_SEGMENT_START ||
-#if V8_ENABLE_DRUMBRAKE
-         type == StackFrame::WASM_INTERPRETER_ENTRY ||
-#endif  // V8_ENABLE_DRUMBRAKE
 #endif  // V8_ENABLE_WEBASSEMBLY
          false;
 }

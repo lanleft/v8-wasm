@@ -61,7 +61,7 @@ int StringBuilderConcatLength(int special_length,
   DisallowGarbageCollection no_gc;
   int position = 0;
   for (int i = 0; i < array_length; i++) {
-    uint32_t increment = 0;
+    int increment = 0;
     Tagged<Object> elt = fixed_array->get(i);
     if (IsSmi(elt)) {
       // Smi encoding of position and length.
@@ -192,7 +192,8 @@ void ReplacementStringBuilder::EnsureCapacity(int elements) {
 }
 
 void ReplacementStringBuilder::AddString(DirectHandle<String> string) {
-  uint32_t length = string->length();
+  int length = string->length();
+  DCHECK_GT(length, 0);
   AddElement(string);
   if (!string->IsOneByteRepresentation()) {
     is_one_byte_ = false;

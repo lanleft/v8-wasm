@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "src/base/optional.h"
 #include "tools/v8windbg/base/utilities.h"
 #include "tools/v8windbg/src/v8-debug-helper-interop.h"
 #include "tools/v8windbg/src/v8windbg-extension.h"

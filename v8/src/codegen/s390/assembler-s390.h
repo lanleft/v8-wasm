@@ -41,7 +41,7 @@
 #define V8_CODEGEN_S390_ASSEMBLER_S390_H_
 #include <stdio.h>
 #include <memory>
-#if V8_HOST_ARCH_S390X && !V8_OS_ZOS
+#if V8_HOST_ARCH_S390 && !V8_OS_ZOS
 // elf.h include is required for auxv check for STFLE facility used
 // for hardware detection, which is sensible only on s390 hosts.
 #include <elf.h>
@@ -204,10 +204,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // own buffer. Otherwise it takes ownership of the provided buffer.
   explicit Assembler(const AssemblerOptions&,
                      std::unique_ptr<AssemblerBuffer> = {});
-  // For compatibility with assemblers that require a zone.
-  Assembler(const MaybeAssemblerZone&, const AssemblerOptions& options,
-            std::unique_ptr<AssemblerBuffer> buffer = {})
-      : Assembler(options, std::move(buffer)) {}
 
   virtual ~Assembler() {}
 
@@ -291,12 +287,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
       Address pc, Address target,
       RelocInfo::Mode mode = RelocInfo::INTERNAL_REFERENCE);
 
-  // Read/modify the uint32 constant used at pc.
-  static inline uint32_t uint32_constant_at(Address pc, Address constant_pool);
-  static inline void set_uint32_constant_at(
-      Address pc, Address constant_pool, uint32_t new_constant,
-      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
-
   // Here we are patching the address in the IIHF/IILF instruction pair.
   // These values are used in the serialization process and must be zero for
   // S390 platform, as Code, Embedded Object or External-reference pointers
@@ -305,7 +295,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   // a target is resolved and written.
   static constexpr int kSpecialTargetSize = 0;
 // Number of bytes for instructions used to store pointer sized constant.
+#if V8_TARGET_ARCH_S390X
   static constexpr int kBytesForPtrConstant = 12;  // IIHF + IILF
+#else
+  static constexpr int kBytesForPtrConstant = 6;  // IILF
+#endif
 
   RegList* GetScratchRegisterList() { return &scratch_register_list_; }
   DoubleRegList* GetScratchDoubleRegisterList() {
@@ -1335,7 +1329,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   static Condition GetCondition(Instr instr);
 
   static bool IsBranch(Instr instr);
+#if V8_TARGET_ARCH_S390X
   static bool Is64BitLoadIntoIP(SixByteInstr instr1, SixByteInstr instr2);
+#else
+  static bool Is32BitLoadIntoIP(SixByteInstr instr);
+#endif
 
   static bool IsCmpRegister(Instr instr);
   static bool IsCmpImmediate(Instr instr);

@@ -36,8 +36,6 @@
 
 #include "src/codegen/arm/assembler-arm.h"
 
-#include <optional>
-
 #if V8_TARGET_ARCH_ARM
 
 #include "src/base/bits.h"
@@ -83,12 +81,12 @@ static unsigned CpuFeaturesFromCommandLine() {
   // If any of the old (deprecated) flags are specified, print a warning, but
   // otherwise try to respect them for now.
   // TODO(jbramley): When all the old bots have been updated, remove this.
-  std::optional<bool> maybe_enable_armv7 = v8_flags.enable_armv7;
-  std::optional<bool> maybe_enable_vfp3 = v8_flags.enable_vfp3;
-  std::optional<bool> maybe_enable_32dregs = v8_flags.enable_32dregs;
-  std::optional<bool> maybe_enable_neon = v8_flags.enable_neon;
-  std::optional<bool> maybe_enable_sudiv = v8_flags.enable_sudiv;
-  std::optional<bool> maybe_enable_armv8 = v8_flags.enable_armv8;
+  base::Optional<bool> maybe_enable_armv7 = v8_flags.enable_armv7;
+  base::Optional<bool> maybe_enable_vfp3 = v8_flags.enable_vfp3;
+  base::Optional<bool> maybe_enable_32dregs = v8_flags.enable_32dregs;
+  base::Optional<bool> maybe_enable_neon = v8_flags.enable_neon;
+  base::Optional<bool> maybe_enable_sudiv = v8_flags.enable_sudiv;
+  base::Optional<bool> maybe_enable_armv8 = v8_flags.enable_armv8;
   if (maybe_enable_armv7.has_value() || maybe_enable_vfp3.has_value() ||
       maybe_enable_32dregs.has_value() || maybe_enable_neon.has_value() ||
       maybe_enable_sudiv.has_value() || maybe_enable_armv8.has_value()) {
@@ -589,12 +587,8 @@ void Assembler::GetCode(LocalIsolate* isolate, CodeDesc* desc,
   // this point to make CodeDesc initialization less fiddly.
 
   static constexpr int kConstantPoolSize = 0;
-  static constexpr int kBuiltinJumpTableInfoSize = 0;
   const int instruction_size = pc_offset();
-  const int builtin_jump_table_info_offset =
-      instruction_size - kBuiltinJumpTableInfoSize;
-  const int code_comments_offset =
-      builtin_jump_table_info_offset - code_comments_size;
+  const int code_comments_offset = instruction_size - code_comments_size;
   const int constant_pool_offset = code_comments_offset - kConstantPoolSize;
   const int handler_table_offset2 = (handler_table_offset == kNoHandlerTable)
                                         ? constant_pool_offset
@@ -607,8 +601,7 @@ void Assembler::GetCode(LocalIsolate* isolate, CodeDesc* desc,
       static_cast<int>(reloc_info_writer.pos() - buffer_->start());
   CodeDesc::Initialize(desc, this, safepoint_table_offset,
                        handler_table_offset2, constant_pool_offset,
-                       code_comments_offset, builtin_jump_table_info_offset,
-                       reloc_info_offset);
+                       code_comments_offset, reloc_info_offset);
 }
 
 void Assembler::Align(int m) {

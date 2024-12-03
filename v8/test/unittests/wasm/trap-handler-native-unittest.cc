@@ -35,7 +35,7 @@
 
 #if V8_TRAP_HANDLER_SUPPORTED
 
-#if V8_HOST_ARCH_ARM64 && (!V8_OS_LINUX && !V8_OS_DARWIN && !V8_OS_WIN)
+#if V8_HOST_ARCH_ARM64 && (!V8_OS_LINUX && !V8_OS_DARWIN)
 #error Unsupported platform
 #endif
 
@@ -175,8 +175,7 @@ class TrapHandlerTest : public TestWithIsolate,
     recovery_buffer_ = AllocateAssemblerBuffer(
         AssemblerBase::kDefaultBufferSize, GetRandomMmapAddr());
 
-    MacroAssembler masm(i_isolate(), AssemblerOptions{},
-                        CodeObjectRequired::kNo,
+    MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                         recovery_buffer_->CreateView());
     int recovery_offset = __ pc_offset();
 #if V8_HOST_ARCH_X64
@@ -247,13 +246,7 @@ class TrapHandlerTest : public TestWithIsolate,
     RemoveVectoredExceptionHandler(g_registered_handler);
     g_registered_handler = nullptr;
     g_test_handler_executed = true;
-#if V8_HOST_ARCH_X64
     exception->ContextRecord->Rip = g_recovery_address;
-#elif V8_HOST_ARCH_ARM64
-    exception->ContextRecord->Pc = g_recovery_address;
-#else
-#error Unsupported architecture
-#endif  // V8_HOST_ARCH_X64
     return EXCEPTION_CONTINUE_EXECUTION;
   }
 #endif
@@ -389,7 +382,7 @@ class TrapHandlerTest : public TestWithIsolate,
 TEST_P(TrapHandlerTest, TestTrapHandlerRecovery) {
   // Test that the wasm trap handler can recover a memory access violation in
   // wasm code (we fake the wasm code and the access violation).
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);
@@ -448,7 +441,7 @@ TEST_P(TrapHandlerTest, TestTrapHandlerRecovery) {
 TEST_P(TrapHandlerTest, TestReleaseHandlerData) {
   // Test that after we release handler data in the trap handler, it cannot
   // recover from the specific memory access violation anymore.
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);
@@ -513,7 +506,7 @@ TEST_P(TrapHandlerTest, TestReleaseHandlerData) {
 TEST_P(TrapHandlerTest, TestNoThreadInWasmFlag) {
   // That that if the thread_in_wasm flag is not set, the trap handler does not
   // get active.
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);
@@ -556,7 +549,7 @@ TEST_P(TrapHandlerTest, TestNoThreadInWasmFlag) {
 TEST_P(TrapHandlerTest, TestCrashInWasmNoProtectedInstruction) {
   // Test that if the crash in wasm happened at an instruction which is not
   // protected, then the trap handler does not handle it.
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);
@@ -607,7 +600,7 @@ TEST_P(TrapHandlerTest, TestCrashInWasmNoProtectedInstruction) {
 TEST_P(TrapHandlerTest, TestCrashInWasmWrongCrashType) {
   // Test that if the crash reason is not a memory access violation, then the
   // wasm trap handler does not handle it.
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);
@@ -688,7 +681,7 @@ TEST_P(TrapHandlerTest, TestCrashInOtherThread) {
   // The current thread enters wasm land (sets the thread_in_wasm flag)
   // A second thread crashes at a protected instruction without having the flag
   // set.
-  MacroAssembler masm(i_isolate(), AssemblerOptions{}, CodeObjectRequired::kNo,
+  MacroAssembler masm(nullptr, AssemblerOptions{}, CodeObjectRequired::kNo,
                       buffer_->CreateView());
 #if V8_HOST_ARCH_X64
   __ Push(scratch);

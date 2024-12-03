@@ -10,7 +10,7 @@ For local development you have to start a local webserver under <http://localhos
 ```
   cd tools/;
   npm install;
-  npm run start-webserver;
+  ws;
 ```
 
 ## Local Symbol Server
@@ -19,7 +19,7 @@ The system-analyzer can symbolize profiles for local binaries by running a
 local symbol server
 ```
   cd tools/;
-  ./system-analyzer/local-server.sh;
+  ws --stack system-analyzer/lws-middleware.js lws-static cors;
 ```
 Note that the local symbol server will run `nm` and `objdump` and has access to
 your files.

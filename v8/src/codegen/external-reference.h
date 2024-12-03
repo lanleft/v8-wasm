@@ -86,9 +86,7 @@ enum class IsolateFieldId : uint8_t;
   V(shared_external_pointer_table_address_address,              \
     "Isolate::shared_external_pointer_table_address_address()") \
   V(trusted_pointer_table_base_address,                         \
-    "Isolate::trusted_pointer_table_base_address()")            \
-  V(shared_trusted_pointer_table_base_address,                  \
-    "Isolate::shared_trusted_pointer_table_base_address()")
+    "Isolate::trusted_pointer_table_base_address()")
 #else
 #define EXTERNAL_REFERENCE_LIST_WITH_ISOLATE_SANDBOX(V)
 #endif  // V8_ENABLE_SANDBOX
@@ -257,9 +255,6 @@ enum class IsolateFieldId : uint8_t;
           "wasm::switch_to_the_central_stack_for_js")                          \
   IF_WASM(V, wasm_switch_from_the_central_stack_for_js,                        \
           "wasm::switch_from_the_central_stack_for_js")                        \
-  IF_WASM(V, wasm_grow_stack, "wasm::grow_stack")                              \
-  IF_WASM(V, wasm_shrink_stack, "wasm::shrink_stack")                          \
-  IF_WASM(V, wasm_load_old_fp, "wasm::load_old_fp")                            \
   IF_WASM(V, wasm_f32_ceil, "wasm::f32_ceil_wrapper")                          \
   IF_WASM(V, wasm_f32_floor, "wasm::f32_floor_wrapper")                        \
   IF_WASM(V, wasm_f32_nearest_int, "wasm::f32_nearest_int_wrapper")            \
@@ -279,8 +274,6 @@ enum class IsolateFieldId : uint8_t;
   IF_WASM(V, wasm_float64_to_int64_sat, "wasm::float64_to_int64_sat_wrapper")  \
   IF_WASM(V, wasm_float64_to_uint64_sat,                                       \
           "wasm::float64_to_uint64_sat_wrapper")                               \
-  IF_WASM(V, wasm_float16_to_float32, "wasm::float16_to_float32_wrapper")      \
-  IF_WASM(V, wasm_float32_to_float16, "wasm::float32_to_float16_wrapper")      \
   IF_WASM(V, wasm_int64_div, "wasm::int64_div")                                \
   IF_WASM(V, wasm_int64_mod, "wasm::int64_mod")                                \
   IF_WASM(V, wasm_int64_to_float32, "wasm::int64_to_float32_wrapper")          \
@@ -305,37 +298,6 @@ enum class IsolateFieldId : uint8_t;
   IF_WASM(V, wasm_f32x4_floor, "wasm::f32x4_floor_wrapper")                    \
   IF_WASM(V, wasm_f32x4_trunc, "wasm::f32x4_trunc_wrapper")                    \
   IF_WASM(V, wasm_f32x4_nearest_int, "wasm::f32x4_nearest_int_wrapper")        \
-  IF_WASM(V, wasm_f16x8_abs, "wasm::f16x8_abs_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_neg, "wasm::f16x8_neg_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_sqrt, "wasm::f16x8_sqrt_wrapper")                      \
-  IF_WASM(V, wasm_f16x8_ceil, "wasm::f16x8_ceil_wrapper")                      \
-  IF_WASM(V, wasm_f16x8_floor, "wasm::f16x8_floor_wrapper")                    \
-  IF_WASM(V, wasm_f16x8_trunc, "wasm::f16x8_trunc_wrapper")                    \
-  IF_WASM(V, wasm_f16x8_nearest_int, "wasm::f16x8_nearest_int_wrapper")        \
-  IF_WASM(V, wasm_f16x8_eq, "wasm::f16x8_eq_wrapper")                          \
-  IF_WASM(V, wasm_f16x8_ne, "wasm::f16x8_ne_wrapper")                          \
-  IF_WASM(V, wasm_f16x8_lt, "wasm::f16x8_lt_wrapper")                          \
-  IF_WASM(V, wasm_f16x8_le, "wasm::f16x8_le_wrapper")                          \
-  IF_WASM(V, wasm_f16x8_add, "wasm::f16x8_add_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_sub, "wasm::f16x8_sub_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_mul, "wasm::f16x8_mul_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_div, "wasm::f16x8_div_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_min, "wasm::f16x8_min_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_max, "wasm::f16x8_max_wrapper")                        \
-  IF_WASM(V, wasm_f16x8_pmin, "wasm::f16x8_pmin_wrapper")                      \
-  IF_WASM(V, wasm_f16x8_pmax, "wasm::f16x8_pmax_wrapper")                      \
-  IF_WASM(V, wasm_i16x8_sconvert_f16x8, "wasm::i16x8_sconvert_f16x8_wrapper")  \
-  IF_WASM(V, wasm_i16x8_uconvert_f16x8, "wasm::i16x8_uconvert_f16x8_wrapper")  \
-  IF_WASM(V, wasm_f16x8_sconvert_i16x8, "wasm::f16x8_sconvert_i16x8_wrapper")  \
-  IF_WASM(V, wasm_f16x8_uconvert_i16x8, "wasm::f16x8_uconvert_i16x8_wrapper")  \
-  IF_WASM(V, wasm_f32x4_promote_low_f16x8,                                     \
-          "wasm::f32x4_promote_low_f16x8_wrapper")                             \
-  IF_WASM(V, wasm_f16x8_demote_f32x4_zero,                                     \
-          "wasm::f16x8_demote_f32x4_zero_wrapper")                             \
-  IF_WASM(V, wasm_f16x8_demote_f64x2_zero,                                     \
-          "wasm::f16x8_demote_f64x2_zero_wrapper")                             \
-  IF_WASM(V, wasm_f16x8_qfma, "wasm::f16x8_qfma_wrapper")                      \
-  IF_WASM(V, wasm_f16x8_qfms, "wasm::f16x8_qfms_wrapper")                      \
   IF_WASM(V, wasm_memory_init, "wasm::memory_init")                            \
   IF_WASM(V, wasm_memory_copy, "wasm::memory_copy")                            \
   IF_WASM(V, wasm_memory_fill, "wasm::memory_fill")                            \
@@ -465,13 +427,11 @@ enum class IsolateFieldId : uint8_t;
 #endif  // V8_INTL_SUPPORT
 
 #ifdef V8_ENABLE_SANDBOX
-#define EXTERNAL_REFERENCE_LIST_SANDBOX(V)                        \
-  V(sandbox_base_address, "Sandbox::base()")                      \
-  V(sandbox_end_address, "Sandbox::end()")                        \
-  V(empty_backing_store_buffer, "EmptyBackingStoreBuffer()")      \
-  V(code_pointer_table_address,                                   \
-    "IsolateGroup::current()->code_pointer_table()")              \
-  V(js_dispatch_table_address, "GetProcessWideJSDispatchTable()") \
+#define EXTERNAL_REFERENCE_LIST_SANDBOX(V)                          \
+  V(sandbox_base_address, "Sandbox::base()")                        \
+  V(sandbox_end_address, "Sandbox::end()")                          \
+  V(empty_backing_store_buffer, "EmptyBackingStoreBuffer()")        \
+  V(code_pointer_table_address, "GetProcessWideCodePointerTable()") \
   V(memory_chunk_metadata_table_address, "MemoryChunkMetadata::Table()")
 #else
 #define EXTERNAL_REFERENCE_LIST_SANDBOX(V)

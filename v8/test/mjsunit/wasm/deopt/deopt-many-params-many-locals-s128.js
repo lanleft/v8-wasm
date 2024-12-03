@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged
 // Flags: --wasm-inlining-ignore-call-counts --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestManyParamsManyLocals() {
   // x86-64 has 16 XMM registers, so we need a few values to run out of
@@ -72,21 +71,15 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(expectedSum, wasm.main(0, wasm.add));
   %WasmTierUpFunction(wasm.deopting);
   assertEquals(expectedSum, wasm.main(0, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.deopting));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.deopting));
   assertEquals(expectedDiff, wasm.main(0, wasm.sub));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.deopting));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.deopting));
 
   // Repeat the test but this time with an additional layer of inlining.
   %WasmTierUpFunction(wasm.main);
   assertEquals(expectedSum, wasm.main(0, wasm.add));
   assertEquals(expectedDiff, wasm.main(0, wasm.sub));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(expectedMax, wasm.main(0, wasm.max));
 
   function generateCalleeBody(binop) {

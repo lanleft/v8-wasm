@@ -5,10 +5,9 @@
 #ifndef V8_COMPILER_JS_HEAP_BROKER_H_
 #define V8_COMPILER_JS_HEAP_BROKER_H_
 
-#include <optional>
-
 #include "src/base/compiler-specific.h"
 #include "src/base/macros.h"
+#include "src/base/optional.h"
 #include "src/base/platform/mutex.h"
 #include "src/codegen/optimized-compilation-info.h"
 #include "src/common/globals.h"
@@ -49,6 +48,12 @@ std::ostream& operator<<(std::ostream& os, ObjectRef ref);
   do {                                                                   \
     if (broker->tracing_enabled() && v8_flags.trace_heap_broker_verbose) \
       StdoutStream{} << broker->Trace() << x << '\n';                    \
+  } while (false)
+
+#define TRACE_BROKER_MEMORY(broker, x)                                  \
+  do {                                                                  \
+    if (broker->tracing_enabled() && v8_flags.trace_heap_broker_memory) \
+      StdoutStream{} << broker->Trace() << x << std::endl;              \
   } while (false)
 
 #define TRACE_BROKER_MISSING(broker, x)                                        \
@@ -101,7 +106,7 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
   // churn when new flags are added.
   JSHeapBroker(Isolate* isolate, Zone* broker_zone)
       : JSHeapBroker(isolate, broker_zone, v8_flags.trace_heap_broker,
-                     CodeKind::TURBOFAN_JS) {}
+                     CodeKind::TURBOFAN) {}
 
   ~JSHeapBroker();
 
@@ -262,7 +267,7 @@ class V8_EXPORT_PRIVATE JSHeapBroker {
                                       : isolate()->AsLocalIsolate();
   }
 
-  std::optional<RootIndex> FindRootIndex(HeapObjectRef object) {
+  base::Optional<RootIndex> FindRootIndex(HeapObjectRef object) {
     // No root constant is a JSReceiver.
     if (object.IsJSReceiver()) return {};
     Address address = object.object()->ptr();
@@ -562,7 +567,7 @@ class V8_NODISCARD UnparkedScopeIfNeeded {
   }
 
  private:
-  std::optional<UnparkedScope> unparked_scope;
+  base::Optional<UnparkedScope> unparked_scope;
 };
 
 class V8_NODISCARD JSHeapBrokerScopeForTesting {

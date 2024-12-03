@@ -56,7 +56,7 @@ class ReplacementStringBuilder {
 
   MaybeDirectHandle<String> ToString();
 
-  void IncrementCharacterCount(uint32_t by) {
+  void IncrementCharacterCount(int by) {
     if (character_count_ > String::kMaxLength - by) {
       static_assert(String::kMaxLength < kMaxInt);
       character_count_ = kMaxInt;
@@ -72,7 +72,7 @@ class ReplacementStringBuilder {
   Heap* heap_;
   FixedArrayBuilder array_builder_;
   DirectHandle<String> subject_;
-  uint32_t character_count_;
+  int character_count_;
   bool is_one_byte_;
 };
 
@@ -104,9 +104,6 @@ class IncrementalStringBuilder {
   V8_INLINE int EscapedLengthIfCurrentPartFits(int length);
 
   void AppendString(DirectHandle<String> string);
-
-  template <typename SrcChar>
-  void AppendSubstring(const SrcChar* src, size_t from, size_t to);
 
   MaybeDirectHandle<String> Finish();
 
@@ -194,8 +191,7 @@ class IncrementalStringBuilder {
   static const int kInitialPartLength = 32;
   static const int kMaxPartLength = 16 * 1024;
   static const int kPartLengthGrowthFactor = 2;
-  // sizeof(string) includes \0.
-  static const int kIntToCStringBufferSize = sizeof("-2147483648");
+  static const int kIntToCStringBufferSize = 100;
 
   Isolate* isolate_;
   String::Encoding encoding_;

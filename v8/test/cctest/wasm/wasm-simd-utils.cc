@@ -18,7 +18,6 @@
 #include "test/common/c-signature.h"
 #include "test/common/value-helper.h"
 #include "test/common/wasm/wasm-macro-gen.h"
-#include "third_party/fp16/src/include/fp16.h"
 
 namespace v8 {
 namespace internal {
@@ -396,144 +395,6 @@ void RunI64x2ShiftOpTest(TestExecutionTier execution_tier, WasmOpcode opcode,
   }
 }
 
-bool IsCanonical(uint16_t actual) {
-  // Canonical NaN has quiet bit and no payload.
-  return isnan(actual) && (actual & 0xFE00) == actual;
-}
-
-bool isnan(uint16_t f) { return (f & 0x7C00) == 0x7C00 && (f & 0x03FF); }
-
-void CheckFloat16LaneResult(float x, float y, uint16_t expected,
-                            uint16_t actual, bool exact) {
-  CheckFloat16LaneResult(x, y, y, expected, actual, exact);
-}
-
-void CheckFloat16LaneResult(float x, float y, float z, uint16_t expected,
-                            uint16_t actual, bool exact) {
-  if (isnan(expected)) {
-    CHECK(isnan(actual));
-    if (std::isnan(x) && IsSameNan(fp16_ieee_from_fp32_value(x), actual)) {
-      return;
-    }
-    if (std::isnan(y) && IsSameNan(fp16_ieee_from_fp32_value(y), actual)) {
-      return;
-    }
-    if (std::isnan(z) && IsSameNan(fp16_ieee_from_fp32_value(z), actual)) {
-      return;
-    }
-    if (IsSameNan(expected, actual)) return;
-    if (IsCanonical(actual)) return;
-    // This is expected to assert; it's useful for debugging.
-    CHECK_EQ(expected, actual);
-  } else {
-    if (exact) {
-      CHECK_EQ(expected, actual);
-      return;
-    }
-    // Otherwise, perform an approximate equality test. First check for
-    // equality to handle +/-Infinity where approximate equality doesn't work.
-    if (expected == actual) return;
-
-    // 1% error allows all platforms to pass easily.
-    constexpr float kApproximationError = 0.01f;
-    float f32_expected = fp16_ieee_to_fp32_value(expected);
-    float f32_actual = fp16_ieee_to_fp32_value(actual);
-    float abs_error = std::abs(f32_expected) * kApproximationError;
-    float min = f32_expected - abs_error;
-    float max = f32_expected + abs_error;
-    CHECK_LE(min, f32_actual);
-    CHECK_GE(max, f32_actual);
-  }
-}
-
-void RunF16x8UnOpTest(TestExecutionTier execution_tier, WasmOpcode opcode,
-                      HalfUnOp expected_op, bool exact) {
-  WasmRunner<int32_t, float> r(execution_tier);
-  // Global to hold output.
-  uint16_t* g = r.builder().AddGlobal<uint16_t>(kWasmS128);
-  // Build fn to splat test value, perform unop, and write the result.
-  uint8_t value = 0;
-  uint8_t temp1 = r.AllocateLocal(kWasmS128);
-  r.Build({WASM_LOCAL_SET(temp1, WASM_SIMD_F16x8_SPLAT(WASM_LOCAL_GET(value))),
-           WASM_GLOBAL_SET(0, WASM_SIMD_UNOP(opcode, WASM_LOCAL_GET(temp1))),
-           WASM_ONE});
-
-  FOR_FLOAT32_INPUTS(x) {
-    if (!PlatformCanRepresent(x)) continue;
-    // Extreme values have larger errors so skip them for approximation tests.
-    if (!exact && IsExtreme(x)) continue;
-    uint16_t expected = expected_op(fp16_ieee_from_fp32_value(x));
-    if (!PlatformCanRepresent(expected)) continue;
-    r.Call(x);
-    for (int i = 0; i < 8; i++) {
-      uint16_t actual = LANE(g, i);
-      CheckFloat16LaneResult(x, x, expected, actual, exact);
-    }
-  }
-}
-
-void RunF16x8BinOpTest(TestExecutionTier execution_tier, WasmOpcode opcode,
-                       HalfBinOp expected_op) {
-  WasmRunner<int32_t, float, float> r(execution_tier);
-  // Global to hold output.
-  uint16_t* g = r.builder().AddGlobal<uint16_t>(kWasmS128);
-  // Build fn to splat test values, perform binop, and write the result.
-  uint8_t value1 = 0, value2 = 1;
-  uint8_t temp1 = r.AllocateLocal(kWasmS128);
-  uint8_t temp2 = r.AllocateLocal(kWasmS128);
-  r.Build({WASM_LOCAL_SET(temp1, WASM_SIMD_F16x8_SPLAT(WASM_LOCAL_GET(value1))),
-           WASM_LOCAL_SET(temp2, WASM_SIMD_F16x8_SPLAT(WASM_LOCAL_GET(value2))),
-           WASM_GLOBAL_SET(0, WASM_SIMD_BINOP(opcode, WASM_LOCAL_GET(temp1),
-                                              WASM_LOCAL_GET(temp2))),
-           WASM_ONE});
-
-  FOR_FLOAT32_INPUTS(x) {
-    if (!PlatformCanRepresent(x)) continue;
-    FOR_FLOAT32_INPUTS(y) {
-      if (!PlatformCanRepresent(y)) continue;
-      uint16_t expected = expected_op(fp16_ieee_from_fp32_value(x),
-                                      fp16_ieee_from_fp32_value(y));
-      if (!PlatformCanRepresent(expected)) continue;
-      r.Call(x, y);
-      for (int i = 0; i < 8; i++) {
-        uint16_t actual = LANE(g, i);
-        CheckFloat16LaneResult(x, y, expected, actual, true /* exact */);
-      }
-    }
-  }
-}
-
-void RunF16x8CompareOpTest(TestExecutionTier execution_tier, WasmOpcode opcode,
-                           HalfCompareOp expected_op) {
-  WasmRunner<int32_t, float, float> r(execution_tier);
-  // Set up global to hold mask output.
-  int16_t* g = r.builder().AddGlobal<int16_t>(kWasmS128);
-  // Build fn to splat test values, perform compare op, and write the result.
-  uint8_t value1 = 0, value2 = 1;
-  uint8_t temp1 = r.AllocateLocal(kWasmS128);
-  uint8_t temp2 = r.AllocateLocal(kWasmS128);
-  r.Build({WASM_LOCAL_SET(temp1, WASM_SIMD_F16x8_SPLAT(WASM_LOCAL_GET(value1))),
-           WASM_LOCAL_SET(temp2, WASM_SIMD_F16x8_SPLAT(WASM_LOCAL_GET(value2))),
-           WASM_GLOBAL_SET(0, WASM_SIMD_BINOP(opcode, WASM_LOCAL_GET(temp1),
-                                              WASM_LOCAL_GET(temp2))),
-           WASM_ONE});
-
-  FOR_FLOAT32_INPUTS(x) {
-    if (!PlatformCanRepresent(x)) continue;
-    FOR_FLOAT32_INPUTS(y) {
-      if (!PlatformCanRepresent(y)) continue;
-      float diff = x - y;  // Model comparison as subtraction.
-      if (!PlatformCanRepresent(diff)) continue;
-      r.Call(x, y);
-      int16_t expected = expected_op(fp16_ieee_from_fp32_value(x),
-                                     fp16_ieee_from_fp32_value(y));
-      for (int i = 0; i < 8; i++) {
-        CHECK_EQ(expected, LANE(g, i));
-      }
-    }
-  }
-}
-
 bool IsExtreme(float x) {
   float abs_x = std::fabs(x);
   const float kSmallFloatThreshold = 1.0e-32f;
@@ -572,9 +433,8 @@ void CheckFloatResult(float x, float y, float expected, float actual,
 
     // 1% error allows all platforms to pass easily.
     constexpr float kApproximationError = 0.01f;
-    float abs_error = std::abs(expected) * kApproximationError;
-    float min = expected - abs_error;
-    float max = expected + abs_error;
+    float abs_error = std::abs(expected) * kApproximationError,
+          min = expected - abs_error, max = expected + abs_error;
     CHECK_LE(min, actual);
     CHECK_GE(max, actual);
   }
@@ -960,7 +820,7 @@ void RunI16x16UnOpRevecTest(WasmOpcode opcode, Int16UnOp expected_op,
   if (!CpuFeatures::IsSupported(AVX2)) return;
   WasmRunner<int32_t, int32_t, int32_t> r(TestExecutionTier::kTurbofan);
   int16_t* memory = r.builder().AddMemoryElems<int16_t>(32);
-  // Build fn to load an I16x16 vector with test value, perform unop, and write
+  // Build fn to load a I16x16 vector with test value, perform unop, and write
   // the result to another array.
   uint8_t param1 = 0;
   uint8_t param2 = 1;
@@ -1123,7 +983,7 @@ void RunI32x8UnOpRevecTest(WasmOpcode opcode, Int32UnOp expected_op,
   if (!CpuFeatures::IsSupported(AVX2)) return;
   WasmRunner<int32_t, int32_t, int32_t> r(TestExecutionTier::kTurbofan);
   int32_t* memory = r.builder().AddMemoryElems<int32_t>(16);
-  // Build fn to load an I32x8 vector with test value, perform unop, and write
+  // Build fn to load a I32x8 vector with test value, perform unop, and write
   // the result to another array.
   uint8_t param1 = 0;
   uint8_t param2 = 1;
@@ -1686,7 +1546,7 @@ void RunI8x32UnOpRevecTest(WasmOpcode opcode, Int8UnOp expected_op,
   if (!CpuFeatures::IsSupported(AVX2)) return;
   WasmRunner<int32_t, int32_t, int32_t> r(TestExecutionTier::kTurbofan);
   int8_t* memory = r.builder().AddMemoryElems<int8_t>(64);
-  // Build fn to load an I8x32 vector with test value, perform unop, and write
+  // Build fn to load a I8x32 vector with test value, perform unop, and write
   // the result to another array.
   uint8_t param1 = 0;
   uint8_t param2 = 1;
@@ -1770,84 +1630,6 @@ template void RunI32x8ConvertF32x8RevecTest<int32_t>(WasmOpcode, ConvertToIntOp,
                                                      compiler::IrOpcode::Value);
 template void RunI32x8ConvertF32x8RevecTest<uint32_t>(
     WasmOpcode, ConvertToIntOp, compiler::IrOpcode::Value);
-
-template <typename S, typename T>
-void RunIntToIntNarrowingRevecTest(WasmOpcode opcode,
-                                   compiler::IrOpcode::Value revec_opcode) {
-  EXPERIMENTAL_FLAG_SCOPE(revectorize);
-  if (!CpuFeatures::IsSupported(AVX) || !CpuFeatures::IsSupported(AVX2)) return;
-  static_assert(sizeof(S) == 2 * sizeof(T),
-                "the element size of dst vector must be half of src vector in "
-                "integer to integer narrowing");
-  WasmRunner<int32_t, int32_t, int32_t, int32_t> r(
-      TestExecutionTier::kTurbofan);
-  uint32_t count = 6 * kSimd128Size / sizeof(S);
-  S* memory = r.builder().AddMemoryElems<S>(count);
-  // Build fn perform binary operation on two 256 bit vectors a and b,
-  // store the result in c:
-  //   simd128 *a,*b,*c;
-  //   *c = *a bin_op *b;
-  //   *(c+1) = *(a+1) bin_op *(b+1);
-  uint8_t param1 = 0;
-  uint8_t param2 = 1;
-  uint8_t param3 = 2;
-  uint8_t temp1 = r.AllocateLocal(kWasmS128);
-  uint8_t temp2 = r.AllocateLocal(kWasmS128);
-  constexpr uint8_t offset = 16;
-  {
-    TSSimd256VerifyScope ts_scope(
-        r.zone(), TSSimd256VerifyScope::VerifyHaveOpcode<
-                      compiler::turboshaft::Opcode::kSimd256Binop>);
-
-    r.Build(
-        {WASM_LOCAL_SET(
-             temp1,
-             WASM_SIMD_BINOP(opcode, WASM_SIMD_LOAD_MEM(WASM_LOCAL_GET(param1)),
-                             WASM_SIMD_LOAD_MEM(WASM_LOCAL_GET(param2)))),
-         WASM_LOCAL_SET(
-             temp2,
-             WASM_SIMD_BINOP(
-                 opcode,
-                 WASM_SIMD_LOAD_MEM_OFFSET(offset, WASM_LOCAL_GET(param1)),
-                 WASM_SIMD_LOAD_MEM_OFFSET(offset, WASM_LOCAL_GET(param2)))),
-         WASM_SIMD_STORE_MEM(WASM_LOCAL_GET(param3), WASM_LOCAL_GET(temp1)),
-         WASM_SIMD_STORE_MEM_OFFSET(offset, WASM_LOCAL_GET(param3),
-                                    WASM_LOCAL_GET(temp2)),
-         WASM_ONE});
-  }
-
-  constexpr uint32_t lanes = kSimd128Size / sizeof(S);
-  for (S x : compiler::ValueHelper::GetVector<S>()) {
-    for (S y : compiler::ValueHelper::GetVector<S>()) {
-      for (uint32_t i = 0; i < lanes; i++) {
-        r.builder().WriteMemory(&memory[i], x);
-        r.builder().WriteMemory(&memory[i + lanes], x);
-        r.builder().WriteMemory(&memory[i + lanes * 2], y);
-        r.builder().WriteMemory(&memory[i + lanes * 3], y);
-      }
-      r.Call(0, 32, 64);
-      T expected_x = base::saturated_cast<T>(x);
-      T expected_y = base::saturated_cast<T>(y);
-      T* output = reinterpret_cast<T*>(memory + lanes * 4);
-      for (uint32_t i = 0; i < lanes; i++) {
-        CHECK_EQ(expected_x, output[i]);
-        CHECK_EQ(expected_y, output[i + lanes]);
-        CHECK_EQ(expected_x, output[i + lanes * 2]);
-        CHECK_EQ(expected_y, output[i + lanes * 3]);
-      }
-    }
-  }
-}
-
-// Explicit instantiations of uses.
-template void RunIntToIntNarrowingRevecTest<int32_t, int16_t>(
-    WasmOpcode, compiler::IrOpcode::Value revec_opcode);
-template void RunIntToIntNarrowingRevecTest<int32_t, uint16_t>(
-    WasmOpcode, compiler::IrOpcode::Value revec_opcode);
-template void RunIntToIntNarrowingRevecTest<int16_t, int8_t>(
-    WasmOpcode, compiler::IrOpcode::Value revec_opcode);
-template void RunIntToIntNarrowingRevecTest<int16_t, uint8_t>(
-    WasmOpcode, compiler::IrOpcode::Value revec_opcode);
 #endif  // V8_ENABLE_WASM_SIMD256_REVEC
 
 }  // namespace wasm

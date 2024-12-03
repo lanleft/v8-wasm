@@ -5,7 +5,6 @@
 #ifndef V8_OBJECTS_MAP_INL_H_
 #define V8_OBJECTS_MAP_INL_H_
 
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap-write-barrier-inl.h"
 #include "src/objects/api-callbacks-inl.h"
 #include "src/objects/cell-inl.h"
@@ -58,7 +57,7 @@ RELEASE_ACQUIRE_WEAK_ACCESSORS(Map, raw_transitions,
 ACCESSORS_CHECKED2(Map, prototype, Tagged<HeapObject>, kPrototypeOffset, true,
                    IsNull(value) || IsJSProxy(value) || IsWasmObject(value) ||
                        (IsJSObject(value) &&
-                        (HeapLayout::InWritableSharedSpace(value) ||
+                        (InWritableSharedSpace(value) ||
                          value->map()->is_prototype_map())))
 
 DEF_GETTER(Map, prototype_info, Tagged<Object>) {
@@ -269,7 +268,7 @@ Tagged<FixedArrayBase> Map::GetInitialElements() const {
   } else {
     UNREACHABLE();
   }
-  DCHECK(!HeapLayout::InYoungGeneration(result));
+  DCHECK(!ObjectInYoungGeneration(result));
   return result;
 }
 
@@ -730,7 +729,7 @@ bool Map::CanTransition() const {
   // Shared JS objects have fixed shapes and do not transition. Their maps are
   // either in shared space or RO space.
   DCHECK_IMPLIES(InstanceTypeChecker::IsAlwaysSharedSpaceJSObject(type),
-                 HeapLayout::InAnySharedSpace(*this));
+                 InAnySharedSpace(*this));
   return InstanceTypeChecker::IsJSObject(type) &&
          !InstanceTypeChecker::IsAlwaysSharedSpaceJSObject(type);
 }
@@ -777,8 +776,7 @@ void Map::AppendDescriptor(Isolate* isolate, Descriptor* desc) {
     descriptors->Append(desc);
     SetNumberOfOwnDescriptors(number_of_own_descriptors + 1);
 #ifndef V8_DISABLE_WRITE_BARRIERS
-    WriteBarrier::ForDescriptorArray(descriptors,
-                                     number_of_own_descriptors + 1);
+    WriteBarrier::Marking(descriptors, number_of_own_descriptors + 1);
 #endif
   }
   // Properly mark the map if the {desc} is an "interesting symbol".
@@ -853,8 +851,12 @@ Tagged<Map> Map::GetMapFor(ReadOnlyRoots roots, InstanceType type) {
 // static
 Tagged<Map> Map::ElementsTransitionMap(Isolate* isolate,
                                        ConcurrencyMode cmode) {
-  return TransitionsAccessor(isolate, *this, IsConcurrent(cmode))
-      .SearchSpecial(ReadOnlyRoots(isolate).elements_transition_symbol());
+  if (auto res = TransitionsAccessor(isolate, *this, IsConcurrent(cmode))
+                     .SearchSpecial(
+                         ReadOnlyRoots(isolate).elements_transition_symbol())) {
+    return *res;
+  }
+  return Map();
 }
 
 ACCESSORS(Map, dependent_code, Tagged<DependentCode>, kDependentCodeOffset)
@@ -901,22 +903,6 @@ bool Map::IsPrototypeValidityCellValid() const {
   }
   Tagged<Smi> cell_value = Cast<Smi>(Cast<Cell>(validity_cell)->value());
   return cell_value == Smi::FromInt(Map::kPrototypeChainValid);
-}
-
-bool Map::BelongsToSameNativeContextAs(Tagged<Map> other_map) const {
-  Tagged<Map> this_meta_map = map();
-  // If the meta map is contextless (as in case of remote object's meta map)
-  // we can't be sure the maps belong to the same context.
-  if (this_meta_map == GetReadOnlyRoots().meta_map()) return false;
-  DCHECK(IsNativeContext(this_meta_map->native_context_or_null()));
-  return this_meta_map == other_map->map();
-}
-
-bool Map::BelongsToSameNativeContextAs(Tagged<Context> context) const {
-  Tagged<Map> context_meta_map = context->map()->map();
-  Tagged<Map> this_meta_map = map();
-  DCHECK_NE(context_meta_map, GetReadOnlyRoots().meta_map());
-  return this_meta_map == context_meta_map;
 }
 
 DEF_GETTER(Map, GetConstructorRaw, Tagged<Object>) {
@@ -1034,12 +1020,13 @@ int Map::InstanceSizeFromSlack(int slack) const {
   return instance_size() - slack * kTaggedSize;
 }
 
+OBJECT_CONSTRUCTORS_IMPL(NormalizedMapCache, WeakFixedArray)
 NEVER_READ_ONLY_SPACE_IMPL(NormalizedMapCache)
 
-int NormalizedMapCache::GetIndex(Isolate* isolate, Tagged<Map> map,
+int NormalizedMapCache::GetIndex(Tagged<Map> map,
                                  Tagged<HeapObject> prototype) {
   DisallowGarbageCollection no_gc;
-  return map->Hash(isolate, prototype) % NormalizedMapCache::kEntries;
+  return map->Hash(prototype) % NormalizedMapCache::kEntries;
 }
 
 DEF_HEAP_OBJECT_PREDICATE(HeapObject, IsNormalizedMapCache) {

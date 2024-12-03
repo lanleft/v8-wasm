@@ -242,12 +242,8 @@ void Snapshot::ClearReconstructableDataForSerialization(
           }
         } else if (IsJSRegExp(o, cage_base)) {
           i::Tagged<i::JSRegExp> regexp = i::Cast<i::JSRegExp>(o);
-          if (regexp->has_data()) {
-            i::Tagged<i::RegExpData> data = regexp->data(isolate);
-            if (data->HasCompiledCode()) {
-              DCHECK(Is<IrRegExpData>(regexp->data(isolate)));
-              Cast<IrRegExpData>(data)->DiscardCompiledCodeForSerialization();
-            }
+          if (regexp->HasCompiledCode()) {
+            regexp->DiscardCompiledCodeForSerialization();
           }
         }
       }
@@ -255,10 +251,11 @@ void Snapshot::ClearReconstructableDataForSerialization(
 
 #if V8_ENABLE_WEBASSEMBLY
     // Clear the cached js-to-wasm wrappers.
-    DirectHandle<WeakFixedArray> wrappers(
-        isolate->heap()->js_to_wasm_wrappers(), isolate);
-    MemsetTagged(wrappers->RawFieldOfFirstElement(), ClearedValue(isolate),
-                 wrappers->length());
+    DirectHandle<WeakArrayList> wrappers(isolate->heap()->js_to_wasm_wrappers(),
+                                         isolate);
+    for (int i = 0; i < wrappers->length(); ++i) {
+      wrappers->Set(i, Tagged<MaybeObject>{});
+    }
 #endif  // V8_ENABLE_WEBASSEMBLY
 
     // Must happen after heap iteration since SFI::DiscardCompiled may allocate.
@@ -287,7 +284,7 @@ void Snapshot::ClearReconstructableDataForSerialization(
 
       // Also, clear out feedback vectors and recompilable code.
       if (fun->CanDiscardCompiled(isolate)) {
-        fun->UpdateCode(*BUILTIN_CODE(isolate, CompileLazy));
+        fun->set_code(*BUILTIN_CODE(isolate, CompileLazy));
       }
       if (!IsUndefined(fun->raw_feedback_cell(cage_base)->value(cage_base))) {
         fun->raw_feedback_cell(cage_base)->set_value(

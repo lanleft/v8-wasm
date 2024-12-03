@@ -20,7 +20,8 @@ class WasmCodeFuzzer : public WasmExecutionFuzzer {
     WasmModuleBuilder builder(zone);
     WasmFunctionBuilder* f = builder.AddFunction(sigs.i_iii());
     f->EmitCode(data.begin(), static_cast<uint32_t>(data.size()));
-    f->Emit(kExprEnd);
+    uint8_t end_opcode = kExprEnd;
+    f->EmitCode(&end_opcode, 1);
     builder.AddExport(base::CStrVector("main"), f);
 
     builder.AddMemory(0, 32);

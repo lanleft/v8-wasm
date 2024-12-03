@@ -182,7 +182,7 @@ class EvalCacheKey : public HashTableKey {
     array->set(1, *source_);
     array->set(2, Smi::FromEnum(language_mode_));
     array->set(3, Smi::FromInt(position_));
-    array->set_map(isolate, ReadOnlyRoots(isolate).fixed_cow_array_map());
+    array->set_map(ReadOnlyRoots(isolate).fixed_cow_array_map());
     return array;
   }
 
@@ -196,27 +196,24 @@ class EvalCacheKey : public HashTableKey {
 // RegExpKey carries the source and flags of a regular expression as key.
 class RegExpKey : public HashTableKey {
  public:
-  RegExpKey(Isolate* isolate, Handle<String> string, JSRegExp::Flags flags)
+  RegExpKey(Handle<String> string, JSRegExp::Flags flags)
       : HashTableKey(
             CompilationCacheShape::RegExpHash(*string, Smi::FromInt(flags))),
-        isolate_(isolate),
         string_(string),
-        flags_(flags) {}
+        flags_(Smi::FromInt(flags)) {}
 
   // Rather than storing the key in the hash table, a pointer to the
   // stored value is stored where the key should be.  IsMatch then
   // compares the search key to the found object, rather than comparing
   // a key to a key.
-  // TODO(pthier): Loading the data via TrustedPointerTable on every key check
-  // is not great.
   bool IsMatch(Tagged<Object> obj) override {
-    Tagged<RegExpData> val = Cast<RegExpDataWrapper>(obj)->data(isolate_);
-    return string_->Equals(val->source()) && (flags_ == val->flags());
+    Tagged<FixedArray> val = Cast<FixedArray>(obj);
+    return string_->Equals(Cast<String>(val->get(JSRegExp::kSourceIndex))) &&
+           (flags_ == val->get(JSRegExp::kFlagsIndex));
   }
 
-  Isolate* isolate_;
   Handle<String> string_;
-  JSRegExp::Flags flags_;
+  Tagged<Smi> flags_;
 };
 
 // CodeKey carries the SharedFunctionInfo key associated with a
@@ -485,7 +482,7 @@ Handle<Object> CompilationCacheTable::LookupRegExp(Handle<String> src,
                                                    JSRegExp::Flags flags) {
   Isolate* isolate = GetIsolate();
   DisallowGarbageCollection no_gc;
-  RegExpKey key(isolate, src, flags);
+  RegExpKey key(src, flags);
   InternalIndex entry = FindEntry(isolate, &key);
   if (entry.is_not_found()) return isolate->factory()->undefined_value();
   return Handle<Object>(PrimaryValueAt(entry), isolate);
@@ -604,14 +601,14 @@ Handle<CompilationCacheTable> CompilationCacheTable::PutEval(
 
 Handle<CompilationCacheTable> CompilationCacheTable::PutRegExp(
     Isolate* isolate, Handle<CompilationCacheTable> cache, Handle<String> src,
-    JSRegExp::Flags flags, DirectHandle<RegExpData> value) {
-  RegExpKey key(isolate, src, flags);
+    JSRegExp::Flags flags, DirectHandle<FixedArray> value) {
+  RegExpKey key(src, flags);
   cache = EnsureCapacity(isolate, cache);
   InternalIndex entry = cache->FindInsertionEntry(isolate, key.Hash());
   // We store the value in the key slot, and compare the search key
   // to the stored value with a custom IsMatch function during lookups.
-  cache->SetKeyAt(entry, value->wrapper());
-  cache->SetPrimaryValueAt(entry, value->wrapper());
+  cache->SetKeyAt(entry, *value);
+  cache->SetPrimaryValueAt(entry, *value);
   cache->ElementAdded();
   return cache;
 }

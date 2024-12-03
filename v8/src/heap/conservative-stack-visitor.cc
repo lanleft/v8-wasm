@@ -19,42 +19,37 @@ namespace internal {
 
 ConservativeStackVisitor::ConservativeStackVisitor(Isolate* isolate,
                                                    RootVisitor* delegate)
-    : ConservativeStackVisitor(isolate, delegate, delegate->collector()) {}
+    : cage_base_(isolate),
+#ifdef V8_EXTERNAL_CODE_SPACE
+      code_cage_base_(isolate->code_cage_base()),
+      code_address_region_(isolate->heap()->code_region()),
+#endif
+      delegate_(delegate),
+      allocator_(isolate->heap()->memory_allocator()),
+      collector_(delegate->collector()) {
+}
 
 ConservativeStackVisitor::ConservativeStackVisitor(Isolate* isolate,
-                                                   RootVisitor* delegate,
                                                    GarbageCollector collector)
     : cage_base_(isolate),
 #ifdef V8_EXTERNAL_CODE_SPACE
       code_cage_base_(isolate->code_cage_base()),
       code_address_region_(isolate->heap()->code_region()),
 #endif
-#ifdef V8_ENABLE_SANDBOX
-      trusted_cage_base_(isolate->isolate_data()->trusted_cage_base_address()),
-#endif
-      delegate_(delegate),
+      delegate_(nullptr),
       allocator_(isolate->heap()->memory_allocator()),
       collector_(collector) {
 }
 
-#ifdef V8_COMPRESS_POINTERS
-bool ConservativeStackVisitor::IsInterestingCage(
-    PtrComprCageBase cage_base) const {
-  if (cage_base == cage_base_) return true;
-#ifdef V8_EXTERNAL_CODE_SPACE
-  if (cage_base == code_cage_base_) return true;
-#endif
-#ifdef V8_ENABLE_SANDBOX
-  if (cage_base == trusted_cage_base_) return true;
-#endif
-  return false;
-}
-#endif  // V8_COMPRESS_POINTERS
-
 Address ConservativeStackVisitor::FindBasePtr(
     Address maybe_inner_ptr, PtrComprCageBase cage_base) const {
 #ifdef V8_COMPRESS_POINTERS
-  DCHECK(IsInterestingCage(cage_base));
+  // Check that the cage base corresponds to an interesting cage.
+#ifdef V8_EXTERNAL_CODE_SPACE
+  DCHECK(cage_base == cage_base_ || cage_base == code_cage_base_);
+#else
+  DCHECK_EQ(cage_base, cage_base_);
+#endif
 #endif  // V8_COMPRESS_POINTERS
   // Check if the pointer is contained by a normal or large page owned by this
   // heap. Bail out if it is not.
@@ -119,12 +114,6 @@ void ConservativeStackVisitor::VisitPointer(const void* pointer) {
         VisitConservativelyIfPointer(ptr, code_cage_base_);
       });
 #endif  // V8_EXTERNAL_CODE_SPACE
-#ifdef V8_ENABLE_SANDBOX
-  TrustedSpaceCompressionScheme::ProcessIntermediatePointers(
-      trusted_cage_base_, address, [this](Address ptr) {
-        VisitConservativelyIfPointer(ptr, trusted_cage_base_);
-      });
-#endif  // V8_ENABLE_SANDBOX
 #endif  // V8_COMPRESS_POINTERS
 }
 

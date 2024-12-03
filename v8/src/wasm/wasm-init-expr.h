@@ -103,42 +103,37 @@ class WasmInitExpr : public ZoneObject {
     return expr;
   }
 
-  static WasmInitExpr RefNullConst(ModuleTypeIndex type_index) {
-    return RefNullConst(
-        static_cast<HeapType::Representation>(type_index.index));
-  }
-
-  static WasmInitExpr StructNew(ModuleTypeIndex index,
+  static WasmInitExpr StructNew(uint32_t index,
                                 ZoneVector<WasmInitExpr>* elements) {
     WasmInitExpr expr(kStructNew, elements);
-    expr.immediate_.index = index.index;
+    expr.immediate_.index = index;
     return expr;
   }
 
-  static WasmInitExpr StructNewDefault(ModuleTypeIndex index) {
+  static WasmInitExpr StructNewDefault(uint32_t index) {
     WasmInitExpr expr(kStructNewDefault);
-    expr.immediate_.index = index.index;
+    expr.immediate_.index = index;
     return expr;
   }
 
-  static WasmInitExpr ArrayNew(Zone* zone, ModuleTypeIndex index,
-                               WasmInitExpr initial, WasmInitExpr length) {
+  static WasmInitExpr ArrayNew(Zone* zone, uint32_t index, WasmInitExpr initial,
+                               WasmInitExpr length) {
     WasmInitExpr expr(zone, kArrayNew, {initial, length});
-    expr.immediate_.index = index.index;
+    expr.immediate_.index = index;
     return expr;
   }
 
-  static WasmInitExpr ArrayNewDefault(Zone* zone, ModuleTypeIndex index,
+  static WasmInitExpr ArrayNewDefault(Zone* zone, uint32_t index,
                                       WasmInitExpr length) {
     WasmInitExpr expr(zone, kArrayNewDefault, {length});
-    expr.immediate_.index = index.index;
+    expr.immediate_.index = index;
     return expr;
   }
 
-  static WasmInitExpr ArrayNewFixed(ModuleTypeIndex index,
+  static WasmInitExpr ArrayNewFixed(uint32_t index,
                                     ZoneVector<WasmInitExpr>* elements) {
     WasmInitExpr expr(kArrayNewFixed, elements);
-    expr.immediate_.index = index.index;
+    expr.immediate_.index = index;
     return expr;
   }
 
@@ -229,7 +224,6 @@ class WasmInitExpr : public ZoneObject {
         return WasmInitExpr(int32_t{0});
       case kI64:
         return WasmInitExpr(int64_t{0});
-      case kF16:
       case kF32:
         return WasmInitExpr(0.0f);
       case kF64:
@@ -241,7 +235,6 @@ class WasmInitExpr : public ZoneObject {
         return WasmInitExpr(value);
       }
       case kVoid:
-      case kTop:
       case kBottom:
       case kRef:
       case kRtt:

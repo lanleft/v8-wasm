@@ -66,7 +66,9 @@ class S390OperandConverter final : public InstructionOperandConverter {
       case Constant::kFloat64:
         return Operand::EmbeddedNumber(constant.ToFloat64().value());
       case Constant::kInt64:
+#if V8_TARGET_ARCH_S390X
         return Operand(constant.ToInt64());
+#endif
       case Constant::kExternalReference:
         return Operand(constant.ToExternalReference());
       case Constant::kCompressedHeapObject:
@@ -461,6 +463,7 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
 #define ASSEMBLE_BIN_OP(_rr, _rm, _ri) AssembleBinOp(instr, _rr, _rm, _ri)
 #define ASSEMBLE_UNARY_OP(_r, _m, _i) AssembleUnaryOp(instr, _r, _m, _i)
 
+#ifdef V8_TARGET_ARCH_S390X
 #define CHECK_AND_ZERO_EXT_OUTPUT(num)                                \
   ([&](int index) {                                                   \
     DCHECK(HasImmediateInput(instr, (index)));                        \
@@ -470,6 +473,10 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
 
 #define ASSEMBLE_BIN32_OP(_rr, _rm, _ri) \
   { CHECK_AND_ZERO_EXT_OUTPUT(AssembleBinOp(instr, _rr, _rm, _ri)); }
+#else
+#define ASSEMBLE_BIN32_OP ASSEMBLE_BIN_OP
+#define CHECK_AND_ZERO_EXT_OUTPUT(num)
+#endif
 
 }  // namespace
 
@@ -587,13 +594,11 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
 #define ASSEMBLE_FLOAT_MODULO()                                             \
   do {                                                                      \
     FrameScope scope(masm(), StackFrame::MANUAL);                           \
-    __ Push(r2, r3, r4, r5);                                                \
     __ PrepareCallCFunction(0, 2, kScratchReg);                             \
     __ MovToFloatParameters(i.InputDoubleRegister(0),                       \
                             i.InputDoubleRegister(1));                      \
     __ CallCFunction(ExternalReference::mod_two_doubles_operation(), 0, 2); \
     __ MovFromFloatResult(i.OutputDoubleRegister());                        \
-    __ Pop(r2, r3, r4, r5);                                                 \
   } while (0)
 
 #define ASSEMBLE_IEEE754_UNOP(name)                                            \
@@ -601,13 +606,11 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
     /* TODO(bmeurer): We should really get rid of this special instruction, */ \
     /* and generate a CallAddress instruction instead. */                      \
     FrameScope scope(masm(), StackFrame::MANUAL);                              \
-    __ Push(r2, r3, r4, r5);                                                   \
     __ PrepareCallCFunction(0, 1, kScratchReg);                                \
     __ MovToFloatParameter(i.InputDoubleRegister(0));                          \
     __ CallCFunction(ExternalReference::ieee754_##name##_function(), 0, 1);    \
     /* Move the result in the double result register. */                       \
     __ MovFromFloatResult(i.OutputDoubleRegister());                           \
-    __ Pop(r2, r3, r4, r5);                                                    \
   } while (0)
 
 #define ASSEMBLE_IEEE754_BINOP(name)                                           \
@@ -615,14 +618,12 @@ static inline int AssembleUnaryOp(Instruction* instr, _R _r, _M _m, _I _i) {
     /* TODO(bmeurer): We should really get rid of this special instruction, */ \
     /* and generate a CallAddress instruction instead. */                      \
     FrameScope scope(masm(), StackFrame::MANUAL);                              \
-    __ Push(r2, r3, r4, r5);                                                   \
     __ PrepareCallCFunction(0, 2, kScratchReg);                                \
     __ MovToFloatParameters(i.InputDoubleRegister(0),                          \
                             i.InputDoubleRegister(1));                         \
     __ CallCFunction(ExternalReference::ieee754_##name##_function(), 0, 2);    \
     /* Move the result in the double result register. */                       \
     __ MovFromFloatResult(i.OutputDoubleRegister());                           \
-    __ Pop(r2, r3, r4, r5);                                                    \
   } while (0)
 
 //
@@ -1122,8 +1123,13 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
 
   switch (opcode) {
     case kArchComment:
+#ifdef V8_TARGET_ARCH_S390X
       __ RecordComment(reinterpret_cast<const char*>(i.InputInt64(0)),
                        SourceLocation());
+#else
+      __ RecordComment(reinterpret_cast<const char*>(i.InputInt32(0)),
+                       SourceLocation());
+#endif
       break;
     case kArchCallCodeObject: {
       if (HasRegisterInput(instr, 0)) {
@@ -1218,9 +1224,7 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
         __ CmpS64(cp, kScratchReg);
         __ Assert(eq, AbortReason::kWrongFunctionContext);
       }
-      uint32_t num_arguments =
-          i.InputUint32(instr->JSCallArgumentCountInputIndex());
-      __ CallJSFunction(func, num_arguments);
+      __ CallJSFunction(func);
       RecordCallPosition(instr);
       frame_access_state()->ClearSPDelta();
       break;
@@ -1904,22 +1908,28 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
       __ CountLeadingZerosU32(i.OutputRegister(), i.InputRegister(0), r0);
       break;
     }
+#if V8_TARGET_ARCH_S390X
     case kS390_Cntlz64: {
       __ CountLeadingZerosU64(i.OutputRegister(), i.InputRegister(0), r0);
       break;
     }
+#endif
     case kS390_Popcnt32:
       __ Popcnt32(i.OutputRegister(), i.InputRegister(0));
       break;
+#if V8_TARGET_ARCH_S390X
     case kS390_Popcnt64:
       __ Popcnt64(i.OutputRegister(), i.InputRegister(0));
       break;
+#endif
     case kS390_Cmp32:
       ASSEMBLE_COMPARE32(CmpS32, CmpU32);
       break;
+#if V8_TARGET_ARCH_S390X
     case kS390_Cmp64:
       ASSEMBLE_COMPARE(CmpS64, CmpU64);
       break;
+#endif
     case kS390_CmpFloat:
       ASSEMBLE_FLOAT_COMPARE(cebr, ceb, ley);
       // __ cebr(i.InputDoubleRegister(0), i.InputDoubleRegister(1));
@@ -2250,12 +2260,14 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kS390_BitcastInt32ToFloat32:
       __ MovIntToFloat(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
+#if V8_TARGET_ARCH_S390X
     case kS390_BitcastDoubleToInt64:
       __ MovDoubleToInt64(i.OutputRegister(), i.InputDoubleRegister(0));
       break;
     case kS390_BitcastInt64ToDouble:
       __ MovInt64ToDouble(i.OutputDoubleRegister(), i.InputRegister(0));
       break;
+#endif
     case kS390_LoadWordU8:
       ASSEMBLE_LOAD_INTEGER(LoadU8);
       break;
@@ -2345,9 +2357,11 @@ CodeGenerator::CodeGenResult CodeGenerator::AssembleArchInstruction(
     case kS390_StoreWord32:
       ASSEMBLE_STORE_INTEGER(StoreU32);
       break;
+#if V8_TARGET_ARCH_S390X
     case kS390_StoreWord64:
       ASSEMBLE_STORE_INTEGER(StoreU64);
       break;
+#endif
     case kS390_StoreReverse16:
       ASSEMBLE_STORE_INTEGER(strvh);
       break;
@@ -3343,11 +3357,11 @@ void CodeGenerator::AssembleArchTableSwitch(Instruction* instr) {
   S390OperandConverter i(this, instr);
   Register input = i.InputRegister(0);
   int32_t const case_count = static_cast<int32_t>(instr->InputCount() - 2);
-  base::Vector<Label*> cases = zone()->AllocateVector<Label*>(case_count);
+  Label** cases = zone()->AllocateArray<Label*>(case_count);
   for (int32_t index = 0; index < case_count; ++index) {
     cases[index] = GetLabel(i.InputRpo(index + 2));
   }
-  Label* const table = AddJumpTable(cases);
+  Label* const table = AddJumpTable(cases, case_count);
   __ CmpU64(input, Operand(case_count));
   __ bge(GetLabel(i.InputRpo(1)));
   __ larl(kScratchReg, table);
@@ -3411,12 +3425,23 @@ void CodeGenerator::AssembleConstructFrame() {
           call_descriptor->IsWasmImportWrapper() ||
           call_descriptor->IsWasmCapiFunction()) {
         // For import wrappers and C-API functions, this stack slot is only used
-        // for printing stack traces in V8. Also, it holds a WasmImportData
-        // instead of the trusted instance data, which is taken care of in the
-        // frames accessors.
-        __ Push(kWasmImplicitArgRegister);
+        // for printing stack traces in V8. Also, it holds a WasmApiFunctionRef
+        // instead of the instance itself, which is taken care of in the frames
+        // accessors.
+        __ Push(kWasmInstanceRegister);
       }
-      if (call_descriptor->IsWasmCapiFunction()) {
+      if (call_descriptor->IsWasmImportWrapper()) {
+        // If the wrapper is running on a secondary stack, it will switch to the
+        // central stack and fill these slots with the central stack pointer and
+        // secondary stack limit. Otherwise the slots remain empty.
+        static_assert(WasmImportWrapperFrameConstants::kCentralStackSPOffset ==
+                      -24);
+        static_assert(
+            WasmImportWrapperFrameConstants::kSecondaryStackLimitOffset == -32);
+        __ mov(r0, Operand(0));
+        __ push(r0);
+        __ push(r0);
+      } else if (call_descriptor->IsWasmCapiFunction()) {
         // Reserve space for saving the PC later.
         __ lay(sp, MemOperand(sp, -kSystemPointerSize));
       }
@@ -3733,10 +3758,16 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
       Register dst = destination->IsRegister() ? g.ToRegister(destination) : r1;
       switch (src.type()) {
         case Constant::kInt32:
-          __ mov(dst, Operand(src.ToInt32(), src.rmode()));
+            __ mov(dst, Operand(src.ToInt32()));
           break;
         case Constant::kInt64:
-          __ mov(dst, Operand(src.ToInt64(), src.rmode()));
+#if V8_ENABLE_WEBASSEMBLY
+          if (RelocInfo::IsWasmReference(src.rmode())) {
+            __ mov(dst, Operand(src.ToInt64(), src.rmode()));
+            break;
+          }
+#endif  // V8_ENABLE_WEBASSEMBLY
+          __ mov(dst, Operand(src.ToInt64()));
           break;
         case Constant::kFloat32:
           __ mov(dst, Operand::EmbeddedNumber(src.ToFloat32()));
@@ -3916,9 +3947,9 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
   }
 }
 
-void CodeGenerator::AssembleJumpTable(base::Vector<Label*> targets) {
-  for (auto target : targets) {
-    __ emit_label_addr(target);
+void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
+  for (size_t index = 0; index < target_count; ++index) {
+    __ emit_label_addr(targets[index]);
   }
 }
 

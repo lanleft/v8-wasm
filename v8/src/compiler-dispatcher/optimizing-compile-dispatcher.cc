@@ -107,7 +107,7 @@ void OptimizingCompileDispatcher::CompileNext(TurbofanCompilationJob* job,
   if (finalize()) isolate_->stack_guard()->RequestInstallCode();
 }
 
-void OptimizingCompileDispatcher::FlushOutputQueue() {
+void OptimizingCompileDispatcher::FlushOutputQueue(bool restore_function_code) {
   for (;;) {
     std::unique_ptr<TurbofanCompilationJob> job;
     {
@@ -117,7 +117,8 @@ void OptimizingCompileDispatcher::FlushOutputQueue() {
       output_queue_.pop();
     }
 
-    Compiler::DisposeTurbofanCompilationJob(isolate_, job.get());
+    Compiler::DisposeTurbofanCompilationJob(isolate_, job.get(),
+                                            restore_function_code);
   }
 }
 
@@ -128,7 +129,7 @@ void OptimizingCompileDispatcherQueue::Flush(Isolate* isolate) {
     DCHECK_NOT_NULL(job);
     shift_ = QueueIndex(1);
     length_--;
-    Compiler::DisposeTurbofanCompilationJob(isolate, job.get());
+    Compiler::DisposeTurbofanCompilationJob(isolate, job.get(), true);
   }
 }
 
@@ -152,15 +153,15 @@ void OptimizingCompileDispatcher::AwaitCompileTasks() {
 }
 
 void OptimizingCompileDispatcher::FlushQueues(
-    BlockingBehavior blocking_behavior) {
+    BlockingBehavior blocking_behavior, bool restore_function_code) {
   FlushInputQueue();
   if (blocking_behavior == BlockingBehavior::kBlock) AwaitCompileTasks();
-  FlushOutputQueue();
+  FlushOutputQueue(restore_function_code);
 }
 
 void OptimizingCompileDispatcher::Flush(BlockingBehavior blocking_behavior) {
   HandleScope handle_scope(isolate_);
-  FlushQueues(blocking_behavior);
+  FlushQueues(blocking_behavior, true);
   if (v8_flags.trace_concurrent_recompilation) {
     PrintF("  ** Flushed concurrent recompilation queues. (mode: %s)\n",
            (blocking_behavior == BlockingBehavior::kBlock) ? "blocking"
@@ -170,7 +171,7 @@ void OptimizingCompileDispatcher::Flush(BlockingBehavior blocking_behavior) {
 
 void OptimizingCompileDispatcher::Stop() {
   HandleScope handle_scope(isolate_);
-  FlushQueues(BlockingBehavior::kBlock);
+  FlushQueues(BlockingBehavior::kBlock, false);
   // At this point the optimizing compiler thread's event loop has stopped.
   // There is no need for a mutex when reading input_queue_length_.
   DCHECK_EQ(input_queue_.Length(), 0);
@@ -199,7 +200,7 @@ void OptimizingCompileDispatcher::InstallOptimizedFunctions() {
         ShortPrint(*function);
         PrintF(" as it has already been optimized.\n");
       }
-      Compiler::DisposeTurbofanCompilationJob(isolate_, job.get());
+      Compiler::DisposeTurbofanCompilationJob(isolate_, job.get(), false);
       continue;
     }
 

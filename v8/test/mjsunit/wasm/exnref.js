@@ -11,8 +11,7 @@
 // tests are added.
 // See also exnref-rethrow.js, exnref-global.js and exnref-api.js.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
 // Test that "exnref" local variables are allowed.
@@ -640,35 +639,4 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   let instance = builder.instantiate();
 
   assertEquals([1, 2], instance.exports.catch_ref_two_params());
-})();
-
-(function TestThrowNoExn() {
-  print(arguments.callee.name);
-  let builder = new WasmModuleBuilder();
-  builder.addFunction("throw_noexn", kSig_v_v)
-      .addBody([
-          kExprRefNull, kNullExnRefCode,
-          kExprThrowRef
-  ]).exportFunc();
-  let instance = builder.instantiate();
-
-  assertTraps(kTrapRethrowNull, () => instance.exports.throw_noexn());
-})();
-
-(function TestJSNonNullableExnRef() {
-  print(arguments.callee.name);
-  let builder = new WasmModuleBuilder();
-  let import_sig = makeSig([], [wasmRefType(kWasmExnRef)]);
-  let imported = builder.addImport('m', 'i', import_sig);
-  builder.addFunction("call_import", kSig_v_v)
-      .addBody([
-          kExprCallFunction, imported,
-          kExprDrop,
-      ]).exportFunc();
-  let export_sig = makeSig([wasmRefType(kWasmExnRef)], []);
-  builder.addFunction("export", export_sig)
-      .addBody([]).exportFunc();
-  let instance = builder.instantiate({m: {i: () => {}}});
-  assertThrows(instance.exports.call_import);
-  assertThrows(instance.exports.export);
 })();

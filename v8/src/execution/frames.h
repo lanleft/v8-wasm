@@ -9,8 +9,8 @@
 #include "src/base/bounds.h"
 #include "src/codegen/handler-table.h"
 #include "src/codegen/safepoint-table.h"
-#include "src/common/assert-scope.h"
 #include "src/common/globals.h"
+#include "src/handles/handles.h"
 #include "src/objects/code.h"
 #include "src/objects/deoptimization-data.h"
 #include "src/objects/objects.h"
@@ -25,12 +25,12 @@
 // - CommonFrame
 //   - CommonFrameWithJSLinkage
 //     - JavaScriptFrame (aka StandardFrame)
-//       - UnoptimizedJSFrame
+//       - UnoptimizedFrame
 //         - InterpretedFrame
 //         - BaselineFrame
-//       - OptimizedJSFrame
+//       - OptimizedFrame
 //         - MaglevFrame
-//         - TurbofanJSFrame
+//         - TurboFanFrame
 //     - TypedFrameWithJSLinkage
 //       - BuiltinFrame
 //       - JavaScriptBuiltinContinuationFrame
@@ -52,7 +52,6 @@
 //     - WasmFrame
 //       - WasmExitFrame
 //       - WasmToJsFrame
-//       - WasmInterpreterEntryFrame (#if V8_ENABLE_DRUMBRAKE)
 //     - WasmDebugBreakFrame
 //     - WasmLiftoffSetupFrame
 //     - IrregexpFrame
@@ -79,10 +78,6 @@ class StringStream;
 class ThreadLocalTop;
 class WasmInstanceObject;
 class WasmModuleObject;
-
-#if V8_ENABLE_DRUMBRAKE
-class Tuple2;
-#endif  // V8_ENABLE_DRUMBRAKE
 
 class StackHandlerConstants : public AllStatic {
  public:
@@ -121,21 +116,19 @@ class StackHandler {
   IF_WASM(V, WASM_TO_JS_FUNCTION, WasmToJsFunctionFrame)                  \
   IF_WASM(V, JS_TO_WASM, JsToWasmFrame)                                   \
   IF_WASM(V, STACK_SWITCH, StackSwitchFrame)                              \
-  IF_WASM_DRUMBRAKE(V, WASM_INTERPRETER_ENTRY, WasmInterpreterEntryFrame) \
   IF_WASM(V, WASM_DEBUG_BREAK, WasmDebugBreakFrame)                       \
   IF_WASM(V, C_WASM_ENTRY, CWasmEntryFrame)                               \
   IF_WASM(V, WASM_EXIT, WasmExitFrame)                                    \
   IF_WASM(V, WASM_LIFTOFF_SETUP, WasmLiftoffSetupFrame)                   \
-  IF_WASM(V, WASM_SEGMENT_START, WasmSegmentStartFrame)                   \
   V(INTERPRETED, InterpretedFrame)                                        \
   V(BASELINE, BaselineFrame)                                              \
   V(MAGLEV, MaglevFrame)                                                  \
-  V(TURBOFAN_JS, TurbofanJSFrame)                                         \
+  V(TURBOFAN, TurbofanFrame)                                              \
   V(STUB, StubFrame)                                                      \
   V(TURBOFAN_STUB_WITH_CONTEXT, TurbofanStubWithContextFrame)             \
   V(BUILTIN_CONTINUATION, BuiltinContinuationFrame)                       \
-  V(JAVASCRIPT_BUILTIN_CONTINUATION, JavaScriptBuiltinContinuationFrame)  \
-  V(JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH,                           \
+  V(JAVA_SCRIPT_BUILTIN_CONTINUATION, JavaScriptBuiltinContinuationFrame) \
+  V(JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH,                          \
     JavaScriptBuiltinContinuationWithCatchFrame)                          \
   V(INTERNAL, InternalFrame)                                              \
   V(CONSTRUCT, ConstructFrame)                                            \
@@ -180,7 +173,6 @@ class StackFrame {
     Address callee_pc = kNullAddress;
     Address* constant_pool_address = nullptr;
     bool is_profiler_entry_frame = false;
-    bool is_stack_exit_frame = false;
   };
 
   // Convert a stack frame type to a marker that can be stored on the stack.
@@ -193,7 +185,7 @@ class StackFrame {
   // Note that the marker is not a Smi: Smis on 64-bit architectures are stored
   // in the top 32 bits of a 64-bit value, which in turn makes them expensive
   // (in terms of code/instruction size) to push as immediates onto the stack.
-  static constexpr int32_t TypeToMarker(Type type) {
+  static int32_t TypeToMarker(Type type) {
     DCHECK_GE(type, 0);
     return (type << kSmiTagSize) | kSmiTag;
   }
@@ -202,21 +194,31 @@ class StackFrame {
   //
   // Unlike the return value of TypeToMarker, this takes an intptr_t, as that is
   // the type of the value on the stack.
-  static constexpr Type MarkerToType(intptr_t marker) {
+  static Type MarkerToType(intptr_t marker) {
     DCHECK(IsTypeMarker(marker));
-    return static_cast<Type>(marker >> kSmiTagSize);
+    intptr_t type = marker >> kSmiTagSize;
+    // TODO(petermarshall): There is a bug in the arm simulators that causes
+    // invalid frame markers.
+#if (defined(USE_SIMULATOR) &&                        \
+     (V8_TARGET_ARCH_ARM64 || V8_TARGET_ARCH_ARM)) || \
+    (V8_TARGET_ARCH_RISCV32 || V8_TARGET_ARCH_RISCV64)
+    if (static_cast<uintptr_t>(type) >= Type::NUMBER_OF_TYPES) {
+      // Appease UBSan.
+      return Type::NUMBER_OF_TYPES;
+    }
+#else
+    DCHECK_LT(static_cast<uintptr_t>(type), Type::NUMBER_OF_TYPES);
+#endif
+    return static_cast<Type>(type);
   }
 
-  // Check if a marker is a stack frame type marker.
+  // Check if a marker is a stack frame type marker or a tagged pointer.
   //
   // Returns true if the given marker is tagged as a stack frame type marker,
   // and should be converted back to a stack frame type using MarkerToType.
-  static constexpr bool IsTypeMarker(uintptr_t function_or_marker) {
-    static_assert(kSmiTag == 0);
-    static_assert((std::numeric_limits<uintptr_t>::max() >> kSmiTagSize) >
-                  Type::NUMBER_OF_TYPES);
-    return (function_or_marker & kSmiTagMask) == kSmiTag &&
-           function_or_marker < (Type::NUMBER_OF_TYPES << kSmiTagSize);
+  // Otherwise, the value is a tagged function pointer.
+  static bool IsTypeMarker(intptr_t function_or_marker) {
+    return (function_or_marker & kSmiTagMask) == kSmiTag;
   }
 
   // Copy constructor; it breaks the connection to host iterator
@@ -230,33 +232,22 @@ class StackFrame {
   bool is_entry() const { return type() == ENTRY; }
   bool is_construct_entry() const { return type() == CONSTRUCT_ENTRY; }
   bool is_exit() const { return type() == EXIT; }
-  bool is_optimized_js() const {
-    static_assert(TURBOFAN_JS == MAGLEV + 1);
-    return base::IsInRange(type(), MAGLEV, TURBOFAN_JS);
+  bool is_optimized() const {
+    static_assert(TURBOFAN == MAGLEV + 1);
+    return base::IsInRange(type(), MAGLEV, TURBOFAN);
   }
-  bool is_unoptimized_js() const {
+  bool is_unoptimized() const {
     static_assert(BASELINE == INTERPRETED + 1);
     return base::IsInRange(type(), INTERPRETED, BASELINE);
   }
   bool is_interpreted() const { return type() == INTERPRETED; }
   bool is_baseline() const { return type() == BASELINE; }
   bool is_maglev() const { return type() == MAGLEV; }
-  bool is_turbofan_js() const { return type() == TURBOFAN_JS; }
+  bool is_turbofan() const { return type() == TURBOFAN; }
 #if V8_ENABLE_WEBASSEMBLY
-  bool is_wasm() const {
-    return this->type() == WASM || this->type() == WASM_SEGMENT_START
-#ifdef V8_ENABLE_DRUMBRAKE
-           || this->type() == WASM_INTERPRETER_ENTRY
-#endif  // V8_ENABLE_DRUMBRAKE
-        ;
-  }
+  bool is_wasm() const { return this->type() == WASM; }
   bool is_c_wasm_entry() const { return type() == C_WASM_ENTRY; }
   bool is_wasm_liftoff_setup() const { return type() == WASM_LIFTOFF_SETUP; }
-#if V8_ENABLE_DRUMBRAKE
-  bool is_wasm_interpreter_entry() const {
-    return type() == WASM_INTERPRETER_ENTRY;
-  }
-#endif  // V8_ENABLE_DRUMBRAKE
   bool is_wasm_debug_break() const { return type() == WASM_DEBUG_BREAK; }
   bool is_wasm_to_js() const {
     return type() == WASM_TO_JS || type() == WASM_TO_JS_FUNCTION;
@@ -268,11 +259,11 @@ class StackFrame {
   bool is_builtin_continuation() const {
     return type() == BUILTIN_CONTINUATION;
   }
-  bool is_javascript_builtin_continuation() const {
-    return type() == JAVASCRIPT_BUILTIN_CONTINUATION;
+  bool is_java_script_builtin_continuation() const {
+    return type() == JAVA_SCRIPT_BUILTIN_CONTINUATION;
   }
-  bool is_javascript_builtin_with_catch_continuation() const {
-    return type() == JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH;
+  bool is_java_script_builtin_with_catch_continuation() const {
+    return type() == JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH;
   }
   bool is_construct() const { return type() == CONSTRUCT; }
   bool is_fast_construct() const { return type() == FAST_CONSTRUCT; }
@@ -284,10 +275,10 @@ class StackFrame {
   static bool IsJavaScript(Type t) {
     static_assert(INTERPRETED + 1 == BASELINE);
     static_assert(BASELINE + 1 == MAGLEV);
-    static_assert(MAGLEV + 1 == TURBOFAN_JS);
-    return t >= INTERPRETED && t <= TURBOFAN_JS;
+    static_assert(MAGLEV + 1 == TURBOFAN);
+    return t >= INTERPRETED && t <= TURBOFAN;
   }
-  bool is_javascript() const { return IsJavaScript(type()); }
+  bool is_java_script() const { return IsJavaScript(type()); }
 
   // Accessors.
   Address sp() const {
@@ -302,7 +293,6 @@ class StackFrame {
   bool is_profiler_entry_frame() const {
     return state_.is_profiler_entry_frame;
   }
-  bool is_stack_exit_frame() const { return state_.is_stack_exit_frame; }
 
   // Skip authentication of the PC, when using CFI. Used in the profiler, where
   // in certain corner-cases we do not use an address on the stack, which would
@@ -348,10 +338,7 @@ class StackFrame {
 
   // Search for the code associated with this frame.
   V8_EXPORT_PRIVATE Tagged<Code> LookupCode() const;
-  V8_EXPORT_PRIVATE std::pair<Tagged<Code>, int> LookupCodeAndOffset() const;
   V8_EXPORT_PRIVATE Tagged<GcSafeCode> GcSafeLookupCode() const;
-  V8_EXPORT_PRIVATE std::pair<Tagged<GcSafeCode>, int>
-  GcSafeLookupCodeAndOffset() const;
 
   virtual void Iterate(RootVisitor* v) const = 0;
   void IteratePc(RootVisitor* v, Address* constant_pool_address,
@@ -411,11 +398,9 @@ class V8_EXPORT_PRIVATE FrameSummary {
  public:
 // Subclasses for the different summary kinds:
 #define FRAME_SUMMARY_VARIANTS(F)                                          \
-  F(JAVASCRIPT, JavaScriptFrameSummary, javascript_summary_, JavaScript)   \
+  F(JAVA_SCRIPT, JavaScriptFrameSummary, java_script_summary_, JavaScript) \
   IF_WASM(F, BUILTIN, BuiltinFrameSummary, builtin_summary_, Builtin)      \
   IF_WASM(F, WASM, WasmFrameSummary, wasm_summary_, Wasm)                  \
-  IF_WASM_DRUMBRAKE(F, WASM_INTERPRETED, WasmInterpretedFrameSummary,      \
-                    wasm_interpreted_summary_, WasmInterpreted)            \
   IF_WASM(F, WASM_INLINED, WasmInlinedFrameSummary, wasm_inlined_summary_, \
           WasmInlined)
 
@@ -549,33 +534,6 @@ class V8_EXPORT_PRIVATE FrameSummary {
    private:
     Builtin builtin_;
   };
-
-#if V8_ENABLE_DRUMBRAKE
-  class WasmInterpretedFrameSummary : public FrameSummaryBase {
-   public:
-    WasmInterpretedFrameSummary(Isolate*, Handle<WasmInstanceObject>,
-                                uint32_t function_index, int byte_offset);
-    Handle<WasmInstanceObject> wasm_instance() const { return wasm_instance_; }
-    Handle<WasmTrustedInstanceData> instance_data() const;
-    uint32_t function_index() const { return function_index_; }
-    int byte_offset() const { return byte_offset_; }
-
-    Handle<Object> receiver() const;
-    int code_offset() const { return byte_offset_; }
-    bool is_constructor() const { return false; }
-    bool is_subject_to_debugging() const { return true; }
-    int SourcePosition() const;
-    int SourceStatementPosition() const { return SourcePosition(); }
-    Handle<Script> script() const;
-    Handle<Context> native_context() const;
-    Handle<StackFrameInfo> CreateStackFrameInfo() const;
-
-   private:
-    Handle<WasmInstanceObject> wasm_instance_;
-    uint32_t function_index_;
-    int byte_offset_;
-  };
-#endif  // V8_ENABLE_DRUMBRAKE
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 #define FRAME_SUMMARY_CONS(kind, type, field, desc) \
@@ -661,7 +619,7 @@ class CommonFrame : public StackFrame {
   // and parts of the fixed part including context and code fields.
   void IterateExpressions(RootVisitor* v) const;
 
-  void IterateTurbofanJSOptimizedFrame(RootVisitor* v) const;
+  void IterateTurbofanOptimizedFrame(RootVisitor* v) const;
 
   // Returns the address of the n'th expression stack element.
   virtual Address GetExpressionAddress(int n) const;
@@ -712,8 +670,8 @@ class CommonFrameWithJSLinkage : public CommonFrame {
 
   // Lookup exception handler for current {pc}, returns -1 if none found. Also
   // returns data associated with the handler site specific to the frame type:
-  //  - OptimizedJSFrame  : Data is not used and will not return a value.
-  //  - UnoptimizedJSFrame: Data is the register index holding the context.
+  //  - OptimizedFrame  : Data is not used and will not return a value.
+  //  - UnoptimizedFrame: Data is the register index holding the context.
   virtual int LookupExceptionHandlerInTable(
       int* data, HandlerTable::CatchPrediction* prediction);
 
@@ -772,20 +730,13 @@ class JavaScriptFrame : public CommonFrameWithJSLinkage {
 
   void GetFunctions(std::vector<Handle<SharedFunctionInfo>>* functions) const;
 
-  // Returns {AbstractCode, code offset} pair for this frame's PC value.
-  std::tuple<Tagged<AbstractCode>, int> GetActiveCodeAndOffset() const;
-
   // Architecture-specific register description.
   static Register fp_register();
   static Register context_register();
   static Register constant_pool_pointer_register();
 
-  bool is_unoptimized() const { return is_unoptimized_js(); }
-  bool is_optimized() const { return is_optimized_js(); }
-  bool is_turbofan() const { return is_turbofan_js(); }
-
   static JavaScriptFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_javascript());
+    DCHECK(frame->is_java_script());
     return static_cast<JavaScriptFrame*>(frame);
   }
 
@@ -1050,7 +1001,7 @@ class StubFrame : public TypedFrame {
   friend class StackFrameIteratorBase;
 };
 
-class OptimizedJSFrame : public JavaScriptFrame {
+class OptimizedFrame : public JavaScriptFrame {
  public:
   // Return a list with {SharedFunctionInfo} objects of this frame.
   // The functions are ordered bottom-to-top (i.e. functions.last()
@@ -1073,13 +1024,13 @@ class OptimizedJSFrame : public JavaScriptFrame {
                                         int trampoline_pc) const = 0;
 
  protected:
-  inline explicit OptimizedJSFrame(StackFrameIteratorBase* iterator);
+  inline explicit OptimizedFrame(StackFrameIteratorBase* iterator);
 };
 
 // An unoptimized frame is a JavaScript frame that is executing bytecode. It
 // may be executing it using the interpreter, or via baseline code compiled from
 // the bytecode.
-class UnoptimizedJSFrame : public JavaScriptFrame {
+class UnoptimizedFrame : public JavaScriptFrame {
  public:
   // Accessors.
   int position() const override;
@@ -1102,13 +1053,13 @@ class UnoptimizedJSFrame : public JavaScriptFrame {
   // Build a list with summaries for this frame including all inlined frames.
   void Summarize(std::vector<FrameSummary>* frames) const override;
 
-  static UnoptimizedJSFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_unoptimized_js());
-    return static_cast<UnoptimizedJSFrame*>(frame);
+  static UnoptimizedFrame* cast(StackFrame* frame) {
+    DCHECK(frame->is_unoptimized());
+    return static_cast<UnoptimizedFrame*>(frame);
   }
 
  protected:
-  inline explicit UnoptimizedJSFrame(StackFrameIteratorBase* iterator);
+  inline explicit UnoptimizedFrame(StackFrameIteratorBase* iterator);
 
   Address GetExpressionAddress(int n) const override;
 
@@ -1116,7 +1067,7 @@ class UnoptimizedJSFrame : public JavaScriptFrame {
   friend class StackFrameIteratorBase;
 };
 
-class InterpretedFrame : public UnoptimizedJSFrame {
+class InterpretedFrame : public UnoptimizedFrame {
  public:
   Type type() const override { return INTERPRETED; }
 
@@ -1140,6 +1091,8 @@ class InterpretedFrame : public UnoptimizedJSFrame {
     return static_cast<const InterpretedFrame*>(frame);
   }
 
+  static int GetBytecodeOffset(Address fp);
+
  protected:
   inline explicit InterpretedFrame(StackFrameIteratorBase* iterator);
 
@@ -1147,7 +1100,7 @@ class InterpretedFrame : public UnoptimizedJSFrame {
   friend class StackFrameIteratorBase;
 };
 
-class BaselineFrame : public UnoptimizedJSFrame {
+class BaselineFrame : public UnoptimizedFrame {
  public:
   Type type() const override { return BASELINE; }
 
@@ -1162,10 +1115,6 @@ class BaselineFrame : public UnoptimizedJSFrame {
     DCHECK(frame->is_baseline());
     return static_cast<BaselineFrame*>(frame);
   }
-  static const BaselineFrame* cast(const StackFrame* frame) {
-    DCHECK(frame->is_baseline());
-    return static_cast<const BaselineFrame*>(frame);
-  }
 
  protected:
   inline explicit BaselineFrame(StackFrameIteratorBase* iterator);
@@ -1174,7 +1123,7 @@ class BaselineFrame : public UnoptimizedJSFrame {
   friend class StackFrameIteratorBase;
 };
 
-class MaglevFrame : public OptimizedJSFrame {
+class MaglevFrame : public OptimizedFrame {
  public:
   Type type() const override { return MAGLEV; }
 
@@ -1200,9 +1149,9 @@ class MaglevFrame : public OptimizedJSFrame {
   friend class StackFrameIteratorBase;
 };
 
-class TurbofanJSFrame : public OptimizedJSFrame {
+class TurbofanFrame : public OptimizedFrame {
  public:
-  Type type() const override { return TURBOFAN_JS; }
+  Type type() const override { return TURBOFAN; }
 
   int ComputeParametersCount() const override;
 
@@ -1212,7 +1161,7 @@ class TurbofanJSFrame : public OptimizedJSFrame {
                                 int trampoline_pc) const override;
 
  protected:
-  inline explicit TurbofanJSFrame(StackFrameIteratorBase* iterator);
+  inline explicit TurbofanFrame(StackFrameIteratorBase* iterator);
 
  private:
   friend class StackFrameIteratorBase;
@@ -1260,7 +1209,7 @@ class WasmFrame : public TypedFrame {
   virtual Tagged<WasmTrustedInstanceData> trusted_instance_data() const;
   V8_EXPORT_PRIVATE wasm::NativeModule* native_module() const;
 
-  virtual wasm::WasmCode* wasm_code() const;
+  wasm::WasmCode* wasm_code() const;
   int function_index() const;
   Tagged<Script> script() const;
   // Byte position in the module, or asm.js source position.
@@ -1274,11 +1223,7 @@ class WasmFrame : public TypedFrame {
   void Summarize(std::vector<FrameSummary>* frames) const override;
 
   static WasmFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_wasm()
-#ifdef V8_ENABLE_DRUMBRAKE
-           && !frame->is_wasm_interpreter_entry()
-#endif  // V8_ENABLE_DRUMBRAKE
-    );
+    DCHECK(frame->is_wasm());
     return static_cast<WasmFrame*>(frame);
   }
 
@@ -1290,24 +1235,6 @@ class WasmFrame : public TypedFrame {
   Tagged<WasmModuleObject> module_object() const;
 };
 
-// WasmSegmentStartFrame is a regular Wasm frame moved to the
-// beginning of a new stack segment allocated for growable stack.
-// It requires special handling on return. To indicate that, the WASM frame type
-// is replaced by WASM_SEGMENT_START.
-class WasmSegmentStartFrame : public WasmFrame {
- public:
-  // type() intentionally returns WASM frame type because WasmSegmentStartFrame
-  // behaves exactly like regular WasmFrame in all scenarios.
-  Type type() const override { return WASM; }
-
- protected:
-  inline explicit WasmSegmentStartFrame(StackFrameIteratorBase* iterator);
-
- private:
-  friend class StackFrameIteratorBase;
-};
-
-// Wasm to C-API exit frame.
 class WasmExitFrame : public WasmFrame {
  public:
   Type type() const override { return WASM_EXIT; }
@@ -1319,49 +1246,6 @@ class WasmExitFrame : public WasmFrame {
  private:
   friend class StackFrameIteratorBase;
 };
-
-#if V8_ENABLE_DRUMBRAKE
-class WasmInterpreterEntryFrame final : public WasmFrame {
- public:
-  Type type() const override { return WASM_INTERPRETER_ENTRY; }
-
-  // GC support.
-  void Iterate(RootVisitor* v) const override;
-
-  // Printing support.
-  void Print(StringStream* accumulator, PrintMode mode,
-             int index) const override;
-
-  void Summarize(std::vector<FrameSummary>* frames) const override;
-
-  // Determine the code for the frame.
-  Tagged<HeapObject> unchecked_code() const override;
-
-  // Accessors.
-  Tagged<Tuple2> interpreter_object() const;
-  V8_EXPORT_PRIVATE Tagged<WasmInstanceObject> wasm_instance() const override;
-  Tagged<WasmTrustedInstanceData> trusted_instance_data() const override;
-
-  wasm::WasmCode* wasm_code() const override { UNREACHABLE(); }
-  int function_index(int inlined_function_index) const;
-  int position() const override;
-  Tagged<Object> context() const override;
-
-  static WasmInterpreterEntryFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_wasm_interpreter_entry());
-    return static_cast<WasmInterpreterEntryFrame*>(frame);
-  }
-
- protected:
-  inline explicit WasmInterpreterEntryFrame(StackFrameIteratorBase* iterator);
-
-  Address GetCallerStackPointer() const override;
-
- private:
-  friend class StackFrameIteratorBase;
-  Tagged<WasmModuleObject> module_object() const;
-};
-#endif  // V8_ENABLE_DRUMBRAKE
 
 class WasmDebugBreakFrame final : public TypedFrame {
  public:
@@ -1388,10 +1272,6 @@ class WasmDebugBreakFrame final : public TypedFrame {
 class WasmToJsFrame : public WasmFrame {
  public:
   Type type() const override { return WASM_TO_JS; }
-
-#if V8_ENABLE_DRUMBRAKE
-  void Iterate(RootVisitor* v) const override;
-#endif  // V8_ENABLE_DRUMBRAKE
 
   int position() const override { return 0; }
   Tagged<WasmInstanceObject> wasm_instance() const override;
@@ -1445,10 +1325,6 @@ class CWasmEntryFrame : public StubFrame {
  public:
   Type type() const override { return C_WASM_ENTRY; }
 
-#if V8_ENABLE_DRUMBRAKE
-  void Iterate(RootVisitor* v) const override;
-#endif  // V8_ENABLE_DRUMBRAKE
-
  protected:
   inline explicit CWasmEntryFrame(StackFrameIteratorBase* iterator);
 
@@ -1461,7 +1337,7 @@ class WasmLiftoffSetupFrame : public TypedFrame {
  public:
   Type type() const override { return WASM_LIFTOFF_SETUP; }
 
-  FullObjectSlot wasm_instance_data_slot() const;
+  FullObjectSlot wasm_instance_slot() const;
 
   int GetDeclaredFunctionIndex() const;
 
@@ -1558,10 +1434,10 @@ class BuiltinContinuationFrame : public InternalFrame {
 
 class JavaScriptBuiltinContinuationFrame : public TypedFrameWithJSLinkage {
  public:
-  Type type() const override { return JAVASCRIPT_BUILTIN_CONTINUATION; }
+  Type type() const override { return JAVA_SCRIPT_BUILTIN_CONTINUATION; }
 
   static JavaScriptBuiltinContinuationFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_javascript_builtin_continuation());
+    DCHECK(frame->is_java_script_builtin_continuation());
     return static_cast<JavaScriptBuiltinContinuationFrame*>(frame);
   }
 
@@ -1583,11 +1459,11 @@ class JavaScriptBuiltinContinuationWithCatchFrame
     : public JavaScriptBuiltinContinuationFrame {
  public:
   Type type() const override {
-    return JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH;
+    return JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH;
   }
 
   static JavaScriptBuiltinContinuationWithCatchFrame* cast(StackFrame* frame) {
-    DCHECK(frame->is_javascript_builtin_with_catch_continuation());
+    DCHECK(frame->is_java_script_builtin_with_catch_continuation());
     return static_cast<JavaScriptBuiltinContinuationWithCatchFrame*>(frame);
   }
 
@@ -1632,9 +1508,6 @@ class StackFrameIteratorBase {
   StackFrameIteratorBase& operator=(const StackFrameIteratorBase&) = delete;
 
   Isolate* isolate() const { return isolate_; }
-#if V8_ENABLE_WEBASSEMBLY
-  wasm::StackMemory* wasm_stack() const { return wasm_stack_; }
-#endif
 
   bool done() const { return frame_ == nullptr; }
 
@@ -1660,18 +1533,6 @@ class StackFrameIteratorBase {
   };
   StackFrame* frame_;
   StackHandler* handler_;
-#if V8_ENABLE_WEBASSEMBLY
-  // Stop at the end of the topmost (wasm) stack.
-  bool first_stack_only_ = false;
-  // // Current wasm stack being iterated.
-  wasm::StackMemory* wasm_stack_ = nullptr;
-  // See {StackFrameIterator::NoHandles}.
-  std::optional<DisallowGarbageCollection> no_gc_;
-  union {
-    Handle<WasmContinuationObject> handle_;
-    Tagged<WasmContinuationObject> obj_;
-  } continuation_{Handle<WasmContinuationObject>::null()};
-#endif
 
   StackHandler* handler() const {
     DCHECK(!done());
@@ -1693,22 +1554,7 @@ class StackFrameIterator : public StackFrameIteratorBase {
   V8_EXPORT_PRIVATE explicit StackFrameIterator(Isolate* isolate);
   // An iterator that iterates over a given thread's stack.
   V8_EXPORT_PRIVATE StackFrameIterator(Isolate* isolate, ThreadLocalTop* t);
-  // Use this constructor to use the stack frame iterator without a handle
-  // scope. This sets the {no_gc_} scope, and if the {continuation_} object is
-  // used, it is unhandlified.
-  struct NoHandles {};
-  V8_EXPORT_PRIVATE StackFrameIterator(Isolate* isolate, ThreadLocalTop* top,
-                                       NoHandles);
 #if V8_ENABLE_WEBASSEMBLY
-  // Depending on the use case, users of the StackFrameIterator should either:
-  // - Use the default constructor, which iterates the active stack and its
-  // ancestors, but not the suspended stacks.
-  // - Or use the constructor below to iterate the topmost stack only, and
-  // iterate the {Isolate::wasm_stacks()} list on the side to visit all
-  // inactive stacks.
-  struct FirstStackOnly {};
-  V8_EXPORT_PRIVATE StackFrameIterator(Isolate* isolate, ThreadLocalTop* t,
-                                       FirstStackOnly);
   // An iterator that iterates over a given wasm stack segment.
   V8_EXPORT_PRIVATE StackFrameIterator(Isolate* isolate,
                                        wasm::StackMemory* stack);
@@ -1727,8 +1573,6 @@ class StackFrameIterator : public StackFrameIteratorBase {
 #if V8_ENABLE_WEBASSEMBLY
   // Go to the first frame of this stack.
   void Reset(ThreadLocalTop* top, wasm::StackMemory* stack);
-  Tagged<WasmContinuationObject> continuation();
-  void set_continuation(Tagged<WasmContinuationObject> continuation);
 #endif
 
 #ifdef DEBUG
@@ -1786,9 +1630,6 @@ class V8_EXPORT_PRIVATE DebuggableStackFrameIterator {
   inline bool is_javascript() const;
 #if V8_ENABLE_WEBASSEMBLY
   inline bool is_wasm() const;
-#if V8_ENABLE_DRUMBRAKE
-  inline bool is_wasm_interpreter_entry() const;
-#endif  // V8_ENABLE_DRUMBRAKE
 #endif  // V8_ENABLE_WEBASSEMBLY
   inline JavaScriptFrame* javascript_frame() const;
 

@@ -14,7 +14,7 @@ import { Edge } from "../edge";
 import { Node } from "../node";
 import { TurboshaftGraph } from "../turboshaft-graph";
 import { Graph } from "../graph";
-import { TurboshaftGraphOperation } from "../phases/turboshaft-graph-phase/turboshaft-graph-operation";
+import { TurboshaftGraphNode } from "../phases/turboshaft-graph-phase/turboshaft-graph-node";
 import { GraphNode } from "../phases/graph-phase/graph-node";
 import { SelectionStorage } from "../selection/selection-storage";
 
@@ -240,9 +240,9 @@ export abstract class MovableView<GraphType extends Graph | TurboshaftGraph> ext
       this.graph.minGraphY + this.graph.height / 2);
   }
 
-  protected searchNodes(filterFunction: (node: TurboshaftGraphOperation | GraphNode) =>
+  protected searchNodes(filterFunction: (node: TurboshaftGraphNode | GraphNode) =>
                           boolean | RegExpExecArray, e: KeyboardEvent, onlyVisible: boolean):
-    Array<TurboshaftGraphOperation | GraphNode> {
+    Array<TurboshaftGraphNode | GraphNode> {
     return [...this.graph.nodes(node => {
       if ((e.ctrlKey || node.visible || !onlyVisible) && filterFunction(node)) {
         if (e.ctrlKey || !onlyVisible) node.visible = true;
@@ -332,13 +332,5 @@ export class MovableViewState {
 
   public set cacheLayout(value: boolean) {
     storageSetItem("toggle-cache-layout", value);
-  }
-
-  public get compactView(): boolean {
-    return storageGetItem("compact-view", true);
-  }
-
-  public set compactView(value: boolean) {
-    storageSetItem("compact-view", value);
   }
 }

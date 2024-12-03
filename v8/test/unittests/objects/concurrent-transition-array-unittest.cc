@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/api/api.h"
 #include "src/base/platform/semaphore.h"
 #include "src/handles/handles-inl.h"
@@ -29,7 +27,7 @@ class ConcurrentSearchThread : public v8::base::Thread {
   ConcurrentSearchThread(Heap* heap, base::Semaphore* background_thread_started,
                          std::unique_ptr<PersistentHandles> ph,
                          Handle<Name> name, Handle<Map> map,
-                         std::optional<Handle<Map>> result_map)
+                         base::Optional<Handle<Map>> result_map)
       : v8::base::Thread(base::Thread::Options("ThreadWithLocalHeap")),
         heap_(heap),
         background_thread_started_(background_thread_started),
@@ -58,7 +56,7 @@ class ConcurrentSearchThread : public v8::base::Thread {
   std::unique_ptr<PersistentHandles> ph_;
   Handle<Name> name_;
   Handle<Map> map_;
-  std::optional<Handle<Map>> result_map_;
+  base::Optional<Handle<Map>> result_map_;
 };
 
 // Background search thread class that creates the transitions accessor before
@@ -364,7 +362,7 @@ TEST_F(ConcurrentTransitionArrayTest, UninitializedToFullFieldTransitions) {
   // Background thread will search for name2, guaranteed to *not* be on the map.
   std::unique_ptr<ConcurrentSearchThread> thread(new ConcurrentSearchThread(
       i_isolate()->heap(), &background_thread_started, std::move(ph),
-      persistent_name2, persistent_map0, std::nullopt));
+      persistent_name2, persistent_map0, base::nullopt));
   CHECK(thread->Start());
 
   background_thread_started.Wait();

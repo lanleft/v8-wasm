@@ -74,13 +74,12 @@ const uint8_t* TypedArrayAndRabGsabTypedArrayElementsKindSizes() {
 }
 
 int GetDefaultHeaderSizeForElementsKind(ElementsKind elements_kind) {
-  static_assert(OFFSET_OF_DATA_START(FixedArray) ==
-                OFFSET_OF_DATA_START(FixedDoubleArray));
+  static_assert(FixedArray::kHeaderSize == FixedDoubleArray::kHeaderSize);
 
   if (IsTypedArrayOrRabGsabTypedArrayElementsKind(elements_kind)) {
     return 0;
   } else {
-    return OFFSET_OF_DATA_START(FixedArray) - kHeapObjectTag;
+    return FixedArray::kHeaderSize - kHeapObjectTag;
   }
 }
 

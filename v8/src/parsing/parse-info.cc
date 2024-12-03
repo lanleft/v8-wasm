@@ -91,6 +91,9 @@ UnoptimizedCompileFlags UnoptimizedCompileFlags::ForToplevelCompile(
   UnoptimizedCompileFlags flags(isolate, isolate->GetNextScriptId());
   flags.SetFlagsForToplevelCompile(is_user_javascript, language_mode, repl_mode,
                                    type, lazy);
+  flags.set_compile_hints_magic_enabled(v8_flags.compile_hints_magic ||
+                                        isolate->allow_compile_hints_magic());
+
   LOG(isolate, ScriptEvent(ScriptEventType::kReserveId, flags.script_id()));
   return flags;
 }
@@ -198,7 +201,7 @@ ParseInfo::ParseInfo(const UnoptimizedCompileFlags flags,
       script_scope_(nullptr),
       stack_limit_(stack_limit),
       parameters_end_pos_(kNoSourcePosition),
-      max_info_id_(kInvalidInfoId),
+      max_function_literal_id_(kFunctionLiteralIdInvalid),
       character_stream_(nullptr),
       function_name_(nullptr),
       runtime_call_stats_(runtime_call_stats),
@@ -210,8 +213,7 @@ ParseInfo::ParseInfo(const UnoptimizedCompileFlags flags,
 #endif  // V8_ENABLE_WEBASSEMBLY
       language_mode_(flags.outer_language_mode()),
       is_background_compilation_(false),
-      is_streaming_compilation_(false),
-      has_module_in_scope_chain_(flags.is_module()) {
+      is_streaming_compilation_(false) {
   if (flags.block_coverage_enabled()) {
     AllocateSourceRangeMap();
   }

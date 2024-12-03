@@ -18,7 +18,6 @@
 #include "src/base/macros.h"
 #include "src/base/platform/time.h"
 #include "src/execution/isolate-inl.h"
-#include "src/execution/v8threads.h"
 #include "src/flags/flags.h"
 #include "src/handles/handles.h"
 #include "src/handles/traced-handles.h"
@@ -167,14 +166,13 @@ class CppgcPlatformAdapter final : public cppgc::Platform {
     return platform_->MonotonicallyIncreasingTime();
   }
 
-  std::shared_ptr<TaskRunner> GetForegroundTaskRunner(
-      TaskPriority priority) final {
+  std::shared_ptr<TaskRunner> GetForegroundTaskRunner() final {
     // If no Isolate has been set, there's no task runner to leverage for
     // foreground tasks. In detached mode the original platform handles the
     // task runner retrieval.
     if (!isolate_ && !is_in_detached_mode_) return nullptr;
 
-    return platform_->GetForegroundTaskRunner(isolate_, priority);
+    return platform_->GetForegroundTaskRunner(isolate_);
   }
 
   std::unique_ptr<JobHandle> PostJob(TaskPriority priority,
@@ -228,16 +226,8 @@ UnifiedHeapConcurrentMarker::CreateConcurrentMarkingVisitor(
 
 void FatalOutOfMemoryHandlerImpl(const std::string& reason,
                                  const SourceLocation&, HeapBase* heap) {
-  auto* cpp_heap = static_cast<v8::internal::CppHeap*>(heap);
-  auto* isolate = cpp_heap->isolate();
-  DCHECK_NOT_NULL(isolate);
-  if (v8_flags.heap_snapshot_on_oom) {
-    cppgc::internal::ClassNameAsHeapObjectNameScope names_scope(
-        cpp_heap->AsBase());
-    isolate->heap_profiler()->WriteSnapshotToDiskAfterGC(
-        v8::HeapProfiler::HeapSnapshotMode::kExposeInternals);
-  }
-  V8::FatalProcessOutOfMemory(isolate, reason.c_str());
+  V8::FatalProcessOutOfMemory(
+      static_cast<v8::internal::CppHeap*>(heap)->isolate(), reason.c_str());
 }
 
 void GlobalFatalOutOfMemoryHandlerImpl(const std::string& reason,
@@ -751,6 +741,8 @@ void CppHeap::InitializeMarking(CollectionType collection_type,
       IsForceGC(current_gc_flags_)
           ? cppgc::internal::MarkingConfig::IsForcedGC::kForced
           : cppgc::internal::MarkingConfig::IsForcedGC::kNotForced,
+      v8::base::TimeDelta::FromMilliseconds(
+          v8_flags.incremental_marking_task_delay_ms),
       v8_flags.incremental_marking_bailout_when_ahead_of_schedule};
   DCHECK_IMPLIES(!isolate_,
                  (MarkingType::kAtomic == marking_config.marking_type) ||
@@ -873,9 +865,12 @@ void CppHeap::WriteBarrier(void* object) {
 
 namespace {
 
-void RecordEmbedderMarkingSpeed(GCTracer* tracer, base::TimeDelta marking_time,
-                                size_t marked_bytes) {
-  tracer->RecordEmbedderMarkingSpeed(marked_bytes, marking_time);
+void RecordEmbedderSpeed(GCTracer* tracer, base::TimeDelta marking_time,
+                         size_t marked_bytes) {
+  constexpr auto kMinReportingTime = base::TimeDelta::FromMillisecondsD(0.5);
+  if (marking_time > kMinReportingTime) {
+    tracer->RecordEmbedderSpeed(marked_bytes, marking_time.InMillisecondsF());
+  }
 }
 
 }  // namespace
@@ -911,8 +906,8 @@ void CppHeap::FinishMarkingAndProcessWeakness() {
     // setting limits close to actual heap sizes.
     allocated_size_limit_for_check_ = 0;
 
-    RecordEmbedderMarkingSpeed(isolate_->heap()->tracer(),
-                               stats_collector_->marking_time(), used_size_);
+    RecordEmbedderSpeed(isolate_->heap()->tracer(),
+                        stats_collector_->marking_time(), used_size_);
   }
 }
 
@@ -958,7 +953,12 @@ void CppHeap::CompactAndSweep() {
             ? cppgc::internal::SweepingConfig::FreeMemoryHandling::
                   kDiscardWherePossible
             : cppgc::internal::SweepingConfig::FreeMemoryHandling::
-                  kDoNotDiscard};
+                  kDoNotDiscard,
+        // CppHeap is initialized before V8 flags are necessarily set which
+        // prohibits us from reading the flag at creation.
+        v8_flags.cppheap_optimize_sweep_for_mutator
+            ? cppgc::internal::SweepingStrategy::kMinimizeMutatorInterference
+            : cppgc::internal::SweepingStrategy::kMinimizeMemory};
     DCHECK_IMPLIES(!isolate_,
                    SweepingType::kAtomic == sweeping_config.sweeping_type);
     sweeper().Start(sweeping_config);
@@ -1225,9 +1225,6 @@ void CppHeap::CollectGarbage(cppgc::internal::GCConfig config) {
           : GCFlag::kNoFlags;
   isolate_->heap()->CollectAllGarbage(
       flags, GarbageCollectionReason::kCppHeapAllocationFailure);
-  DCHECK_IMPLIES(
-      config.sweeping_type == cppgc::internal::GCConfig::SweepingType::kAtomic,
-      !sweeper_.IsSweepingInProgress());
 }
 
 std::optional<cppgc::EmbedderStackState> CppHeap::overridden_stack_state()
@@ -1303,15 +1300,6 @@ bool CppHeap::IsGCForbidden() const {
   return (isolate_ && isolate_->InFastCCall() &&
           !v8_flags.allow_allocation_in_fast_api_call) ||
          HeapBase::IsGCForbidden();
-}
-
-bool CppHeap::IsCurrentThread(int thread_id) const {
-  if (isolate_ && V8_UNLIKELY(isolate_->was_locker_ever_used())) {
-    // If v8::Locker has been used, we only check if the isolate is now locked
-    // by the current thread.
-    return isolate_->thread_manager()->IsLockedByCurrentThread();
-  }
-  return HeapBase::IsCurrentThread(thread_id);
 }
 
 }  // namespace internal

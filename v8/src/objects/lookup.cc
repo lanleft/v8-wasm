@@ -4,8 +4,6 @@
 
 #include "src/objects/lookup.h"
 
-#include <optional>
-
 #include "src/common/globals.h"
 #include "src/deoptimizer/deoptimizer.h"
 #include "src/execution/isolate-inl.h"
@@ -24,7 +22,8 @@
 #include "src/objects/property-details.h"
 #include "src/objects/struct-inl.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 PropertyKey::PropertyKey(Isolate* isolate, Handle<Object> key, bool* success) {
   if (Object::ToIntegerIndex(*key, &index_)) {
@@ -131,36 +130,6 @@ void LookupIterator::RestartInternal(InterceptorState interceptor_state) {
 template void LookupIterator::RestartInternal<true>(InterceptorState);
 template void LookupIterator::RestartInternal<false>(InterceptorState);
 
-void LookupIterator::RecheckTypedArrayBounds() {
-  DCHECK(IsJSTypedArray(*holder_, isolate_));
-  DCHECK_EQ(state_, TYPED_ARRAY_INDEX_NOT_FOUND);
-
-  if (!IsElement(*holder_)) {
-    // This happens when the index is not an allowed index.
-    return;
-  }
-
-  Tagged<JSObject> js_object = Cast<JSObject>(*holder_);
-  ElementsAccessor* accessor = js_object->GetElementsAccessor(isolate_);
-  Tagged<FixedArrayBase> backing_store = js_object->elements(isolate_);
-  number_ =
-      accessor->GetEntryForIndex(isolate_, js_object, backing_store, index_);
-
-  if (number_.is_not_found()) {
-    // The state is already TYPED_ARRAY_INDEX_NOT_FOUND.
-    return;
-  }
-  property_details_ = accessor->GetDetails(js_object, number_);
-#ifdef DEBUG
-  Tagged<Map> map = holder_->map(isolate_);
-  DCHECK(!map->has_frozen_elements());
-  DCHECK(!map->has_sealed_elements());
-#endif  // DEBUG
-  has_property_ = true;
-  DCHECK_EQ(property_details_.kind(), v8::internal::PropertyKind::kData);
-  state_ = DATA;
-}
-
 // static
 MaybeHandle<JSReceiver> LookupIterator::GetRootForNonJSReceiver(
     Isolate* isolate, DirectHandle<JSPrimitive> lookup_start_object,
@@ -219,8 +188,8 @@ void LookupIterator::InternalUpdateProtector(Isolate* isolate,
                                              Handle<Object> receiver_generic,
                                              DirectHandle<Name> name) {
   if (isolate->bootstrapper()->IsActive()) return;
-  if (!IsJSObject(*receiver_generic)) return;
-  auto receiver = Cast<JSObject>(receiver_generic);
+  if (!IsHeapObject(*receiver_generic)) return;
+  auto receiver = Cast<HeapObject>(receiver_generic);
 
   ReadOnlyRoots roots(isolate);
   if (*name == roots.constructor_string()) {
@@ -248,9 +217,8 @@ void LookupIterator::InternalUpdateProtector(Isolate* isolate,
       DisallowGarbageCollection no_gc;
       // Setting the constructor of any prototype with the @@species protector
       // (of any realm) also needs to invalidate the protector.
-      if (isolate->IsInCreationContext(
-              Cast<JSObject>(*receiver),
-              Context::INITIAL_ARRAY_PROTOTYPE_INDEX)) {
+      if (isolate->IsInAnyContext(*receiver,
+                                  Context::INITIAL_ARRAY_PROTOTYPE_INDEX)) {
         if (!Protectors::IsArraySpeciesLookupChainIntact(isolate)) return;
         isolate->CountUsage(
             v8::Isolate::UseCounterFeature::kArrayPrototypeConstructorModified);
@@ -330,7 +298,7 @@ void LookupIterator::InternalUpdateProtector(Isolate* isolate,
       if (Protectors::IsSetIteratorLookupChainIntact(isolate)) {
         Protectors::InvalidateSetIteratorLookupChain(isolate);
       }
-    } else if (isolate->IsInCreationContext(
+    } else if (isolate->IsInAnyContext(
                    *receiver, Context::INITIAL_STRING_PROTOTYPE_INDEX)) {
       // Setting the Symbol.iterator property of String.prototype invalidates
       // the string iterator protector. Symbol.iterator can also be set on a
@@ -374,17 +342,17 @@ void LookupIterator::InternalUpdateProtector(Isolate* isolate,
     }
   } else if (*name == roots.to_primitive_symbol()) {
     if (!Protectors::IsStringWrapperToPrimitiveIntact(isolate)) return;
-    if (isolate->IsInCreationContext(*receiver,
-                                     Context::INITIAL_STRING_PROTOTYPE_INDEX) ||
-        isolate->IsInCreationContext(*receiver,
-                                     Context::INITIAL_OBJECT_PROTOTYPE_INDEX) ||
+    if (isolate->IsInAnyContext(*receiver,
+                                Context::INITIAL_STRING_PROTOTYPE_INDEX) ||
+        isolate->IsInAnyContext(*receiver,
+                                Context::INITIAL_OBJECT_PROTOTYPE_INDEX) ||
         IsStringWrapper(*receiver)) {
       Protectors::InvalidateStringWrapperToPrimitive(isolate);
     }
   } else if (*name == roots.valueOf_string()) {
     if (!Protectors::IsStringWrapperToPrimitiveIntact(isolate)) return;
-    if (isolate->IsInCreationContext(*receiver,
-                                     Context::INITIAL_STRING_PROTOTYPE_INDEX) ||
+    if (isolate->IsInAnyContext(*receiver,
+                                Context::INITIAL_STRING_PROTOTYPE_INDEX) ||
         IsStringWrapper(*receiver)) {
       Protectors::InvalidateStringWrapperToPrimitive(isolate);
     }
@@ -707,7 +675,7 @@ void LookupIterator::ApplyTransitionToDataProperty(
     state_ = DATA;
     return;
   }
-  DirectHandle<Map> transition = transition_map();
+  Handle<Map> transition = transition_map();
   bool simple_transition =
       transition->GetBackPointer(isolate_) == receiver->map(isolate_);
 
@@ -821,7 +789,7 @@ void LookupIterator::TransitionToAccessorProperty(
     // interceptors.
     DCHECK_IMPLIES(!IsFound(), number_.is_not_found());
 
-    DirectHandle<Map> new_map = Map::TransitionToAccessorProperty(
+    Handle<Map> new_map = Map::TransitionToAccessorProperty(
         isolate_, old_map, name_, number_, getter, setter, attributes);
     bool simple_transition =
         new_map->GetBackPointer(isolate_) == receiver->map(isolate_);
@@ -1476,7 +1444,7 @@ bool LookupIterator::LookupCachedProperty(
   DCHECK(IsAccessorPair(*GetAccessors(), isolate_));
 
   Tagged<Object> getter = accessor_pair->getter(isolate_);
-  std::optional<Tagged<Name>> maybe_name =
+  base::Optional<Tagged<Name>> maybe_name =
       FunctionTemplateInfo::TryGetCachedPropertyName(isolate(), getter);
   if (!maybe_name.has_value()) return false;
 
@@ -1498,7 +1466,7 @@ bool LookupIterator::LookupCachedProperty(
 }
 
 // static
-std::optional<Tagged<Object>> ConcurrentLookupIterator::TryGetOwnCowElement(
+base::Optional<Tagged<Object>> ConcurrentLookupIterator::TryGetOwnCowElement(
     Isolate* isolate, Tagged<FixedArray> array_elements,
     ElementsKind elements_kind, int array_length, size_t index) {
   DisallowGarbageCollection no_gc;
@@ -1643,7 +1611,7 @@ ConcurrentLookupIterator::Result ConcurrentLookupIterator::TryGetOwnChar(
 }
 
 // static
-std::optional<Tagged<PropertyCell>>
+base::Optional<Tagged<PropertyCell>>
 ConcurrentLookupIterator::TryGetPropertyCell(
     Isolate* isolate, LocalIsolate* local_isolate,
     DirectHandle<JSGlobalObject> holder, DirectHandle<Name> name) {
@@ -1654,7 +1622,7 @@ ConcurrentLookupIterator::TryGetPropertyCell(
   if (holder_map->has_named_interceptor()) return {};
 
   Tagged<GlobalDictionary> dict = holder->global_dictionary(kAcquireLoad);
-  std::optional<Tagged<PropertyCell>> maybe_cell =
+  base::Optional<Tagged<PropertyCell>> maybe_cell =
       dict->TryFindPropertyCellForConcurrentLookupIterator(isolate, name,
                                                            kRelaxedLoad);
   if (!maybe_cell.has_value()) return {};
@@ -1664,7 +1632,7 @@ ConcurrentLookupIterator::TryGetPropertyCell(
     Tagged<Object> maybe_accessor_pair = cell->value(kAcquireLoad);
     if (!IsAccessorPair(maybe_accessor_pair)) return {};
 
-    std::optional<Tagged<Name>> maybe_cached_property_name =
+    base::Optional<Tagged<Name>> maybe_cached_property_name =
         FunctionTemplateInfo::TryGetCachedPropertyName(
             isolate, Cast<AccessorPair>(maybe_accessor_pair)
                          ->getter(isolate, kAcquireLoad));
@@ -1684,4 +1652,5 @@ ConcurrentLookupIterator::TryGetPropertyCell(
   return cell;
 }
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8

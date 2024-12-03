@@ -5,8 +5,6 @@
 #ifndef V8_BASE_PLATFORM_MUTEX_H_
 #define V8_BASE_PLATFORM_MUTEX_H_
 
-#include <optional>
-
 #include "include/v8config.h"
 
 #if V8_OS_DARWIN
@@ -20,6 +18,7 @@
 #include "src/base/base-export.h"
 #include "src/base/lazy-instance.h"
 #include "src/base/logging.h"
+#include "src/base/optional.h"
 
 #if V8_OS_WIN
 #include "src/base/win32-headers.h"
@@ -379,7 +378,7 @@ class V8_NODISCARD SharedMutexGuardIf final {
   SharedMutexGuardIf& operator=(const SharedMutexGuardIf&) = delete;
 
  private:
-  std::optional<SharedMutexGuard<kIsShared, Behavior>> mutex_;
+  base::Optional<SharedMutexGuard<kIsShared, Behavior>> mutex_;
 };
 
 }  // namespace base

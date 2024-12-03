@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/codegen/code-stub-assembler-inl.h"
 #include "src/codegen/cpu-features.h"
 #include "src/objects/objects-inl.h"
@@ -16,8 +14,6 @@
 namespace v8 {
 namespace internal {
 namespace test_swiss_hash_table {
-
-#include "src/codegen/define-code-stub-assembler-macros.inc"
 
 // The non-SIMD SwissNameDictionary implementation requires 64 bit integer
 // operations, which CSA/Torque don't offer on 32 bit platforms. Therefore, we
@@ -59,8 +55,8 @@ class CSATestRunner {
   void Shrink();
 
   Handle<FixedArray> GetData(InternalIndex entry);
-  void CheckCounts(std::optional<int> capacity, std::optional<int> elements,
-                   std::optional<int> deleted);
+  void CheckCounts(base::Optional<int> capacity, base::Optional<int> elements,
+                   base::Optional<int> deleted);
   void CheckEnumerationOrder(const std::vector<std::string>& expected_keys);
   void CheckCopy();
   void VerifyHeap();
@@ -184,9 +180,9 @@ Handle<FixedArray> CSATestRunner::GetData(InternalIndex entry) {
       table, handle(Smi::FromInt(entry.as_int()), isolate_));
 }
 
-void CSATestRunner::CheckCounts(std::optional<int> capacity,
-                                std::optional<int> elements,
-                                std::optional<int> deleted) {
+void CSATestRunner::CheckCounts(base::Optional<int> capacity,
+                                base::Optional<int> elements,
+                                base::Optional<int> deleted) {
   DirectHandle<FixedArray> counts =
       get_counts_ft_.CallChecked<FixedArray>(table);
 
@@ -473,8 +469,6 @@ const char kCSATestFileName[] = __FILE__;
 SharedSwissTableTests<CSATestRunner, kCSATestFileName> execute_shared_tests_csa;
 
 #endif
-
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace test_swiss_hash_table
 }  // namespace internal

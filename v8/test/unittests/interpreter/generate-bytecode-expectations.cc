@@ -599,11 +599,8 @@ int main(int argc, char** argv) {
   }
 
   V8InitializationScope platform(argv[0]);
-  {
-    v8::Isolate::Scope isolate_scope(platform.isolate());
-    platform.isolate()->AddMessageListener(
-        options.suppress_runtime_errors() ? DiscardMessage : PrintMessage);
-  }
+  platform.isolate()->AddMessageListener(
+      options.suppress_runtime_errors() ? DiscardMessage : PrintMessage);
 
   std::vector<std::string> snippet_list;
 

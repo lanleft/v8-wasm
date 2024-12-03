@@ -4,8 +4,6 @@
 
 #include "src/torque/type-visitor.h"
 
-#include <optional>
-
 #include "src/common/globals.h"
 #include "src/torque/declarable.h"
 #include "src/torque/global-context.h"
@@ -14,7 +12,9 @@
 #include "src/torque/type-inference.h"
 #include "src/torque/type-oracle.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 const Type* TypeVisitor::ComputeType(TypeDeclaration* decl,
                                      MaybeSpecializationKey specialized_from,
@@ -59,7 +59,7 @@ const Type* TypeVisitor::ComputeType(TypeAliasDeclaration* decl,
 }
 
 namespace {
-std::string ComputeGeneratesType(std::optional<std::string> opt_gen,
+std::string ComputeGeneratesType(base::Optional<std::string> opt_gen,
                                  bool enforce_tnode_type) {
   if (!opt_gen) return "";
   const std::string& generates = *opt_gen;
@@ -206,7 +206,7 @@ const StructType* TypeVisitor::ComputeType(
     }
     Field f{field.name_and_type.name->pos,
             struct_type,
-            std::nullopt,
+            base::nullopt,
             {field.name_and_type.name->value, field_type},
             offset.SingleValue(),
             false,
@@ -374,22 +374,23 @@ const Type* TypeVisitor::ComputeType(TypeExpression* type_expression) {
       LanguageServerData::AddDefinition(type_expression->pos, pos);
     }
     return type;
-  }
-  if (auto* union_type = UnionTypeExpression::DynamicCast(type_expression)) {
+
+  } else if (auto* union_type =
+                 UnionTypeExpression::DynamicCast(type_expression)) {
     return TypeOracle::GetUnionType(ComputeType(union_type->a),
                                     ComputeType(union_type->b));
-  }
-  if (auto* function_type_exp =
-          FunctionTypeExpression::DynamicCast(type_expression)) {
+  } else if (auto* function_type_exp =
+                 FunctionTypeExpression::DynamicCast(type_expression)) {
     TypeVector argument_types;
     for (TypeExpression* type_exp : function_type_exp->parameters) {
       argument_types.push_back(ComputeType(type_exp));
     }
     return TypeOracle::GetBuiltinPointerType(
-        std::move(argument_types), ComputeType(function_type_exp->return_type));
+        argument_types, ComputeType(function_type_exp->return_type));
+  } else {
+    auto* precomputed = PrecomputedTypeExpression::cast(type_expression);
+    return precomputed->type;
   }
-  auto* precomputed = PrecomputedTypeExpression::cast(type_expression);
-  return precomputed->type;
 }
 
 Signature TypeVisitor::MakeSignature(const CallableDeclaration* declaration) {
@@ -398,7 +399,7 @@ Signature TypeVisitor::MakeSignature(const CallableDeclaration* declaration) {
     LabelDeclaration def = {label.name, ComputeTypeVector(label.types)};
     definition_vector.push_back(def);
   }
-  std::optional<std::string> arguments_variable;
+  base::Optional<std::string> arguments_variable;
   if (declaration->parameters.has_varargs)
     arguments_variable = declaration->parameters.arguments_variable;
   Signature result{declaration->parameters.names,
@@ -438,7 +439,7 @@ void TypeVisitor::VisitClassFieldsAndMethods(
         ReportError("in-object properties cannot use @customWeakMarking");
       }
     }
-    std::optional<ClassFieldIndexInfo> array_length = field_expression.index;
+    base::Optional<ClassFieldIndexInfo> array_length = field_expression.index;
     const Field& field = class_type->RegisterField(
         {field_expression.name_and_type.name->pos,
          class_type,
@@ -501,7 +502,7 @@ const Type* TypeVisitor::ComputeTypeForStructExpression(
 
   QualifiedName qualified_name{basic->namespace_qualification,
                                basic->name->value};
-  std::optional<GenericType*> maybe_generic_type =
+  base::Optional<GenericType*> maybe_generic_type =
       Declarations::TryLookupGenericType(qualified_name);
 
   StructDeclaration* decl =
@@ -533,7 +534,7 @@ const Type* TypeVisitor::ComputeTypeForStructExpression(
   TypeArgumentInference inference(
       generic_type->generic_parameters(), explicit_type_arguments,
       term_parameters,
-      TransformVector<std::optional<const Type*>>(term_argument_types));
+      TransformVector<base::Optional<const Type*>>(term_argument_types));
 
   if (inference.HasFailed()) {
     ReportError("failed to infer type arguments for struct ", basic->name,
@@ -547,4 +548,6 @@ const Type* TypeVisitor::ComputeTypeForStructExpression(
       TypeOracle::GetGenericTypeInstance(generic_type, inference.GetResult()));
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8

@@ -48,8 +48,7 @@ let table0 = instance.exports.table0;
 
 // Prepare corruption utilities.
 const kHeapObjectTag = 1;
-const kWasmTableType = Sandbox.getInstanceTypeIdFor('WASM_TABLE_OBJECT_TYPE');
-const kWasmTableObjectTypeOffset = Sandbox.getFieldOffset(kWasmTableType, 'raw_type');
+const kWasmTableObjectTypeOffset = 28;
 
 let memory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
 
@@ -70,7 +69,7 @@ assertThrows(
 
 // Corrupt the table's type to accept putting $func0 into it.
 let t0 = getPtr(table0);
-const kRef = 10;
+const kRef = 9;
 const kSmiTagSize = 1;
 const kHeapTypeShift = 5;
 let expected_old_type = (($sig_i_l << kHeapTypeShift) | kRef) << kSmiTagSize;

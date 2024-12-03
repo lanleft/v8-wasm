@@ -75,28 +75,11 @@ struct RuntimeCallDescriptor {
 #endif  // DEBUG
   };
 
-  // TODO(nicohartmann@): Unfortunately, we cannot define builtins with
-  // void/never return types properly (e.g. in Torque), but they typically have
-  // a JSAny dummy return type. Use Void/Never sentinels to express that in
-  // Turboshaft's descriptors. We should find a better way to model this.
-  using Void = V<Any>;
-  using Never = V<Any>;
-
  public:
   struct Abort : public Descriptor<Abort> {
     static constexpr auto kFunction = Runtime::kAbort;
     using arguments_t = std::tuple<V<Smi>>;
     using result_t = V<Object>;
-
-    static constexpr bool kNeedsFrameState = false;
-    static constexpr Operator::Properties kProperties =
-        Operator::kNoDeopt | Operator::kNoThrow;
-  };
-
-  struct BigIntUnaryOp : public Descriptor<BigIntUnaryOp> {
-    static constexpr auto kFunction = Runtime::kBigIntUnaryOp;
-    using arguments_t = std::tuple<V<BigInt>, V<Smi>>;
-    using result_t = V<BigInt>;
 
     static constexpr bool kNeedsFrameState = false;
     static constexpr Operator::Properties kProperties =
@@ -111,26 +94,6 @@ struct RuntimeCallDescriptor {
     static constexpr bool kNeedsFrameState = false;
     static constexpr Operator::Properties kProperties =
         Operator::kNoDeopt | Operator::kNoThrow;
-  };
-
-  struct DebugPrint : public Descriptor<DebugPrint> {
-    static constexpr auto kFunction = Runtime::kDebugPrint;
-    using arguments_t = std::tuple<V<Object>>;
-    using result_t = Void;  // No actual result
-
-    static constexpr bool kNeedsFrameState = false;
-    static constexpr Operator::Properties kProperties =
-        Operator::kNoDeopt | Operator::kNoThrow;
-  };
-
-  struct StackGuard : public Descriptor<StackGuard> {
-    static constexpr auto kFunction = Runtime::kStackGuard;
-    using arguments_t = std::tuple<>;
-    using result_t = V<Object>;
-
-    static constexpr bool kNeedsFrameState = false;
-    // TODO(nicohartmann@): Verify this.
-    static constexpr Operator::Properties kProperties = Operator::kNoProperties;
   };
 
   struct StackGuardWithGap : public Descriptor<StackGuardWithGap> {
@@ -162,15 +125,6 @@ struct RuntimeCallDescriptor {
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
   };
 
-  struct ReThrow : public Descriptor<ReThrow> {
-    static constexpr auto kFunction = Runtime::kReThrow;
-    using arguments_t = std::tuple<V<Object>>;
-    using result_t = Never;
-
-    static constexpr bool kNeedsFrameState = false;
-    static constexpr Operator::Properties kProperties = Operator::kNoThrow;
-  };
-
   struct StringCharCodeAt : public Descriptor<StringCharCodeAt> {
     static constexpr auto kFunction = Runtime::kStringCharCodeAt;
     using arguments_t = std::tuple<V<String>, V<Number>>;
@@ -198,7 +152,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<V<Symbol>>;
     using result_t = V<String>;
 
-    static constexpr bool kNeedsFrameState = true;
+    static constexpr bool kNeedsFrameState = false;
     static constexpr Operator::Properties kProperties = Operator::kNoDeopt;
   };
 
@@ -238,7 +192,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<V<Object>>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -251,7 +205,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -263,7 +217,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<V<Object>, V<Object>>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -275,7 +229,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -286,7 +240,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -297,7 +251,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<V<Object>>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;
@@ -309,7 +263,7 @@ struct RuntimeCallDescriptor {
     using arguments_t = std::tuple<>;
     // Doesn't actually return something, but the actual runtime call descriptor
     // (returned by Linkage::GetRuntimeCallDescriptor) returns 1 instead of 0.
-    using result_t = Never;
+    using result_t = V<Object>;
 
     static constexpr bool kNeedsFrameState = true;
     static constexpr Operator::Properties kProperties = Operator::kNoProperties;

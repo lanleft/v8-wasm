@@ -28,15 +28,11 @@ V8_INLINE void InitSelfIndirectPointerField(Address field_address,
   if (tag == kCodeIndirectPointerTag) {
     CodePointerTable::Space* space =
         isolate.GetCodePointerTableSpaceFor(field_address);
-    handle =
-        IsolateGroup::current()
-            ->code_pointer_table()
-            ->AllocateAndInitializeEntry(space, host.address(), kNullAddress,
-                                         kDefaultCodeEntrypointTag);
+    handle = GetProcessWideCodePointerTable()->AllocateAndInitializeEntry(
+        space, host.address(), kNullAddress, kDefaultCodeEntrypointTag);
   } else {
-    TrustedPointerTable::Space* space =
-        isolate.GetTrustedPointerTableSpaceFor(tag);
-    handle = isolate.GetTrustedPointerTableFor(tag).AllocateAndInitializeEntry(
+    TrustedPointerTable::Space* space = isolate.GetTrustedPointerTableSpace();
+    handle = isolate.GetTrustedPointerTable().AllocateAndInitializeEntry(
         space, host.ptr(), tag);
   }
 
@@ -55,13 +51,13 @@ namespace {
 template <IndirectPointerTag tag>
 V8_INLINE Tagged<Object> ResolveTrustedPointerHandle(
     IndirectPointerHandle handle, IsolateForSandbox isolate) {
-  const TrustedPointerTable& table = isolate.GetTrustedPointerTableFor(tag);
+  const TrustedPointerTable& table = isolate.GetTrustedPointerTable();
   return Tagged<Object>(table.Get(handle, tag));
 }
 
 V8_INLINE Tagged<Object> ResolveCodePointerHandle(
     IndirectPointerHandle handle) {
-  CodePointerTable* table = IsolateGroup::current()->code_pointer_table();
+  CodePointerTable* table = GetProcessWideCodePointerTable();
   return Tagged<Object>(table->GetCodeObject(handle));
 }
 #endif  // V8_ENABLE_SANDBOX
@@ -69,16 +65,18 @@ V8_INLINE Tagged<Object> ResolveCodePointerHandle(
 
 template <IndirectPointerTag tag>
 V8_INLINE Tagged<Object> ReadIndirectPointerField(Address field_address,
-                                                  IsolateForSandbox isolate,
-                                                  AcquireLoadTag) {
+                                                  IsolateForSandbox isolate) {
 #ifdef V8_ENABLE_SANDBOX
   // Load the indirect pointer handle from the object.
-  // Technically, we could use memory_order_consume here as the loads are
-  // dependent, but that appears to be deprecated in favor of acquire ordering.
   auto location = reinterpret_cast<IndirectPointerHandle*>(field_address);
-  IndirectPointerHandle handle = base::AsAtomic32::Acquire_Load(location);
+  IndirectPointerHandle handle = base::AsAtomic32::Relaxed_Load(location);
+  DCHECK_NE(handle, kNullIndirectPointerHandle);
 
   // Resolve the handle. The tag implies the pointer table to use.
+  // Here we generally assume that the load from the table cannot be reordered
+  // before the load of the code object pointer due to the data dependency
+  // between the two loads and therefore use relaxed memory ordering, but
+  // technically we should use memory_order_consume here.
   if constexpr (tag == kUnknownIndirectPointerTag) {
     // In this case we need to check if the handle is a code pointer handle and
     // select the appropriate table based on that.
@@ -103,8 +101,7 @@ V8_INLINE Tagged<Object> ReadIndirectPointerField(Address field_address,
 
 template <IndirectPointerTag tag>
 V8_INLINE void WriteIndirectPointerField(Address field_address,
-                                         Tagged<ExposedTrustedObject> value,
-                                         ReleaseStoreTag) {
+                                         Tagged<ExposedTrustedObject> value) {
 #ifdef V8_ENABLE_SANDBOX
   static_assert(tag != kIndirectPointerNullTag);
   IndirectPointerHandle handle = value->self_indirect_pointer_handle();

@@ -4,8 +4,6 @@
 
 #include "src/maglev/maglev-compilation-info.h"
 
-#include <optional>
-
 #include "src/codegen/compiler.h"
 #include "src/compiler/compilation-dependencies.h"
 #include "src/compiler/js-heap-broker.h"
@@ -56,9 +54,8 @@ class V8_NODISCARD MaglevCompilationHandleScope final {
 };
 
 static bool SpecializeToFunctionContext(
-    Isolate* isolate, BytecodeOffset osr_offset,
-    DirectHandle<JSFunction> function,
-    std::optional<bool> specialize_to_function_context_override) {
+    Isolate* isolate, BytecodeOffset osr_offset, Handle<JSFunction> function,
+    base::Optional<bool> specialize_to_function_context_override) {
   if (osr_offset != BytecodeOffset::None()) return false;
   if (!v8_flags.maglev_function_context_specialization) return false;
   if (specialize_to_function_context_override.has_value()) {
@@ -74,9 +71,9 @@ static bool SpecializeToFunctionContext(
 }  // namespace
 
 MaglevCompilationInfo::MaglevCompilationInfo(
-    Isolate* isolate, IndirectHandle<JSFunction> function,
-    BytecodeOffset osr_offset, std::optional<compiler::JSHeapBroker*> js_broker,
-    std::optional<bool> specialize_to_function_context,
+    Isolate* isolate, Handle<JSFunction> function, BytecodeOffset osr_offset,
+    base::Optional<compiler::JSHeapBroker*> js_broker,
+    base::Optional<bool> specialize_to_function_context,
     bool for_turboshaft_frontend)
     : zone_(isolate->allocator(), kMaglevZoneName),
       broker_(js_broker.has_value()
@@ -146,15 +143,15 @@ void MaglevCompilationInfo::set_code_generator(
 
 namespace {
 template <typename T>
-IndirectHandle<T> CanonicalHandle(CanonicalHandlesMap* canonical_handles,
-                                  Tagged<T> object, Isolate* isolate) {
+Handle<T> CanonicalHandle(CanonicalHandlesMap* canonical_handles,
+                          Tagged<T> object, Isolate* isolate) {
   DCHECK_NOT_NULL(canonical_handles);
   DCHECK(PersistentHandlesScope::IsActive(isolate));
   auto find_result = canonical_handles->FindOrInsert(object);
   if (!find_result.already_exists) {
-    *find_result.entry = IndirectHandle<T>(object, isolate).location();
+    *find_result.entry = Handle<T>(object, isolate).location();
   }
-  return IndirectHandle<T>(*find_result.entry);
+  return Handle<T>(*find_result.entry);
 }
 }  // namespace
 

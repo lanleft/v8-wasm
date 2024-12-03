@@ -4,10 +4,9 @@
 //
 // Flags: --allow-natives-syntax --maglev
 
-const a = [1];
-a[3296295157] = 2;
-
 function foo() {
+  const a = [1];
+  a[3296295157] = 2;
   let [x] = a;
   return x;
 }
@@ -18,4 +17,9 @@ assertEquals(1, foo());
 
 %OptimizeMaglevOnNextCall(foo);
 assertEquals(1, foo());
+
+%OptimizeMaglevOnNextCall(foo);
+assertEquals(1, foo());
+// Check we don't have a deopt loop, ie, we don't try to optimize
+// ArrayProtoNext again.
 assertTrue(isOptimized(foo));

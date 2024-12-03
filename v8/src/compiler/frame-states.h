@@ -15,8 +15,8 @@ namespace v8 {
 namespace internal {
 
 namespace wasm {
-class CanonicalValueType;
-using CanonicalSig = Signature<CanonicalValueType>;
+class ValueType;
+using FunctionSig = Signature<ValueType>;
 }  // namespace wasm
 
 namespace compiler {
@@ -66,7 +66,7 @@ class OutputFrameStateCombine {
 
 // The type of stack frame that a FrameState node represents.
 enum class FrameStateType {
-  kUnoptimizedFunction,    // Represents an UnoptimizedJSFrame.
+  kUnoptimizedFunction,    // Represents an UnoptimizedFrame.
   kInlinedExtraArguments,  // Represents inlined extra arguments.
   kConstructCreateStub,    // Represents a frame created before creating a new
                            // object in the construct stub.
@@ -92,7 +92,7 @@ class FrameStateFunctionInfo {
  public:
   FrameStateFunctionInfo(FrameStateType type, uint16_t parameter_count,
                          uint16_t max_arguments, int local_count,
-                         IndirectHandle<SharedFunctionInfo> shared_info,
+                         Handle<SharedFunctionInfo> shared_info,
                          uint32_t wasm_liftoff_frame_size = 0,
                          uint32_t wasm_function_index = -1)
       : type_(type),
@@ -109,9 +109,7 @@ class FrameStateFunctionInfo {
   int local_count() const { return local_count_; }
   uint16_t parameter_count() const { return parameter_count_; }
   uint16_t max_arguments() const { return max_arguments_; }
-  IndirectHandle<SharedFunctionInfo> shared_info() const {
-    return shared_info_;
-  }
+  Handle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   FrameStateType type() const { return type_; }
   uint32_t wasm_liftoff_frame_size() const {
     return wasm_liftoff_frame_size_;
@@ -138,7 +136,7 @@ class FrameStateFunctionInfo {
   static constexpr uint32_t wasm_liftoff_frame_size_ = 0;
   static constexpr uint32_t wasm_function_index_ = -1;
 #endif
-  const IndirectHandle<SharedFunctionInfo> shared_info_;
+  const Handle<SharedFunctionInfo> shared_info_;
 };
 
 #if V8_ENABLE_WEBASSEMBLY
@@ -146,18 +144,18 @@ class JSToWasmFrameStateFunctionInfo : public FrameStateFunctionInfo {
  public:
   JSToWasmFrameStateFunctionInfo(FrameStateType type, uint16_t parameter_count,
                                  int local_count,
-                                 IndirectHandle<SharedFunctionInfo> shared_info,
-                                 const wasm::CanonicalSig* signature)
+                                 Handle<SharedFunctionInfo> shared_info,
+                                 const wasm::FunctionSig* signature)
       : FrameStateFunctionInfo(type, parameter_count, 0, local_count,
                                shared_info),
         signature_(signature) {
     DCHECK_NOT_NULL(signature);
   }
 
-  const wasm::CanonicalSig* signature() const { return signature_; }
+  const wasm::FunctionSig* signature() const { return signature_; }
 
  private:
-  const wasm::CanonicalSig* const signature_;
+  const wasm::FunctionSig* const signature_;
 };
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -176,8 +174,8 @@ class FrameStateInfo final {
   }
   BytecodeOffset bailout_id() const { return bailout_id_; }
   OutputFrameStateCombine state_combine() const { return frame_state_combine_; }
-  MaybeIndirectHandle<SharedFunctionInfo> shared_info() const {
-    return info_ == nullptr ? MaybeIndirectHandle<SharedFunctionInfo>()
+  MaybeHandle<SharedFunctionInfo> shared_info() const {
+    return info_ == nullptr ? MaybeHandle<SharedFunctionInfo>()
                             : info_->shared_info();
   }
   uint16_t parameter_count() const {
@@ -215,12 +213,12 @@ FrameState CreateStubBuiltinContinuationFrameState(
     JSGraph* graph, Builtin name, Node* context, Node* const* parameters,
     int parameter_count, Node* outer_frame_state,
     ContinuationFrameStateMode mode,
-    const wasm::CanonicalSig* signature = nullptr);
+    const wasm::FunctionSig* signature = nullptr);
 
 #if V8_ENABLE_WEBASSEMBLY
 FrameState CreateJSWasmCallBuiltinContinuationFrameState(
     JSGraph* jsgraph, Node* context, Node* outer_frame_state,
-    const wasm::CanonicalSig* signature);
+    const wasm::FunctionSig* signature);
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 FrameState CreateJavaScriptBuiltinContinuationFrameState(

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --wasm-inlining-call-indirect
+// Flags: --experimental-wasm-inlining-call-indirect
 // Flags: --experimental-wasm-type-reflection
 // Flags: --no-wasm-tier-up --wasm-dynamic-tiering --allow-natives-syntax
 // Flags: --turboshaft-wasm
@@ -15,8 +15,7 @@
 // --trace-wasm, and (for the last test only) --trace or consider the test in
 // message/wasm-speculative-inlining.js.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function CallRefSpecSucceededTest() {
   print(arguments.callee.name);

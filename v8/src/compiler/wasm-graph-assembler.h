@@ -226,6 +226,10 @@ class WasmGraphAssembler : public GraphAssembler {
   Node* LoadByteArrayElement(Node* byte_array, Node* index_intptr,
                              MachineType type);
 
+  Node* LoadExternalPointerArrayElement(Node* array, Node* index_intptr,
+                                        ExternalPointerTag tag,
+                                        Node* isolate_root);
+
   Node* StoreFixedArrayElement(Node* array, int index, Node* value,
                                ObjectAccess access);
 
@@ -241,7 +245,8 @@ class WasmGraphAssembler : public GraphAssembler {
         ObjectAccess(MachineType::AnyTagged(), kFullWriteBarrier));
   }
 
-  Node* LoadWeakFixedArrayElement(Node* fixed_array, Node* index_intptr);
+  Node* LoadWeakArrayListElement(Node* fixed_array, Node* index_intptr,
+                                 MachineType type = MachineType::AnyTagged());
 
   // Functions, SharedFunctionInfos, FunctionData.
 

@@ -4,8 +4,6 @@
 
 #include "src/compiler/common-operator.h"
 
-#include <optional>
-
 #include "src/base/functional.h"
 #include "src/base/lazy-instance.h"
 #include "src/compiler/linkage.h"
@@ -1022,7 +1020,7 @@ const Operator* CommonOperatorBuilder::StaticAssert(const char* source) {
 
 const Operator* CommonOperatorBuilder::SLVerifierHint(
     const Operator* semantics,
-    const std::optional<Type>& override_output_type) {
+    const base::Optional<Type>& override_output_type) {
   return zone()->New<Operator1<SLVerifierHintParameters>>(
       IrOpcode::kSLVerifierHint, Operator::kNoProperties, "SLVerifierHint", 1,
       0, 0, 1, 0, 0, SLVerifierHintParameters(semantics, override_output_type));
@@ -1342,36 +1340,26 @@ const Operator* CommonOperatorBuilder::PointerConstant(intptr_t value) {
 
 const Operator* CommonOperatorBuilder::HeapConstant(
     const Handle<HeapObject>& value) {
-  return zone()->New<Operator1<IndirectHandle<HeapObject>>>(  // --
-      IrOpcode::kHeapConstant, Operator::kPure,               // opcode
-      "HeapConstant",                                         // name
-      0, 0, 0, 1, 0, 0,                                       // counts
-      value);                                                 // parameter
+  return zone()->New<Operator1<Handle<HeapObject>>>(  // --
+      IrOpcode::kHeapConstant, Operator::kPure,       // opcode
+      "HeapConstant",                                 // name
+      0, 0, 0, 1, 0, 0,                               // counts
+      value);                                         // parameter
 }
 
 const Operator* CommonOperatorBuilder::CompressedHeapConstant(
     const Handle<HeapObject>& value) {
-  return zone()->New<Operator1<IndirectHandle<HeapObject>>>(  // --
-      IrOpcode::kCompressedHeapConstant, Operator::kPure,     // opcode
-      "CompressedHeapConstant",                               // name
-      0, 0, 0, 1, 0, 0,                                       // counts
-      value);                                                 // parameter
-}
-
-const Operator* CommonOperatorBuilder::TrustedHeapConstant(
-    const Handle<HeapObject>& value) {
-  return zone()->New<Operator1<IndirectHandle<HeapObject>>>(  // --
-      IrOpcode::kTrustedHeapConstant, Operator::kPure,        // opcode
-      "TrustedHeapConstant",                                  // name
-      0, 0, 0, 1, 0, 0,                                       // counts
-      value);                                                 // parameter
+  return zone()->New<Operator1<Handle<HeapObject>>>(       // --
+      IrOpcode::kCompressedHeapConstant, Operator::kPure,  // opcode
+      "CompressedHeapConstant",                            // name
+      0, 0, 0, 1, 0, 0,                                    // counts
+      value);                                              // parameter
 }
 
 Handle<HeapObject> HeapConstantOf(const Operator* op) {
   DCHECK(IrOpcode::kHeapConstant == op->opcode() ||
-         IrOpcode::kCompressedHeapConstant == op->opcode() ||
-         IrOpcode::kTrustedHeapConstant == op->opcode());
-  return OpParameter<IndirectHandle<HeapObject>>(op);
+         IrOpcode::kCompressedHeapConstant == op->opcode());
+  return OpParameter<Handle<HeapObject>>(op);
 }
 
 const char* StaticAssertSourceOf(const Operator* op) {
@@ -1702,7 +1690,7 @@ const FrameStateFunctionInfo*
 CommonOperatorBuilder::CreateJSToWasmFrameStateFunctionInfo(
     FrameStateType type, uint16_t parameter_count, int local_count,
     Handle<SharedFunctionInfo> shared_info,
-    const wasm::CanonicalSig* signature) {
+    const wasm::FunctionSig* signature) {
   DCHECK_EQ(type, FrameStateType::kJSToWasmBuiltinContinuation);
   DCHECK_NOT_NULL(signature);
   return zone()->New<JSToWasmFrameStateFunctionInfo>(

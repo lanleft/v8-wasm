@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_TURBOSHAFT_MAGLEV_GRAPH_BUILDING_PHASE_H_
 #define V8_COMPILER_TURBOSHAFT_MAGLEV_GRAPH_BUILDING_PHASE_H_
 
-#include <optional>
-
 #include "src/compiler/turboshaft/phase.h"
 #include "src/zone/zone.h"
 
@@ -15,7 +13,7 @@ namespace v8::internal::compiler::turboshaft {
 struct MaglevGraphBuildingPhase {
   DECL_TURBOSHAFT_PHASE_CONSTANTS(MaglevGraphBuilding)
 
-  std::optional<BailoutReason> Run(PipelineData* data, Zone* temp_zone);
+  base::Optional<BailoutReason> Run(PipelineData* data, Zone* temp_zone);
 };
 
 }  // namespace v8::internal::compiler::turboshaft

@@ -739,10 +739,8 @@ bool OutputLongShortNarrowOrNumeric(
   if (value == 0 && display == JSDurationFormat::Display::kAuto)
     return display_negative_sign;
   if (style == JSDurationFormat::FieldStyle::kNumeric) {
-    return Output(type, value,
-                  fmt.grouping(UNumberGroupingStrategy::UNUM_GROUPING_OFF),
-                  addToLast, display_negative_sign, negative_duration,
-                  separator, parts, strings);
+    return Output(type, value, fmt, addToLast, display_negative_sign,
+                  negative_duration, separator, parts, strings);
   }
   return OutputLongShortOrNarrow(
       type, value, display, fmt.unit(unit).unitWidth(ToUNumberUnitWidth(style)),
@@ -764,8 +762,7 @@ bool OutputLongShortNarrowNumericOr2Digit(
       displayRequired) {
     if (style == JSDurationFormat::FieldStyle::k2Digit) {
       return Output(type, value,
-                    fmt.integerWidth(icu::number::IntegerWidth::zeroFillTo(2))
-                        .grouping(UNumberGroupingStrategy::UNUM_GROUPING_OFF),
+                    fmt.integerWidth(icu::number::IntegerWidth::zeroFillTo(2)),
                     maybeAddToLast, display_negative_sign, negative_duration,
                     separator, parts, strings);
     }
@@ -1079,7 +1076,7 @@ MaybeHandle<JSArray> FormattedListToJSArray(
                              separator_string);
           } break;
           case Part::Type::kFormatted:
-            DirectHandle<String> type_string =
+            Handle<String> type_string =
                 factory->NewStringFromAsciiChecked(it.type.c_str());
             Maybe<int> index_after_add = Intl::AddNumberElements(
                 isolate, it.formatted, array, index, type_string);

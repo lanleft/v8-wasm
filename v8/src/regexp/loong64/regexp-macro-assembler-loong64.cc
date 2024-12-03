@@ -125,8 +125,8 @@ RegExpMacroAssemblerLOONG64::~RegExpMacroAssemblerLOONG64() {
   fallback_label_.Unuse();
 }
 
-int RegExpMacroAssemblerLOONG64::stack_limit_slack_slot_count() {
-  return RegExpStack::kStackLimitSlackSlotCount;
+int RegExpMacroAssemblerLOONG64::stack_limit_slack() {
+  return RegExpStack::kStackLimitSlack;
 }
 
 void RegExpMacroAssemblerLOONG64::AdvanceCurrentPosition(int by) {
@@ -491,21 +491,8 @@ void RegExpMacroAssemblerLOONG64::CheckBitInTable(Handle<ByteArray> table,
     __ Add_d(a0, a0, current_character());
   }
 
-  __ Ld_bu(a0, FieldMemOperand(a0, OFFSET_OF_DATA_START(ByteArray)));
+  __ Ld_bu(a0, FieldMemOperand(a0, ByteArray::kHeaderSize));
   BranchOrBacktrack(on_bit_set, ne, a0, Operand(zero_reg));
-}
-
-void RegExpMacroAssemblerLOONG64::SkipUntilBitInTable(
-    int cp_offset, Handle<ByteArray> table, Handle<ByteArray> nibble_table,
-    int advance_by) {
-  // TODO(pthier): Optimize. Table can be loaded outside of the loop.
-  Label cont, again;
-  Bind(&again);
-  LoadCurrentCharacter(cp_offset, &cont, true);
-  CheckBitInTable(table, &cont);
-  AdvanceCurrentPosition(advance_by);
-  GoTo(&again);
-  Bind(&cont);
 }
 
 bool RegExpMacroAssemblerLOONG64::CheckSpecialClassRanges(
@@ -653,8 +640,7 @@ void RegExpMacroAssemblerLOONG64::PopRegExpBasePointer(
   StoreRegExpStackPointerToMemory(stack_pointer_out, scratch);
 }
 
-Handle<HeapObject> RegExpMacroAssemblerLOONG64::GetCode(Handle<String> source,
-                                                        RegExpFlags flags) {
+Handle<HeapObject> RegExpMacroAssemblerLOONG64::GetCode(Handle<String> source) {
   Label return_v0;
   if (0 /* todo masm_->has_exception()*/) {
     // If the code gets corrupted due to long regular expressions and lack of
@@ -1001,7 +987,7 @@ Handle<HeapObject> RegExpMacroAssemblerLOONG64::GetCode(Handle<String> source,
           .set_empty_source_position_table()
           .Build();
   LOG(masm_->isolate(),
-      RegExpCodeCreateEvent(Cast<AbstractCode>(code), source, flags));
+      RegExpCodeCreateEvent(Cast<AbstractCode>(code), source));
   return Cast<HeapObject>(code);
 }
 

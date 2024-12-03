@@ -4,8 +4,6 @@
 
 #include "src/compiler/machine-operator.h"
 
-#include <optional>
-
 #include "src/base/lazy-instance.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/operator.h"
@@ -418,37 +416,6 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   IF_WASM(V, F32x4Trunc, Operator::kNoProperties, 1, 0, 1)                     \
   IF_WASM(V, F32x4NearestInt, Operator::kNoProperties, 1, 0, 1)                \
   IF_WASM(V, F32x4DemoteF64x2Zero, Operator::kNoProperties, 1, 0, 1)           \
-  IF_WASM(V, F16x8Splat, Operator::kNoProperties, 1, 0, 1)                     \
-  IF_WASM(V, F16x8Abs, Operator::kNoProperties, 1, 0, 1)                       \
-  IF_WASM(V, F16x8Neg, Operator::kNoProperties, 1, 0, 1)                       \
-  IF_WASM(V, F16x8Sqrt, Operator::kNoProperties, 1, 0, 1)                      \
-  IF_WASM(V, F16x8Ceil, Operator::kNoProperties, 1, 0, 1)                      \
-  IF_WASM(V, F16x8Floor, Operator::kNoProperties, 1, 0, 1)                     \
-  IF_WASM(V, F16x8Trunc, Operator::kNoProperties, 1, 0, 1)                     \
-  IF_WASM(V, F16x8NearestInt, Operator::kNoProperties, 1, 0, 1)                \
-  IF_WASM(V, F16x8Add, Operator::kCommutative, 2, 0, 1)                        \
-  IF_WASM(V, F16x8Sub, Operator::kNoProperties, 2, 0, 1)                       \
-  IF_WASM(V, F16x8Mul, Operator::kCommutative, 2, 0, 1)                        \
-  IF_WASM(V, F16x8Div, Operator::kNoProperties, 2, 0, 1)                       \
-  IF_WASM(V, F16x8Min, Operator::kAssociative | Operator::kCommutative, 2, 0,  \
-          1)                                                                   \
-  IF_WASM(V, F16x8Max, Operator::kAssociative | Operator::kCommutative, 2, 0,  \
-          1)                                                                   \
-  IF_WASM(V, F16x8Pmin, Operator::kNoProperties, 2, 0, 1)                      \
-  IF_WASM(V, F16x8Pmax, Operator::kNoProperties, 2, 0, 1)                      \
-  IF_WASM(V, F16x8Eq, Operator::kCommutative, 2, 0, 1)                         \
-  IF_WASM(V, F16x8Ne, Operator::kCommutative, 2, 0, 1)                         \
-  IF_WASM(V, F16x8Lt, Operator::kNoProperties, 2, 0, 1)                        \
-  IF_WASM(V, F16x8Le, Operator::kNoProperties, 2, 0, 1)                        \
-  IF_WASM(V, F16x8SConvertI16x8, Operator::kNoProperties, 1, 0, 1)             \
-  IF_WASM(V, F16x8UConvertI16x8, Operator::kNoProperties, 1, 0, 1)             \
-  IF_WASM(V, I16x8UConvertF16x8, Operator::kNoProperties, 1, 0, 1)             \
-  IF_WASM(V, I16x8SConvertF16x8, Operator::kNoProperties, 1, 0, 1)             \
-  IF_WASM(V, F16x8DemoteF32x4Zero, Operator::kNoProperties, 1, 0, 1)           \
-  IF_WASM(V, F16x8DemoteF64x2Zero, Operator::kNoProperties, 1, 0, 1)           \
-  IF_WASM(V, F32x4PromoteLowF16x8, Operator::kNoProperties, 1, 0, 1)           \
-  IF_WASM(V, F16x8Qfma, Operator::kNoProperties, 3, 0, 1)                      \
-  IF_WASM(V, F16x8Qfms, Operator::kNoProperties, 3, 0, 1)                      \
   IF_WASM(V, I64x4Splat, Operator::kNoProperties, 1, 0, 1)                     \
   IF_WASM(V, I64x2Splat, Operator::kNoProperties, 1, 0, 1)                     \
   IF_WASM(V, I64x2SplatI32Pair, Operator::kNoProperties, 2, 0, 1)              \
@@ -616,8 +583,6 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   IF_WASM(V, F64x4Max, Operator::kAssociative | Operator::kCommutative, 2, 0,  \
           1)                                                                   \
   IF_WASM(V, F64x4Add, Operator::kCommutative, 2, 0, 1)                        \
-  IF_WASM(V, F64x4Abs, Operator::kNoProperties, 1, 0, 1)                       \
-  IF_WASM(V, F64x4Neg, Operator::kNoProperties, 1, 0, 1)                       \
   IF_WASM(V, F64x4Sqrt, Operator::kNoProperties, 1, 0, 1)                      \
   IF_WASM(V, F32x8Abs, Operator::kNoProperties, 1, 0, 1)                       \
   IF_WASM(V, F32x8Neg, Operator::kNoProperties, 1, 0, 1)                       \
@@ -759,9 +724,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   IF_WASM(V, I16x16RelaxedLaneSelect, Operator::kNoProperties, 3, 0, 1)        \
   IF_WASM(V, I8x32RelaxedLaneSelect, Operator::kNoProperties, 3, 0, 1)         \
   IF_WASM(V, I32x8DotI8x32I7x32AddS, Operator::kNoProperties, 3, 0, 1)         \
-  IF_WASM(V, I16x16DotI8x32I7x32S, Operator::kNoProperties, 2, 0, 1)           \
-  IF_WASM(V, I32x8RelaxedTruncF32x8S, Operator::kNoProperties, 1, 0, 1)        \
-  IF_WASM(V, I32x8RelaxedTruncF32x8U, Operator::kNoProperties, 1, 0, 1)
+  IF_WASM(V, I16x16DotI8x32I7x32S, Operator::kNoProperties, 2, 0, 1)
 
 // The format is:
 // V(Name, properties, value_input_count, control_input_count, output_count)
@@ -903,8 +866,7 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(Word32Select, Operator::kNoProperties, 3, 0, 1)         \
   V(Word64Select, Operator::kNoProperties, 3, 0, 1)         \
   V(Float32Select, Operator::kNoProperties, 3, 0, 1)        \
-  V(Float64Select, Operator::kNoProperties, 3, 0, 1)        \
-  V(TruncateFloat64ToFloat16, Operator::kNoProperties, 1, 0, 1)
+  V(Float64Select, Operator::kNoProperties, 3, 0, 1)
 
 // The format is:
 // V(Name, properties, value_input_count, control_input_count, output_count)
@@ -917,7 +879,6 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(Int64MulWithOverflow, Operator::kAssociative | Operator::kCommutative)
 
 #define MACHINE_TYPE_LIST(V) \
-  V(Float16)                 \
   V(Float32)                 \
   V(Float64)                 \
   V(Simd128)                 \
@@ -941,7 +902,6 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(Simd256)
 
 #define MACHINE_REPRESENTATION_LIST(V) \
-  V(kFloat16)                          \
   V(kFloat32)                          \
   V(kFloat64)                          \
   V(kSimd128)                          \
@@ -1137,7 +1097,6 @@ std::ostream& operator<<(std::ostream& os, TruncateKind kind) {
   V(F32x4, 4)                \
   V(I64x2, 2)                \
   V(I32x4, 4)                \
-  V(F16x8, 8)                \
   V(I16x8, 8)                \
   V(I8x16, 16)
 
@@ -2141,7 +2100,7 @@ const Operator* MachineOperatorBuilder::StoreIndirectPointer(
   }
 }
 
-std::optional<const Operator*> MachineOperatorBuilder::TryStorePair(
+base::Optional<const Operator*> MachineOperatorBuilder::TryStorePair(
     StoreRepresentation store_rep1, StoreRepresentation store_rep2) {
   DCHECK_NE(store_rep1.representation(), MachineRepresentation::kMapWord);
 
@@ -2650,7 +2609,6 @@ EXTRACT_LANE_OP(F64x2, , 2)
 EXTRACT_LANE_OP(F32x4, , 4)
 EXTRACT_LANE_OP(I64x2, , 2)
 EXTRACT_LANE_OP(I32x4, , 4)
-EXTRACT_LANE_OP(F16x8, , 8)
 EXTRACT_LANE_OP(I16x8, U, 8)
 EXTRACT_LANE_OP(I16x8, S, 8)
 EXTRACT_LANE_OP(I8x16, U, 16)

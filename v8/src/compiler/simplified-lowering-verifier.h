@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_SIMPLIFIED_LOWERING_VERIFIER_H_
 #define V8_COMPILER_SIMPLIFIED_LOWERING_VERIFIER_H_
 
-#include <optional>
-
 #include "src/base/container-utils.h"
 #include "src/compiler/opcodes.h"
 #include "src/compiler/representation-change.h"
@@ -20,7 +18,7 @@ class OperationTyper;
 class SimplifiedLoweringVerifier final {
  public:
   struct PerNodeData {
-    std::optional<Type> type = std::nullopt;
+    base::Optional<Type> type = base::nullopt;
     Truncation truncation = Truncation::Any(IdentifyZeros::kDistinguishZeros);
   };
 
@@ -53,7 +51,7 @@ class SimplifiedLoweringVerifier final {
     return machine_uses_of_constants_;
   }
 
-  std::optional<Type> GetType(Node* node) const {
+  base::Optional<Type> GetType(Node* node) const {
     if (NodeProperties::IsTyped(node)) {
       Type type = NodeProperties::GetType(node);
       // We do not use the static type for constants, even if we have one,
@@ -71,7 +69,7 @@ class SimplifiedLoweringVerifier final {
     if (node->id() < data_.size()) {
       return data_[node->id()].type;
     }
-    return std::nullopt;
+    return base::nullopt;
   }
 
  private:

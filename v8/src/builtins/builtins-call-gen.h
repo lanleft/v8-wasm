@@ -5,8 +5,6 @@
 #ifndef V8_BUILTINS_BUILTINS_CALL_GEN_H_
 #define V8_BUILTINS_BUILTINS_CALL_GEN_H_
 
-#include <optional>
-
 #include "src/codegen/code-stub-assembler.h"
 
 namespace v8 {
@@ -18,25 +16,25 @@ class CallOrConstructBuiltinsAssembler : public CodeStubAssembler {
       : CodeStubAssembler(state) {}
 
   void CallOrConstructWithArrayLike(TNode<Object> target,
-                                    std::optional<TNode<Object>> new_target,
+                                    base::Optional<TNode<Object>> new_target,
                                     TNode<Object> arguments_list,
                                     TNode<Context> context);
   void CallOrConstructDoubleVarargs(TNode<Object> target,
-                                    std::optional<TNode<Object>> new_target,
+                                    base::Optional<TNode<Object>> new_target,
                                     TNode<FixedDoubleArray> elements,
                                     TNode<Int32T> length,
                                     TNode<Int32T> args_count,
                                     TNode<Context> context, TNode<Int32T> kind);
   void CallOrConstructWithSpread(TNode<Object> target,
-                                 std::optional<TNode<Object>> new_target,
+                                 base::Optional<TNode<Object>> new_target,
                                  TNode<Object> spread, TNode<Int32T> args_count,
                                  TNode<Context> context);
 
   template <class Descriptor>
-  void CallReceiver(Builtin id, std::optional<TNode<Object>> = std::nullopt);
+  void CallReceiver(Builtin id, base::Optional<TNode<Object>> = base::nullopt);
   template <class Descriptor>
   void CallReceiver(Builtin id, TNode<Int32T> argc, TNode<UintPtrT> slot,
-                    std::optional<TNode<Object>> = std::nullopt);
+                    base::Optional<TNode<Object>> = base::nullopt);
 
   enum class CallFunctionTemplateMode : uint8_t {
     // This version is for using from IC system and generic builtins like

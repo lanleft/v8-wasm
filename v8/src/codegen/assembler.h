@@ -42,7 +42,6 @@
 #include <ostream>
 #include <type_traits>
 #include <unordered_map>
-#include <variant>
 
 #include "src/base/macros.h"
 #include "src/base/memory.h"
@@ -257,14 +256,6 @@ struct V8_EXPORT_PRIVATE AssemblerOptions {
   static AssemblerOptions Default(Isolate* isolate);
 };
 
-// Wrapper around an optional Zone*. If the zone isn't present, the
-// AccountingAllocator* may be used to create a fresh one.
-//
-// This is useful for assemblers that want to Zone-allocate temporay data,
-// without forcing all users to have to create a Zone before using the
-// assembler.
-using MaybeAssemblerZone = std::variant<Zone*, AccountingAllocator*>;
-
 class AssemblerBuffer {
  public:
   virtual ~AssemblerBuffer() = default;
@@ -317,8 +308,7 @@ class SlotDescriptor {
   }
 
  private:
-  explicit SlotDescriptor(IndirectPointerTag tag)
-      : indirect_pointer_tag_(tag) {}
+  SlotDescriptor(IndirectPointerTag tag) : indirect_pointer_tag_(tag) {}
 
   // If the tag is null, this object describes a direct pointer slot.
   IndirectPointerTag indirect_pointer_tag_;
@@ -495,14 +485,14 @@ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
  protected:
   // Add 'target' to the {code_targets_} vector, if necessary, and return the
   // offset at which it is stored.
-  int AddCodeTarget(IndirectHandle<Code> target);
-  IndirectHandle<Code> GetCodeTarget(intptr_t code_target_index) const;
+  int AddCodeTarget(Handle<Code> target);
+  Handle<Code> GetCodeTarget(intptr_t code_target_index) const;
 
   // Add 'object' to the {embedded_objects_} vector and return the index at
   // which it is stored.
   using EmbeddedObjectIndex = size_t;
-  EmbeddedObjectIndex AddEmbeddedObject(IndirectHandle<HeapObject> object);
-  IndirectHandle<HeapObject> GetEmbeddedObject(EmbeddedObjectIndex index) const;
+  EmbeddedObjectIndex AddEmbeddedObject(Handle<HeapObject> object);
+  Handle<HeapObject> GetEmbeddedObject(EmbeddedObjectIndex index) const;
 
   // The buffer into which code and relocation info are generated.
   std::unique_ptr<AssemblerBuffer> buffer_;
@@ -537,6 +527,13 @@ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
         !v8_flags.debug_code) {
       return false;
     }
+    if (RelocInfo::IsOnlyForDisassembler(rmode)) {
+#ifdef ENABLE_DISASSEMBLER
+      return true;
+#else
+      return false;
+#endif  // ENABLE_DISASSEMBLER
+    }
     return true;
   }
 
@@ -549,20 +546,19 @@ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
   // guaranteed to fit in the instruction's offset field. We keep track of the
   // code handles we encounter in calls in this vector, and encode the index of
   // the code handle in the vector instead.
-  std::vector<IndirectHandle<Code>> code_targets_;
+  std::vector<Handle<Code>> code_targets_;
 
   // If an assembler needs a small number to refer to a heap object handle
   // (for example, because there are only 32bit available on a 64bit arch), the
   // assembler adds the object into this vector using AddEmbeddedObject, and
   // may then refer to the heap object using the handle's index in this vector.
-  std::vector<IndirectHandle<HeapObject>> embedded_objects_;
+  std::vector<Handle<HeapObject>> embedded_objects_;
 
   // Embedded objects are deduplicated based on handle location. This is a
   // compromise that is almost as effective as deduplication based on actual
   // heap object addresses maintains GC safety.
-  std::unordered_map<IndirectHandle<HeapObject>, EmbeddedObjectIndex,
-                     IndirectHandle<HeapObject>::hash,
-                     IndirectHandle<HeapObject>::equal_to>
+  std::unordered_map<Handle<HeapObject>, EmbeddedObjectIndex,
+                     Handle<HeapObject>::hash, Handle<HeapObject>::equal_to>
       embedded_objects_map_;
 
   const AssemblerOptions options_;

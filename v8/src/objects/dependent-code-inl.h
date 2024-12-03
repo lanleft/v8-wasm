@@ -5,7 +5,6 @@
 #ifndef V8_OBJECTS_DEPENDENT_CODE_INL_H_
 #define V8_OBJECTS_DEPENDENT_CODE_INL_H_
 
-#include "src/heap/heap-layout-inl.h"
 #include "src/objects/dependent-code.h"
 #include "src/objects/fixed-array-inl.h"
 #include "src/objects/tagged.h"
@@ -32,8 +31,7 @@ void DependentCode::DeoptimizeDependencyGroups(Isolate* isolate,
                                                Tagged<ObjectT> object,
                                                DependencyGroups groups) {
   // Shared objects are designed to never invalidate code.
-  DCHECK(!HeapLayout::InAnySharedSpace(object) &&
-         !HeapLayout::InReadOnlySpace(object));
+  DCHECK(!InAnySharedSpace(object) && !InReadOnlySpace(object));
   object->dependent_code()->DeoptimizeDependencyGroups(isolate, groups);
 }
 
@@ -43,8 +41,7 @@ bool DependentCode::MarkCodeForDeoptimization(Isolate* isolate,
                                               Tagged<ObjectT> object,
                                               DependencyGroups groups) {
   // Shared objects are designed to never invalidate code.
-  DCHECK(!HeapLayout::InAnySharedSpace(object) &&
-         !HeapLayout::InReadOnlySpace(object));
+  DCHECK(!InAnySharedSpace(object) && !InReadOnlySpace(object));
   return object->dependent_code()->MarkCodeForDeoptimization(isolate, groups);
 }
 

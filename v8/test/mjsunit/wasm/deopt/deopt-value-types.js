@@ -3,12 +3,11 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
 // Test for different types of stack, local and literal values.
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestDeoptTypesLiteralsInLocals() {
   var builder = new WasmModuleBuilder();
@@ -81,14 +80,10 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   %WasmTierUpFunction(wasm.literals);
   assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.literals));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.literals));
   // Deopt happened, the result should still be the same.
   assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.literals));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.literals));
 })();
 
 (function TestDeoptTypesLiteralsOnValueStack() {
@@ -159,14 +154,10 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
   %WasmTierUpFunction(wasm.literals);
   assertEqualsDelta(expected, wasm.literals(wasm.nop1), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.literals));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.literals));
   // Deopt happened, the result should still be the same.
   assertEqualsDelta(expected, wasm.literals(wasm.nop2), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.literals));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.literals));
 })();
 
 (function TestDeoptTypesNonLiterals() {
@@ -235,12 +226,8 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
   %WasmTierUpFunction(wasm.locals);
   assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop1), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.locals));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.locals));
   // Deopt happened, the result should still be the same.
   assertEqualsDelta(42 * 7, wasm.locals(42, wasm.nop2), delta);
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.locals));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.locals));
 })();

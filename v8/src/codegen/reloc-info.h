@@ -117,11 +117,12 @@ class RelocInfo {
 
     WASM_CALL,  // FIRST_SHAREABLE_RELOC_MODE
     WASM_STUB_CALL,
-    WASM_INDIRECT_CALL_TARGET,  // A Wasm fn address embedded as a full pointer.
-    WASM_CANONICAL_SIG_ID,
 
     EXTERNAL_REFERENCE,  // The address of an external C++ function.
     INTERNAL_REFERENCE,  // An address inside the same function.
+
+    // The relative address (target-table) in the switch table.
+    RELATIVE_SWITCH_TABLE_ENTRY,
 
     // Encoded internal reference, used only on RISCV64, RISCV32, MIPS64
     // and PPC.
@@ -207,14 +208,9 @@ class RelocInfo {
                            LAST_EMBEDDED_OBJECT_RELOC_MODE);
   }
   static constexpr bool IsWasmCall(Mode mode) { return mode == WASM_CALL; }
+  static constexpr bool IsWasmReference(Mode mode) { return mode == WASM_CALL; }
   static constexpr bool IsWasmStubCall(Mode mode) {
     return mode == WASM_STUB_CALL;
-  }
-  static constexpr bool IsWasmCanonicalSigId(Mode mode) {
-    return mode == WASM_CANONICAL_SIG_ID;
-  }
-  static constexpr bool IsWasmIndirectCallTarget(Mode mode) {
-    return mode == WASM_INDIRECT_CALL_TARGET;
   }
   static constexpr bool IsConstPool(Mode mode) { return mode == CONST_POOL; }
   static constexpr bool IsVeneerPool(Mode mode) { return mode == VENEER_POOL; }
@@ -233,6 +229,9 @@ class RelocInfo {
   }
   static constexpr bool IsInternalReference(Mode mode) {
     return mode == INTERNAL_REFERENCE;
+  }
+  static constexpr bool IsRelativeSwitchTableEntry(Mode mode) {
+    return mode == RELATIVE_SWITCH_TABLE_ENTRY;
   }
   static constexpr bool IsInternalReferenceEncoded(Mode mode) {
     return mode == INTERNAL_REFERENCE_ENCODED;
@@ -262,12 +261,15 @@ class RelocInfo {
 #endif
   }
 
+  static bool IsOnlyForDisassembler(Mode mode) {
+    return mode == RELATIVE_SWITCH_TABLE_ENTRY;
+  }
+
   static constexpr int ModeMask(Mode mode) { return 1 << mode; }
 
   // Accessors
   Address pc() const { return pc_; }
   Mode rmode() const { return rmode_; }
-  Address constant_pool() const { return constant_pool_; }
   intptr_t data() const { return data_; }
 
   // Is the pointer this relocation info refers to coded like a plain pointer
@@ -285,8 +287,6 @@ class RelocInfo {
 
   Address wasm_call_address() const;
   Address wasm_stub_call_address() const;
-  V8_EXPORT_PRIVATE uint32_t wasm_canonical_sig_id() const;
-  V8_INLINE WasmCodePointer wasm_indirect_call_target() const;
 
   uint32_t wasm_call_tag() const;
 
@@ -410,11 +410,10 @@ class WritableRelocInfo : public RelocInfo {
  public:
   WritableRelocInfo(WritableJitAllocation& jit_allocation, Address pc,
                     Mode rmode)
-      : RelocInfo(pc, rmode), jit_allocation_(jit_allocation) {}
+      : RelocInfo(pc, rmode) {}
   WritableRelocInfo(WritableJitAllocation& jit_allocation, Address pc,
                     Mode rmode, intptr_t data, Address constant_pool)
-      : RelocInfo(pc, rmode, data, constant_pool),
-        jit_allocation_(jit_allocation) {}
+      : RelocInfo(pc, rmode, data, constant_pool) {}
 
   // Apply a relocation by delta bytes. When the code object is moved, PC
   // relative addresses have to be updated as well as absolute addresses
@@ -424,10 +423,6 @@ class WritableRelocInfo : public RelocInfo {
 
   void set_wasm_call_address(Address);
   void set_wasm_stub_call_address(Address);
-  void set_wasm_canonical_sig_id(uint32_t);
-  V8_INLINE void set_wasm_indirect_call_target(
-      WasmCodePointer,
-      ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
 
   void set_target_address(
       Tagged<InstructionStream> host, Address target,
@@ -448,11 +443,6 @@ class WritableRelocInfo : public RelocInfo {
 
   V8_INLINE void set_target_external_reference(
       Address, ICacheFlushMode icache_flush_mode = FLUSH_ICACHE_IF_NEEDED);
-
-  V8_INLINE WritableJitAllocation& jit_allocation() { return jit_allocation_; }
-
- private:
-  WritableJitAllocation& jit_allocation_;
 };
 
 // RelocInfoWriter serializes a stream of relocation info. It writes towards

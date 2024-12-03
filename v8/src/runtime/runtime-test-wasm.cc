@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <cinttypes>
-#include <type_traits>
 
 #include "include/v8-wasm.h"
 #include "src/base/memory.h"
@@ -12,10 +11,8 @@
 #include "src/execution/arguments-inl.h"
 #include "src/execution/frames-inl.h"
 #include "src/heap/heap-inl.h"
-#include "src/objects/property-descriptor.h"
 #include "src/objects/smi.h"
 #include "src/trap-handler/trap-handler.h"
-#include "src/wasm/function-body-decoder.h"
 #include "src/wasm/fuzzing/random-module-generation.h"
 #include "src/wasm/memory-tracing.h"
 #include "src/wasm/module-compiler.h"
@@ -29,11 +26,6 @@
 namespace v8::internal {
 
 namespace {
-V8_WARN_UNUSED_RESULT Tagged<Object> CrashUnlessFuzzing(Isolate* isolate) {
-  CHECK(v8_flags.fuzzing);
-  return ReadOnlyRoots(isolate).undefined_value();
-}
-
 struct WasmCompileControls {
   uint32_t MaxWasmBufferSize = std::numeric_limits<uint32_t>::max();
   bool AllowAnySizeForAsync = true;
@@ -110,10 +102,8 @@ bool WasmInstanceOverride(const v8::FunctionCallbackInfo<v8::Value>& info) {
 // parameters when it is called.
 RUNTIME_FUNCTION(Runtime_SetWasmCompileControls) {
   HandleScope scope(isolate);
-  if (args.length() != 2 || !IsSmi(args[0]) || !IsBoolean(args[1])) {
-    return CrashUnlessFuzzing(isolate);
-  }
   v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+  CHECK_EQ(args.length(), 2);
   int block_size = args.smi_value_at(0);
   bool allow_async = Cast<Boolean>(args[1])->ToBool(isolate);
   base::MutexGuard guard(g_PerIsolateWasmControlsMutex.Pointer());
@@ -127,6 +117,7 @@ RUNTIME_FUNCTION(Runtime_SetWasmCompileControls) {
 RUNTIME_FUNCTION(Runtime_SetWasmInstantiateControls) {
   HandleScope scope(isolate);
   v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+  CHECK_EQ(args.length(), 0);
   v8_isolate->SetWasmInstanceCallback(WasmInstanceOverride);
   return ReadOnlyRoots(isolate).undefined_value();
 }
@@ -156,9 +147,7 @@ int WasmStackSize(Isolate* isolate) {
 
 RUNTIME_FUNCTION(Runtime_CountUnoptimizedWasmToJSWrapper) {
   SealHandleScope shs(isolate);
-  if (args.length() != 1 || !IsWasmInstanceObject(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Tagged<WasmInstanceObject> instance_object =
       Cast<WasmInstanceObject>(args[0]);
   Tagged<WasmTrustedInstanceData> trusted_data =
@@ -191,14 +180,13 @@ RUNTIME_FUNCTION(Runtime_CountUnoptimizedWasmToJSWrapper) {
 
 RUNTIME_FUNCTION(Runtime_HasUnoptimizedWasmToJSWrapper) {
   SealHandleScope shs{isolate};
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Tagged<JSFunction> function = Cast<JSFunction>(args[0]);
   Tagged<SharedFunctionInfo> sfi = function->shared();
-  if (!sfi->HasWasmFunctionData()) return isolate->heap()->ToBoolean(false);
-  Tagged<WasmFunctionData> func_data = sfi->wasm_function_data();
-  Address call_target = func_data->internal()->call_target();
+  Tagged<Object> func_data = sfi->GetData(isolate);
+  if (!IsWasmFunctionData(func_data)) return isolate->heap()->ToBoolean(false);
+  Address call_target =
+      Cast<WasmFunctionData>(func_data)->internal()->call_target();
 
   Address wrapper = Builtins::EntryOf(Builtin::kWasmToJsWrapperAsm, isolate);
   return isolate->heap()->ToBoolean(call_target == wrapper);
@@ -206,9 +194,7 @@ RUNTIME_FUNCTION(Runtime_HasUnoptimizedWasmToJSWrapper) {
 
 RUNTIME_FUNCTION(Runtime_HasUnoptimizedJSToJSWrapper) {
   HandleScope shs(isolate);
-  if (args.length() != 1) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<Object> param = args.at<Object>(0);
   if (!WasmJSFunction::IsWasmJSFunction(*param)) {
     return isolate->heap()->ToBoolean(false);
@@ -241,7 +227,6 @@ RUNTIME_FUNCTION(Runtime_HasUnoptimizedJSToJSWrapper) {
 
 RUNTIME_FUNCTION(Runtime_WasmTraceEnter) {
   HandleScope shs(isolate);
-  // This isn't exposed to fuzzers so doesn't need to handle invalid arguments.
   DCHECK_EQ(0, args.length());
   PrintIndentation(WasmStackSize(isolate));
 
@@ -250,9 +235,6 @@ RUNTIME_FUNCTION(Runtime_WasmTraceEnter) {
   DebuggableStackFrameIterator it(isolate);
   DCHECK(!it.done());
   DCHECK(it.is_wasm());
-#if V8_ENABLE_DRUMBRAKE
-  DCHECK(!it.is_wasm_interpreter_entry());
-#endif  // V8_ENABLE_DRUMBRAKE
   WasmFrame* frame = WasmFrame::cast(it.frame());
 
   // Find the function name.
@@ -279,7 +261,6 @@ RUNTIME_FUNCTION(Runtime_WasmTraceEnter) {
 
 RUNTIME_FUNCTION(Runtime_WasmTraceExit) {
   HandleScope shs(isolate);
-  // This isn't exposed to fuzzers so doesn't need to handle invalid arguments.
   DCHECK_EQ(1, args.length());
   Tagged<Smi> return_addr_smi = Cast<Smi>(args[0]);
 
@@ -291,9 +272,6 @@ RUNTIME_FUNCTION(Runtime_WasmTraceExit) {
   DebuggableStackFrameIterator it(isolate);
   DCHECK(!it.done());
   DCHECK(it.is_wasm());
-#if V8_ENABLE_DRUMBRAKE
-  DCHECK(!it.is_wasm_interpreter_entry());
-#endif  // V8_ENABLE_DRUMBRAKE
   WasmFrame* frame = WasmFrame::cast(it.frame());
   int func_index = frame->function_index();
   const wasm::WasmModule* module = frame->trusted_instance_data()->module();
@@ -341,9 +319,7 @@ RUNTIME_FUNCTION(Runtime_WasmTraceExit) {
 
 RUNTIME_FUNCTION(Runtime_IsAsmWasmCode) {
   SealHandleScope shs(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   auto function = Cast<JSFunction>(args[0]);
   if (!function->shared()->HasAsmWasmData()) {
     return ReadOnlyRoots(isolate).false_value();
@@ -367,9 +343,7 @@ bool DisallowWasmCodegenFromStringsCallback(v8::Local<v8::Context> context,
 
 RUNTIME_FUNCTION(Runtime_DisallowWasmCodegen) {
   SealHandleScope shs(isolate);
-  if (args.length() != 1 || !IsBoolean(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   bool flag = Cast<Boolean>(args[0])->ToBool(isolate);
   v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
   v8_isolate->SetAllowWasmCodeGenerationCallback(
@@ -379,54 +353,42 @@ RUNTIME_FUNCTION(Runtime_DisallowWasmCodegen) {
 
 RUNTIME_FUNCTION(Runtime_IsWasmCode) {
   SealHandleScope shs(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   auto function = Cast<JSFunction>(args[0]);
   Tagged<Code> code = function->code(isolate);
   bool is_js_to_wasm = code->kind() == CodeKind::JS_TO_WASM_FUNCTION ||
                        (code->builtin_id() == Builtin::kJSToWasmWrapper);
-#if V8_ENABLE_DRUMBRAKE
-  // TODO(paolosev@microsoft.com) - Implement an empty
-  // GenericJSToWasmInterpreterWrapper also when V8_ENABLE_DRUMBRAKE is not
-  // defined to get rid of these #ifdefs.
-  is_js_to_wasm =
-      is_js_to_wasm ||
-      (code->builtin_id() == Builtin::kGenericJSToWasmInterpreterWrapper);
-#endif  // V8_ENABLE_DRUMBRAKE
   return isolate->heap()->ToBoolean(is_js_to_wasm);
 }
 
 RUNTIME_FUNCTION(Runtime_IsWasmTrapHandlerEnabled) {
   DisallowGarbageCollection no_gc;
+  DCHECK_EQ(0, args.length());
   return isolate->heap()->ToBoolean(trap_handler::IsTrapHandlerEnabled());
 }
 
 RUNTIME_FUNCTION(Runtime_IsWasmPartialOOBWriteNoop) {
   DisallowGarbageCollection no_gc;
+  DCHECK_EQ(0, args.length());
   return isolate->heap()->ToBoolean(wasm::kPartialOOBWritesAreNoops);
 }
 
 RUNTIME_FUNCTION(Runtime_IsThreadInWasm) {
   DisallowGarbageCollection no_gc;
+  DCHECK_EQ(0, args.length());
   return isolate->heap()->ToBoolean(trap_handler::IsThreadInWasm());
 }
 
 RUNTIME_FUNCTION(Runtime_GetWasmRecoveredTrapCount) {
   HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
   size_t trap_count = trap_handler::GetRecoveredTrapCount();
   return *isolate->factory()->NewNumberFromSize(trap_count);
 }
 
 RUNTIME_FUNCTION(Runtime_GetWasmExceptionTagId) {
   HandleScope scope(isolate);
-  if (args.length() != 2 || !IsWasmExceptionPackage(args[0]) ||
-      !IsWasmInstanceObject(args[1]) ||
-      !args.at<WasmInstanceObject>(1)
-           ->trusted_data(isolate)
-           ->has_tags_table()) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(2, args.length());
   Handle<WasmExceptionPackage> exception = args.at<WasmExceptionPackage>(0);
   DirectHandle<WasmInstanceObject> instance_object =
       args.at<WasmInstanceObject>(1);
@@ -439,21 +401,16 @@ RUNTIME_FUNCTION(Runtime_GetWasmExceptionTagId) {
   for (int index = 0; index < tags_table->length(); ++index) {
     if (tags_table->get(index) == *tag) return Smi::FromInt(index);
   }
-  return CrashUnlessFuzzing(isolate);
+  UNREACHABLE();
 }
 
 RUNTIME_FUNCTION(Runtime_GetWasmExceptionValues) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsWasmExceptionPackage(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<WasmExceptionPackage> exception = args.at<WasmExceptionPackage>(0);
   Handle<Object> values_obj =
       WasmExceptionPackage::GetExceptionValues(isolate, exception);
-  if (!IsFixedArray(*values_obj)) {
-    // Only called with correct input (unless fuzzing).
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(IsFixedArray(*values_obj));  // Only called with correct input.
   auto values = Cast<FixedArray>(values_obj);
   DirectHandle<FixedArray> externalized_values =
       isolate->factory()->NewFixedArray(values->length());
@@ -471,9 +428,7 @@ RUNTIME_FUNCTION(Runtime_GetWasmExceptionValues) {
 
 RUNTIME_FUNCTION(Runtime_SerializeWasmModule) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsWasmModuleObject(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   DirectHandle<WasmModuleObject> module_obj = args.at<WasmModuleObject>(0);
 
   wasm::NativeModule* native_module = module_obj->native_module();
@@ -488,9 +443,8 @@ RUNTIME_FUNCTION(Runtime_SerializeWasmModule) {
                                             InitializedFlag::kUninitialized)
           .ToHandleChecked();
 
-  bool serialized_successfully = wasm_serializer.SerializeNativeModule(
-      {static_cast<uint8_t*>(array_buffer->backing_store()), byte_length});
-  CHECK(serialized_successfully || v8_flags.fuzzing);
+  CHECK(wasm_serializer.SerializeNativeModule(
+      {static_cast<uint8_t*>(array_buffer->backing_store()), byte_length}));
   return *array_buffer;
 }
 
@@ -498,11 +452,7 @@ RUNTIME_FUNCTION(Runtime_SerializeWasmModule) {
 // Return undefined if unsuccessful.
 RUNTIME_FUNCTION(Runtime_DeserializeWasmModule) {
   HandleScope scope(isolate);
-  // This isn't exposed to fuzzers so doesn't need to handle invalid arguments.
-  CHECK_EQ(2, args.length());
-  CHECK(IsJSArrayBuffer(args[0]));
-  CHECK(IsJSTypedArray(args[1]));
-
+  DCHECK_EQ(2, args.length());
   DirectHandle<JSArrayBuffer> buffer = args.at<JSArrayBuffer>(0);
   DirectHandle<JSTypedArray> wire_bytes = args.at<JSTypedArray>(1);
   CHECK(!buffer->was_detached());
@@ -532,9 +482,7 @@ RUNTIME_FUNCTION(Runtime_DeserializeWasmModule) {
 
 RUNTIME_FUNCTION(Runtime_WasmGetNumberOfInstances) {
   SealHandleScope shs(isolate);
-  if (args.length() != 1 || !IsWasmModuleObject(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   DirectHandle<WasmModuleObject> module_obj = args.at<WasmModuleObject>(0);
   int instance_count = 0;
   Tagged<WeakArrayList> weak_instance_list =
@@ -546,10 +494,8 @@ RUNTIME_FUNCTION(Runtime_WasmGetNumberOfInstances) {
 }
 
 RUNTIME_FUNCTION(Runtime_WasmNumCodeSpaces) {
+  DCHECK_EQ(1, args.length());
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSObject(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
   DirectHandle<JSObject> argument = args.at<JSObject>(0);
   wasm::NativeModule* native_module;
   if (IsWasmInstanceObject(*argument)) {
@@ -565,35 +511,10 @@ RUNTIME_FUNCTION(Runtime_WasmNumCodeSpaces) {
   return *isolate->factory()->NewNumberFromSize(num_spaces);
 }
 
-namespace {
-
-template <typename T1, typename T2 = T1>
-void PrintRep(Address address, const char* str) {
-  PrintF("%4s:", str);
-  const auto t1 = base::ReadLittleEndianValue<T1>(address);
-  if constexpr (std::is_floating_point_v<T1>) {
-    PrintF("%f", t1);
-  } else if constexpr (sizeof(T1) > sizeof(uint32_t)) {
-    PrintF("%" PRIu64, t1);
-  } else {
-    PrintF("%u", t1);
-  }
-  const auto t2 = base::ReadLittleEndianValue<T2>(address);
-  if constexpr (sizeof(T1) > sizeof(uint32_t)) {
-    PrintF(" / %016" PRIx64 "\n", t2);
-  } else {
-    PrintF(" / %0*x\n", static_cast<int>(2 * sizeof(T2)), t2);
-  }
-}
-
-}  // namespace
-
 RUNTIME_FUNCTION(Runtime_WasmTraceMemory) {
   SealHandleScope scope(isolate);
-  if (args.length() != 1 || !IsSmi(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
   DisallowGarbageCollection no_gc;
+  DCHECK_EQ(1, args.length());
   auto info_addr = Cast<Smi>(args[0]);
 
   wasm::MemoryTracingInfo* info =
@@ -604,247 +525,60 @@ RUNTIME_FUNCTION(Runtime_WasmTraceMemory) {
   DebuggableStackFrameIterator it(isolate);
   DCHECK(!it.done());
   DCHECK(it.is_wasm());
-#if V8_ENABLE_DRUMBRAKE
-  DCHECK(!it.is_wasm_interpreter_entry());
-#endif  // V8_ENABLE_DRUMBRAKE
   WasmFrame* frame = WasmFrame::cast(it.frame());
 
-  PrintF("%-11s func:%6d:0x%-4x %s %016" PRIuPTR " val: ",
-         ExecutionTierToString(frame->wasm_code()->is_liftoff()
-                                   ? wasm::ExecutionTier::kLiftoff
-                                   : wasm::ExecutionTier::kTurbofan),
-         frame->function_index(), frame->position(),
-         // Note: The extra leading space makes " store to" the same width as
-         // "load from".
-         info->is_store ? " store to" : "load from", info->offset);
   // TODO(14259): Fix for multi-memory.
-  const Address address =
-      reinterpret_cast<Address>(frame->trusted_instance_data()
-                                    ->memory_object(0)
-                                    ->array_buffer()
-                                    ->backing_store()) +
-      info->offset;
-  switch (static_cast<MachineRepresentation>(info->mem_rep)) {
-    case MachineRepresentation::kWord8:
-      PrintRep<uint8_t>(address, "i8");
-      break;
-    case MachineRepresentation::kWord16:
-      PrintRep<uint16_t>(address, "i16");
-      break;
-    case MachineRepresentation::kWord32:
-      PrintRep<uint32_t>(address, "i32");
-      break;
-    case MachineRepresentation::kWord64:
-      PrintRep<uint64_t>(address, "i64");
-      break;
-    case MachineRepresentation::kFloat32:
-      PrintRep<float, uint32_t>(address, "f32");
-      break;
-    case MachineRepresentation::kFloat64:
-      PrintRep<double, uint64_t>(address, "f64");
-      break;
-    case MachineRepresentation::kSimd128: {
-      const auto a = base::ReadLittleEndianValue<uint32_t>(address);
-      const auto b = base::ReadLittleEndianValue<uint32_t>(address + 4);
-      const auto c = base::ReadLittleEndianValue<uint32_t>(address + 8);
-      const auto d = base::ReadLittleEndianValue<uint32_t>(address + 12);
-      PrintF("s128:%u %u %u %u / %08x %08x %08x %08x\n", a, b, c, d, a, b, c,
-             d);
-      break;
-    }
-    default:
-      PrintF("unknown\n");
-      break;
-  }
-
+  auto memory_object = frame->trusted_instance_data()->memory_object(0);
+  uint8_t* mem_start = reinterpret_cast<uint8_t*>(
+      memory_object->array_buffer()->backing_store());
+  int func_index = frame->function_index();
+  int pos = frame->position();
+  wasm::ExecutionTier tier = frame->wasm_code()->is_liftoff()
+                                 ? wasm::ExecutionTier::kLiftoff
+                                 : wasm::ExecutionTier::kTurbofan;
+  wasm::TraceMemoryOperation(tier, info, func_index, pos, mem_start);
   return ReadOnlyRoots(isolate).undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_WasmTierUpFunction) {
-  DCHECK(!v8_flags.wasm_jitless);
-
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<JSFunction> function = args.at<JSFunction>(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*function)) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(WasmExportedFunction::IsWasmExportedFunction(*function));
   auto exp_fun = Cast<WasmExportedFunction>(function);
-  auto func_data = exp_fun->shared()->wasm_exported_function_data();
-  Tagged<WasmTrustedInstanceData> trusted_data = func_data->instance_data();
-  int func_index = func_data->function_index();
-  const wasm::WasmModule* module = trusted_data->module();
-  if (static_cast<uint32_t>(func_index) < module->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
-  if (!module->function_was_validated(func_index)) {
-    DCHECK(v8_flags.wasm_lazy_validation);
-    Zone validation_zone(isolate->allocator(), ZONE_NAME);
-    wasm::WasmDetectedFeatures unused_detected_features;
-    const wasm::WasmFunction* func = &module->functions[func_index];
-    bool is_shared = module->type(func->sig_index).is_shared;
-    base::Vector<const uint8_t> wire_bytes =
-        trusted_data->native_module()->wire_bytes();
-    wasm::FunctionBody body{func->sig, func->code.offset(),
-                            wire_bytes.begin() + func->code.offset(),
-                            wire_bytes.begin() + func->code.end_offset(),
-                            is_shared};
-    if (ValidateFunctionBody(&validation_zone,
-                             trusted_data->native_module()->enabled_features(),
-                             module, &unused_detected_features, body)
-            .failed()) {
-      return CrashUnlessFuzzing(isolate);
-    }
-    module->set_function_validated(func_index);
-  }
+  Tagged<WasmTrustedInstanceData> trusted_data = exp_fun->instance_data();
+  int func_index = exp_fun->function_index();
   wasm::TierUpNowForTesting(isolate, trusted_data, func_index);
   return ReadOnlyRoots(isolate).undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_WasmNull) {
-  // This isn't exposed to fuzzers. (Wasm nulls may not appear in JS.)
   HandleScope scope(isolate);
   return ReadOnlyRoots(isolate).wasm_null();
 }
 
-static Tagged<Object> CreateWasmObject(Isolate* isolate,
-                                       base::Vector<const uint8_t> module_bytes,
-                                       bool is_struct) {
-  // Create and compile the wasm module.
-  wasm::ErrorThrower thrower(isolate, "CreateWasmObject");
-  wasm::ModuleWireBytes bytes(base::VectorOf(module_bytes));
-  wasm::WasmEngine* engine = wasm::GetWasmEngine();
-  MaybeHandle<WasmModuleObject> maybe_module_object =
-      engine->SyncCompile(isolate, wasm::WasmEnabledFeatures(),
-                          wasm::CompileTimeImports(), &thrower, bytes);
-  CHECK(!thrower.error());
-  Handle<WasmModuleObject> module_object;
-  if (!maybe_module_object.ToHandle(&module_object)) {
-    DCHECK(isolate->has_exception());
-    return ReadOnlyRoots(isolate).exception();
-  }
-  // Instantiate the module.
-  MaybeHandle<WasmInstanceObject> maybe_instance = engine->SyncInstantiate(
-      isolate, &thrower, module_object, Handle<JSReceiver>::null(),
-      MaybeHandle<JSArrayBuffer>());
-  CHECK(!thrower.error());
-  Handle<WasmInstanceObject> instance;
-  if (!maybe_instance.ToHandle(&instance)) {
-    DCHECK(isolate->has_exception());
-    return ReadOnlyRoots(isolate).exception();
-  }
-  wasm::WasmValue value(int64_t{0x7AADF00DBAADF00D});
-  wasm::ModuleTypeIndex type_index{0};
-  Tagged<Map> map = Tagged<Map>::cast(
-      instance->trusted_data(isolate)->managed_object_maps()->get(
-          type_index.index));
-  if (is_struct) {
-    const wasm::StructType* struct_type =
-        instance->module()->struct_type(type_index);
-    DCHECK_EQ(struct_type->field_count(), 1);
-    DCHECK_EQ(struct_type->field(0), wasm::kWasmI64);
-    return *isolate->factory()->NewWasmStruct(struct_type, &value,
-                                              handle(map, isolate));
-  } else {
-    DCHECK_EQ(instance->module()->array_type(type_index)->element_type(),
-              wasm::kWasmI64);
-    return *isolate->factory()->NewWasmArray(wasm::kWasmI64, 1, value,
-                                             handle(map, isolate));
-  }
-}
-
-// In jitless mode we don't support creation of real wasm objects (they require
-// a NativeModule and instantiating that is not supported in jitless), so this
-// function creates a frozen JS object that should behave the same as a wasm
-// object within JS.
-static Tagged<Object> CreateDummyWasmLookAlikeForFuzzing(Isolate* isolate) {
-  Handle<JSObject> obj = isolate->factory()->NewJSObjectWithNullProto();
-  CHECK(IsJSReceiver(*obj));
-  MAYBE_RETURN(JSReceiver::SetIntegrityLevel(isolate, Cast<JSReceiver>(obj),
-                                             FROZEN, kThrowOnError),
-               ReadOnlyRoots(isolate).exception());
-  return *obj;
-}
-
-// Creates a new wasm struct with one i64 (value 0x7AADF00DBAADF00D).
-RUNTIME_FUNCTION(Runtime_WasmStruct) {
-  HandleScope scope(isolate);
-  if (v8_flags.jitless) {
-    return CreateDummyWasmLookAlikeForFuzzing(isolate);
-  }
-  /* Recreate with:
-    d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
-    let builder = new WasmModuleBuilder();
-    let struct = builder.addStruct([makeField(kWasmI64, false)]);
-    builder.instantiate();
-  */
-  static constexpr uint8_t wasm_module_bytes[] = {
-      0x00, 0x61, 0x73, 0x6d,  // wasm magic
-      0x01, 0x00, 0x00, 0x00,  // wasm version
-      0x01,                    // section kind: Type
-      0x07,                    // section length 7
-      0x01, 0x50, 0x00,        // types count 1:  subtype extensible,
-                               // supertype count 0
-      0x5f, 0x01, 0x7e, 0x00,  //  kind: struct, field count 1:  i64 immutable
-  };
-  return CreateWasmObject(isolate, base::VectorOf(wasm_module_bytes), true);
-}
-
-// Creates a new wasm array of type i64 with one element (0x7AADF00DBAADF00D).
-RUNTIME_FUNCTION(Runtime_WasmArray) {
-  HandleScope scope(isolate);
-  if (v8_flags.jitless) {
-    return CreateDummyWasmLookAlikeForFuzzing(isolate);
-  }
-  /* Recreate with:
-    d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
-    let builder = new WasmModuleBuilder();
-    let array = builder.addArray(kWasmI64, false);
-    builder.instantiate();
-  */
-  static constexpr uint8_t wasm_module_bytes[] = {
-      0x00, 0x61, 0x73, 0x6d,  // wasm magic
-      0x01, 0x00, 0x00, 0x00,  // wasm version
-      0x01,                    // section kind: Type
-      0x06,                    // section length 6
-      0x01, 0x50, 0x00,        // types count 1:  subtype extensible,
-                               // supertype count 0
-      0x5e, 0x7e, 0x00,        //  kind: array i64 immutable
-  };
-  return CreateWasmObject(isolate, base::VectorOf(wasm_module_bytes), false);
-}
-
 RUNTIME_FUNCTION(Runtime_WasmEnterDebugging) {
   HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
   wasm::GetWasmEngine()->EnterDebuggingForIsolate(isolate);
   return ReadOnlyRoots(isolate).undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_WasmLeaveDebugging) {
   HandleScope scope(isolate);
+  DCHECK_EQ(0, args.length());
   wasm::GetWasmEngine()->LeaveDebuggingForIsolate(isolate);
   return ReadOnlyRoots(isolate).undefined_value();
 }
 
 RUNTIME_FUNCTION(Runtime_IsWasmDebugFunction) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<JSFunction> function = args.at<JSFunction>(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*function)) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(WasmExportedFunction::IsWasmExportedFunction(*function));
   auto exp_fun = Cast<WasmExportedFunction>(function);
-  auto data = exp_fun->shared()->wasm_exported_function_data();
-  wasm::NativeModule* native_module = data->instance_data()->native_module();
-  uint32_t func_index = data->function_index();
-  if (static_cast<uint32_t>(func_index) <
-      data->instance_data()->module()->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  wasm::NativeModule* native_module = exp_fun->instance_data()->native_module();
+  uint32_t func_index = exp_fun->function_index();
   wasm::WasmCodeRefScope code_ref_scope;
   wasm::WasmCode* code = native_module->GetCode(func_index);
   return isolate->heap()->ToBoolean(code && code->is_liftoff() &&
@@ -853,21 +587,12 @@ RUNTIME_FUNCTION(Runtime_IsWasmDebugFunction) {
 
 RUNTIME_FUNCTION(Runtime_IsLiftoffFunction) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<JSFunction> function = args.at<JSFunction>(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*function)) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(WasmExportedFunction::IsWasmExportedFunction(*function));
   auto exp_fun = Cast<WasmExportedFunction>(function);
-  auto data = exp_fun->shared()->wasm_exported_function_data();
-  wasm::NativeModule* native_module = data->instance_data()->native_module();
-  uint32_t func_index = data->function_index();
-  if (static_cast<uint32_t>(func_index) <
-      data->instance_data()->module()->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  wasm::NativeModule* native_module = exp_fun->instance_data()->native_module();
+  uint32_t func_index = exp_fun->function_index();
   wasm::WasmCodeRefScope code_ref_scope;
   wasm::WasmCode* code = native_module->GetCode(func_index);
   return isolate->heap()->ToBoolean(code && code->is_liftoff());
@@ -875,21 +600,12 @@ RUNTIME_FUNCTION(Runtime_IsLiftoffFunction) {
 
 RUNTIME_FUNCTION(Runtime_IsTurboFanFunction) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<JSFunction> function = args.at<JSFunction>(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*function)) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(WasmExportedFunction::IsWasmExportedFunction(*function));
   auto exp_fun = Cast<WasmExportedFunction>(function);
-  auto data = exp_fun->shared()->wasm_exported_function_data();
-  wasm::NativeModule* native_module = data->instance_data()->native_module();
-  uint32_t func_index = data->function_index();
-  if (static_cast<uint32_t>(func_index) <
-      data->instance_data()->module()->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  wasm::NativeModule* native_module = exp_fun->instance_data()->native_module();
+  uint32_t func_index = exp_fun->function_index();
   wasm::WasmCodeRefScope code_ref_scope;
   wasm::WasmCode* code = native_module->GetCode(func_index);
   return isolate->heap()->ToBoolean(code && code->is_turbofan());
@@ -897,28 +613,17 @@ RUNTIME_FUNCTION(Runtime_IsTurboFanFunction) {
 
 RUNTIME_FUNCTION(Runtime_IsUncompiledWasmFunction) {
   HandleScope scope(isolate);
-  if (args.length() != 1 || !IsJSFunction(args[0])) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   Handle<JSFunction> function = args.at<JSFunction>(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*function)) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  CHECK(WasmExportedFunction::IsWasmExportedFunction(*function));
   auto exp_fun = Cast<WasmExportedFunction>(function);
-  auto data = exp_fun->shared()->wasm_exported_function_data();
-  wasm::NativeModule* native_module = data->instance_data()->native_module();
-  uint32_t func_index = data->function_index();
-  if (static_cast<uint32_t>(func_index) <
-      data->instance_data()->module()->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  wasm::NativeModule* native_module = exp_fun->instance_data()->native_module();
+  uint32_t func_index = exp_fun->function_index();
   return isolate->heap()->ToBoolean(!native_module->HasCode(func_index));
 }
 
 RUNTIME_FUNCTION(Runtime_FreezeWasmLazyCompilation) {
-  // This isn't exposed to fuzzers so doesn't need to handle invalid arguments.
-  DCHECK_EQ(args.length(), 1);
-  DCHECK(IsWasmInstanceObject(args[0]));
+  DCHECK_EQ(1, args.length());
   DisallowGarbageCollection no_gc;
   auto instance_object = Cast<WasmInstanceObject>(args[0]);
 
@@ -930,9 +635,7 @@ RUNTIME_FUNCTION(Runtime_FreezeWasmLazyCompilation) {
 // This runtime function enables WebAssembly imported strings through an
 // embedder callback and thereby bypasses the value in v8_flags.
 RUNTIME_FUNCTION(Runtime_SetWasmImportedStringsEnabled) {
-  if (args.length() != 1) {
-    return CrashUnlessFuzzing(isolate);
-  }
+  DCHECK_EQ(1, args.length());
   bool enable = Object::BooleanValue(*args.at(0), isolate);
   v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
   WasmImportedStringsEnabledCallback enabled = [](v8::Local<v8::Context>) {
@@ -970,22 +673,15 @@ RUNTIME_FUNCTION(Runtime_WasmDeoptsExecutedCount) {
 }
 
 RUNTIME_FUNCTION(Runtime_WasmDeoptsExecutedForFunction) {
-  if (args.length() != 1) {
-    return CrashUnlessFuzzing(isolate);
-  }
   Handle<Object> arg = args.at(0);
-  if (!WasmExportedFunction::IsWasmExportedFunction(*arg)) {
-    return CrashUnlessFuzzing(isolate);
+  if (IsSmi(*arg) || !IsJSFunction(*arg) ||
+      !WasmExportedFunction::IsWasmExportedFunction(*arg)) {
+    return Smi::FromInt(-1);
   }
   auto wasm_func = Cast<WasmExportedFunction>(arg);
-  auto func_data = wasm_func->shared()->wasm_exported_function_data();
   const wasm::WasmModule* module =
-      func_data->instance_data()->native_module()->module();
-  uint32_t func_index = func_data->function_index();
-  if (static_cast<uint32_t>(func_index) <
-      func_data->instance_data()->module()->num_imported_functions) {
-    return CrashUnlessFuzzing(isolate);
-  }
+      wasm_func->instance_data()->native_module()->module();
+  uint32_t func_index = wasm_func->function_index();
   const wasm::TypeFeedbackStorage& feedback = module->type_feedback;
   base::SharedMutexGuard<base::kExclusive> mutex_guard(&feedback.mutex);
   auto entry = feedback.deopt_count_for_function.find(func_index);
@@ -1011,11 +707,8 @@ RUNTIME_FUNCTION(Runtime_CheckIsOnCentralStack) {
 // The GenerateRandomWasmModule function is only implemented in non-official
 // builds (to save binary size). Hence also skip the runtime function in
 // official builds.
-#ifdef V8_WASM_RANDOM_FUZZERS
+#ifndef OFFICIAL_BUILD
 RUNTIME_FUNCTION(Runtime_WasmGenerateRandomModule) {
-  if (v8_flags.jitless) {
-    return CrashUnlessFuzzing(isolate);
-  }
   HandleScope scope{isolate};
   Zone temporary_zone{isolate->allocator(), "WasmGenerateRandomModule"};
   constexpr size_t kMaxInputBytes = 512;
@@ -1077,6 +770,6 @@ RUNTIME_FUNCTION(Runtime_WasmGenerateRandomModule) {
   }
   return *maybe_module_object.ToHandleChecked();
 }
-#endif  // V8_WASM_RANDOM_FUZZERS
+#endif  // OFFICIAL_BUILD
 
 }  // namespace v8::internal

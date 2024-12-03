@@ -263,7 +263,7 @@ void AssemblerBase::RequestHeapNumber(HeapNumberRequest request) {
   heap_number_requests_.push_front(request);
 }
 
-int AssemblerBase::AddCodeTarget(IndirectHandle<Code> target) {
+int AssemblerBase::AddCodeTarget(Handle<Code> target) {
   int current = static_cast<int>(code_targets_.size());
   if (current > 0 && !target.is_null() &&
       code_targets_.back().address() == target.address()) {
@@ -275,14 +275,13 @@ int AssemblerBase::AddCodeTarget(IndirectHandle<Code> target) {
   }
 }
 
-IndirectHandle<Code> AssemblerBase::GetCodeTarget(
-    intptr_t code_target_index) const {
+Handle<Code> AssemblerBase::GetCodeTarget(intptr_t code_target_index) const {
   DCHECK_LT(static_cast<size_t>(code_target_index), code_targets_.size());
   return code_targets_[code_target_index];
 }
 
 AssemblerBase::EmbeddedObjectIndex AssemblerBase::AddEmbeddedObject(
-    IndirectHandle<HeapObject> object) {
+    Handle<HeapObject> object) {
   EmbeddedObjectIndex current = embedded_objects_.size();
   // Do not deduplicate invalid handles, they are to heap object requests.
   if (!object.is_null()) {
@@ -296,11 +295,12 @@ AssemblerBase::EmbeddedObjectIndex AssemblerBase::AddEmbeddedObject(
   return current;
 }
 
-IndirectHandle<HeapObject> AssemblerBase::GetEmbeddedObject(
+Handle<HeapObject> AssemblerBase::GetEmbeddedObject(
     EmbeddedObjectIndex index) const {
   DCHECK_LT(index, embedded_objects_.size());
   return embedded_objects_[index];
 }
+
 
 int Assembler::WriteCodeComments() {
   if (!v8_flags.code_comments) return 0;

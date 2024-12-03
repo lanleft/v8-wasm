@@ -4,8 +4,7 @@
 
 // Flags: --experimental-wasm-imported-strings
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 const kRefExtern = wasmRefType(kWasmExternRef);
 
@@ -16,7 +15,7 @@ const kRefExtern = wasmRefType(kWasmExternRef);
   assertThrows(
       () => invalid_builder.instantiate(
           {"'": {foo: () => {}}}, {importedStringConstants: "'"}),
-      WebAssembly.CompileError,
+      WebAssembly.LinkError,
       'WebAssembly.Module(): String constant import #0 "foo" must be ' +
           'an immutable global subtyping externref @+17');
 
@@ -26,7 +25,7 @@ const kRefExtern = wasmRefType(kWasmExternRef);
   assertThrows(
       () => invalid_builder2.instantiate(
           {"'": {bar: 42}}, {importedStringConstants: "'"}),
-      WebAssembly.CompileError,
+      WebAssembly.LinkError,
       'WebAssembly.Module(): String constant import #0 "bar" must be ' +
           'an immutable global subtyping externref @+11');
 

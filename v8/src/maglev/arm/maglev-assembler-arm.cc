@@ -40,8 +40,8 @@ void AllocateRaw(MaglevAssembler* masm, Isolate* isolate,
   ExternalReference top = SpaceAllocationTopAddress(isolate, alloc_type);
   ExternalReference limit = SpaceAllocationLimitAddress(isolate, alloc_type);
   ZoneLabelRef done(masm);
-  MaglevAssembler::TemporaryRegisterScope temps(masm);
-  Register scratch = temps.AcquireScratch();
+  MaglevAssembler::ScratchRegisterScope temps(masm);
+  Register scratch = temps.Acquire();
   // We are a bit short on registers, so we use the same register for {object}
   // and {new_top}. Once we have defined {new_top}, we don't use {object} until
   // {new_top} is used for the last time. And there (at the end of this
@@ -81,8 +81,8 @@ void MaglevAssembler::Allocate(RegisterSnapshot register_snapshot,
 }
 
 void MaglevAssembler::OSRPrologue(Graph* graph) {
-  TemporaryRegisterScope temps(this);
-  Register scratch = temps.AcquireScratch();
+  ScratchRegisterScope temps(this);
+  Register scratch = temps.Acquire();
 
   DCHECK(graph->is_osr());
   CHECK(!graph->has_recursive_calls());
@@ -124,7 +124,7 @@ void MaglevAssembler::OSRPrologue(Graph* graph) {
 }
 
 void MaglevAssembler::Prologue(Graph* graph) {
-  TemporaryRegisterScope temps(this);
+  ScratchRegisterScope temps(this);
   temps.Include({r4, r8});
 
   DCHECK(!graph->is_osr());
@@ -169,8 +169,8 @@ void MaglevAssembler::Prologue(Graph* graph) {
   // Initialize stack slots.
   if (graph->tagged_stack_slots() > 0) {
     ASM_CODE_COMMENT_STRING(this, "Initializing stack slots");
-    TemporaryRegisterScope temps(this);
-    Register scratch = temps.AcquireScratch();
+    ScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
     Move(scratch, 0);
 
     // Magic value. Experimentally, an unroll size of 8 doesn't seem any
@@ -189,7 +189,7 @@ void MaglevAssembler::Prologue(Graph* graph) {
       for (int i = 0; i < first_slots; ++i) {
         Push(scratch);
       }
-      Register unroll_counter = temps.AcquireScratch();
+      Register unroll_counter = temps.Acquire();
       Move(unroll_counter, tagged_slots / kLoopUnrollSize);
       // We enter the loop unconditionally, so make sure we need to loop at
       // least once.
@@ -228,7 +228,7 @@ void MaglevAssembler::LoadSingleCharacterString(Register result,
   Register table = scratch;
   LoadRoot(table, RootIndex::kSingleCharacterStringTable);
   add(table, table, Operand(char_code, LSL, kTaggedSizeLog2));
-  ldr(result, FieldMemOperand(table, OFFSET_OF_DATA_START(FixedArray)));
+  ldr(result, FieldMemOperand(table, FixedArray::kHeaderSize));
 }
 
 void MaglevAssembler::StringFromCharCode(RegisterSnapshot register_snapshot,
@@ -319,11 +319,15 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
   bind(&loop);
 
   if (v8_flags.debug_code) {
-    // Check if {string} is a string.
-    AssertObjectTypeInRange(string, FIRST_STRING_TYPE, LAST_STRING_TYPE,
-                            AbortReason::kUnexpectedValue);
-
     Register scratch = instance_type;
+
+    // Check if {string} is a string.
+    AssertNotSmi(string);
+    LoadMap(scratch, string);
+    CompareInstanceTypeRange(scratch, scratch, FIRST_STRING_TYPE,
+                             LAST_STRING_TYPE);
+    Check(ls, AbortReason::kUnexpectedValue);
+
     ldr(scratch, FieldMemOperand(string, offsetof(String, length_)));
     cmp(index, scratch);
     Check(lo, AbortReason::kUnexpectedValue);
@@ -333,8 +337,8 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
   LoadInstanceType(instance_type, string);
 
   {
-    TemporaryRegisterScope temps(this);
-    Register representation = temps.AcquireScratch();
+    ScratchRegisterScope temps(this);
+    Register representation = temps.Acquire();
 
     // TODO(victorgomes): Add fast path for external strings.
     and_(representation, instance_type, Operand(kStringRepresentationMask));
@@ -357,8 +361,8 @@ void MaglevAssembler::StringCharCodeOrCodePointAt(
 
   bind(&sliced_string);
   {
-    TemporaryRegisterScope temps(this);
-    Register offset = temps.AcquireScratch();
+    ScratchRegisterScope temps(this);
+    Register offset = temps.Acquire();
 
     LoadAndUntagTaggedSignedField(offset, string,
                                   offsetof(SlicedString, offset_));

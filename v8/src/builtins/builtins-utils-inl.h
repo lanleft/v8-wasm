@@ -21,15 +21,18 @@ Handle<Object> BuiltinArguments::atOrUndefined(Isolate* isolate,
 }
 
 Handle<Object> BuiltinArguments::receiver() const {
-  return Handle<Object>(address_of_arg_at(kReceiverIndex));
+  int index = kReceiverOffset;
+  return Handle<Object>(address_of_arg_at(index));
 }
 
 Handle<JSFunction> BuiltinArguments::target() const {
-  return Handle<JSFunction>(address_of_arg_at(kTargetIndex));
+  int index = kTargetOffset;
+  return Handle<JSFunction>(address_of_arg_at(index));
 }
 
 Handle<HeapObject> BuiltinArguments::new_target() const {
-  return Handle<JSFunction>(address_of_arg_at(kNewTargetIndex));
+  int index = kNewTargetOffset;
+  return Handle<JSFunction>(address_of_arg_at(index));
 }
 
 }  // namespace internal

@@ -4,8 +4,6 @@
 
 #include "src/compiler/js-typed-lowering.h"
 
-#include <optional>
-
 #include "src/ast/modules.h"
 #include "src/builtins/builtins-utils.h"
 #include "src/codegen/code-factory.h"
@@ -22,8 +20,8 @@
 #include "src/compiler/node.h"
 #include "src/compiler/operator-properties.h"
 #include "src/compiler/simplified-operator.h"
-#include "src/compiler/turbofan-types.h"
 #include "src/compiler/type-cache.h"
+#include "src/compiler/types.h"
 #include "src/execution/protectors.h"
 #include "src/objects/js-generator.h"
 #include "src/objects/module-inl.h"
@@ -1112,7 +1110,7 @@ Reduction JSTypedLowering::ReduceJSToNumberInput(Node* input) {
     HeapObjectMatcher m(input);
     if (m.HasResolvedValue() && m.Ref(broker()).IsString()) {
       StringRef input_value = m.Ref(broker()).AsString();
-      std::optional<double> number = input_value.ToNumber(broker());
+      base::Optional<double> number = input_value.ToNumber(broker());
       if (!number.has_value()) return NoChange();
       return Replace(jsgraph()->ConstantNoHole(number.value()));
     }
@@ -1726,16 +1724,12 @@ void ReduceBuiltin(JSGraph* jsgraph, Node* node, Builtin builtin, int arity,
   const int argc = arity + BuiltinArguments::kNumExtraArgsWithReceiver;
   Node* argc_node = jsgraph->ConstantNoHole(argc);
 
-  static const int kStub = 1;
-  static_assert(BuiltinArguments::kNewTargetIndex == 0);
-  static_assert(BuiltinArguments::kTargetIndex == 1);
-  static_assert(BuiltinArguments::kArgcIndex == 2);
-  static_assert(BuiltinArguments::kPaddingIndex == 3);
+  static const int kStubAndReceiver = 2;
   node->InsertInput(zone, 1, new_target);
   node->InsertInput(zone, 2, target);
   node->InsertInput(zone, 3, argc_node);
   node->InsertInput(zone, 4, jsgraph->PaddingConstant());
-  int cursor = arity + kStub + BuiltinArguments::kNumExtraArgsWithReceiver;
+  int cursor = arity + kStubAndReceiver + BuiltinArguments::kNumExtraArgs;
 
   Address entry = Builtins::CppEntryOf(builtin);
   ExternalReference entry_ref = ExternalReference::Create(entry);
@@ -1953,10 +1947,6 @@ Reduction JSTypedLowering::ReduceJSCall(Node* node) {
       node->InsertInput(graph()->zone(), formal_count + 2, new_target);
       node->InsertInput(graph()->zone(), formal_count + 3,
                         jsgraph()->ConstantNoHole(JSParameterCount(arity)));
-#ifdef V8_ENABLE_LEAPTIERING
-      node->InsertInput(graph()->zone(), formal_count + 4,
-                        jsgraph()->ConstantNoHole(kPlaceholderDispatchHandle));
-#endif
       NodeProperties::ChangeOp(node,
                                common()->Call(Linkage::GetJSCallDescriptor(
                                    graph()->zone(), false, 1 + formal_count,
@@ -1980,10 +1970,6 @@ Reduction JSTypedLowering::ReduceJSCall(Node* node) {
       node->InsertInput(graph()->zone(), 2, new_target);
       node->InsertInput(graph()->zone(), 3,
                         jsgraph()->ConstantNoHole(JSParameterCount(arity)));
-#ifdef V8_ENABLE_LEAPTIERING
-      node->InsertInput(graph()->zone(), 4,
-                        jsgraph()->ConstantNoHole(kPlaceholderDispatchHandle));
-#endif
       NodeProperties::ChangeOp(node, common()->Call(call_descriptor));
     } else {
       // Patch {node} to a direct call.
@@ -1991,10 +1977,6 @@ Reduction JSTypedLowering::ReduceJSCall(Node* node) {
       node->InsertInput(graph()->zone(), arity + 2, new_target);
       node->InsertInput(graph()->zone(), arity + 3,
                         jsgraph()->ConstantNoHole(JSParameterCount(arity)));
-#ifdef V8_ENABLE_LEAPTIERING
-      node->InsertInput(graph()->zone(), arity + 4,
-                        jsgraph()->ConstantNoHole(kPlaceholderDispatchHandle));
-#endif
       NodeProperties::ChangeOp(node,
                                common()->Call(Linkage::GetJSCallDescriptor(
                                    graph()->zone(), false, 1 + arity,

@@ -35,7 +35,6 @@
 
 #include <cmath>
 #include <cstdlib>
-#include <optional>
 
 #include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
@@ -55,8 +54,6 @@
 #if V8_OS_DARWIN
 #include <mach/mach.h>
 #include <malloc/malloc.h>
-#elif V8_OS_OPENBSD
-#include <sys/malloc.h>
 #elif !V8_OS_ZOS
 #include <malloc.h>
 #endif
@@ -269,8 +266,6 @@ void OS::Initialize(AbortMode abort_mode, const char* const gc_fake_mmap) {
 }
 #endif  // !V8_OS_FUCHSIA
 
-bool OS::IsHardwareEnforcedShadowStacksEnabled() { return false; }
-
 int OS::ActivationFrameAlignment() {
 #if V8_TARGET_ARCH_ARM
   // On EABI ARM targets this is required for fp correctness in the
@@ -278,7 +273,7 @@ int OS::ActivationFrameAlignment() {
   return 8;
 #elif V8_TARGET_ARCH_MIPS
   return 8;
-#elif V8_TARGET_ARCH_S390X
+#elif V8_TARGET_ARCH_S390
   return 8;
 #else
   // Otherwise we just assume 16 byte alignment, i.e.:
@@ -338,27 +333,21 @@ void* OS::GetRandomMmapAddr() {
   raw_addr &= 0x007fffff0000ULL;
   raw_addr += 0x7e8000000000ULL;
 #else
-#if V8_TARGET_ARCH_X64
+#if V8_TARGET_ARCH_X64 || V8_TARGET_ARCH_ARM64
   // Currently available CPUs have 48 bits of virtual addressing.  Truncate
   // the hint address to 46 bits to give the kernel a fighting chance of
   // fulfilling our placement request.
   raw_addr &= uint64_t{0x3FFFFFFFF000};
-#elif V8_TARGET_ARCH_ARM64
-#if defined(V8_TARGET_OS_LINUX) || defined(V8_TARGET_OS_ANDROID)
-  // On Linux, the default virtual address space is limited to 39 bits when
-  // using 4KB pages, see arch/arm64/Kconfig. We truncate to 38 bits.
-  raw_addr &= uint64_t{0x3FFFFFF000};
-#else
-  // On macOS and elsewhere, we use 46 bits, same as on x64.
-  raw_addr &= uint64_t{0x3FFFFFFFF000};
-#endif
 #elif V8_TARGET_ARCH_PPC64
 #if V8_OS_AIX
-  // AIX: 64 bits of virtual addressing, but we limit address range to minimize
-  // Segment Lookaside Buffer (SLB) misses.
+  // AIX: 64 bits of virtual addressing, but we limit address range to:
+  //   a) minimize Segment Lookaside Buffer (SLB) misses and
   raw_addr &= uint64_t{0x3FFFF000};
   // Use extra address space to isolate the mmap regions.
   raw_addr += uint64_t{0x400000000000};
+#elif V8_TARGET_BIG_ENDIAN
+  // Big-endian Linux: 42 bits of virtual addressing.
+  raw_addr &= uint64_t{0x03FFFFFFF000};
 #else
   // Little-endian Linux: 46 bits of virtual addressing.
   raw_addr &= uint64_t{0x3FFFFFFF0000};
@@ -368,6 +357,10 @@ void* OS::GetRandomMmapAddr() {
   // of virtual addressing.  Truncate to 40 bits to allow kernel chance to
   // fulfill request.
   raw_addr &= uint64_t{0xFFFFFFF000};
+#elif V8_TARGET_ARCH_S390
+  // 31 bits of virtual addressing.  Truncate to 29 bits to allow kernel chance
+  // to fulfill request.
+  raw_addr &= 0x1FFFF000;
 #elif V8_TARGET_ARCH_MIPS64
   // 42 bits of virtual addressing. Truncate to 40 bits to allow kernel chance
   // to fulfill request.
@@ -618,24 +611,10 @@ bool OS::DecommitPages(void* address, size_t size) {
 #endif  // !V8_OS_ZOS
 
 // static
-bool OS::SealPages(void* address, size_t size) {
-#ifdef V8_ENABLE_MEMORY_SEALING
-#if V8_OS_LINUX && defined(__NR_mseal)
-  long ret = syscall(__NR_mseal, address, size, 0);
-  return ret == 0;
-#else
-  return false;
-#endif
-#else  // V8_ENABLE_MEMORY_SEALING
-  return false;
-#endif
-}
-
-// static
 bool OS::CanReserveAddressSpace() { return true; }
 
 // static
-std::optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
+Optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
     void* hint, size_t size, size_t alignment,
     MemoryPermission max_permission) {
   // On POSIX, address space reservations are backed by private memory mappings.
@@ -747,7 +726,7 @@ void OS::DebugBreak() {
   asm("break");
 #elif V8_HOST_ARCH_LOONG64
   asm("break 0");
-#elif V8_HOST_ARCH_PPC64
+#elif V8_HOST_ARCH_PPC || V8_HOST_ARCH_PPC64
   asm("twge 2,2");
 #elif V8_HOST_ARCH_IA32
   asm("int $3");
@@ -755,7 +734,7 @@ void OS::DebugBreak() {
   asm("int $3");
 #elif V8_OS_ZOS
   asm(" dc x'0001'");
-#elif V8_HOST_ARCH_S390X
+#elif V8_HOST_ARCH_S390
   // Software breakpoint instruction is 0x0001
   asm volatile(".word 0x0001");
 #elif V8_HOST_ARCH_RISCV64
@@ -1057,8 +1036,7 @@ void OS::StrNCpy(char* dest, int length, const char* src, size_t n) {
 
 #if !V8_OS_CYGWIN && !V8_OS_FUCHSIA
 
-std::optional<AddressSpaceReservation>
-AddressSpaceReservation::CreateSubReservation(
+Optional<AddressSpaceReservation> AddressSpaceReservation::CreateSubReservation(
     void* address, size_t size, OS::MemoryPermission max_permission) {
   DCHECK(Contains(address, size));
   DCHECK_EQ(0, size % OS::AllocatePageSize());
@@ -1367,15 +1345,6 @@ bool MainThreadIsCurrentThread() {
 Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
 #if V8_OS_ZOS
   return __get_stack_start();
-#elif V8_OS_OPENBSD
-  stack_t stack;
-  int error = pthread_stackseg_np(pthread_self(), &stack);
-  if(error) {
-    DCHECK(MainThreadIsCurrentThread());
-    return nullptr;
-  }
-  void* stack_start = reinterpret_cast<uint8_t*>(stack.ss_sp) + stack.ss_size;
-  return stack_start;
 #else
   pthread_attr_t attr;
   int error = pthread_getattr_np(pthread_self(), &attr);

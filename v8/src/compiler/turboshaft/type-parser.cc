@@ -4,11 +4,9 @@
 
 #include "src/compiler/turboshaft/type-parser.h"
 
-#include <optional>
-
 namespace v8::internal::compiler::turboshaft {
 
-std::optional<Type> TypeParser::ParseType() {
+base::Optional<Type> TypeParser::ParseType() {
   if (ConsumeIf("Word32")) {
     if (IsNext("{")) return ParseSet<Word32Type>();
     if (IsNext("[")) return ParseRange<Word32Type>();
@@ -28,7 +26,7 @@ std::optional<Type> TypeParser::ParseType() {
     if (IsNext("[")) return ParseRange<Float64Type>();
     return Float64Type::Any();
   } else {
-    return std::nullopt;
+    return base::nullopt;
   }
 }
 

@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestDeoptSignalingNanFloat32Literal() {
   var builder = new WasmModuleBuilder();
@@ -33,18 +32,12 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(1, wasm.main(wasm.justOne));
   %WasmTierUpFunction(wasm.main);
   assertEquals(1, wasm.main(wasm.justOne));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(0x7fa7a1b9, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   assertEquals(0x7fa7a1b9, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();
 
 (function TestDeoptSignalingNanFloat32Value() {
@@ -75,18 +68,12 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(1, wasm.main(wasm.justOne));
   %WasmTierUpFunction(wasm.main);
   assertEquals(1, wasm.main(wasm.justOne));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(0x7fa7a1b9, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   assertEquals(0x7fa7a1b9, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();
 
 (function TestDeoptSignalingNanFloat64Literal() {
@@ -113,18 +100,12 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(1n, wasm.main(wasm.justOne));
   %WasmTierUpFunction(wasm.main);
   assertEquals(1n, wasm.main(wasm.justOne));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(0x7ff4000000000000n, wasm.main(wasm.reinterpretF64));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   assertEquals(0x7ff4000000000000n, wasm.main(wasm.reinterpretF64));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();
 
 (function TestDeoptSignalingNanFloat64Value() {
@@ -156,16 +137,10 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(1n, wasm.main(wasm.justOne));
   %WasmTierUpFunction(wasm.main);
   assertEquals(1n, wasm.main(wasm.justOne));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(0x7ff4000000000000n, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   assertEquals(0x7ff4000000000000n, wasm.main(wasm.reinterpretF32));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();

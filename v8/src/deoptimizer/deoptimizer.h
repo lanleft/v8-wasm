@@ -5,7 +5,6 @@
 #ifndef V8_DEOPTIMIZER_DEOPTIMIZER_H_
 #define V8_DEOPTIMIZER_DEOPTIMIZER_H_
 
-#include <optional>
 #include <vector>
 
 #include "src/builtins/builtins.h"
@@ -17,7 +16,6 @@
 #include "src/objects/js-function.h"
 
 #if V8_ENABLE_WEBASSEMBLY
-#include "src/sandbox/hardware-support.h"
 #include "src/wasm/value-type.h"
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -159,10 +157,6 @@ class Deoptimizer : public Malloced {
                                                Tagged<SharedFunctionInfo> sfi,
                                                const char* reason);
 
-  // Patch the generated code to jump to a safepoint entry. This is used only
-  // when Shadow Stack is enabled.
-  static void PatchJumpToTrampoline(Address pc, Address new_pc);
-
  private:
   void QueueValueForMaterialization(Address output_address, Tagged<Object> obj,
                                     const TranslatedFrame::iterator& iterator);
@@ -180,10 +174,6 @@ class Deoptimizer : public Malloced {
   FrameDescription* DoComputeWasmLiftoffFrame(
       TranslatedFrame& frame, wasm::NativeModule* native_module,
       Tagged<WasmTrustedInstanceData> wasm_trusted_instance, int frame_index);
-
-  void GetWasmStackSlotsCounts(const wasm::FunctionSig* sig,
-                               int* parameter_stack_slots,
-                               int* return_stack_slots);
 #endif
 
   void DoComputeUnoptimizedFrame(TranslatedFrame* translated_frame,
@@ -200,7 +190,7 @@ class Deoptimizer : public Malloced {
 
 #if V8_ENABLE_WEBASSEMBLY
   TranslatedValue TranslatedValueForWasmReturnKind(
-      std::optional<wasm::ValueKind> wasm_call_return_kind);
+      base::Optional<wasm::ValueKind> wasm_call_return_kind);
 #endif  // V8_ENABLE_WEBASSEMBLY
 
   void DoComputeBuiltinContinuation(TranslatedFrame* translated_frame,
@@ -281,19 +271,6 @@ class Deoptimizer : public Malloced {
   // Note: This is intentionally not a unique_ptr s.t. the Deoptimizer
   // satisfies is_standard_layout, needed for offsetof().
   CodeTracer::Scope* const trace_scope_;
-
-#if V8_ENABLE_WEBASSEMBLY && V8_TARGET_ARCH_32_BIT
-  // Needed by webassembly for lowering signatures containing i64 types. Stored
-  // as members for re-use for multiple signatures during one de-optimization.
-  std::optional<AccountingAllocator> alloc_;
-  std::optional<Zone> zone_;
-#endif
-#if V8_ENABLE_WEBASSEMBLY && V8_ENABLE_SANDBOX
-  // Wasm deoptimizations should not access the heap at all. All deopt data is
-  // stored off-heap.
-  std::optional<SandboxHardwareSupport::BlockAccessScope>
-      no_heap_access_during_wasm_deopt_;
-#endif
 
   friend class DeoptimizedFrameInfo;
   friend class FrameDescription;

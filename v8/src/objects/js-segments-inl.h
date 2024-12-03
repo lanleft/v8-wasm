@@ -29,7 +29,7 @@ ACCESSORS(JSSegments, unicode_string, Tagged<Managed<icu::UnicodeString>>,
           kUnicodeStringOffset)
 
 inline void JSSegments::set_granularity(JSSegmenter::Granularity granularity) {
-  DCHECK(GranularityBits::is_valid(granularity));
+  DCHECK_GE(GranularityBits::kMax, granularity);
   int hints = flags();
   hints = GranularityBits::update(hints, granularity);
   set_flags(hints);

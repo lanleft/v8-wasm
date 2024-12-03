@@ -118,7 +118,7 @@ inline bool EnsureJSArrayWithWritableFastElements(Isolate* isolate,
 
   // Adding elements to the array prototype would break code that makes sure
   // it has no elements. Handle that elsewhere.
-  if (isolate->IsInitialArrayPrototype(*array)) return false;
+  if (isolate->IsAnyInitialArrayPrototype(*array)) return false;
 
   // Need to ensure that the arguments passed in args can be contained in
   // the array.
@@ -450,7 +450,7 @@ V8_WARN_UNUSED_RESULT Tagged<Object> GenericArrayPop(Isolate* isolate,
       isolate, element, Object::GetPropertyOrElement(isolate, receiver, index));
 
   // d. Perform ? DeletePropertyOrThrow(O, index).
-  MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(isolate, receiver, index,
+  MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(receiver, index,
                                                    LanguageMode::kStrict),
                ReadOnlyRoots(isolate).exception());
 
@@ -568,7 +568,7 @@ V8_WARN_UNUSED_RESULT Tagged<Object> GenericArrayShift(
                                        Just(ShouldThrow::kThrowOnError)));
     } else {  // e. Else fromPresent is false,
       // i. Perform ? DeletePropertyOrThrow(O, to).
-      MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(isolate, receiver, to,
+      MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(receiver, to,
                                                        LanguageMode::kStrict),
                    ReadOnlyRoots(isolate).exception());
     }
@@ -580,8 +580,8 @@ V8_WARN_UNUSED_RESULT Tagged<Object> GenericArrayShift(
   // 7. Perform ? DeletePropertyOrThrow(O, ! ToString(len-1)).
   Handle<String> new_length = isolate->factory()->NumberToString(
       isolate->factory()->NewNumber(length - 1));
-  MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(
-                   isolate, receiver, new_length, LanguageMode::kStrict),
+  MAYBE_RETURN(JSReceiver::DeletePropertyOrElement(receiver, new_length,
+                                                   LanguageMode::kStrict),
                ReadOnlyRoots(isolate).exception());
 
   // 8. Perform ? Set(O, "length", len-1, true).
@@ -634,7 +634,7 @@ BUILTIN(ArrayUnshift) {
   DCHECK(array->map()->is_extensible());
   DCHECK(!IsDictionaryElementsKind(array->GetElementsKind()));
   DCHECK(IsJSArrayFastElementMovingAllowed(isolate, *array));
-  DCHECK(!isolate->IsInitialArrayPrototype(*array));
+  DCHECK(!isolate->IsAnyInitialArrayPrototype(*array));
 
   MatchArrayElementsKindToArguments(isolate, array, &args, 1,
                                     args.length() - 1);
@@ -699,7 +699,7 @@ class ArrayConcatVisitor {
       set_exceeds_array_limit(true);
       // Exception hasn't been thrown at this point. Return true to
       // break out, and caller will throw. !visit would imply that
-      // there is already an exception.
+      // there is already a exception.
       return true;
     }
 
@@ -772,7 +772,7 @@ class ArrayConcatVisitor {
       Tagged<JSArray> raw = *array;
       raw->set_length(*length);
       raw->set_elements(*storage_fixed_array());
-      raw->set_map(isolate_, *map, kReleaseStore);
+      raw->set_map(*map, kReleaseStore);
     }
     return array;
   }
@@ -1443,7 +1443,7 @@ Tagged<Object> Slow_ArrayConcat(BuiltinArguments* args, Handle<Object> species,
     // In case of failure, fall through.
   }
 
-  DirectHandle<HeapObject> storage;
+  Handle<HeapObject> storage;
   if (fast_case) {
     // The backing storage array must have non-existing elements to preserve
     // holes across concat operations.
@@ -1562,7 +1562,7 @@ BUILTIN(ArrayConcat) {
       isolate, receiver,
       Object::ToObject(isolate, args.receiver(), "Array.prototype.concat"));
   BuiltinArguments::ChangeValueScope set_receiver_value_scope(
-      isolate, &args, BuiltinArguments::kReceiverIndex, *receiver);
+      isolate, &args, BuiltinArguments::kReceiverOffset, *receiver);
 
   Handle<JSArray> result_array;
 

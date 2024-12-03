@@ -365,9 +365,6 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
       vl(dst.fp().toV(), src_reg, 0, E8);
       break;
     }
-    case LoadType::kF32LoadF16:
-      UNIMPLEMENTED();
-      break;
     default:
       UNREACHABLE();
   }
@@ -1026,10 +1023,9 @@ void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
 
 void LiftoffAssembler::StoreCallerFrameSlot(LiftoffRegister src,
                                             uint32_t caller_slot_idx,
-                                            ValueKind kind,
-                                            Register frame_pointer) {
+                                            ValueKind kind) {
   int32_t offset = kSystemPointerSize * (caller_slot_idx + 1);
-  liftoff::Store(this, frame_pointer, offset, src, kind);
+  liftoff::Store(this, fp, offset, src, kind);
 }
 
 void LiftoffAssembler::LoadReturnStackSlot(LiftoffRegister dst, int offset,
@@ -2332,8 +2328,6 @@ void LiftoffStackSlots::Construct(int param_slots) {
     }
   }
 }
-
-bool LiftoffAssembler::supports_f16_mem_access() { return false; }
 
 }  // namespace v8::internal::wasm
 

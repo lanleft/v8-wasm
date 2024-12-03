@@ -6,13 +6,14 @@
 #define V8_OBJECTS_BACKING_STORE_H_
 
 #include <memory>
-#include <optional>
 
 #include "include/v8-array-buffer.h"
 #include "include/v8-internal.h"
+#include "src/base/optional.h"
 #include "src/handles/handles.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 class Isolate;
 class WasmMemoryObject;
@@ -110,9 +111,9 @@ class V8_EXPORT_PRIVATE BackingStore : public BackingStoreBase {
 
 #if V8_ENABLE_WEBASSEMBLY
   // Attempt to grow this backing store in place.
-  std::optional<size_t> GrowWasmMemoryInPlace(Isolate* isolate,
-                                              size_t delta_pages,
-                                              size_t max_pages);
+  base::Optional<size_t> GrowWasmMemoryInPlace(Isolate* isolate,
+                                               size_t delta_pages,
+                                               size_t max_pages);
 
   // Allocate a new, larger, backing store for this Wasm memory and copy the
   // contents of this backing store into it.
@@ -257,6 +258,7 @@ class GlobalBackingStoreRegistry {
   static void UpdateSharedWasmMemoryObjects(Isolate* isolate);
 };
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_OBJECTS_BACKING_STORE_H_

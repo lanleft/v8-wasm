@@ -22,9 +22,8 @@ namespace v8 {
 namespace internal {
 
 OptimizedCompilationInfo::OptimizedCompilationInfo(
-    Zone* zone, Isolate* isolate, IndirectHandle<SharedFunctionInfo> shared,
-    IndirectHandle<JSFunction> closure, CodeKind code_kind,
-    BytecodeOffset osr_offset)
+    Zone* zone, Isolate* isolate, Handle<SharedFunctionInfo> shared,
+    Handle<JSFunction> closure, CodeKind code_kind, BytecodeOffset osr_offset)
     : isolate_unsafe_(isolate),
       code_kind_(code_kind),
       osr_offset_(osr_offset),
@@ -64,8 +63,7 @@ OptimizedCompilationInfo::OptimizedCompilationInfo(
       optimization_id_(kNoOptimizationId),
       debug_name_(debug_name) {
   DCHECK_IMPLIES(builtin_ != Builtin::kNoBuiltinId,
-                 (code_kind_ == CodeKind::BUILTIN ||
-                  code_kind_ == CodeKind::BYTECODE_HANDLER));
+                 code_kind_ == CodeKind::BUILTIN);
   SetTracingFlags(
       PassesFilter(debug_name, base::CStrVector(v8_flags.trace_turbo_filter)));
   ConfigureFlags();
@@ -75,12 +73,8 @@ OptimizedCompilationInfo::OptimizedCompilationInfo(
 void OptimizedCompilationInfo::ConfigureFlags() {
   if (v8_flags.turbo_inline_js_wasm_calls) set_inline_js_wasm_calls();
 
-  if (v8_flags.cet_compatible) {
-    set_shadow_stack_compliant_lazy_deopt();
-  }
-
   switch (code_kind_) {
-    case CodeKind::TURBOFAN_JS:
+    case CodeKind::TURBOFAN:
       set_called_with_code_start_register();
       set_switch_jump_table();
       if (v8_flags.analyze_environment_liveness) {
@@ -191,7 +185,7 @@ StackFrame::Type OptimizedCompilationInfo::GetOutputStackFrameType() const {
   }
 }
 
-void OptimizedCompilationInfo::SetCode(IndirectHandle<Code> code) {
+void OptimizedCompilationInfo::SetCode(Handle<Code> code) {
   DCHECK_EQ(code->kind(), code_kind());
   code_ = code;
 }
@@ -236,8 +230,8 @@ Tagged<JSGlobalObject> OptimizedCompilationInfo::global_object() const {
 }
 
 int OptimizedCompilationInfo::AddInlinedFunction(
-    IndirectHandle<SharedFunctionInfo> inlined_function,
-    IndirectHandle<BytecodeArray> inlined_bytecode, SourcePosition pos) {
+    Handle<SharedFunctionInfo> inlined_function,
+    Handle<BytecodeArray> inlined_bytecode, SourcePosition pos) {
   int id = static_cast<int>(inlined_functions_.size());
   inlined_functions_.push_back(
       InlinedFunctionHolder(inlined_function, inlined_bytecode, pos));
@@ -255,8 +249,8 @@ void OptimizedCompilationInfo::SetTracingFlags(bool passes_filter) {
 }
 
 OptimizedCompilationInfo::InlinedFunctionHolder::InlinedFunctionHolder(
-    IndirectHandle<SharedFunctionInfo> inlined_shared_info,
-    IndirectHandle<BytecodeArray> inlined_bytecode, SourcePosition pos)
+    Handle<SharedFunctionInfo> inlined_shared_info,
+    Handle<BytecodeArray> inlined_bytecode, SourcePosition pos)
     : shared_info(inlined_shared_info), bytecode_array(inlined_bytecode) {
   position.position = pos;
   // initialized when generating the deoptimization literals

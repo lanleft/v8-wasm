@@ -21,11 +21,6 @@ ASSERT_OFFSET(Builtin::kDeoptimizationEntry_Lazy);
 const int Deoptimizer::kEagerDeoptExitSize = 2 * kInstrSize;
 const int Deoptimizer::kLazyDeoptExitSize = 2 * kInstrSize;
 
-// static
-void Deoptimizer::PatchJumpToTrampoline(Address pc, Address new_pc) {
-  UNREACHABLE();
-}
-
 Float32 RegisterValues::GetFloatRegister(unsigned n) const {
   const Address start = reinterpret_cast<Address>(simd128_registers_);
   const size_t offset = n * sizeof(Float32);
@@ -39,7 +34,7 @@ Float64 RegisterValues::GetDoubleRegister(unsigned n) const {
 }
 
 void RegisterValues::SetDoubleRegister(unsigned n, Float64 value) {
-  V8_ASSUME(n < 2 * arraysize(simd128_registers_));
+  V8_ASSUME(2 * n < arraysize(simd128_registers_));
   const Address start = reinterpret_cast<Address>(simd128_registers_);
   const size_t offset = n * sizeof(Float64);
   base::WriteUnalignedValue(start + offset, value);
@@ -58,7 +53,9 @@ void FrameDescription::SetCallerConstantPool(unsigned offset, intptr_t value) {
   UNREACHABLE();
 }
 
-void FrameDescription::SetPc(intptr_t pc) { pc_ = pc; }
+void FrameDescription::SetPc(intptr_t pc, bool skip_validity_check) {
+  pc_ = pc;
+}
 
 }  // namespace internal
 }  // namespace v8

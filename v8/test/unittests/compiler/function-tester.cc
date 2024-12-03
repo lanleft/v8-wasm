@@ -8,10 +8,10 @@
 #include "src/codegen/assembler.h"
 #include "src/codegen/compiler.h"
 #include "src/codegen/optimized-compilation-info.h"
+#include "src/compiler/graph.h"
 #include "src/compiler/js-heap-broker.h"
 #include "src/compiler/linkage.h"
 #include "src/compiler/pipeline.h"
-#include "src/compiler/turbofan-graph.h"
 #include "src/execution/execution.h"
 #include "src/handles/handles.h"
 #include "src/objects/objects-inl.h"
@@ -58,7 +58,7 @@ FunctionTester::FunctionTester(Isolate* isolate, Handle<Code> code,
       flags_(0) {
   CHECK(!code.is_null());
   Compile(function);
-  function->UpdateCode(*code);
+  function->set_code(*code, kReleaseStore);
 }
 
 void FunctionTester::CheckThrows(Handle<Object> a) {
@@ -150,14 +150,14 @@ Handle<JSFunction> FunctionTester::CompileGraph(Graph* graph) {
   Handle<SharedFunctionInfo> shared(function->shared(), isolate);
   Zone zone(isolate->allocator(), ZONE_NAME);
   OptimizedCompilationInfo info(&zone, isolate, shared, function,
-                                CodeKind::TURBOFAN_JS);
+                                CodeKind::TURBOFAN);
 
   auto call_descriptor = Linkage::ComputeIncoming(&zone, &info);
   DirectHandle<Code> code =
       Pipeline::GenerateCodeForTesting(&info, isolate, call_descriptor, graph,
                                        AssemblerOptions::Default(isolate))
           .ToHandleChecked();
-  function->UpdateCode(*code);
+  function->set_code(*code, kReleaseStore);
   return function;
 }
 
@@ -172,7 +172,7 @@ Handle<JSFunction> FunctionTester::Optimize(Handle<JSFunction> function,
   CHECK_NOT_NULL(zone);
 
   OptimizedCompilationInfo info(zone, isolate, shared, function,
-                                CodeKind::TURBOFAN_JS);
+                                CodeKind::TURBOFAN);
 
   if (flags & ~OptimizedCompilationInfo::kInlining) UNIMPLEMENTED();
   if (flags & OptimizedCompilationInfo::kInlining) {
@@ -185,7 +185,7 @@ Handle<JSFunction> FunctionTester::Optimize(Handle<JSFunction> function,
   DirectHandle<Code> code =
       compiler::Pipeline::GenerateCodeForTesting(&info, isolate)
           .ToHandleChecked();
-  function->UpdateCode(*code);
+  function->set_code(*code, v8::kReleaseStore);
   return function;
 }
 }  // namespace compiler

@@ -5,8 +5,7 @@
 #ifndef V8_COMPILER_PROPERTY_ACCESS_BUILDER_H_
 #define V8_COMPILER_PROPERTY_ACCESS_BUILDER_H_
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/codegen/machine-type.h"
 #include "src/compiler/js-heap-broker.h"
 #include "src/compiler/node.h"
@@ -54,7 +53,7 @@ class PropertyAccessBuilder {
   // Tries to load a constant value from a prototype object in dictionary mode
   // and constant-folds it. Returns {} if the constant couldn't be safely
   // retrieved.
-  std::optional<Node*> FoldLoadDictPrototypeConstant(
+  base::Optional<Node*> FoldLoadDictPrototypeConstant(
       PropertyAccessInfo const& access_info);
 
   static MachineRepresentation ConvertRepresentation(

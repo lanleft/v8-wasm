@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Minimal test case for a wasm deopt.
 // The following flags can help:
@@ -41,14 +40,10 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   %WasmTierUpFunction(wasm.main);
   // tierup.
   assertEquals(42, wasm.main(30, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   // Non-deopt call succeeded, now causing deopt.
   assertEquals(360, wasm.main(30, wasm.mul));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   // Deopt happened, executions are now in liftoff.
   assertEquals(42, wasm.main(30, wasm.add));
   // Re-opt.
@@ -56,7 +51,5 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   // There is feedback for both targets, they do not trigger new deopts.
   assertEquals(360, wasm.main(30, wasm.mul));
   assertEquals(42, wasm.main(30, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();

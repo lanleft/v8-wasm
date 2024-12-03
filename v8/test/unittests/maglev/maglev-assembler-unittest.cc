@@ -19,7 +19,7 @@ class MaglevAssemblerTest : public MaglevTest {
   MaglevAssemblerTest()
       : MaglevTest(),
         codegen_state(nullptr, nullptr),
-        as(isolate(), zone(), &codegen_state) {}
+        as(isolate(), &codegen_state) {}
 
   void FinalizeAndRun(Label* pass, Label* fail) {
     as.bind(pass);

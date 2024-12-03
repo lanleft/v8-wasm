@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_BACKEND_REGISTER_ALLOCATOR_VERIFIER_H_
 #define V8_COMPILER_BACKEND_REGISTER_ALLOCATOR_VERIFIER_H_
 
-#include <optional>
-
 #include "src/compiler/backend/instruction.h"
 #include "src/zone/zone-containers.h"
 
@@ -177,7 +175,7 @@ class BlockAssessments : public ZoneObject {
   }
   void CheckReferenceMap(const ReferenceMap* reference_map);
   bool IsStaleReferenceStackSlot(InstructionOperand op,
-                                 std::optional<int> vreg = std::nullopt);
+                                 base::Optional<int> vreg = base::nullopt);
 
   OperandMap& map() { return map_; }
   const OperandMap& map() const { return map_; }

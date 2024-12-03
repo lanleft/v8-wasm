@@ -56,7 +56,7 @@ class MyRandomNumberGenerator {
     Q[0] = seed;
     Q[1] = seed + phi;
     Q[2] = seed + phi + phi;
-    for (uint32_t j = 3; j < kQSize; j++) {
+    for (unsigned j = 3; j < kQSize; j++) {
       Q[j] = Q[j - 3] ^ Q[j - 2] ^ phi ^ j;
     }
   }
@@ -133,10 +133,10 @@ static void InitializeBuildingBlocks(Handle<String>* building_blocks,
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
   for (int i = 0; i < bb_length; i++) {
-    uint32_t len = rng->next(16);
-    uint32_t slice_head_chars = 0;
-    uint32_t slice_tail_chars = 0;
-    uint32_t slice_depth = 0;
+    int len = rng->next(16);
+    int slice_head_chars = 0;
+    int slice_tail_chars = 0;
+    int slice_depth = 0;
     for (int j = 0; j < 3; j++) {
       if (rng->next(0.35)) slice_depth++;
     }
@@ -154,12 +154,12 @@ static void InitializeBuildingBlocks(Handle<String>* building_blocks,
     }
     // Don't slice 0 length strings.
     if (len == 0) slice_depth = 0;
-    uint32_t slice_length = slice_depth * (slice_head_chars + slice_tail_chars);
+    int slice_length = slice_depth * (slice_head_chars + slice_tail_chars);
     len += slice_length;
     switch (rng->next(4)) {
       case 0: {
         base::uc16 buf[2000];
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           buf[j] = rng->next(0x10000);
         }
         building_blocks[i] =
@@ -167,48 +167,48 @@ static void InitializeBuildingBlocks(Handle<String>* building_blocks,
                 ->NewStringFromTwoByte(
                     v8::base::Vector<const base::uc16>(buf, len))
                 .ToHandleChecked();
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           CHECK_EQ(buf[j], building_blocks[i]->Get(j));
         }
         break;
       }
       case 1: {
         char buf[2000];
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           buf[j] = rng->next(0x80);
         }
         building_blocks[i] =
             factory->NewStringFromOneByte(v8::base::OneByteVector(buf, len))
                 .ToHandleChecked();
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           CHECK_EQ(buf[j], building_blocks[i]->Get(j));
         }
         break;
       }
       case 2: {
         base::uc16* buf = NewArray<base::uc16>(len);
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           buf[j] = rng->next(0x10000);
         }
         Resource* resource = new Resource(buf, len);
         building_blocks[i] = v8::Utils::OpenHandle(
             *v8::String::NewExternalTwoByte(CcTest::isolate(), resource)
                  .ToLocalChecked());
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           CHECK_EQ(buf[j], building_blocks[i]->Get(j));
         }
         break;
       }
       case 3: {
         char* buf = NewArray<char>(len);
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           buf[j] = rng->next(0x80);
         }
         OneByteResource* resource = new OneByteResource(buf, len);
         building_blocks[i] = v8::Utils::OpenHandle(
             *v8::String::NewExternalOneByte(CcTest::isolate(), resource)
                  .ToLocalChecked());
-        for (uint32_t j = 0; j < len; j++) {
+        for (int j = 0; j < len; j++) {
           CHECK_EQ(buf[j], building_blocks[i]->Get(j));
         }
         break;
@@ -308,8 +308,8 @@ void ConsStringGenerationData::Reset() {
 }
 
 void AccumulateStats(Tagged<ConsString> cons_string, ConsStringStats* stats) {
-  uint32_t left_length = cons_string->first()->length();
-  uint32_t right_length = cons_string->second()->length();
+  int left_length = cons_string->first()->length();
+  int right_length = cons_string->second()->length();
   CHECK(cons_string->length() == left_length + right_length);
   // Check left side.
   bool left_is_cons = IsConsString(cons_string->first());
@@ -1339,7 +1339,6 @@ class OneByteVectorResource : public v8::String::ExternalOneByteStringResource {
 
 TEST(InternalizeExternal) {
   v8_flags.stress_incremental_marking = false;
-  ManualGCScope manual_gc_scope;
   CcTest::InitializeVM();
   i::Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
@@ -1354,14 +1353,14 @@ TEST(InternalizeExternal) {
     Handle<String> string = v8::Utils::OpenHandle(*ext_string);
     CHECK(IsExternalString(*string));
     CHECK(!IsInternalizedString(*string));
-    CHECK(!i::HeapLayout::InYoungGeneration(*string));
+    CHECK(!i::Heap::InYoungGeneration(*string));
     CHECK_EQ(isolate->string_table()->TryStringToIndexOrLookupExisting(
                  isolate, string->ptr()),
              Smi::FromInt(ResultSentinel::kNotFound).ptr());
     factory->InternalizeName(string);
     CHECK(IsExternalString(*string));
     CHECK(IsInternalizedString(*string));
-    CHECK(!i::HeapLayout::InYoungGeneration(*string));
+    CHECK(!i::Heap::InYoungGeneration(*string));
   }
   i::heap::InvokeMajorGC(CcTest::heap());
   i::heap::InvokeMajorGC(CcTest::heap());
@@ -1390,7 +1389,7 @@ TEST(Regress1402187) {
     v8::Local<v8::String> ext_string =
         Utils::ToLocal(factory->NewStringFromAsciiChecked(
             ext_string_content, AllocationType::kOld));
-    CHECK(ext_string->MakeExternal(CcTest::isolate(), resource));
+    CHECK(ext_string->MakeExternal(resource));
     Handle<String> string = v8::Utils::OpenHandle(*ext_string);
     string->set_raw_hash_field(fake_hash);
     CHECK(IsExternalString(*string));
@@ -1441,7 +1440,7 @@ static void ExternalizeDuringJsonStringifyCallback(
   OneByteVectorResource* resource =
       new OneByteVectorResource(v8::base::Vector<const char>(
           ext_string_content, strlen(ext_string_content)));
-  CHECK(v8::String::Cast(*key)->MakeExternal(CcTest::isolate(), resource));
+  CHECK(v8::String::Cast(*key)->MakeExternal(resource));
 }
 
 TEST(ExternalizeDuringJsonStringify) {
@@ -1506,7 +1505,7 @@ TEST(SliceFromSlice) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   v8::Local<v8::Value> result;
-  DirectHandle<String> string;
+  Handle<String> string;
   const char* init = "var str = 'abcdefghijklmnopqrstuvwxyz';";
   const char* slice = "var slice = ''; slice = str.slice(1,-1); slice";
   const char* slice_from_slice = "slice.slice(1,-1);";
@@ -1514,14 +1513,14 @@ TEST(SliceFromSlice) {
   CompileRun(init);
   result = CompileRun(slice);
   CHECK(result->IsString());
-  string = v8::Utils::OpenDirectHandle(v8::String::Cast(*result));
+  string = v8::Utils::OpenHandle(v8::String::Cast(*result));
   CHECK(IsSlicedString(*string));
   CHECK(IsSeqString(Cast<SlicedString>(*string)->parent()));
   CHECK_EQ(0, strcmp("bcdefghijklmnopqrstuvwxy", string->ToCString().get()));
 
   result = CompileRun(slice_from_slice);
   CHECK(result->IsString());
-  string = v8::Utils::OpenDirectHandle(v8::String::Cast(*result));
+  string = v8::Utils::OpenHandle(v8::String::Cast(*result));
   CHECK(IsSlicedString(*string));
   CHECK(IsSeqString(Cast<SlicedString>(*string)->parent()));
   CHECK_EQ(0, strcmp("cdefghijklmnopqrstuvwx", string->ToCString().get()));
@@ -1730,7 +1729,9 @@ TEST(InvalidExternalString) {
     HandleScope scope(isolate);                                          \
     v8::base::Vector<TYPE> dummy = v8::base::Vector<TYPE>::New(invalid); \
     memset(dummy.begin(), 0x0, dummy.length() * sizeof(TYPE));           \
-    CHECK(isolate->factory()->FUN(dummy).is_null());                     \
+    CHECK(isolate->factory()                                             \
+              ->FUN(v8::base::Vector<const TYPE>::cast(dummy))           \
+              .is_null());                                               \
     memset(dummy.begin(), 0x20, dummy.length() * sizeof(TYPE));          \
     CHECK(isolate->has_exception());                                     \
     isolate->clear_exception();                                          \
@@ -2083,7 +2084,7 @@ TEST(CheckCachedDataInternalExternalUncachedString) {
       new OneByteResource(i::StrDup(raw_small), strlen(raw_small));
 
   // Check it is external, internalized, and uncached with a cacheable resource.
-  string->MakeExternal(CcTest::i_isolate(), resource);
+  string->MakeExternal(resource);
   CHECK(string->IsOneByteRepresentation());
   CHECK(IsExternalString(*string));
   CHECK(IsInternalizedString(*string));
@@ -2128,7 +2129,7 @@ TEST(CheckCachedDataInternalExternalUncachedStringTwoByte) {
   Resource* resource = new Resource(two_byte, len);
 
   // Check it is external, internalized, and uncached with a cacheable resource.
-  string->MakeExternal(CcTest::i_isolate(), resource);
+  string->MakeExternal(resource);
   CHECK(string->IsTwoByteRepresentation());
   CHECK(IsExternalString(*string));
   CHECK(IsInternalizedString(*string));

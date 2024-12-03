@@ -15,8 +15,6 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-#include "src/codegen/define-code-stub-assembler-macros.inc"
-
 class IntrinsicsGenerator {
  public:
   explicit IntrinsicsGenerator(InterpreterAssembler* assembler)
@@ -264,8 +262,6 @@ void IntrinsicsGenerator::AbortIfArgCountMismatch(int expected,
 }
 
 #undef __
-
-#include "src/codegen/undef-code-stub-assembler-macros.inc"
 
 }  // namespace interpreter
 }  // namespace internal

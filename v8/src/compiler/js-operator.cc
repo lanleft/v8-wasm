@@ -724,7 +724,7 @@ int JSWasmCallParameters::input_count() const {
 }
 
 // static
-Type JSWasmCallNode::TypeForWasmReturnType(wasm::CanonicalValueType type) {
+Type JSWasmCallNode::TypeForWasmReturnType(const wasm::ValueType& type) {
   switch (type.kind()) {
     case wasm::kI32:
       return Type::Signed32();
@@ -735,7 +735,7 @@ Type JSWasmCallNode::TypeForWasmReturnType(wasm::CanonicalValueType type) {
       return Type::Number();
     case wasm::kRef:
     case wasm::kRefNull:
-      CHECK(type.is_reference_to(wasm::HeapType::kExtern));
+      CHECK_EQ(type.heap_type(), wasm::HeapType::kExtern);
       return Type::Any();
     default:
       UNREACHABLE();
@@ -946,11 +946,9 @@ const Operator* JSOperatorBuilder::CallRuntime(
 #if V8_ENABLE_WEBASSEMBLY
 const Operator* JSOperatorBuilder::CallWasm(
     const wasm::WasmModule* wasm_module,
-    const wasm::CanonicalSig* wasm_signature, int wasm_function_index,
+    const wasm::FunctionSig* wasm_signature, int wasm_function_index,
     SharedFunctionInfoRef shared_fct_info, wasm::NativeModule* native_module,
     FeedbackSource const& feedback) {
-  // TODO(clemensb): Drop wasm_module.
-  DCHECK_EQ(wasm_module, native_module->module());
   JSWasmCallParameters parameters(wasm_module, wasm_signature,
                                   wasm_function_index, shared_fct_info,
                                   native_module, feedback);

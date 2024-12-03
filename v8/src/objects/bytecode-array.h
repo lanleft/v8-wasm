@@ -73,7 +73,6 @@ class BytecodeArray : public ExposedTrustedObject {
 
   // Note: the parameter count includes the implicit 'this' receiver.
   inline uint16_t parameter_count() const;
-  inline uint16_t parameter_count_without_receiver() const;
   inline void set_parameter_count(uint16_t number_of_parameters);
   inline uint16_t max_arguments() const;
   inline void set_max_arguments(uint16_t max_arguments);
@@ -163,13 +162,21 @@ class BytecodeWrapper : public Struct {
   DECL_PRINTER(BytecodeWrapper)
   DECL_VERIFIER(BytecodeWrapper)
 
+  // When flushing bytecode, we in-place convert the wrapper object to an
+  // UncompiledData object (we cannot convert the BytecodeArray itself as that
+  // lives in trusted space). As such, the wrapper object must be at least as
+  // large as an UncompiledData object and therefore requires padding.
 #define FIELD_LIST(V)                     \
   V(kBytecodeOffset, kTrustedPointerSize) \
+  V(kPadding1Offset, kInt32Size)          \
+  V(kPadding2Offset, kInt32Size)          \
   V(kHeaderSize, 0)                       \
   V(kSize, 0)
 
   DEFINE_FIELD_OFFSET_CONSTANTS(Struct::kHeaderSize, FIELD_LIST)
 #undef FIELD_LIST
+
+  inline void clear_padding();
 
   class BodyDescriptor;
 

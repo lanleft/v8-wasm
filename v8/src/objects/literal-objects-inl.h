@@ -5,21 +5,24 @@
 #ifndef V8_OBJECTS_LITERAL_OBJECTS_INL_H_
 #define V8_OBJECTS_LITERAL_OBJECTS_INL_H_
 
-#include <optional>
-
 #include "src/objects/literal-objects.h"
+
 #include "src/objects/objects-inl.h"
 
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 #include "torque-generated/src/objects/literal-objects-tq-inl.inc"
 
 //
 // ObjectBoilerplateDescription
 //
+
+OBJECT_CONSTRUCTORS_IMPL(ObjectBoilerplateDescription,
+                         ObjectBoilerplateDescription::Super)
 
 // static
 template <class IsolateT>
@@ -41,7 +44,7 @@ Handle<ObjectBoilerplateDescription> ObjectBoilerplateDescription::New(
   // empty_object_boilerplate_description here since `flags` may be modified
   // even on empty descriptions.
 
-  std::optional<DisallowGarbageCollection> no_gc;
+  base::Optional<DisallowGarbageCollection> no_gc;
   auto result = Cast<ObjectBoilerplateDescription>(
       Allocate(isolate, capacity, &no_gc, allocation));
   result->set_flags(0);
@@ -51,18 +54,9 @@ Handle<ObjectBoilerplateDescription> ObjectBoilerplateDescription::New(
   return result;
 }
 
-int ObjectBoilerplateDescription::backing_store_size() const {
-  return backing_store_size_.load().value();
-}
-void ObjectBoilerplateDescription::set_backing_store_size(int value) {
-  backing_store_size_.store(this, Smi::FromInt(value));
-}
-int ObjectBoilerplateDescription::flags() const {
-  return flags_.load().value();
-}
-void ObjectBoilerplateDescription::set_flags(int value) {
-  flags_.store(this, Smi::FromInt(value));
-}
+SMI_ACCESSORS(ObjectBoilerplateDescription, backing_store_size,
+              Shape::kBackingStoreSizeOffset)
+SMI_ACCESSORS(ObjectBoilerplateDescription, flags, Shape::kFlagsOffset)
 
 Tagged<Object> ObjectBoilerplateDescription::name(int index) const {
   return get(NameIndex(index));
@@ -126,13 +120,10 @@ bool ArrayBoilerplateDescription::is_empty() const {
 // RegExpBoilerplateDescription
 //
 
-OBJECT_CONSTRUCTORS_IMPL(RegExpBoilerplateDescription, Struct)
-TRUSTED_POINTER_ACCESSORS(RegExpBoilerplateDescription, data, RegExpData,
-                          kDataOffset, kRegExpDataIndirectPointerTag)
-ACCESSORS(RegExpBoilerplateDescription, source, Tagged<String>, kSourceOffset)
-SMI_ACCESSORS(RegExpBoilerplateDescription, flags, kFlagsOffset)
+TQ_OBJECT_CONSTRUCTORS_IMPL(RegExpBoilerplateDescription)
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"
 

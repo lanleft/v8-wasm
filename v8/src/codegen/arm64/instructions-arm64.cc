@@ -5,23 +5,10 @@
 #if V8_TARGET_ARCH_ARM64
 
 #include "src/codegen/arm64/instructions-arm64.h"
-
 #include "src/codegen/arm64/assembler-arm64-inl.h"
-#include "src/common/code-memory-access-inl.h"
 
 namespace v8 {
 namespace internal {
-
-void Instruction::SetInstructionBits(Instr new_instr,
-                                     WritableJitAllocation* jit_allocation) {
-  // Usually this is aligned, but when de/serializing that's not guaranteed.
-  if (jit_allocation) {
-    jit_allocation->WriteUnalignedValue(reinterpret_cast<Address>(this),
-                                        new_instr);
-  } else {
-    base::WriteUnalignedValue(reinterpret_cast<Address>(this), new_instr);
-  }
-}
 
 bool Instruction::IsLoad() const {
   if (Mask(LoadStoreAnyFMask) != LoadStoreAnyFixed) {
@@ -226,10 +213,10 @@ bool Instruction::IsTargetInImmPCOffsetRange(Instruction* target) {
   return IsValidImmPCOffset(BranchType(), DistanceTo(target));
 }
 
-void Instruction::SetImmPCOffsetTarget(Zone* zone, AssemblerOptions options,
+void Instruction::SetImmPCOffsetTarget(const AssemblerOptions& options,
                                        Instruction* target) {
   if (IsPCRelAddressing()) {
-    SetPCRelImmTarget(zone, options, target);
+    SetPCRelImmTarget(options, target);
   } else if (IsCondBranchImm()) {
     SetBranchImmTarget<CondBranchType>(target);
   } else if (IsUncondBranchImm()) {
@@ -239,14 +226,14 @@ void Instruction::SetImmPCOffsetTarget(Zone* zone, AssemblerOptions options,
   } else if (IsTestBranch()) {
     SetBranchImmTarget<TestBranchType>(target);
   } else if (IsUnresolvedInternalReference()) {
-    SetUnresolvedInternalReferenceImmTarget(zone, options, target);
+    SetUnresolvedInternalReferenceImmTarget(options, target);
   } else {
     // Load literal (offset from PC).
     SetImmLLiteral(target);
   }
 }
 
-void Instruction::SetPCRelImmTarget(Zone* zone, AssemblerOptions options,
+void Instruction::SetPCRelImmTarget(const AssemblerOptions& options,
                                     Instruction* target) {
   // ADRP is not supported, so 'this' must point to an ADR instruction.
   DCHECK(IsAdr());
@@ -257,14 +244,14 @@ void Instruction::SetPCRelImmTarget(Zone* zone, AssemblerOptions options,
     imm = Assembler::ImmPCRelAddress(static_cast<int>(target_offset));
     SetInstructionBits(Mask(~ImmPCRel_mask) | imm);
   } else {
-    PatchingAssembler patcher(zone, options, reinterpret_cast<uint8_t*>(this),
+    PatchingAssembler patcher(options, reinterpret_cast<uint8_t*>(this),
                               PatchingAssembler::kAdrFarPatchableNInstrs);
     patcher.PatchAdrFar(target_offset);
   }
 }
 
 void Instruction::SetUnresolvedInternalReferenceImmTarget(
-    Zone* zone, AssemblerOptions options, Instruction* target) {
+    const AssemblerOptions& options, Instruction* target) {
   DCHECK(IsUnresolvedInternalReference());
   DCHECK(IsAligned(DistanceTo(target), kInstrSize));
   DCHECK(is_int32(DistanceTo(target) >> kInstrSizeLog2));
@@ -273,7 +260,7 @@ void Instruction::SetUnresolvedInternalReferenceImmTarget(
   uint32_t high16 = unsigned_bitextract_32(31, 16, target_offset);
   uint32_t low16 = unsigned_bitextract_32(15, 0, target_offset);
 
-  PatchingAssembler patcher(zone, options, reinterpret_cast<uint8_t*>(this), 2);
+  PatchingAssembler patcher(options, reinterpret_cast<uint8_t*>(this), 2);
   patcher.brk(high16);
   patcher.brk(low16);
 }

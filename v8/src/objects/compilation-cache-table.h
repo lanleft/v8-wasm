@@ -147,11 +147,11 @@ class CompilationCacheTable
       DirectHandle<Context> native_context,
       DirectHandle<FeedbackCell> feedback_cell, int position);
 
-  // The RegExp cache contains RegExpData objects.
+  // The RegExp cache contains JSRegExp::data fixed arrays.
   Handle<Object> LookupRegExp(Handle<String> source, JSRegExp::Flags flags);
   static Handle<CompilationCacheTable> PutRegExp(
       Isolate* isolate, Handle<CompilationCacheTable> cache, Handle<String> src,
-      JSRegExp::Flags flags, DirectHandle<RegExpData> value);
+      JSRegExp::Flags flags, DirectHandle<FixedArray> value);
 
   void Remove(Tagged<Object> value);
   void RemoveEntry(InternalIndex entry);
@@ -170,6 +170,9 @@ class CompilationCacheTable
  private:
   static Handle<CompilationCacheTable> EnsureScriptTableCapacity(
       Isolate* isolate, Handle<CompilationCacheTable> cache);
+
+  OBJECT_CONSTRUCTORS(CompilationCacheTable,
+                      HashTable<CompilationCacheTable, CompilationCacheShape>);
 };
 
 }  // namespace internal

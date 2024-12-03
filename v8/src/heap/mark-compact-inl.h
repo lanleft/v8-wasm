@@ -99,7 +99,7 @@ void RootMarkingVisitor::VisitRootPointers(Root root, const char* description,
 
 void RootMarkingVisitor::MarkObjectByPointer(Root root, FullObjectSlot p) {
   Tagged<Object> object = *p;
-#ifdef V8_ENABLE_DIRECT_HANDLE
+#ifdef V8_ENABLE_DIRECT_LOCAL
   if (object.ptr() == kTaggedNullAddress) return;
 #endif
   if (!IsHeapObject(object)) return;

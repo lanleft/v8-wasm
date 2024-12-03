@@ -5,8 +5,7 @@
 // Tier up quickly to save time:
 // Flags: --wasm-tiering-budget=100
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 var builder = new WasmModuleBuilder();
 let supertype = builder.addStruct([makeField(kWasmI32, true)]);

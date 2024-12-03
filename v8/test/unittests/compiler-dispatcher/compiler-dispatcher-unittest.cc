@@ -207,7 +207,7 @@ class MockPlatform : public v8::Platform {
   int NumberOfWorkerThreads() override { return 1; }
 
   std::shared_ptr<TaskRunner> GetForegroundTaskRunner(
-      v8::Isolate* isolate, TaskPriority priority) override {
+      v8::Isolate* isolate) override {
     return std::make_shared<MockForegroundTaskRunner>(this);
   }
 

@@ -9,11 +9,6 @@
 
 namespace v8::base::tmp {
 
-template <typename T>
-struct lazy_false : std::false_type {};
-template <typename T>
-struct lazy_true : std::true_type {};
-
 // call_parameters returns a list of parameter types of the given (member)
 // function pointer.
 template <typename>

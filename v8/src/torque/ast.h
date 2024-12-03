@@ -9,17 +9,19 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "src/base/optional.h"
 #include "src/numbers/integer-literal.h"
 #include "src/torque/constants.h"
 #include "src/torque/source-positions.h"
 #include "src/torque/utils.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 #define AST_EXPRESSION_NODE_KIND_LIST(V) \
   V(CallExpression)                      \
@@ -537,9 +539,9 @@ struct AssignmentExpression : Expression {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(AssignmentExpression)
   AssignmentExpression(SourcePosition pos, Expression* location,
                        Expression* value)
-      : AssignmentExpression(pos, location, std::nullopt, value) {}
+      : AssignmentExpression(pos, location, base::nullopt, value) {}
   AssignmentExpression(SourcePosition pos, Expression* location,
-                       std::optional<std::string> op, Expression* value)
+                       base::Optional<std::string> op, Expression* value)
       : Expression(kKind, pos),
         location(location),
         op(std::move(op)),
@@ -552,7 +554,7 @@ struct AssignmentExpression : Expression {
   }
 
   Expression* location;
-  std::optional<std::string> op;
+  base::Optional<std::string> op;
   Expression* value;
 };
 
@@ -702,7 +704,7 @@ struct ExpressionStatement : Statement {
 struct IfStatement : Statement {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(IfStatement)
   IfStatement(SourcePosition pos, bool is_constexpr, Expression* condition,
-              Statement* if_true, std::optional<Statement*> if_false)
+              Statement* if_true, base::Optional<Statement*> if_false)
       : Statement(kKind, pos),
         condition(condition),
         is_constexpr(is_constexpr),
@@ -711,7 +713,7 @@ struct IfStatement : Statement {
   Expression* condition;
   bool is_constexpr;
   Statement* if_true;
-  std::optional<Statement*> if_false;
+  base::Optional<Statement*> if_false;
 };
 
 struct WhileStatement : Statement {
@@ -724,9 +726,9 @@ struct WhileStatement : Statement {
 
 struct ReturnStatement : Statement {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(ReturnStatement)
-  ReturnStatement(SourcePosition pos, std::optional<Expression*> value)
+  ReturnStatement(SourcePosition pos, base::Optional<Expression*> value)
       : Statement(kKind, pos), value(value) {}
-  std::optional<Expression*> value;
+  base::Optional<Expression*> value;
 };
 
 struct DebugStatement : Statement {
@@ -760,9 +762,10 @@ struct TailCallStatement : Statement {
 
 struct VarDeclarationStatement : Statement {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(VarDeclarationStatement)
-  VarDeclarationStatement(SourcePosition pos, bool const_qualified,
-                          Identifier* name, std::optional<TypeExpression*> type,
-                          std::optional<Expression*> initializer = std::nullopt)
+  VarDeclarationStatement(
+      SourcePosition pos, bool const_qualified, Identifier* name,
+      base::Optional<TypeExpression*> type,
+      base::Optional<Expression*> initializer = base::nullopt)
       : Statement(kKind, pos),
         const_qualified(const_qualified),
         name(name),
@@ -770,8 +773,8 @@ struct VarDeclarationStatement : Statement {
         initializer(initializer) {}
   bool const_qualified;
   Identifier* name;
-  std::optional<TypeExpression*> type;
-  std::optional<Expression*> initializer;
+  base::Optional<TypeExpression*> type;
+  base::Optional<Expression*> initializer;
 };
 
 struct BreakStatement : Statement {
@@ -795,9 +798,9 @@ struct GotoStatement : Statement {
 
 struct ForLoopStatement : Statement {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(ForLoopStatement)
-  ForLoopStatement(SourcePosition pos, std::optional<Statement*> declaration,
-                   std::optional<Expression*> test,
-                   std::optional<Statement*> action, Statement* body)
+  ForLoopStatement(SourcePosition pos, base::Optional<Statement*> declaration,
+                   base::Optional<Expression*> test,
+                   base::Optional<Statement*> action, Statement* body)
       : Statement(kKind, pos),
         var_declaration(),
         test(std::move(test)),
@@ -806,9 +809,9 @@ struct ForLoopStatement : Statement {
     if (declaration)
       var_declaration = VarDeclarationStatement::cast(*declaration);
   }
-  std::optional<VarDeclarationStatement*> var_declaration;
-  std::optional<Expression*> test;
-  std::optional<Statement*> action;
+  base::Optional<VarDeclarationStatement*> var_declaration;
+  base::Optional<Expression*> test;
+  base::Optional<Statement*> action;
   Statement* body;
 };
 
@@ -874,8 +877,8 @@ struct AbstractTypeDeclaration : TypeDeclaration {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(AbstractTypeDeclaration)
   AbstractTypeDeclaration(SourcePosition pos, Identifier* name,
                           AbstractTypeFlags flags,
-                          std::optional<TypeExpression*> extends,
-                          std::optional<std::string> generates)
+                          base::Optional<TypeExpression*> extends,
+                          base::Optional<std::string> generates)
       : TypeDeclaration(kKind, pos, name),
         flags(flags),
         extends(extends),
@@ -888,8 +891,8 @@ struct AbstractTypeDeclaration : TypeDeclaration {
   bool IsTransient() const { return flags & AbstractTypeFlag::kTransient; }
 
   AbstractTypeFlags flags;
-  std::optional<TypeExpression*> extends;
-  std::optional<std::string> generates;
+  base::Optional<TypeExpression*> extends;
+  base::Optional<std::string> generates;
 };
 
 struct TypeAliasDeclaration : TypeDeclaration {
@@ -938,7 +941,7 @@ struct AnnotationParameter {
 
 struct Annotation {
   Identifier* name;
-  std::optional<AnnotationParameter> param;
+  base::Optional<AnnotationParameter> param;
 };
 
 struct ClassFieldIndexInfo {
@@ -952,7 +955,7 @@ struct ClassFieldIndexInfo {
 
 struct ClassFieldExpression {
   NameAndTypeExpression name_and_type;
-  std::optional<ClassFieldIndexInfo> index;
+  base::Optional<ClassFieldIndexInfo> index;
   std::vector<ConditionalAnnotation> conditions;
   bool custom_weak_marking;
   bool const_qualified;
@@ -989,31 +992,30 @@ struct CallableDeclaration : Declaration {
 struct MacroDeclaration : CallableDeclaration {
   DEFINE_AST_NODE_INNER_BOILERPLATE(MacroDeclaration)
   MacroDeclaration(AstNode::Kind kind, SourcePosition pos, bool transitioning,
-                   Identifier* name, std::optional<std::string> op,
+                   Identifier* name, base::Optional<std::string> op,
                    ParameterList parameters, TypeExpression* return_type,
-                   LabelAndTypesVector labels)
+                   const LabelAndTypesVector& labels)
       : CallableDeclaration(kind, pos, transitioning, name,
-                            std::move(parameters), return_type,
-                            std::move(labels)),
+                            std::move(parameters), return_type, labels),
         op(std::move(op)) {
     if (parameters.implicit_kind == ImplicitKind::kJSImplicit) {
       Error("Cannot use \"js-implicit\" with macros, use \"implicit\" instead.")
           .Position(parameters.implicit_kind_pos);
     }
   }
-  std::optional<std::string> op;
+  base::Optional<std::string> op;
 };
 
 struct ExternalMacroDeclaration : MacroDeclaration {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(ExternalMacroDeclaration)
   ExternalMacroDeclaration(SourcePosition pos, bool transitioning,
                            std::string external_assembler_name,
-                           Identifier* name, std::optional<std::string> op,
+                           Identifier* name, base::Optional<std::string> op,
                            ParameterList parameters,
                            TypeExpression* return_type,
-                           LabelAndTypesVector labels)
+                           const LabelAndTypesVector& labels)
       : MacroDeclaration(kKind, pos, transitioning, name, std::move(op),
-                         std::move(parameters), return_type, std::move(labels)),
+                         std::move(parameters), return_type, labels),
         external_assembler_name(std::move(external_assembler_name)) {}
   std::string external_assembler_name;
 };
@@ -1033,16 +1035,16 @@ struct IntrinsicDeclaration : CallableDeclaration {
 struct TorqueMacroDeclaration : MacroDeclaration {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(TorqueMacroDeclaration)
   TorqueMacroDeclaration(SourcePosition pos, bool transitioning,
-                         Identifier* name, std::optional<std::string> op,
+                         Identifier* name, base::Optional<std::string> op,
                          ParameterList parameters, TypeExpression* return_type,
-                         LabelAndTypesVector labels, bool export_to_csa,
-                         std::optional<Statement*> body)
+                         const LabelAndTypesVector& labels, bool export_to_csa,
+                         base::Optional<Statement*> body)
       : MacroDeclaration(kKind, pos, transitioning, name, std::move(op),
-                         std::move(parameters), return_type, std::move(labels)),
+                         std::move(parameters), return_type, labels),
         export_to_csa(export_to_csa),
         body(body) {}
   bool export_to_csa;
-  std::optional<Statement*> body;
+  base::Optional<Statement*> body;
 };
 
 struct BuiltinDeclaration : CallableDeclaration {
@@ -1088,13 +1090,13 @@ struct TorqueBuiltinDeclaration : BuiltinDeclaration {
                            ParameterList parameters,
                            TypeExpression* return_type,
                            bool has_custom_interface_descriptor,
-                           std::optional<Statement*> body)
+                           base::Optional<Statement*> body)
       : BuiltinDeclaration(kKind, pos, javascript_linkage, transitioning, name,
                            std::move(parameters), return_type),
         has_custom_interface_descriptor(has_custom_interface_descriptor),
         body(body) {}
   bool has_custom_interface_descriptor;
-  std::optional<Statement*> body;
+  base::Optional<Statement*> body;
 };
 
 struct ExternalRuntimeDeclaration : CallableDeclaration {
@@ -1121,7 +1123,7 @@ struct ConstDeclaration : Declaration {
 
 struct GenericParameter {
   Identifier* name;
-  std::optional<TypeExpression*> constraint;
+  base::Optional<TypeExpression*> constraint;
 };
 
 using GenericParameters = std::vector<GenericParameter>;
@@ -1228,7 +1230,7 @@ struct ClassBody : AstNode {
 struct ClassDeclaration : TypeDeclaration {
   DEFINE_AST_NODE_LEAF_BOILERPLATE(ClassDeclaration)
   ClassDeclaration(SourcePosition pos, Identifier* name, ClassFlags flags,
-                   TypeExpression* super, std::optional<std::string> generates,
+                   TypeExpression* super, base::Optional<std::string> generates,
                    std::vector<Declaration*> methods,
                    std::vector<ClassFieldExpression> fields,
                    InstanceTypeConstraints instance_type_constraints)
@@ -1241,7 +1243,7 @@ struct ClassDeclaration : TypeDeclaration {
         instance_type_constraints(std::move(instance_type_constraints)) {}
   ClassFlags flags;
   TypeExpression* super;
-  std::optional<std::string> generates;
+  base::Optional<std::string> generates;
   std::vector<Declaration*> methods;
   std::vector<ClassFieldExpression> fields;
   InstanceTypeConstraints instance_type_constraints;
@@ -1322,7 +1324,7 @@ inline VarDeclarationStatement* MakeConstDeclarationStatement(
     std::string name, Expression* initializer) {
   return MakeNode<VarDeclarationStatement>(
       /*const_qualified=*/true, MakeNode<Identifier>(std::move(name)),
-      std::optional<TypeExpression*>{}, initializer);
+      base::Optional<TypeExpression*>{}, initializer);
 }
 
 inline BasicTypeExpression* MakeBasicTypeExpression(
@@ -1337,6 +1339,8 @@ inline StructExpression* MakeStructExpression(
   return MakeNode<StructExpression>(type, std::move(initializers));
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TORQUE_AST_H_

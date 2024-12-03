@@ -5,8 +5,7 @@
 #ifndef V8_DIAGNOSTICS_CODE_TRACER_H_
 #define V8_DIAGNOSTICS_CODE_TRACER_H_
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/base/platform/platform.h"
 #include "src/base/platform/wrappers.h"
 #include "src/base/strings.h"
@@ -69,8 +68,8 @@ class CodeTracer final : public Malloced {
 
    private:
     // Exactly one of these two will be initialized.
-    std::optional<StdoutStream> stdout_stream_;
-    std::optional<OFStream> file_stream_;
+    base::Optional<StdoutStream> stdout_stream_;
+    base::Optional<OFStream> file_stream_;
   };
 
   void OpenFile() {

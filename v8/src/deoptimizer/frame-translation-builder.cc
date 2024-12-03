@@ -4,8 +4,6 @@
 
 #include "src/deoptimizer/frame-translation-builder.h"
 
-#include <optional>
-
 #include "src/base/vlq.h"
 #include "src/deoptimizer/translated-state.h"
 #include "src/objects/fixed-array-inl.h"
@@ -285,7 +283,7 @@ void FrameTranslationBuilder::BeginBuiltinContinuationFrame(
 #if V8_ENABLE_WEBASSEMBLY
 void FrameTranslationBuilder::BeginJSToWasmBuiltinContinuationFrame(
     BytecodeOffset bytecode_offset, int literal_id, unsigned height,
-    std::optional<wasm::ValueKind> return_kind) {
+    base::Optional<wasm::ValueKind> return_kind) {
   auto opcode = TranslationOpcode::JS_TO_WASM_BUILTIN_CONTINUATION_FRAME;
   Add(opcode, SignedOperand(bytecode_offset.ToInt()), SignedOperand(literal_id),
       SignedOperand(height),
@@ -311,7 +309,7 @@ void FrameTranslationBuilder::BeginLiftoffFrame(BytecodeOffset bailout_id,
 
 void FrameTranslationBuilder::BeginJavaScriptBuiltinContinuationFrame(
     BytecodeOffset bytecode_offset, int literal_id, unsigned height) {
-  auto opcode = TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_FRAME;
+  auto opcode = TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_FRAME;
   Add(opcode, SignedOperand(bytecode_offset.ToInt()), SignedOperand(literal_id),
       SignedOperand(height));
 }
@@ -319,7 +317,7 @@ void FrameTranslationBuilder::BeginJavaScriptBuiltinContinuationFrame(
 void FrameTranslationBuilder::BeginJavaScriptBuiltinContinuationWithCatchFrame(
     BytecodeOffset bytecode_offset, int literal_id, unsigned height) {
   auto opcode =
-      TranslationOpcode::JAVASCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME;
+      TranslationOpcode::JAVA_SCRIPT_BUILTIN_CONTINUATION_WITH_CATCH_FRAME;
   Add(opcode, SignedOperand(bytecode_offset.ToInt()), SignedOperand(literal_id),
       SignedOperand(height));
 }

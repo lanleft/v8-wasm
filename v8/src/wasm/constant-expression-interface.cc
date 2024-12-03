@@ -56,8 +56,8 @@ void ConstantExpressionInterface::UnOp(FullDecoder* decoder, WasmOpcode opcode,
     case kExprAnyConvertExtern: {
       const char* error_message = nullptr;
       result->runtime_value = WasmValue(
-          JSToWasmObject(isolate_, input.runtime_value.to_ref(),
-                         kCanonicalAnyRef, &error_message)
+          JSToWasmObject(isolate_, input.runtime_value.to_ref(), kWasmAnyRef, 0,
+                         &error_message)
               .ToHandleChecked(),
           ValueType::RefMaybeNull(HeapType::kAny, input.type.nullability()));
       break;
@@ -104,10 +104,12 @@ void ConstantExpressionInterface::BinOp(FullDecoder* decoder, WasmOpcode opcode,
 void ConstantExpressionInterface::RefNull(FullDecoder* decoder, ValueType type,
                                           Value* result) {
   if (!generate_value()) return;
-  result->runtime_value = WasmValue(
-      type.use_wasm_null() ? Cast<Object>(isolate_->factory()->wasm_null())
-                           : Cast<Object>(isolate_->factory()->null_value()),
-      type);
+  result->runtime_value =
+      WasmValue((IsSubtypeOf(type, kWasmExternRef, decoder->module_) ||
+                 IsSubtypeOf(type, kWasmExnRef, decoder->module_))
+                    ? Cast<Object>(isolate_->factory()->null_value())
+                    : Cast<Object>(isolate_->factory()->wasm_null()),
+                type);
 }
 
 void ConstantExpressionInterface::RefFunc(FullDecoder* decoder,
@@ -118,8 +120,8 @@ void ConstantExpressionInterface::RefFunc(FullDecoder* decoder,
     return;
   }
   if (!generate_value()) return;
-  ModuleTypeIndex sig_index = module_->functions[function_index].sig_index;
-  bool function_is_shared = module_->type(sig_index).is_shared;
+  uint32_t sig_index = module_->functions[function_index].sig_index;
+  bool function_is_shared = module_->types[sig_index].is_shared;
   ValueType type = ValueType::Ref(module_->functions[function_index].sig_index);
   Handle<WasmFuncRef> func_ref = WasmTrustedInstanceData::GetOrCreateFuncRef(
       isolate_,
@@ -153,8 +155,8 @@ void ConstantExpressionInterface::StructNew(FullDecoder* decoder,
   if (!generate_value()) return;
   DirectHandle<WasmTrustedInstanceData> data =
       GetTrustedInstanceDataForTypeIndex(imm.index);
-  DirectHandle<Map> rtt{
-      Cast<Map>(data->managed_object_maps()->get(imm.index.index)), isolate_};
+  DirectHandle<Map> rtt{Cast<Map>(data->managed_object_maps()->get(imm.index)),
+                        isolate_};
   WasmValue* field_values =
       decoder->zone_->AllocateArray<WasmValue>(imm.struct_type->field_count());
   for (size_t i = 0; i < imm.struct_type->field_count(); i++) {
@@ -195,7 +197,6 @@ WasmValue DefaultValueForType(ValueType type, Isolate* isolate) {
       return WasmValue(0);
     case kI64:
       return WasmValue(int64_t{0});
-    case kF16:
     case kF32:
       return WasmValue(0.0f);
     case kF64:
@@ -203,16 +204,14 @@ WasmValue DefaultValueForType(ValueType type, Isolate* isolate) {
     case kS128:
       return WasmValue(Simd128());
     case kRefNull:
-      // printf("kRefNull and type.use_wasm_null() = %d\n", type.use_wasm_null());
-      // printf("repr = %d\n", type.heap_representation_non_shared());
-      return WasmValue(type.use_wasm_null()
-                           ? Cast<Object>(isolate->factory()->wasm_null()) // 
-                           : Cast<Object>(isolate->factory()->null_value()), // 
+      return WasmValue(type == kWasmExternRef || type == kWasmNullExternRef ||
+                               type == kWasmExnRef || type == kWasmNullExnRef
+                           ? Cast<Object>(isolate->factory()->null_value())
+                           : Cast<Object>(isolate->factory()->wasm_null()),
                        type);
     case kVoid:
     case kRtt:
     case kRef:
-    case kTop:
     case kBottom:
       UNREACHABLE();
   }
@@ -224,8 +223,8 @@ void ConstantExpressionInterface::StructNewDefault(
   if (!generate_value()) return;
   DirectHandle<WasmTrustedInstanceData> data =
       GetTrustedInstanceDataForTypeIndex(imm.index);
-  DirectHandle<Map> rtt{
-      Cast<Map>(data->managed_object_maps()->get(imm.index.index)), isolate_};
+  DirectHandle<Map> rtt{Cast<Map>(data->managed_object_maps()->get(imm.index)),
+                        isolate_};
   WasmValue* field_values =
       decoder->zone_->AllocateArray<WasmValue>(imm.struct_type->field_count());
   for (uint32_t i = 0; i < imm.struct_type->field_count(); i++) {
@@ -244,8 +243,8 @@ void ConstantExpressionInterface::ArrayNew(FullDecoder* decoder,
   if (!generate_value()) return;
   DirectHandle<WasmTrustedInstanceData> data =
       GetTrustedInstanceDataForTypeIndex(imm.index);
-  DirectHandle<Map> rtt{
-      Cast<Map>(data->managed_object_maps()->get(imm.index.index)), isolate_};
+  DirectHandle<Map> rtt{Cast<Map>(data->managed_object_maps()->get(imm.index)),
+                        isolate_};
   if (length.runtime_value.to_u32() >
       static_cast<uint32_t>(WasmArray::MaxLength(imm.array_type))) {
     error_ = MessageTemplate::kWasmTrapArrayTooLarge;
@@ -275,8 +274,7 @@ void ConstantExpressionInterface::ArrayNewFixed(
   DirectHandle<WasmTrustedInstanceData> data =
       GetTrustedInstanceDataForTypeIndex(array_imm.index);
   DirectHandle<Map> rtt{
-      Cast<Map>(data->managed_object_maps()->get(array_imm.index.index)),
-      isolate_};
+      Cast<Map>(data->managed_object_maps()->get(array_imm.index)), isolate_};
   base::Vector<WasmValue> element_values =
       decoder->zone_->AllocateVector<WasmValue>(length_imm.index);
   for (size_t i = 0; i < length_imm.index; i++) {
@@ -301,8 +299,7 @@ void ConstantExpressionInterface::ArrayNewSegment(
       GetTrustedInstanceDataForTypeIndex(array_imm.index);
 
   DirectHandle<Map> rtt{
-      Cast<Map>(data->managed_object_maps()->get(array_imm.index.index)),
-      isolate_};
+      Cast<Map>(data->managed_object_maps()->get(array_imm.index)), isolate_};
 
   uint32_t length = length_value.runtime_value.to_u32();
   uint32_t offset = offset_value.runtime_value.to_u32();
@@ -390,8 +387,8 @@ void ConstantExpressionInterface::DoReturn(FullDecoder* decoder,
 
 Handle<WasmTrustedInstanceData>
 ConstantExpressionInterface::GetTrustedInstanceDataForTypeIndex(
-    ModuleTypeIndex index) {
-  bool type_is_shared = module_->type(index).is_shared;
+    uint32_t index) {
+  bool type_is_shared = module_->types[index].is_shared;
   return type_is_shared ? shared_trusted_instance_data_
                         : trusted_instance_data_;
 }

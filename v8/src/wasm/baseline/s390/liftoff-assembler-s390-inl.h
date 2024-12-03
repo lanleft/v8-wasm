@@ -55,9 +55,6 @@ inline void StoreToMemory(LiftoffAssembler* assm, MemOperand dst,
                           Register scratch) {
   if (src.is_reg()) {
     switch (src.kind()) {
-      case kI16:
-        assm->StoreU16(src.reg().gp(), dst);
-        break;
       case kI32:
         assm->StoreU32(src.reg().gp(), dst);
         break;
@@ -149,7 +146,7 @@ void LiftoffAssembler::AlignFrameSize() {}
 
 void LiftoffAssembler::PatchPrepareStackFrame(
     int offset, SafepointTableBuilder* safepoint_table_builder,
-    bool feedback_vector_slot, size_t stack_param_slots) {
+    bool feedback_vector_slot) {
   int frame_size = GetTotalFrameSize() - 2 * kSystemPointerSize;
   // The frame setup builtin also pushes the feedback vector.
   if (feedback_vector_slot) {
@@ -261,13 +258,6 @@ void LiftoffAssembler::CheckTierUp(int declared_func_index, int budget_used,
   SubS32(budget, Operand(budget_used));
   StoreU32(budget, budget_addr);
   blt(ool_label);
-}
-
-Register LiftoffAssembler::LoadOldFramePointer() { return fp; }
-
-void LiftoffAssembler::CheckStackShrink() {
-  // TODO(irezvov): 42202153
-  UNIMPLEMENTED();
 }
 
 void LiftoffAssembler::LoadConstant(LiftoffRegister reg, WasmValue value) {
@@ -1294,8 +1284,7 @@ void LiftoffAssembler::LoadCallerFrameSlot(LiftoffRegister dst,
 
 void LiftoffAssembler::StoreCallerFrameSlot(LiftoffRegister src,
                                             uint32_t caller_slot_idx,
-                                            ValueKind kind,
-                                            Register frame_pointer) {
+                                            ValueKind kind) {
   int32_t offset = (caller_slot_idx + 1) * 8;
   switch (kind) {
     case kI32: {
@@ -2698,84 +2687,6 @@ SIMD_RELAXED_UNOP_LIST(SIMD_VISIT_RELAXED_UNOP)
 #undef SIMD_VISIT_RELAXED_UNOP
 #undef SIMD_RELAXED_UNOP_LIST
 
-#define F16_UNOP_LIST(V)     \
-  V(f16x8_splat)             \
-  V(f16x8_abs)               \
-  V(f16x8_neg)               \
-  V(f16x8_sqrt)              \
-  V(f16x8_ceil)              \
-  V(f16x8_floor)             \
-  V(f16x8_trunc)             \
-  V(f16x8_nearest_int)       \
-  V(i16x8_sconvert_f16x8)    \
-  V(i16x8_uconvert_f16x8)    \
-  V(f16x8_sconvert_i16x8)    \
-  V(f16x8_uconvert_i16x8)    \
-  V(f16x8_demote_f32x4_zero) \
-  V(f32x4_promote_low_f16x8) \
-  V(f16x8_demote_f64x2_zero)
-
-#define VISIT_F16_UNOP(name)                                \
-  bool LiftoffAssembler::emit_##name(LiftoffRegister dst,   \
-                                     LiftoffRegister src) { \
-    return false;                                           \
-  }
-F16_UNOP_LIST(VISIT_F16_UNOP)
-#undef VISIT_F16_UNOP
-#undef F16_UNOP_LIST
-
-#define F16_BINOP_LIST(V) \
-  V(f16x8_eq)             \
-  V(f16x8_ne)             \
-  V(f16x8_lt)             \
-  V(f16x8_le)             \
-  V(f16x8_add)            \
-  V(f16x8_sub)            \
-  V(f16x8_mul)            \
-  V(f16x8_div)            \
-  V(f16x8_min)            \
-  V(f16x8_max)            \
-  V(f16x8_pmin)           \
-  V(f16x8_pmax)
-
-#define VISIT_F16_BINOP(name)                                                  \
-  bool LiftoffAssembler::emit_##name(LiftoffRegister dst, LiftoffRegister lhs, \
-                                     LiftoffRegister rhs) {                    \
-    return false;                                                              \
-  }
-F16_BINOP_LIST(VISIT_F16_BINOP)
-#undef VISIT_F16_BINOP
-#undef F16_BINOP_LIST
-
-bool LiftoffAssembler::supports_f16_mem_access() { return false; }
-
-bool LiftoffAssembler::emit_f16x8_extract_lane(LiftoffRegister dst,
-                                               LiftoffRegister lhs,
-                                               uint8_t imm_lane_idx) {
-  return false;
-}
-
-bool LiftoffAssembler::emit_f16x8_replace_lane(LiftoffRegister dst,
-                                               LiftoffRegister src1,
-                                               LiftoffRegister src2,
-                                               uint8_t imm_lane_idx) {
-  return false;
-}
-
-bool LiftoffAssembler::emit_f16x8_qfma(LiftoffRegister dst,
-                                       LiftoffRegister src1,
-                                       LiftoffRegister src2,
-                                       LiftoffRegister src3) {
-  return false;
-}
-
-bool LiftoffAssembler::emit_f16x8_qfms(LiftoffRegister dst,
-                                       LiftoffRegister src1,
-                                       LiftoffRegister src2,
-                                       LiftoffRegister src3) {
-  return false;
-}
-
 void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
                                      Register offset_reg, uintptr_t offset_imm,
                                      LoadType type,
@@ -3088,6 +2999,11 @@ void LiftoffAssembler::emit_s128_relaxed_laneselect(LiftoffRegister dst,
   emit_s128_select(dst, src1, src2, mask);
 }
 
+void LiftoffAssembler::set_trap_on_oob_mem64(Register index, uint64_t oob_size,
+                                             uint64_t oob_index) {
+  UNREACHABLE();
+}
+
 void LiftoffAssembler::StackCheck(Label* ool_code) {
   Register limit_address = ip;
   LoadStackLimit(limit_address, StackLimitKind::kInterruptStackLimit);
@@ -3155,7 +3071,7 @@ void LiftoffAssembler::CallCWithStackBuffer(
   int arg_offset = 0;
   for (const VarState& arg : args) {
     MemOperand dst{sp, arg_offset};
-    liftoff::StoreToMemory(this, dst, arg, ip);
+    liftoff::StoreToMemory(this, dst, arg, r0);
     arg_offset += value_kind_size(arg.kind());
   }
   DCHECK_LE(arg_offset, stack_bytes);
@@ -3181,9 +3097,6 @@ void LiftoffAssembler::CallCWithStackBuffer(
   // Load potential output value from the buffer on the stack.
   if (out_argument_kind != kVoid) {
     switch (out_argument_kind) {
-      case kI16:
-        LoadS16(result_reg->gp(), MemOperand(sp));
-        break;
       case kI32:
         LoadS32(result_reg->gp(), MemOperand(sp));
         break;
@@ -3200,7 +3113,7 @@ void LiftoffAssembler::CallCWithStackBuffer(
         LoadF64(result_reg->fp(), MemOperand(sp));
         break;
       case kS128:
-        LoadV128(result_reg->fp(), MemOperand(sp), ip);
+        LoadV128(result_reg->fp(), MemOperand(sp), r0);
         break;
       default:
         UNREACHABLE();
@@ -3232,7 +3145,7 @@ void LiftoffAssembler::CallC(const std::initializer_list<VarState> args,
       int offset =
           (kStackFrameExtraParamSlot + stack_args) * kSystemPointerSize;
       MemOperand dst{sp, offset + bias};
-      liftoff::StoreToMemory(this, dst, arg, ip);
+      liftoff::StoreToMemory(this, dst, arg, r0);
       ++stack_args;
     }
   }

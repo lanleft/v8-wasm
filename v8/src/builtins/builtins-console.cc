@@ -76,8 +76,7 @@ bool Formatter(Isolate* isolate, BuiltinArguments& args, int index) {
   while (!states.empty() && index < args.length()) {
     State& state = states.top();
     state.off = String::IndexOf(isolate, state.str, percent, state.off);
-    if (state.off < 0 ||
-        state.off == static_cast<int>(state.str->length()) - 1) {
+    if (state.off < 0 || state.off == state.str->length() - 1) {
       states.pop();
       continue;
     }
@@ -160,7 +159,7 @@ void ConsoleCall(
   int context_id = 0;
   Handle<String> context_name = isolate->factory()->anonymous_string();
   if (!IsNativeContext(args.target()->context())) {
-    DirectHandle<Context> context(args.target()->context(), isolate);
+    Handle<Context> context(args.target()->context(), isolate);
     CHECK_EQ(CONSOLE_CONTEXT_SLOTS, context->length());
     context_id = Cast<Smi>(context->get(CONSOLE_CONTEXT_ID_INDEX)).value();
     context_name =
@@ -246,13 +245,16 @@ void InstallContextFunction(Isolate* isolate, Handle<JSObject> target,
 
   Handle<String> name_string = factory->InternalizeUtf8String(name);
 
-  Handle<SharedFunctionInfo> info = factory->NewSharedFunctionInfoForBuiltin(
-      name_string, builtin, 1, kDontAdapt);
+  Handle<SharedFunctionInfo> info =
+      factory->NewSharedFunctionInfoForBuiltin(name_string, builtin);
   info->set_language_mode(LanguageMode::kSloppy);
-  info->set_native(true);
 
-  DirectHandle<JSFunction> fun =
+  Handle<JSFunction> fun =
       Factory::JSFunctionBuilder{isolate, info, context}.set_map(map).Build();
+
+  fun->shared()->set_native(true);
+  fun->shared()->DontAdaptArguments();
+  fun->shared()->set_length(1);
 
   JSObject::AddProperty(isolate, target, name_string, fun, NONE);
 }
@@ -277,8 +279,7 @@ BUILTIN(ConsoleContext) {
   isolate->set_last_console_context_id(context_id);
 
   Handle<SharedFunctionInfo> info = factory->NewSharedFunctionInfoForBuiltin(
-      factory->InternalizeUtf8String("Context"), Builtin::kIllegal, 0,
-      kDontAdapt);
+      factory->InternalizeUtf8String("Context"), Builtin::kIllegal);
   info->set_language_mode(LanguageMode::kSloppy);
 
   Handle<JSFunction> cons =

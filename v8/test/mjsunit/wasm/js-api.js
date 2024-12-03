@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Flags: --expose-wasm
+
 d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
 
 function assertEq(val, expected) {
@@ -673,10 +675,10 @@ assertEq(get.call(tbl1, 1), null);
 assertEq(get.call(tbl1, 1.5), null);
 assertThrows(
     () => get.call(tbl1, 2), RangeError,
-    /invalid address 2 in funcref table of size 2/);
+    /invalid index 2 into funcref table of size 2/);
 assertThrows(
     () => get.call(tbl1, 2.5), RangeError,
-    /invalid address 2 in funcref table of size 2/);
+    /invalid index 2 into funcref table of size 2/);
 assertThrows(() => get.call(tbl1, -1), TypeError, /must be non-negative/);
 assertThrows(
     () => get.call(tbl1, Math.pow(2, 33)), TypeError,
@@ -703,7 +705,7 @@ assertThrows(
     /must be convertible to a valid number/);
 assertThrows(
     () => set.call(tbl1, 2, null), RangeError,
-    /invalid address 2 in funcref table of size 2/);
+    /invalid index 2 into funcref table of size 2/);
 assertThrows(
     () => set.call(tbl1, -1, null), TypeError, /must be non-negative/);
 assertThrows(

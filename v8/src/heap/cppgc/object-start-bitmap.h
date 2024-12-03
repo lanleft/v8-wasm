@@ -42,7 +42,7 @@ class V8_EXPORT_PRIVATE ObjectStartBitmap {
 
   inline ObjectStartBitmap();
 
-  // Finds an object header based on an
+  // Finds an object header based on a
   // address_maybe_pointing_to_the_middle_of_object. Will search for an object
   // start in decreasing address order.
   template <AccessMode = AccessMode::kNonAtomic>

@@ -5,8 +5,6 @@
 #ifndef V8_DEOPTIMIZER_FRAME_TRANSLATION_BUILDER_H_
 #define V8_DEOPTIMIZER_FRAME_TRANSLATION_BUILDER_H_
 
-#include <optional>
-
 #include "src/codegen/register.h"
 #include "src/deoptimizer/translation-opcode.h"
 #include "src/objects/deoptimization-data.h"
@@ -47,7 +45,7 @@ class FrameTranslationBuilder {
 #if V8_ENABLE_WEBASSEMBLY
   void BeginJSToWasmBuiltinContinuationFrame(
       BytecodeOffset bailout_id, int literal_id, unsigned height,
-      std::optional<wasm::ValueKind> return_kind);
+      base::Optional<wasm::ValueKind> return_kind);
   void BeginWasmInlinedIntoJSFrame(BytecodeOffset bailout_id, int literal_id,
                                    unsigned height);
   void BeginLiftoffFrame(BytecodeOffset bailout_id, unsigned height,

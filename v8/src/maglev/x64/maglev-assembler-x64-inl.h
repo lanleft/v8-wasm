@@ -57,59 +57,50 @@ inline ScaleFactor ScaleFactorFromInt(int n) {
   }
 }
 
-class MaglevAssembler::TemporaryRegisterScope
-    : public TemporaryRegisterScopeBase<TemporaryRegisterScope> {
-  using Base = TemporaryRegisterScopeBase<TemporaryRegisterScope>;
-
+class MaglevAssembler::ScratchRegisterScope {
  public:
-  struct SavedData : public Base::SavedData {
-    bool has_scratch_register_;
-    bool has_double_scratch_register_;
-  };
-
-  explicit TemporaryRegisterScope(MaglevAssembler* masm)
-      : Base(masm),
-        has_scratch_register_(prev_scope_ ? prev_scope_->has_scratch_register_
-                                          : true),
-        has_double_scratch_register_(
-            prev_scope_ ? prev_scope_->has_double_scratch_register_ : true) {}
-  explicit TemporaryRegisterScope(MaglevAssembler* masm,
-                                  const SavedData& saved_data)
-      : Base(masm, saved_data),
-        has_scratch_register_(saved_data.has_scratch_register_),
-        has_double_scratch_register_(saved_data.has_double_scratch_register_) {}
-
-  Register AcquireScratch() {
-    CHECK(has_scratch_register_);
-    has_scratch_register_ = false;
-    return kScratchRegister;
+  explicit ScratchRegisterScope(MaglevAssembler* masm)
+      : masm_(masm),
+        prev_scope_(masm->scratch_register_scope_),
+        available_(masm->scratch_register_scope_
+                       ? masm_->scratch_register_scope_->available_
+                       : RegList()),
+        available_double_(
+            masm->scratch_register_scope_
+                ? masm_->scratch_register_scope_->available_double_
+                : DoubleRegList()) {
+    masm_->scratch_register_scope_ = this;
   }
-  DoubleRegister AcquireScratchDouble() {
-    CHECK(has_double_scratch_register_);
-    has_double_scratch_register_ = false;
-    return kScratchDoubleReg;
-  }
-  void IncludeScratch(Register reg) {
-    DCHECK_EQ(reg, kScratchRegister);
-    has_scratch_register_ = true;
+  ~ScratchRegisterScope() { masm_->scratch_register_scope_ = prev_scope_; }
+
+  void ResetToDefault() {
+    available_ = {};
+    available_double_ = {};
   }
 
-  SavedData CopyForDefer() {
-    return SavedData{
-        CopyForDeferBase(),
-        has_scratch_register_,
-        has_double_scratch_register_,
-    };
+  Register GetDefaultScratchRegister() { return kScratchRegister; }
+  DoubleRegister GetDefaultScratchDoubleRegister() { return kScratchDoubleReg; }
+
+  Register Acquire() { return available_.PopFirst(); }
+  void Include(Register reg) { available_.set(reg); }
+  void Include(const RegList list) { available_ = available_ | list; }
+
+  DoubleRegister AcquireDouble() { return available_double_.PopFirst(); }
+  void IncludeDouble(const DoubleRegList list) {
+    available_double_ = available_double_ | list;
   }
 
-  void ResetToDefaultImpl() {
-    has_scratch_register_ = true;
-    has_double_scratch_register_ = true;
-  }
+  RegList Available() { return available_; }
+  void SetAvailable(RegList list) { available_ = list; }
+
+  DoubleRegList AvailableDouble() { return available_double_; }
+  void SetAvailableDouble(DoubleRegList list) { available_double_ = list; }
 
  private:
-  bool has_scratch_register_;
-  bool has_double_scratch_register_;
+  MaglevAssembler* masm_;
+  ScratchRegisterScope* prev_scope_;
+  RegList available_;
+  DoubleRegList available_double_;
 };
 
 inline MapCompare::MapCompare(MaglevAssembler* masm, Register object,
@@ -390,49 +381,44 @@ inline void MaglevAssembler::LoadExternalPointerField(Register result,
 void MaglevAssembler::LoadFixedArrayElement(Register result, Register array,
                                             Register index) {
   if (v8_flags.debug_code) {
-    AssertObjectType(array, FIXED_ARRAY_TYPE, AbortReason::kUnexpectedValue);
+    CompareObjectTypeAndAssert(array, FIXED_ARRAY_TYPE, kEqual,
+                               AbortReason::kUnexpectedValue);
     CompareInt32AndAssert(index, 0, kUnsignedGreaterThanEqual,
                           AbortReason::kUnexpectedNegativeValue);
   }
   LoadTaggedFieldByIndex(result, array, index, kTaggedSize,
-                         OFFSET_OF_DATA_START(FixedArray));
-}
-
-inline void MaglevAssembler::LoadTaggedFieldWithoutDecompressing(
-    Register result, Register object, int offset) {
-  MacroAssembler::LoadTaggedFieldWithoutDecompressing(
-      result, FieldMemOperand(object, offset));
+                         FixedArray::kHeaderSize);
 }
 
 void MaglevAssembler::LoadFixedArrayElementWithoutDecompressing(
     Register result, Register array, Register index) {
   if (v8_flags.debug_code) {
-    AssertObjectType(array, FIXED_ARRAY_TYPE, AbortReason::kUnexpectedValue);
+    CompareObjectTypeAndAssert(array, FIXED_ARRAY_TYPE, kEqual,
+                               AbortReason::kUnexpectedValue);
     CompareInt32AndAssert(index, 0, kUnsignedGreaterThanEqual,
                           AbortReason::kUnexpectedNegativeValue);
   }
   MacroAssembler::LoadTaggedFieldWithoutDecompressing(
-      result, FieldOperand(array, index, times_tagged_size,
-                           OFFSET_OF_DATA_START(FixedArray)));
+      result,
+      FieldOperand(array, index, times_tagged_size, FixedArray::kHeaderSize));
 }
 
 void MaglevAssembler::LoadFixedDoubleArrayElement(DoubleRegister result,
                                                   Register array,
                                                   Register index) {
   if (v8_flags.debug_code) {
-    AssertObjectType(array, FIXED_DOUBLE_ARRAY_TYPE,
-                     AbortReason::kUnexpectedValue);
+    CompareObjectTypeAndAssert(array, FIXED_DOUBLE_ARRAY_TYPE, kEqual,
+                               AbortReason::kUnexpectedValue);
     CompareInt32AndAssert(index, 0, kUnsignedGreaterThanEqual,
                           AbortReason::kUnexpectedNegativeValue);
   }
-  Movsd(result, FieldOperand(array, index, times_8,
-                             OFFSET_OF_DATA_START(FixedDoubleArray)));
+  Movsd(result,
+        FieldOperand(array, index, times_8, FixedDoubleArray::kHeaderSize));
 }
 
 inline void MaglevAssembler::StoreFixedDoubleArrayElement(
     Register array, Register index, DoubleRegister value) {
-  Movsd(FieldOperand(array, index, times_8,
-                     OFFSET_OF_DATA_START(FixedDoubleArray)),
+  Movsd(FieldOperand(array, index, times_8, FixedDoubleArray::kHeaderSize),
         value);
 }
 
@@ -467,8 +453,8 @@ inline void MaglevAssembler::SetSlotAddressForTaggedField(Register slot_reg,
 }
 inline void MaglevAssembler::SetSlotAddressForFixedArrayElement(
     Register slot_reg, Register object, Register index) {
-  leaq(slot_reg, FieldOperand(object, index, times_tagged_size,
-                              OFFSET_OF_DATA_START(FixedArray)));
+  leaq(slot_reg,
+       FieldOperand(object, index, times_tagged_size, FixedArray::kHeaderSize));
 }
 
 inline void MaglevAssembler::StoreTaggedFieldNoWriteBarrier(Register object,
@@ -480,8 +466,7 @@ inline void MaglevAssembler::StoreTaggedFieldNoWriteBarrier(Register object,
 inline void MaglevAssembler::StoreFixedArrayElementNoWriteBarrier(
     Register array, Register index, Register value) {
   MacroAssembler::StoreTaggedField(
-      FieldOperand(array, index, times_tagged_size,
-                   OFFSET_OF_DATA_START(FixedArray)),
+      FieldOperand(array, index, times_tagged_size, FixedArray::kHeaderSize),
       value);
 }
 
@@ -514,15 +499,6 @@ inline void MaglevAssembler::StoreField(Operand operand, Register value,
   }
 }
 
-#ifdef V8_ENABLE_SANDBOX
-
-inline void MaglevAssembler::StoreTrustedPointerFieldNoWriteBarrier(
-    Register object, int offset, Register value) {
-  MacroAssembler::StoreTrustedPointerField(FieldOperand(object, offset), value);
-}
-
-#endif  // V8_ENABLE_SANDBOX
-
 inline void MaglevAssembler::ReverseByteOrder(Register value, int size) {
   if (size == 2) {
     bswapl(value);
@@ -544,14 +520,6 @@ inline void MaglevAssembler::DecrementInt32(Register reg) { decl(reg); }
 
 inline void MaglevAssembler::AddInt32(Register reg, int amount) {
   addl(reg, Immediate(amount));
-}
-
-inline void MaglevAssembler::AndInt32(Register reg, int mask) {
-  andl(reg, Immediate(mask));
-}
-
-inline void MaglevAssembler::OrInt32(Register reg, int mask) {
-  orl(reg, Immediate(mask));
 }
 
 inline void MaglevAssembler::ShiftLeft(Register reg, int amount) {
@@ -626,10 +594,6 @@ inline void MaglevAssembler::Move(Register dst, int32_t i) {
 
 inline void MaglevAssembler::Move(Register dst, uint32_t i) {
   // Move as a uint32 to avoid sign extension.
-  MacroAssembler::Move(dst, i);
-}
-
-inline void MaglevAssembler::Move(Register dst, IndirectPointerTag i) {
   MacroAssembler::Move(dst, i);
 }
 
@@ -734,7 +698,7 @@ inline void MaglevAssembler::LoadByte(Register dst, MemOperand src) {
 
 inline Condition MaglevAssembler::IsCallableAndNotUndetectable(
     Register map, Register scratch) {
-  movb(scratch, FieldOperand(map, Map::kBitFieldOffset));
+  movl(scratch, FieldOperand(map, Map::kBitFieldOffset));
   andl(scratch, Immediate(Map::Bits1::IsUndetectableBit::kMask |
                           Map::Bits1::IsCallableBit::kMask));
   cmpl(scratch, Immediate(Map::Bits1::IsCallableBit::kMask));
@@ -743,7 +707,7 @@ inline Condition MaglevAssembler::IsCallableAndNotUndetectable(
 
 inline Condition MaglevAssembler::IsNotCallableNorUndetactable(
     Register map, Register scratch) {
-  testb(FieldOperand(map, Map::kBitFieldOffset),
+  testl(FieldOperand(map, Map::kBitFieldOffset),
         Immediate(Map::Bits1::IsUndetectableBit::kMask |
                   Map::Bits1::IsCallableBit::kMask));
   return kEqual;
@@ -755,71 +719,45 @@ inline void MaglevAssembler::LoadInstanceType(Register instance_type,
   movzxwl(instance_type, FieldOperand(instance_type, Map::kInstanceTypeOffset));
 }
 
-inline void MaglevAssembler::JumpIfObjectType(Register heap_object,
-                                              InstanceType type, Label* target,
-                                              Label::Distance distance) {
-  IsObjectType(heap_object, type, kScratchRegister);
-  JumpIf(kEqual, target, distance);
+inline void MaglevAssembler::CompareObjectTypeAndJumpIf(
+    Register heap_object, InstanceType type, Condition cond, Label* target,
+    Label::Distance distance) {
+  if (cond == kEqual || cond == kNotEqual) {
+    IsObjectType(heap_object, type, kScratchRegister);
+  } else {
+    LoadMap(kScratchRegister, heap_object);
+    CmpInstanceType(kScratchRegister, type);
+  }
+  JumpIf(cond, target, distance);
 }
 
-inline void MaglevAssembler::JumpIfNotObjectType(Register heap_object,
-                                                 InstanceType type,
-                                                 Label* target,
-                                                 Label::Distance distance) {
-  IsObjectType(heap_object, type, kScratchRegister);
-  JumpIf(kNotEqual, target, distance);
-}
-
-inline void MaglevAssembler::AssertObjectType(Register heap_object,
-                                              InstanceType type,
-                                              AbortReason reason) {
+inline void MaglevAssembler::CompareObjectTypeAndAssert(Register heap_object,
+                                                        InstanceType type,
+                                                        Condition cond,
+                                                        AbortReason reason) {
   AssertNotSmi(heap_object);
-  IsObjectType(heap_object, type, kScratchRegister);
-  Assert(kEqual, reason);
+  if (cond == kEqual || cond == kNotEqual) {
+    IsObjectType(heap_object, type, kScratchRegister);
+  } else {
+    LoadMap(kScratchRegister, heap_object);
+    CmpInstanceType(kScratchRegister, type);
+  }
+  Assert(cond, reason);
 }
 
-inline void MaglevAssembler::BranchOnObjectType(
-    Register heap_object, InstanceType type, Label* if_true,
-    Label::Distance true_distance, bool fallthrough_when_true, Label* if_false,
-    Label::Distance false_distance, bool fallthrough_when_false) {
-  IsObjectType(heap_object, type, kScratchRegister);
-  Branch(kEqual, if_true, true_distance, fallthrough_when_true, if_false,
-         false_distance, fallthrough_when_false);
-}
-
-inline void MaglevAssembler::JumpIfObjectTypeInRange(Register heap_object,
-                                                     InstanceType lower_limit,
-                                                     InstanceType higher_limit,
-                                                     Label* target,
-                                                     Label::Distance distance) {
-  IsObjectTypeInRange(heap_object, lower_limit, higher_limit, kScratchRegister);
-  JumpIf(kUnsignedLessThanEqual, target, distance);
-}
-
-inline void MaglevAssembler::JumpIfObjectTypeNotInRange(
-    Register heap_object, InstanceType lower_limit, InstanceType higher_limit,
-    Label* target, Label::Distance distance) {
-  IsObjectTypeInRange(heap_object, lower_limit, higher_limit, kScratchRegister);
-  JumpIf(kUnsignedGreaterThan, target, distance);
-}
-
-inline void MaglevAssembler::AssertObjectTypeInRange(Register heap_object,
-                                                     InstanceType lower_limit,
-                                                     InstanceType higher_limit,
-                                                     AbortReason reason) {
-  AssertNotSmi(heap_object);
-  IsObjectTypeInRange(heap_object, lower_limit, higher_limit, kScratchRegister);
-  Assert(kUnsignedLessThanEqual, reason);
-}
-
-inline void MaglevAssembler::BranchOnObjectTypeInRange(
-    Register heap_object, InstanceType lower_limit, InstanceType higher_limit,
+inline void MaglevAssembler::CompareObjectTypeAndBranch(
+    Register heap_object, InstanceType type, Condition condition,
     Label* if_true, Label::Distance true_distance, bool fallthrough_when_true,
     Label* if_false, Label::Distance false_distance,
     bool fallthrough_when_false) {
-  IsObjectTypeInRange(heap_object, lower_limit, higher_limit, kScratchRegister);
-  Branch(kUnsignedLessThanEqual, if_true, true_distance, fallthrough_when_true,
-         if_false, false_distance, fallthrough_when_false);
+  if (condition == kEqual || condition == kNotEqual) {
+    IsObjectType(heap_object, type, kScratchRegister);
+  } else {
+    LoadMap(kScratchRegister, heap_object);
+    CmpInstanceType(kScratchRegister, type);
+  }
+  Branch(condition, if_true, true_distance, fallthrough_when_true, if_false,
+         false_distance, fallthrough_when_false);
 }
 
 inline void MaglevAssembler::JumpIfJSAnyIsNotPrimitive(
@@ -828,45 +766,20 @@ inline void MaglevAssembler::JumpIfJSAnyIsNotPrimitive(
                                             target, distance);
 }
 
-#if V8_STATIC_ROOTS_BOOL
-inline void MaglevAssembler::JumpIfObjectInRange(Register heap_object,
-                                                 Tagged_t lower_limit,
-                                                 Tagged_t higher_limit,
-                                                 Label* target,
-                                                 Label::Distance distance) {
-  // Only allowed for comparisons against RORoots.
-  DCHECK_LE(lower_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  DCHECK_LE(higher_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  AssertNotSmi(heap_object);
-  CompareRange(heap_object, lower_limit, higher_limit);
-  JumpIf(kUnsignedLessThanEqual, target, distance);
+inline void MaglevAssembler::CompareObjectTypeRange(Register heap_object,
+                                                    InstanceType lower_limit,
+                                                    InstanceType higher_limit) {
+  CompareObjectTypeRange(heap_object, kScratchRegister, lower_limit,
+                         higher_limit);
 }
 
-inline void MaglevAssembler::JumpIfObjectNotInRange(Register heap_object,
-                                                    Tagged_t lower_limit,
-                                                    Tagged_t higher_limit,
-                                                    Label* target,
-                                                    Label::Distance distance) {
-  // Only allowed for comparisons against RORoots.
-  DCHECK_LE(lower_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  DCHECK_LE(higher_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  AssertNotSmi(heap_object);
-  CompareRange(heap_object, lower_limit, higher_limit);
-  JumpIf(kUnsignedGreaterThan, target, distance);
+inline void MaglevAssembler::CompareObjectTypeRange(Register heap_object,
+                                                    Register scratch,
+                                                    InstanceType lower_limit,
+                                                    InstanceType higher_limit) {
+  LoadMap(scratch, heap_object);
+  CmpInstanceTypeRange(scratch, scratch, lower_limit, higher_limit);
 }
-
-inline void MaglevAssembler::AssertObjectInRange(Register heap_object,
-                                                 Tagged_t lower_limit,
-                                                 Tagged_t higher_limit,
-                                                 AbortReason reason) {
-  // Only allowed for comparisons against RORoots.
-  DCHECK_LE(lower_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  DCHECK_LE(higher_limit, StaticReadOnlyRoot::kLastAllocatedRoot);
-  AssertNotSmi(heap_object);
-  CompareRange(heap_object, lower_limit, higher_limit);
-  Assert(kUnsignedLessThanEqual, reason);
-}
-#endif
 
 inline void MaglevAssembler::CompareMapWithRoot(Register object,
                                                 RootIndex index,
@@ -885,11 +798,10 @@ inline void MaglevAssembler::CompareInstanceType(Register map,
   CmpInstanceType(map, instance_type);
 }
 
-inline Condition MaglevAssembler::CompareInstanceTypeRange(
+inline void MaglevAssembler::CompareInstanceTypeRange(
     Register map, Register instance_type_out, InstanceType lower_limit,
     InstanceType higher_limit) {
   CmpInstanceTypeRange(map, instance_type_out, lower_limit, higher_limit);
-  return kUnsignedLessThanEqual;
 }
 
 inline void MaglevAssembler::CompareFloat64AndJumpIf(
@@ -1120,15 +1032,6 @@ inline void MaglevAssembler::CompareSmiAndJumpIf(Register r1, Tagged<Smi> value,
   JumpIf(cond, target, distance);
 }
 
-inline void MaglevAssembler::CompareSmiAndAssert(Register r1, Tagged<Smi> value,
-                                                 Condition cond,
-                                                 AbortReason reason) {
-  if (!v8_flags.debug_code) return;
-  AssertSmi(r1);
-  Cmp(r1, value);
-  Assert(cond, reason);
-}
-
 inline void MaglevAssembler::CompareByteAndJumpIf(MemOperand left, int8_t right,
                                                   Condition cond,
                                                   Register scratch,
@@ -1195,12 +1098,6 @@ inline void MaglevAssembler::TestInt32AndJumpIfAnySet(
   JumpIf(kNotZero, target, distance);
 }
 
-inline void MaglevAssembler::TestUint8AndJumpIfAnySet(
-    MemOperand operand, uint8_t mask, Label* target, Label::Distance distance) {
-  testb(operand, Immediate(mask));
-  JumpIf(kNotZero, target, distance);
-}
-
 inline void MaglevAssembler::TestInt32AndJumpIfAllClear(
     Register r1, int32_t mask, Label* target, Label::Distance distance) {
   testl(r1, Immediate(mask));
@@ -1210,12 +1107,6 @@ inline void MaglevAssembler::TestInt32AndJumpIfAllClear(
 inline void MaglevAssembler::TestInt32AndJumpIfAllClear(
     MemOperand operand, int32_t mask, Label* target, Label::Distance distance) {
   testl(operand, Immediate(mask));
-  JumpIf(kZero, target, distance);
-}
-
-inline void MaglevAssembler::TestUint8AndJumpIfAllClear(
-    MemOperand operand, uint8_t mask, Label* target, Label::Distance distance) {
-  testb(operand, Immediate(mask));
   JumpIf(kZero, target, distance);
 }
 
@@ -1290,12 +1181,6 @@ inline void MaglevAssembler::MoveRepr(MachineRepresentation repr,
                                       MemOperand dst, MemOperand src) {
   MoveRepr(repr, kScratchRegister, src);
   MoveRepr(repr, dst, kScratchRegister);
-}
-
-inline void MaglevAssembler::MaybeEmitPlaceHolderForDeopt() {
-  if (v8_flags.cet_compatible) {
-    Nop(Assembler::kIntraSegmentJmpInstrSize);
-  }
 }
 
 }  // namespace maglev

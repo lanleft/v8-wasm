@@ -4,8 +4,7 @@
 
 // Flags: --experimental-wasm-stringref --expose-externalize-string
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 let kSig_w_v = makeSig([], [kWasmStringRef]);
 let kSig_w_ii = makeSig([kWasmI32, kWasmI32], [kWasmStringRef]);

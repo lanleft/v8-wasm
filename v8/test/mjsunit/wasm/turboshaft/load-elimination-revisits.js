@@ -18,8 +18,7 @@
 // finally reaching an out of memory for the zone as it seems to be limited to
 // 4 GB.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Parameter to configure the nesting of loops.
 // Note that initially 22 nested loops where enough to trigger the oom situation

@@ -18,7 +18,6 @@ namespace {
 
 #define CHECK_SELF_OR_THROW_FAST_OPTIONS(return_value)                      \
   if (!self) {                                                              \
-    HandleScope handle_scope(options.isolate);                              \
     options.isolate->ThrowError(                                            \
         "This method is not defined on objects inheriting from FastCAPI."); \
     return return_value;                                                    \
@@ -53,9 +52,6 @@ class FastCApiObject {
 
   static int ThrowNoFallbackFastCallback(Local<Object> receiver) {
     FastCApiObject* self = UnwrapObject(receiver);
-    if (!self) {
-      self = &FastCApiObject::instance();
-    }
     self->fast_call_count_++;
     v8::Isolate* isolate = receiver->GetIsolate();
     v8::HandleScope scope(isolate);
@@ -94,17 +90,6 @@ class FastCApiObject {
     self->fast_call_count_++;
 
     HandleScope handle_scope(options.isolate);
-    if (!out->IsUint8Array()) {
-      options.isolate->ThrowError(
-          "Invalid parameter, the second parameter has to be a a Uint8Array.");
-      return;
-    }
-    Local<Uint8Array> array = out.As<Uint8Array>();
-    if (array->Length() < source.length) {
-      options.isolate->ThrowError(
-          "Invalid parameter, destination array is too small.");
-      return;
-    }
     uint8_t* memory =
         reinterpret_cast<uint8_t*>(out.As<Uint8Array>()->Buffer()->Data());
     memcpy(memory, source.data, source.length);
@@ -160,9 +145,21 @@ class FastCApiObject {
                                             int32_t arg_i32, uint32_t arg_u32,
                                             int64_t arg_i64, uint64_t arg_u64,
                                             float arg_f32, double arg_f64) {
-    FastCApiObject* self = UnwrapObject(receiver);
-    if (!self) {
+    FastCApiObject* self;
+
+    // For Wasm call, we don't pass FastCApiObject as the receiver, so we need
+    // to retrieve the FastCApiObject instance from a static variable.
+    if (IsJSGlobalProxy(*Utils::OpenDirectHandle(*receiver)) ||
+        IsUndefined(*Utils::OpenDirectHandle(*receiver))) {
+      // Note: FastCApiObject::instance() returns the reference of an object
+      // allocated in thread-local storage, its value cannot be stored in a
+      // static variable here.
       self = &FastCApiObject::instance();
+    } else {
+      // Fuzzing code can call this function from JS; in this case the receiver
+      // should be a FastCApiObject.
+      self = UnwrapObject(receiver);
+      CHECK_NOT_NULL(self);
     }
     self->fast_call_count_++;
 
@@ -375,9 +372,9 @@ class FastCApiObject {
     T* memory = reinterpret_cast<T*>(
         typed_array_arg.As<TypedArray>()->Buffer()->Data());
     size_t length = typed_array_arg.As<TypedArray>()->ByteLength() / sizeof(T);
-    double sum = 0;
+    T sum = 0;
     for (size_t i = 0; i < length; ++i) {
-      sum += static_cast<double>(memory[i]);
+      sum += memory[i];
     }
     return static_cast<Type>(sum);
   }
@@ -446,13 +443,6 @@ class FastCApiObject {
   static int32_t AddAllIntInvalidCallback(Local<Object> receiver,
                                           int32_t arg_i32,
                                           FastApiCallbackOptions& options) {
-    // This should never be called
-    UNREACHABLE();
-  }
-
-  static int32_t AddAllIntInvalidOverloadCallback(
-      Local<Object> receiver, Local<Object> seq_arg,
-      FastApiCallbackOptions& options) {
     // This should never be called
     UNREACHABLE();
   }
@@ -745,6 +735,10 @@ class FastCApiObject {
 
     HandleScope handle_scope(isolate);
 
+    if (i::v8_flags.fuzzing) {
+      info.GetReturnValue().Set(false);
+      return;
+    }
     double real_arg = 0;
     if (info.Length() > 1 && info[1]->IsNumber()) {
       real_arg = info[1]->NumberValue(isolate->GetCurrentContext()).FromJust();
@@ -1247,11 +1241,7 @@ class FastCApiObject {
     FastCApiObject* self = UnwrapObject(receiver);
     CHECK_SELF_OR_THROW_FAST_OPTIONS(0);
     self->fast_call_count_++;
-    // This CHECK here is unnecessary, but it keeps this function from getting
-    // merged with `sumInt64FastCallback`. There is a test which relies on
-    // `sumUint64FastCallback` and `sumInt64FastCallback` being different call
-    // targets.
-    CHECK_GT(self->fast_call_count_, 0);
+
     return a + b;
   }
 
@@ -1369,7 +1359,6 @@ class FastCApiObject {
 
  private:
   static bool IsValidApiObject(Local<Object> object) {
-    if (object->IsInt32()) return false;
     auto instance_type = i::Internals::GetInstanceType(
         internal::ValueHelper::ValueAsAddress(*object));
     return (base::IsInRange(instance_type, i::Internals::kFirstJSApiObjectType,
@@ -1378,9 +1367,6 @@ class FastCApiObject {
   }
   static FastCApiObject* UnwrapObject(Local<Object> object) {
     if (!IsValidApiObject(object)) {
-      return nullptr;
-    }
-    if (object->InternalFieldCount() <= kV8WrapperObjectIndex) {
       return nullptr;
     }
     FastCApiObject* wrapped = reinterpret_cast<FastCApiObject*>(
@@ -1423,8 +1409,7 @@ void CreateFastCAPIObject(const FunctionCallbackInfo<Value>& info) {
   api_object->SetAccessorProperty(
       String::NewFromUtf8Literal(info.GetIsolate(), "supports_fp_params"),
       FunctionTemplate::New(info.GetIsolate(), FastCApiObject::SupportsFPParams)
-          ->GetFunction(api_object->GetCreationContext(info.GetIsolate())
-                            .ToLocalChecked())
+          ->GetFunction(api_object->GetCreationContext().ToLocalChecked())
           .ToLocalChecked());
 }
 
@@ -1546,8 +1531,7 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
 
     CFunction add_all_no_options_c_func = CFunction::Make(
         FastCApiObject::AddAllFastCallbackNoOptions V8_IF_USE_SIMULATOR(
-            FastCApiObject::AddAllFastCallbackNoOptionsPatch),
-        CFunctionInfo::Int64Representation::kBigInt);
+            FastCApiObject::AddAllFastCallbackNoOptionsPatch));
     api_obj_ctor->PrototypeTemplate()->Set(
         isolate, "add_all_no_options",
         FunctionTemplate::New(
@@ -1580,12 +1564,9 @@ Local<FunctionTemplate> Shell::CreateTestFastCApiTemplate(Isolate* isolate) {
 
     CFunction add_all_int_invalid_func =
         CFunction::Make(FastCApiObject::AddAllIntInvalidCallback);
-    CFunction add_all_int_invalid_overload =
-        CFunction::Make(FastCApiObject::AddAllIntInvalidOverloadCallback);
-
     const CFunction add_all_invalid_overloads[] = {
         add_all_int_invalid_func,
-        add_all_int_invalid_overload,
+        add_all_seq_c_func,
     };
     api_obj_ctor->PrototypeTemplate()->Set(
         isolate, "add_all_invalid_overload",

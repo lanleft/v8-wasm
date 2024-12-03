@@ -36,9 +36,6 @@ extern macro SetContinuationPreservedEmbedderData(Object): void;
 }
 
 namespace promise {
-const kInvalidAsyncTaskId:
-    constexpr uint32 generates 'JSPromise::kInvalidAsyncTaskId';
-
 extern macro IsFunctionWithPrototypeSlotMap(Map): bool;
 
 @export
@@ -53,7 +50,7 @@ macro PromiseInit(promise: JSPromise): void {
     status: PromiseState::kPending,
     has_handler: false,
     is_silent: false,
-    async_task_id: kInvalidAsyncTaskId
+    async_task_id: 0
   });
   promise_internal::ZeroOutEmbedderOffsets(promise);
 }
@@ -72,7 +69,7 @@ macro InnerNewJSPromise(implicit context: Context)(): JSPromise {
     status: PromiseState::kPending,
     has_handler: false,
     is_silent: false,
-    async_task_id: kInvalidAsyncTaskId
+    async_task_id: 0
   });
   return promise;
 }

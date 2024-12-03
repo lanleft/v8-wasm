@@ -3,13 +3,12 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff --expose-gc
+// Flags: --experimental-wasm-inlining --liftoff --expose-gc
 // Flags: --turboshaft-wasm-instruction-selection-staged
 // Flags: --wasm-inlining-ignore-call-counts --wasm-inlining-factor=30
 // Flags: --wasm-inlining-budget=100000 --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Test deopt with many params with different types, some tagged, some untagged.
 (function TestManyParamsTagged() {
@@ -98,35 +97,23 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(expectedSum, wasm.main(...valuesTyped, wasm.add));
   %WasmTierUpFunction(wasm.main);
   assertEquals(expectedSum, wasm.main(...valuesTyped, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-   assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   assertEquals(expectedDiff, wasm.main(...valuesTyped, wasm.sub));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
 
   // Repeat the test but this time with an additional layer of inlining.
   assertEquals(expectedSum, wasm.outerDirect(42, ...valuesTyped, wasm.add));
   %WasmTierUpFunction(wasm.outerDirect);
   assertEquals(expectedSum, wasm.outerDirect(42, ...valuesTyped, wasm.add));
   assertEquals(expectedDiff, wasm.outerDirect(42, ...valuesTyped, wasm.sub));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.outerDirect));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.outerDirect));
   assertEquals(expectedSum, wasm.outerDirect(42, ...valuesTyped, wasm.add2));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.outerDirect));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.outerDirect));
   %WasmTierUpFunction(wasm.outerDirect);
   assertEquals(expectedSum, wasm.outerDirect(42, ...valuesTyped, wasm.add2));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.outerDirect));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.outerDirect));
   assertEquals(expectedSum, wasm.outerDirect(42, ...valuesTyped, wasm.addGC));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.outerDirect));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.outerDirect));
 
   function generateCalleeBody(binop) {
     let result = [kExprLocalGet, 0, ...types[0].toI32];

@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
 #include <sstream>
 
 #include "debug-helper-internal.h"
@@ -19,7 +18,9 @@
 
 namespace i = v8::internal;
 
-namespace v8::internal::debug_helper_internal {
+namespace v8 {
+namespace internal {
+namespace debug_helper_internal {
 
 constexpr char kTaggedValue[] = "v8::internal::TaggedValue";
 constexpr char kSmi[] = "v8::internal::Smi";
@@ -215,7 +216,7 @@ TypedObject GetTypedHeapObject(uintptr_t address, d::MemoryAccessor accessor,
 class ReadStringVisitor : public TqObjectVisitor {
  public:
   struct Result {
-    std::optional<std::string> maybe_truncated_string;
+    v8::base::Optional<std::string> maybe_truncated_string;
     std::unique_ptr<ObjectProperty> maybe_raw_characters_property;
   };
   static Result Visit(d::MemoryAccessor accessor,
@@ -227,7 +228,7 @@ class ReadStringVisitor : public TqObjectVisitor {
   }
 
   // Returns the result as UTF-8 once visiting is complete.
-  std::optional<std::string> GetString() {
+  v8::base::Optional<std::string> GetString() {
     if (failed_) return {};
     std::vector<char> result(
         string_.size() * unibrow::Utf16::kMaxExtraUtf8BytesForOneUtf16CodeUnit);
@@ -812,7 +813,9 @@ std::unique_ptr<StackFrameResult> GetStackFrame(
   return std::make_unique<StackFrameResult>(std::move(props));
 }
 
-}  // namespace v8::internal::debug_helper_internal
+}  // namespace debug_helper_internal
+}  // namespace internal
+}  // namespace v8
 
 namespace di = v8::internal::debug_helper_internal;
 

@@ -11,7 +11,6 @@
 #include "src/execution/thread-id.h"
 #include "src/handles/maybe-handles.h"
 #include "src/heap/base/stack.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/objects/objects-inl.h"
 #include "src/roots/roots-inl.h"
 #include "src/utils/address-map.h"
@@ -26,11 +25,6 @@
 #include "src/heap/heap-write-barrier-inl.h"
 // For GetIsolateFromWritableObject.
 #include "src/execution/isolate-utils-inl.h"
-#endif
-
-#ifdef V8_ENABLE_DIRECT_HANDLE
-// For Isolate::Current() in indirect_handle.
-#include "src/execution/isolate-inl.h"
 #endif
 
 namespace v8 {
@@ -56,26 +50,6 @@ ASSERT_TRIVIALLY_COPYABLE(DirectHandle<Object>);
 ASSERT_TRIVIALLY_COPYABLE(MaybeDirectHandle<Object>);
 #endif
 
-// static
-Address* HandleBase::indirect_handle(Address object) {
-  return HandleScope::CreateHandle(Isolate::Current(), object);
-}
-
-// static
-Address* HandleBase::indirect_handle(Address object, Isolate* isolate) {
-  return HandleScope::CreateHandle(isolate, object);
-}
-
-// static
-Address* HandleBase::indirect_handle(Address object, LocalIsolate* isolate) {
-  return LocalHandleScope::GetHandle(isolate->heap(), object);
-}
-
-// static
-Address* HandleBase::indirect_handle(Address object, LocalHeap* local_heap) {
-  return LocalHandleScope::GetHandle(local_heap, object);
-}
-
 #endif  // V8_ENABLE_DIRECT_HANDLE
 
 #ifdef DEBUG
@@ -85,8 +59,8 @@ bool HandleBase::IsDereferenceAllowed() const {
   Tagged<Object> object(*location_);
   if (IsSmi(object)) return true;
   Tagged<HeapObject> heap_object = Cast<HeapObject>(object);
-  if (HeapLayout::InReadOnlySpace(heap_object)) return true;
-  Isolate* isolate = Isolate::Current();
+  if (IsReadOnlyHeapObject(heap_object)) return true;
+  Isolate* isolate = GetIsolateFromWritableObject(heap_object);
   RootIndex root_index;
   if (isolate->roots_table().IsRootHandleLocation(location_, &root_index) &&
       RootsTable::IsImmortalImmovable(root_index)) {
@@ -96,7 +70,7 @@ bool HandleBase::IsDereferenceAllowed() const {
   if (!AllowHandleDereference::IsAllowed()) return false;
 
   // Allocations in the shared heap may be dereferenced by multiple threads.
-  if (HeapLayout::InWritableSharedSpace(heap_object)) return true;
+  if (InWritableSharedSpace(heap_object)) return true;
 
   // Deref is explicitly allowed from any thread. Used for running internal GC
   // epilogue callbacks in the safepoint after a GC.
@@ -134,12 +108,12 @@ bool DirectHandleBase::IsDereferenceAllowed() const {
   Tagged<Object> object(obj_);
   if (IsSmi(object)) return true;
   Tagged<HeapObject> heap_object = Cast<HeapObject>(object);
-  if (HeapLayout::InReadOnlySpace(heap_object)) return true;
-  Isolate* isolate = Isolate::Current();
+  if (IsReadOnlyHeapObject(heap_object)) return true;
+  Isolate* isolate = GetIsolateFromWritableObject(heap_object);
   if (!AllowHandleDereference::IsAllowed()) return false;
 
   // Allocations in the shared heap may be dereferenced by multiple threads.
-  if (HeapLayout::InWritableSharedSpace(heap_object)) return true;
+  if (InWritableSharedSpace(heap_object)) return true;
 
   // Deref is explicitly allowed from any thread. Used for running internal GC
   // epilogue callbacks in the safepoint after a GC.

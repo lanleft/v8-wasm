@@ -256,13 +256,9 @@ class WasmScript : public Script {
  public:
   static WasmScript* Cast(Script* script);
 
-  struct DebugSymbols {
-    enum class Type { SourceMap, EmbeddedDWARF, ExternalDWARF };
-    Type type;
-    v8::MemorySpan<const char> external_url;
-  };
-  std::vector<DebugSymbols> GetDebugSymbols() const;
-
+  enum class DebugSymbolsType { None, SourceMap, EmbeddedDWARF, ExternalDWARF };
+  DebugSymbolsType GetDebugSymbolType() const;
+  MemorySpan<const char> ExternalSymbolsURL() const;
   int NumFunctions() const;
   int NumImportedFunctions() const;
 

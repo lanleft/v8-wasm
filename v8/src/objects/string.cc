@@ -11,7 +11,6 @@
 #include "src/execution/thread-id.h"
 #include "src/handles/handles-inl.h"
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/local-factory-inl.h"
 #include "src/heap/local-heap-inl.h"
 #include "src/heap/mutable-page-metadata.h"
@@ -36,7 +35,7 @@ namespace internal {
 Handle<String> String::SlowFlatten(Isolate* isolate, Handle<ConsString> cons,
                                    AllocationType allocation) {
   DCHECK_NE(cons->second()->length(), 0);
-  DCHECK(!HeapLayout::InAnySharedSpace(*cons));
+  DCHECK(!InAnySharedSpace(*cons));
 
   // TurboFan can create cons strings with empty first parts.
   while (cons->first()->length() == 0) {
@@ -52,10 +51,10 @@ Handle<String> String::SlowFlatten(Isolate* isolate, Handle<ConsString> cons,
   }
 
   DCHECK(AllowGarbageCollection::IsAllowed());
-  uint32_t length = cons->length();
+  int length = cons->length();
   if (allocation != AllocationType::kSharedOld) {
-    allocation = HeapLayout::InYoungGeneration(*cons) ? allocation
-                                                      : AllocationType::kOld;
+    allocation =
+        ObjectInYoungGeneration(*cons) ? allocation : AllocationType::kOld;
   }
   Handle<SeqString> result;
   if (cons->IsOneByteRepresentation()) {
@@ -115,14 +114,14 @@ Handle<String> String::SlowShare(Isolate* isolate, Handle<String> source) {
     case StringTransitionStrategy::kInPlace:
       // A relaxed write is sufficient here, because at this point the string
       // has not yet escaped the current thread.
-      DCHECK(HeapLayout::InAnySharedSpace(*flat));
-      flat->set_map_no_write_barrier(isolate, *new_map.ToHandleChecked());
+      DCHECK(InAnySharedSpace(*flat));
+      flat->set_map_no_write_barrier(*new_map.ToHandleChecked());
       return flat;
     case StringTransitionStrategy::kAlreadyTransitioned:
       return flat;
   }
 
-  uint32_t length = flat->length();
+  int length = flat->length();
   if (flat->IsOneByteRepresentation()) {
     Handle<SeqOneByteString> copy =
         isolate->factory()->NewRawSharedOneByteString(length).ToHandleChecked();
@@ -250,9 +249,9 @@ void String::MakeThin(IsolateT* isolate, Tagged<String> internalized) {
   }
 
   if (initial_shape.IsExternal()) {
-    set_map(isolate, target_map, kReleaseStore);
+    set_map(target_map, kReleaseStore);
   } else {
-    set_map_safe_transition(isolate, target_map, kReleaseStore);
+    set_map_safe_transition(target_map, kReleaseStore);
   }
 }
 
@@ -272,7 +271,6 @@ bool String::MarkForExternalizationDuringGC(Isolate* isolate, T* resource) {
       // The external resource was concurrently updated by another thread.
       return false;
     }
-    resource->Unaccount(reinterpret_cast<v8::Isolate*>(isolate));
     raw_hash = Name::IsExternalForwardingIndexBit::update(raw_hash, true);
     set_raw_hash_field(raw_hash, kReleaseStore);
     return true;
@@ -286,7 +284,6 @@ bool String::MarkForExternalizationDuringGC(Isolate* isolate, T* resource) {
     raw_hash = EnsureRawHash();
   }
   DCHECK(IsHashFieldComputed(raw_hash));
-  resource->Unaccount(reinterpret_cast<v8::Isolate*>(isolate));
   int forwarding_index =
       isolate->string_forwarding_table()->AddExternalResourceAndHash(
           this, resource, raw_hash);
@@ -382,7 +379,7 @@ void String::MakeExternalDuringGC(Isolate* isolate, T* resource) {
   // We are storing the new map using release store after creating a filler in
   // the NotifyObjectSizeChange call for the left-over space to avoid races with
   // the sweeper thread.
-  this->set_map(isolate, new_map, kReleaseStore);
+  this->set_map(new_map, kReleaseStore);
 
   if constexpr (is_one_byte) {
     Tagged<ExternalOneByteString> self = Cast<ExternalOneByteString>(this);
@@ -400,8 +397,7 @@ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::
     MakeExternalDuringGC(Isolate* isolate, v8::String::ExternalStringResource*);
 
-bool String::MakeExternal(Isolate* isolate,
-                          v8::String::ExternalStringResource* resource) {
+bool String::MakeExternal(v8::String::ExternalStringResource* resource) {
   // Disallow garbage collection to avoid possible GC vs string access deadlock.
   DisallowGarbageCollection no_gc;
 
@@ -425,16 +421,14 @@ bool String::MakeExternal(Isolate* isolate,
   if (size < static_cast<int>(sizeof(UncachedExternalString))) return false;
   // Read-only strings cannot be made external, since that would mutate the
   // string.
-  if (HeapLayout::InReadOnlySpace(this)) return false;
+  if (IsReadOnlyHeapObject(this)) return false;
+  Isolate* isolate = GetIsolateFromWritableObject(this);
   if (IsShared()) {
+    DCHECK(isolate->is_shared_space_isolate());
     return MarkForExternalizationDuringGC(isolate, resource);
   }
-  // For strings in the shared space we need the shared space isolate instead of
-  // the current isolate.
-  if (HeapLayout::InWritableSharedSpace(this)) {
-    resource->Unaccount(reinterpret_cast<v8::Isolate*>(isolate));
-    isolate = isolate->shared_space_isolate();
-  }
+  DCHECK_IMPLIES(InWritableSharedSpace(this),
+                 isolate->is_shared_space_isolate());
   bool is_internalized = IsInternalizedString(this);
   bool has_pointers = StringShape(this).IsIndirect();
 
@@ -479,7 +473,7 @@ bool String::MakeExternal(Isolate* isolate,
   // We are storing the new map using release store after creating a filler in
   // the NotifyObjectSizeChange call for the left-over space to avoid races with
   // the sweeper thread.
-  this->set_map(isolate, new_map, kReleaseStore);
+  this->set_map(new_map, kReleaseStore);
 
   Tagged<ExternalTwoByteString> self = Cast<ExternalTwoByteString>(this);
   self->SetResource(isolate, resource);
@@ -489,8 +483,7 @@ bool String::MakeExternal(Isolate* isolate,
   return true;
 }
 
-bool String::MakeExternal(Isolate* isolate,
-                          v8::String::ExternalOneByteStringResource* resource) {
+bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
   // Disallow garbage collection to avoid possible GC vs string access deadlock.
   DisallowGarbageCollection no_gc;
 
@@ -519,16 +512,14 @@ bool String::MakeExternal(Isolate* isolate,
   if (size < static_cast<int>(sizeof(UncachedExternalString))) return false;
   // Read-only strings cannot be made external, since that would mutate the
   // string.
-  if (HeapLayout::InReadOnlySpace(this)) return false;
+  if (IsReadOnlyHeapObject(this)) return false;
+  Isolate* isolate = GetIsolateFromWritableObject(this);
   if (IsShared()) {
+    DCHECK(isolate->is_shared_space_isolate());
     return MarkForExternalizationDuringGC(isolate, resource);
   }
-  // For strings in the shared space we need the shared space isolate instead of
-  // the current isolate.
-  if (HeapLayout::InWritableSharedSpace(this)) {
-    resource->Unaccount(reinterpret_cast<v8::Isolate*>(isolate));
-    isolate = isolate->shared_space_isolate();
-  }
+  DCHECK_IMPLIES(InWritableSharedSpace(this),
+                 isolate->is_shared_space_isolate());
   bool is_internalized = IsInternalizedString(this);
   bool has_pointers = StringShape(this).IsIndirect();
 
@@ -549,7 +540,7 @@ bool String::MakeExternal(Isolate* isolate,
     int new_size = this->SizeFromMap(new_map);
 
     if (has_pointers) {
-      DCHECK(!HeapLayout::InWritableSharedSpace(this));
+      DCHECK(!InWritableSharedSpace(this));
       isolate->heap()->NotifyObjectLayoutChange(
           this, no_gc, InvalidateRecordedSlots::kYes,
           InvalidateExternalPointerSlots::kNo, new_size);
@@ -573,7 +564,7 @@ bool String::MakeExternal(Isolate* isolate,
   // We are storing the new map using release store after creating a filler in
   // the NotifyObjectSizeChange call for the left-over space to avoid races with
   // the sweeper thread.
-  this->set_map(isolate, new_map, kReleaseStore);
+  this->set_map(new_map, kReleaseStore);
 
   Tagged<ExternalOneByteString> self = Cast<ExternalOneByteString>(this);
   self->SetResource(isolate, resource);
@@ -590,7 +581,7 @@ bool String::SupportsExternalization(v8::String::Encoding encoding) {
   }
 
   // RO_SPACE strings cannot be externalized.
-  if (HeapLayout::InReadOnlySpace(this)) {
+  if (IsReadOnlyHeapObject(this)) {
     return false;
   }
 
@@ -611,7 +602,7 @@ bool String::SupportsExternalization(v8::String::Encoding encoding) {
   }
 
   // Only strings in old space can be externalized.
-  if (HeapLayout::InYoungGeneration(Tagged(this))) {
+  if (Heap::InYoungGeneration(Tagged(this))) {
     return false;
   }
 
@@ -664,7 +655,7 @@ void String::StringShortPrint(StringStream* accumulator) {
     return;
   }
 
-  const uint32_t len = length();
+  const int len = length();
   accumulator->Add("<String[%u]: ", len);
   accumulator->Add(PrefixForDebugPrint());
 
@@ -721,16 +712,93 @@ bool String::LooksValid() {
   // TODO(leszeks): Maybe remove this check entirely, Heap::Contains uses
   // basically the same logic as the way we access the heap in the first place.
   // RO_SPACE objects should always be valid.
+  if (V8_ENABLE_THIRD_PARTY_HEAP_BOOL) return true;
   if (ReadOnlyHeap::Contains(this)) return true;
   MemoryChunkMetadata* chunk = MemoryChunkMetadata::FromHeapObject(this);
   if (chunk->heap() == nullptr) return false;
   return chunk->heap()->Contains(this);
 }
 
+namespace {
+
+bool AreDigits(const uint8_t* s, int from, int to) {
+  for (int i = from; i < to; i++) {
+    if (s[i] < '0' || s[i] > '9') return false;
+  }
+
+  return true;
+}
+
+int ParseDecimalInteger(const uint8_t* s, int from, int to) {
+  DCHECK_LT(to - from, 10);  // Overflow is not possible.
+  DCHECK(from < to);
+  int d = s[from] - '0';
+
+  for (int i = from + 1; i < to; i++) {
+    d = 10 * d + (s[i] - '0');
+  }
+
+  return d;
+}
+
+}  // namespace
+
 // static
 Handle<Number> String::ToNumber(Isolate* isolate, Handle<String> subject) {
-  return isolate->factory()->NewNumber(
-      StringToDouble(isolate, subject, ALLOW_NON_DECIMAL_PREFIX));
+  // Flatten {subject} string first.
+  subject = String::Flatten(isolate, subject);
+
+  // Fast array index case.
+  uint32_t index;
+  if (subject->AsArrayIndex(&index)) {
+    return isolate->factory()->NewNumberFromUint(index);
+  }
+
+  // Fast case: short integer or some sorts of junk values.
+  if (IsSeqOneByteString(*subject)) {
+    int len = subject->length();
+    if (len == 0) return handle(Smi::zero(), isolate);
+
+    DisallowGarbageCollection no_gc;
+    uint8_t const* data = Cast<SeqOneByteString>(subject)->GetChars(no_gc);
+    bool minus = (data[0] == '-');
+    int start_pos = (minus ? 1 : 0);
+
+    if (start_pos == len) {
+      return isolate->factory()->nan_value();
+    } else if (data[start_pos] > '9') {
+      // Fast check for a junk value. A valid string may start from a
+      // whitespace, a sign ('+' or '-'), the decimal point, a decimal digit
+      // or the 'I' character ('Infinity'). All of that have codes not greater
+      // than '9' except 'I' and &nbsp;.
+      if (data[start_pos] != 'I' && data[start_pos] != 0xA0) {
+        return isolate->factory()->nan_value();
+      }
+    } else if (len - start_pos < 10 && AreDigits(data, start_pos, len)) {
+      // The maximal/minimal smi has 10 digits. If the string has less digits
+      // we know it will fit into the smi-data type.
+      int d = ParseDecimalInteger(data, start_pos, len);
+      if (minus) {
+        if (d == 0) return isolate->factory()->minus_zero_value();
+        d = -d;
+      } else if (!subject->HasHashCode() && len <= String::kMaxArrayIndexSize &&
+                 (len == 1 || data[0] != '0')) {
+        // String hash is not calculated yet but all the data are present.
+        // Update the hash field to speed up sequential convertions.
+        uint32_t raw_hash_field = StringHasher::MakeArrayIndexHash(d, len);
+#ifdef DEBUG
+        subject->EnsureHash();  // Force hash calculation.
+        DCHECK_EQ(subject->raw_hash_field(), raw_hash_field);
+#endif
+        subject->set_raw_hash_field_if_empty(raw_hash_field);
+      }
+      return handle(Smi::FromInt(d), isolate);
+    }
+  }
+
+  // Slower case.
+  int flags = ALLOW_HEX | ALLOW_OCTAL | ALLOW_BINARY;
+  return isolate->factory()->NewNumber(StringToDouble(isolate, subject, flags));
 }
 
 String::FlatContent String::SlowGetFlatContent(
@@ -739,7 +807,7 @@ String::FlatContent String::SlowGetFlatContent(
   USE(no_gc);
   Tagged<String> string = this;
   StringShape shape(string);
-  uint32_t offset = 0;
+  int offset = 0;
 
   // Extract cons- and sliced strings.
   if (shape.IsCons()) {
@@ -772,8 +840,8 @@ String::FlatContent String::SlowGetFlatContent(
 
 std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
                                           RobustnessFlag robust_flag,
-                                          uint32_t offset, uint32_t length,
-                                          uint32_t* length_return) {
+                                          int offset, int length,
+                                          int* length_return) {
   if (robust_flag == ROBUST_STRING_TRAVERSAL && !LooksValid()) {
     return std::unique_ptr<char[]>();
   }
@@ -782,9 +850,9 @@ std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
 
   // Compute the size of the UTF-8 string. Start at the specified offset.
   StringCharacterStream stream(this, offset);
-  uint32_t character_position = offset;
-  uint32_t utf8_bytes = 0;
-  uint32_t last = unibrow::Utf16::kNoPreviousCharacter;
+  int character_position = offset;
+  int utf8_bytes = 0;
+  int last = unibrow::Utf16::kNoPreviousCharacter;
   while (stream.HasMore() && character_position++ < offset + length) {
     uint16_t character = stream.GetNext();
     utf8_bytes += unibrow::Utf8::Length(character, last);
@@ -817,14 +885,14 @@ std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
 
 std::unique_ptr<char[]> String::ToCString(AllowNullsFlag allow_nulls,
                                           RobustnessFlag robust_flag,
-                                          uint32_t* length_return) {
+                                          int* length_return) {
   return ToCString(allow_nulls, robust_flag, 0, -1, length_return);
 }
 
 // static
 template <typename sinkchar>
-void String::WriteToFlat(Tagged<String> source, sinkchar* sink, uint32_t start,
-                         uint32_t length) {
+void String::WriteToFlat(Tagged<String> source, sinkchar* sink, int start,
+                         int length) {
   DCHECK(!SharedStringAccessGuardIfNeeded::IsNeeded(source));
   return WriteToFlat(source, sink, start, length,
                      SharedStringAccessGuardIfNeeded::NotNeeded());
@@ -832,8 +900,8 @@ void String::WriteToFlat(Tagged<String> source, sinkchar* sink, uint32_t start,
 
 // static
 template <typename sinkchar>
-void String::WriteToFlat(Tagged<String> source, sinkchar* sink, uint32_t start,
-                         uint32_t length,
+void String::WriteToFlat(Tagged<String> source, sinkchar* sink, int start,
+                         int length,
                          const SharedStringAccessGuardIfNeeded& access_guard) {
   DisallowGarbageCollection no_gc;
   if (length == 0) return;
@@ -915,7 +983,7 @@ void String::WriteToFlat(Tagged<String> source, sinkchar* sink, uint32_t start,
       case kOneByteStringTag | kSlicedStringTag:
       case kTwoByteStringTag | kSlicedStringTag: {
         Tagged<SlicedString> slice = Cast<SlicedString>(source);
-        uint32_t offset = slice->offset();
+        unsigned offset = slice->offset();
         source = slice->parent();
         start += offset;
         continue;
@@ -1018,7 +1086,7 @@ bool String::SlowEquals(
     const SharedStringAccessGuardIfNeeded& access_guard) const {
   DisallowGarbageCollection no_gc;
   // Fast check: negative check with lengths.
-  uint32_t len = length();
+  int len = length();
   if (len != other->length()) return false;
   if (len == 0) return true;
 
@@ -1042,7 +1110,7 @@ bool String::SlowEquals(
     if (v8_flags.enable_slow_asserts) {
       if (this_hash != other_hash) {
         bool found_difference = false;
-        for (uint32_t i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++) {
           if (Get(i) != other->Get(i)) {
             found_difference = true;
             break;
@@ -1075,7 +1143,7 @@ bool String::SlowEquals(
 bool String::SlowEquals(Isolate* isolate, Handle<String> one,
                         Handle<String> two) {
   // Fast check: negative check with lengths.
-  const uint32_t one_length = one->length();
+  const int one_length = one->length();
   if (one_length != two->length()) return false;
   if (one_length == 0) return true;
 
@@ -1100,7 +1168,7 @@ bool String::SlowEquals(Isolate* isolate, Handle<String> one,
     if (v8_flags.enable_slow_asserts) {
       if (one_hash != two_hash) {
         bool found_difference = false;
-        for (uint32_t i = 0; i < one_length; i++) {
+        for (int i = 0; i < one_length; i++) {
           if (one->Get(i) != two->Get(i)) {
             found_difference = true;
             break;
@@ -1166,7 +1234,7 @@ ComparisonResult String::Compare(Isolate* isolate, Handle<String> x,
 
   DisallowGarbageCollection no_gc;
   ComparisonResult result = ComparisonResult::kEqual;
-  uint32_t prefix_length = x->length();
+  int prefix_length = x->length();
   if (y->length() < prefix_length) {
     prefix_length = y->length();
     result = ComparisonResult::kGreaterThan;
@@ -1207,8 +1275,8 @@ namespace {
 
 uint32_t ToValidIndex(Tagged<String> str, Tagged<Object> number) {
   uint32_t index = PositiveNumberToUint32(number);
-  uint32_t length = str->length();
-  if (index > length) return length;
+  uint32_t length_value = static_cast<uint32_t>(str->length());
+  if (index > length_value) return length_value;
   return index;
 }
 
@@ -1254,8 +1322,9 @@ int SearchString(Isolate* isolate, String::FlatContent receiver_content,
 }  // namespace
 
 int String::IndexOf(Isolate* isolate, Handle<String> receiver,
-                    Handle<String> search, uint32_t start_index) {
-  DCHECK_LE(start_index, receiver->length());
+                    Handle<String> search, int start_index) {
+  DCHECK_LE(0, start_index);
+  DCHECK(start_index <= receiver->length());
 
   uint32_t search_length = search->length();
   if (search_length == 0) return start_index;
@@ -1284,7 +1353,9 @@ int String::IndexOf(Isolate* isolate, Handle<String> receiver,
 
 MaybeHandle<String> String::GetSubstitution(Isolate* isolate, Match* match,
                                             Handle<String> replacement,
-                                            uint32_t start_index) {
+                                            int start_index) {
+  DCHECK_GE(start_index, 0);
+
   Factory* factory = isolate->factory();
 
   const int replacement_length = replacement->length();
@@ -1586,7 +1657,7 @@ bool String::IsIdentifier(Isolate* isolate, Handle<String> str) {
 namespace {
 
 template <typename Char>
-uint32_t HashString(Tagged<String> string, size_t start, uint32_t length,
+uint32_t HashString(Tagged<String> string, size_t start, int length,
                     uint64_t seed,
                     const SharedStringAccessGuardIfNeeded& access_guard) {
   DisallowGarbageCollection no_gc;
@@ -1669,7 +1740,7 @@ uint32_t String::ComputeAndSetRawHash(
 
 bool String::SlowAsArrayIndex(uint32_t* index) {
   DisallowGarbageCollection no_gc;
-  uint32_t length = this->length();
+  int length = this->length();
   if (length <= kMaxCachedArrayIndexLength) {
     uint32_t field = EnsureRawHash();  // Force computation of hash code.
     if (!IsIntegerIndex(field)) return false;
@@ -1683,7 +1754,7 @@ bool String::SlowAsArrayIndex(uint32_t* index) {
 
 bool String::SlowAsIntegerIndex(size_t* index) {
   DisallowGarbageCollection no_gc;
-  uint32_t length = this->length();
+  int length = this->length();
   if (length <= kMaxCachedArrayIndexLength) {
     uint32_t field = EnsureRawHash();  // Force computation of hash code.
     if (!IsIntegerIndex(field)) return false;
@@ -1697,25 +1768,25 @@ bool String::SlowAsIntegerIndex(size_t* index) {
 }
 
 void String::PrintOn(FILE* file) {
-  uint32_t length = this->length();
-  for (uint32_t i = 0; i < length; i++) {
+  int length = this->length();
+  for (int i = 0; i < length; i++) {
     PrintF(file, "%c", Get(i));
   }
 }
 
 void String::PrintOn(std::ostream& ostream) {
-  uint32_t length = this->length();
-  for (uint32_t i = 0; i < length; i++) {
+  int length = this->length();
+  for (int i = 0; i < length; i++) {
     ostream.put(Get(i));
   }
 }
 
 Handle<String> SeqString::Truncate(Isolate* isolate, Handle<SeqString> string,
-                                   uint32_t new_length) {
+                                   int new_length) {
   if (new_length == 0) return string->GetReadOnlyRoots().empty_string_handle();
 
   int new_size, old_size;
-  uint32_t old_length = string->length();
+  int old_length = string->length();
   if (old_length <= new_length) return string;
 
   if (IsSeqOneByteString(*string)) {
@@ -1792,7 +1863,7 @@ void SeqString::ClearPadding() {
 }
 
 uint16_t ConsString::Get(
-    uint32_t index, const SharedStringAccessGuardIfNeeded& access_guard) const {
+    int index, const SharedStringAccessGuardIfNeeded& access_guard) const {
   DCHECK(index >= 0 && index < this->length());
 
   // Check for a flattened cons string
@@ -1822,12 +1893,12 @@ uint16_t ConsString::Get(
 }
 
 uint16_t ThinString::Get(
-    uint32_t index, const SharedStringAccessGuardIfNeeded& access_guard) const {
+    int index, const SharedStringAccessGuardIfNeeded& access_guard) const {
   return actual()->Get(index, access_guard);
 }
 
 uint16_t SlicedString::Get(
-    uint32_t index, const SharedStringAccessGuardIfNeeded& access_guard) const {
+    int index, const SharedStringAccessGuardIfNeeded& access_guard) const {
   return parent()->Get(offset() + index, access_guard);
 }
 
@@ -1893,12 +1964,12 @@ Tagged<String> ConsStringIterator::Search(int* offset_out) {
   depth_ = 1;
   maximum_depth_ = 1;
   frames_[0] = cons_string;
-  const uint32_t consumed = consumed_;
-  uint32_t offset = 0;
+  const int consumed = consumed_;
+  int offset = 0;
   while (true) {
     // Loop until the string is found which contains the target offset.
     Tagged<String> string = cons_string->first();
-    uint32_t length = string->length();
+    int length = string->length();
     int32_t type;
     if (consumed < offset + length) {
       // Target offset is in the left branch.
@@ -1965,7 +2036,7 @@ Tagged<String> ConsStringIterator::NextLeaf(bool* blew_stack) {
     if ((type & kStringRepresentationMask) != kConsStringTag) {
       // Pop stack so next iteration is in correct place.
       Pop();
-      uint32_t length = string->length();
+      int length = string->length();
       // Could be a flattened ConsString.
       if (length == 0) continue;
       consumed_ += length;
@@ -1980,7 +2051,7 @@ Tagged<String> ConsStringIterator::NextLeaf(bool* blew_stack) {
       type = string->map()->instance_type();
       if ((type & kStringRepresentationMask) != kConsStringTag) {
         AdjustMaximumDepth();
-        uint32_t length = string->length();
+        int length = string->length();
         if (length == 0) break;  // Skip empty left-hand sides of ConsStrings.
         consumed_ += length;
         return string;
@@ -1993,7 +2064,7 @@ Tagged<String> ConsStringIterator::NextLeaf(bool* blew_stack) {
 }
 
 const uint8_t* String::AddressOfCharacterAt(
-    uint32_t start_index, const DisallowGarbageCollection& no_gc) {
+    int start_index, const DisallowGarbageCollection& no_gc) {
   DCHECK(IsFlat());
   Tagged<String> subject = this;
   StringShape shape(subject);
@@ -2030,14 +2101,14 @@ const uint8_t* String::AddressOfCharacterAt(
 }
 
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::WriteToFlat(
-    Tagged<String> source, uint16_t* sink, uint32_t from, uint32_t to);
+    Tagged<String> source, uint16_t* sink, int from, int to);
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::WriteToFlat(
-    Tagged<String> source, uint8_t* sink, uint32_t from, uint32_t to);
+    Tagged<String> source, uint8_t* sink, int from, int to);
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::WriteToFlat(
-    Tagged<String> source, uint16_t* sink, uint32_t from, uint32_t to,
+    Tagged<String> source, uint16_t* sink, int from, int to,
     const SharedStringAccessGuardIfNeeded&);
 template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void String::WriteToFlat(
-    Tagged<String> source, uint8_t* sink, uint32_t from, uint32_t to,
+    Tagged<String> source, uint8_t* sink, int from, int to,
     const SharedStringAccessGuardIfNeeded&);
 
 namespace {

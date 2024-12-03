@@ -1905,13 +1905,6 @@ void MacroAssembler::li(Register rd, Operand j, LiFlags mode) {
     }
 
     RecordRelocInfo(j.rmode(), immediate);
-    if (RelocInfo::IsWasmCanonicalSigId(j.rmode())) {
-      // wasm_canonical_sig_id is 32-bit value.
-      DCHECK(is_int32(immediate));
-      lui(rd, (immediate >> 16) & kImm16Mask);
-      ori(rd, rd, immediate & kImm16Mask);
-      return;
-    }
     lui(rd, (immediate >> 32) & kImm16Mask);
     ori(rd, rd, (immediate >> 16) & kImm16Mask);
     dsll(rd, rd, 16);
@@ -4226,8 +4219,8 @@ void MacroAssembler::LoadFromConstantsTable(Register destination,
   DCHECK(RootsTable::IsImmortalImmovable(RootIndex::kBuiltinsConstantsTable));
   LoadRoot(destination, RootIndex::kBuiltinsConstantsTable);
   Ld(destination,
-     FieldMemOperand(destination, OFFSET_OF_DATA_START(FixedArray) +
-                                      constant_index * kPointerSize));
+     FieldMemOperand(destination,
+                     FixedArray::kHeaderSize + constant_index * kPointerSize));
 }
 
 void MacroAssembler::LoadRootRelative(Register destination, int32_t offset) {
@@ -4912,23 +4905,6 @@ void MacroAssembler::StackOverflowCheck(Register num_args, Register scratch1,
   Branch(stack_overflow, le, scratch1, Operand(scratch2));
 }
 
-#ifdef V8_ENABLE_LEAPTIERING
-void MacroAssembler::LoadCodeEntrypointFromJSDispatchTable(
-    Register destination, MemOperand field_operand) {
-  ASM_CODE_COMMENT(this);
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  DCHECK(!AreAliased(destination, scratch));
-  DCHECK_EQ(JSDispatchEntry::kEntrypointOffset, 0);
-
-  li(scratch, ExternalReference::js_dispatch_table_address());
-  Lwu(destination, field_operand);
-  dsrl(destination, destination, kJSDispatchHandleShift);
-  dsll(destination, destination, kJSDispatchTableEntrySizeLog2);
-  Ld(destination, MemOperand(scratch, destination));
-}
-#endif
-
 void MacroAssembler::TestCodeIsMarkedForDeoptimizationAndJump(
     Register code_data_container, Register scratch, Condition cond,
     Label* target) {
@@ -5464,9 +5440,8 @@ void MacroAssembler::EnterFrame(StackFrame::Type type) {
     Push(kScratchReg);
   }
 #if V8_ENABLE_WEBASSEMBLY
-  if (type == StackFrame::WASM || type == StackFrame::WASM_LIFTOFF_SETUP) {
-    Push(kWasmImplicitArgRegister);
-  }
+  if (type == StackFrame::WASM || type == StackFrame::WASM_LIFTOFF_SETUP)
+    Push(kWasmInstanceRegister);
 #endif  // V8_ENABLE_WEBASSEMBLY
 }
 
@@ -6126,11 +6101,15 @@ int MacroAssembler::CallCFunctionHelper(
       // and C frames. 't' registers are caller-saved so this is safe as a
       // scratch register.
       Register pc_scratch = t1;
-      DCHECK(!AreAliased(pc_scratch, function));
-      CHECK(root_array_available());
+      Register scratch = t2;
+      DCHECK(!AreAliased(pc_scratch, scratch, function));
 
       LoadAddressPCRelative(pc_scratch, &get_pc);
 
+      // Save the frame pointer and PC so that the stack layout remains
+      // iterable, even without an ExitFrame which normally exists between JS
+      // and C frames.
+      CHECK(root_array_available());
       Sd(pc_scratch,
          ExternalReferenceAsOperand(IsolateFieldId::kFastCCallCallerPC));
       Sd(fp, ExternalReferenceAsOperand(IsolateFieldId::kFastCCallCallerFP));
@@ -6249,36 +6228,19 @@ void MacroAssembler::JumpCodeObject(Register code_data_container_object,
 
 void MacroAssembler::CallJSFunction(Register function_object) {
   Register code = kJavaScriptCallCodeStartRegister;
-#ifdef V8_ENABLE_LEAPTIERING
-  LoadCodeEntrypointFromJSDispatchTable(
-      code,
-      FieldMemOperand(function_object, JSFunction::kDispatchHandleOffset));
-  Call(code);
-#else
   Ld(code, FieldMemOperand(function_object, JSFunction::kCodeOffset));
   CallCodeObject(code, kJSEntrypointTag);
-#endif
 }
 
 void MacroAssembler::JumpJSFunction(Register function_object,
                                     JumpMode jump_mode) {
   Register code = kJavaScriptCallCodeStartRegister;
-#ifdef V8_ENABLE_LEAPTIERING
-  LoadCodeEntrypointFromJSDispatchTable(
-      code,
-      FieldMemOperand(function_object, JSFunction::kDispatchHandleOffset));
-  DCHECK_EQ(jump_mode, JumpMode::kJump);
-  Jump(code);
-#else
   Ld(code, FieldMemOperand(function_object, JSFunction::kCodeOffset));
   JumpCodeObject(code, kJSEntrypointTag, jump_mode);
-#endif
 }
 
 namespace {
 
-#ifndef V8_ENABLE_LEAPTIERING
-// Only used when leaptiering is disabled.
 void TailCallOptimizedCodeSlot(MacroAssembler* masm,
                                Register optimized_code_entry, Register scratch1,
                                Register scratch2) {
@@ -6290,6 +6252,7 @@ void TailCallOptimizedCodeSlot(MacroAssembler* masm,
   ASM_CODE_COMMENT(masm);
   DCHECK(!AreAliased(optimized_code_entry, a1, a3, scratch1, scratch2));
 
+  Register closure = a1;
   Label heal_optimized_code_slot;
 
   // If the optimized code is cleared, go to runtime to update the optimization
@@ -6310,8 +6273,8 @@ void TailCallOptimizedCodeSlot(MacroAssembler* masm,
   // the optimized functions list, then tail call the optimized code.
   // The feedback vector is no longer used, so re-use it as a scratch
   // register.
-  __ ReplaceClosureCodeWithOptimizedCode(optimized_code_entry, a1, scratch1,
-                                         scratch2);
+  __ ReplaceClosureCodeWithOptimizedCode(optimized_code_entry, closure,
+                                         scratch1, scratch2);
 
   static_assert(kJavaScriptCallCodeStartRegister == a2, "ABI mismatch");
   __ LoadCodeInstructionStart(a2, optimized_code_entry, kJSEntrypointTag);
@@ -6323,7 +6286,6 @@ void TailCallOptimizedCodeSlot(MacroAssembler* masm,
   __ bind(&heal_optimized_code_slot);
   __ GenerateTailCallToReturnedCode(Runtime::kHealOptimizedCodeSlot);
 }
-#endif  // V8_ENABLE_LEAPTIERING
 
 }  // namespace
 
@@ -6349,17 +6311,12 @@ void MacroAssembler::ReplaceClosureCodeWithOptimizedCode(
     Register scratch2) {
   ASM_CODE_COMMENT(this);
   DCHECK(!AreAliased(optimized_code, closure, scratch1, scratch2));
-
-#ifdef V8_ENABLE_LEAPTIERING
-  UNREACHABLE();
-#else
   // Store code entry in the closure.
   Sd(optimized_code, FieldMemOperand(closure, JSFunction::kCodeOffset));
   mov(scratch1, optimized_code);  // Write barrier clobbers scratch1 below.
   RecordWriteField(closure, JSFunction::kCodeOffset, scratch1, scratch2,
                    kRAHasNotBeenSaved, SaveFPRegsMode::kIgnore,
                    SmiCheck::kOmit);
-#endif  // V8_ENABLE_LEAPTIERING
 }
 
 void MacroAssembler::GenerateTailCallToReturnedCode(
@@ -6397,34 +6354,20 @@ void MacroAssembler::LoadFeedbackVectorFlagsAndJumpIfNeedsProcessing(
   ASM_CODE_COMMENT(this);
   DCHECK(CodeKindCanTierUp(current_code_kind));
   Register scratch = t2;
-  uint32_t flag_mask =
-      FeedbackVector::FlagMaskForNeedsProcessingCheckFrom(current_code_kind);
   Lhu(flags, FieldMemOperand(feedback_vector, FeedbackVector::kFlagsOffset));
-  And(scratch, flags, Operand(flag_mask));
+  uint32_t kFlagsMask = FeedbackVector::kFlagsTieringStateIsAnyRequested |
+                        FeedbackVector::kFlagsMaybeHasTurbofanCode |
+                        FeedbackVector::kFlagsLogNextExecution;
+  if (current_code_kind != CodeKind::MAGLEV) {
+    kFlagsMask |= FeedbackVector::kFlagsMaybeHasMaglevCode;
+  }
+  And(scratch, flags, Operand(kFlagsMask));
   Branch(flags_need_processing, ne, scratch, Operand(zero_reg));
 }
 
 void MacroAssembler::OptimizeCodeOrTailCallOptimizedCodeSlot(
     Register flags, Register feedback_vector) {
   ASM_CODE_COMMENT(this);
-#ifdef V8_ENABLE_LEAPTIERING
-  // In the leaptiering case, we don't load optimized code from the feedback
-  // vector so only need to call CompileOptimized or FunctionLogNextExecution
-  // here. See also LoadFeedbackVectorFlagsAndJumpIfNeedsProcessing above.
-  Label needs_logging;
-  {
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-    And(scratch, flags,
-        Operand(FeedbackVector::kFlagsTieringStateIsAnyRequested));
-    Branch(&needs_logging, eq, scratch, Operand(zero_reg));
-  }
-
-  GenerateTailCallToReturnedCode(Runtime::kCompileOptimized);
-
-  bind(&needs_logging);
-  GenerateTailCallToReturnedCode(Runtime::kFunctionLogNextExecution);
-#else
   Label maybe_has_optimized_code, maybe_needs_logging;
   // Check if optimized code marker is available.
   {
@@ -6453,7 +6396,6 @@ void MacroAssembler::OptimizeCodeOrTailCallOptimizedCodeSlot(
      FieldMemOperand(feedback_vector,
                      FeedbackVector::kMaybeOptimizedCodeOffset));
   TailCallOptimizedCodeSlot(this, optimized_code_entry, t3, a5);
-#endif  // V8_ENABLE_LEAPTIERING
 }
 
 // Calls an API function.  Allocates HandleScope, extracts returned value

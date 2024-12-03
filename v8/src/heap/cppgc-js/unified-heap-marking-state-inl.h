@@ -24,7 +24,8 @@ namespace internal {
 class BasicTracedReferenceExtractor final {
  public:
   static Address* GetObjectSlotForMarking(const TracedReferenceBase& ref) {
-    return const_cast<Address*>(ref.GetSlotThreadSafe());
+    return const_cast<Address*>(
+        reinterpret_cast<const Address*>(ref.GetSlotThreadSafe()));
   }
 };
 

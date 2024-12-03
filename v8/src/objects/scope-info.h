@@ -114,10 +114,6 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   // Does this scope belong to a function?
   bool HasPositionInfo() const;
 
-  bool IsHiddenCatchScope() const;
-
-  bool IsWrappedFunctionScope() const;
-
   // Return if contexts are allocated for this scope.
   bool HasContext() const;
 
@@ -222,7 +218,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
 
   FunctionKind function_kind() const;
 
-  // Returns true if this ScopeInfo is linked to an outer ScopeInfo.
+  // Returns true if this ScopeInfo is linked to a outer ScopeInfo.
   bool HasOuterScopeInfo() const;
 
   // Returns true if this ScopeInfo was created for a debug-evaluate scope.
@@ -237,6 +233,14 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
 
   bool is_script_scope() const;
 
+  // Returns true if this ScopeInfo has a blocklist attached containing stack
+  // allocated local variables.
+  V8_EXPORT_PRIVATE bool HasLocalsBlockList() const;
+  // Returns a list of stack-allocated locals of parent scopes.
+  // Used during local debug-evalute to decide whether a context lookup
+  // can continue upwards after checking this scope.
+  V8_EXPORT_PRIVATE Tagged<StringSet> LocalsBlockList() const;
+
   // Returns true if this ScopeInfo was created for a scope that skips the
   // closest outer class when resolving private names.
   bool PrivateNameLookupSkipsOuterClass() const;
@@ -244,6 +248,13 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   // REPL mode scopes allow re-declaraction of let and const variables. They
   // come from debug evaluate but are different to IsDebugEvaluateScope().
   bool IsReplModeScope() const;
+
+  // 1 bit of information that, paired with a bit from the script, allows us to
+  // identify whether the scope info still belongs to the script, or already to
+  // a parent. Once a scope info belongs to a parent, the bit may match up again
+  // with the bit of this script once we reach the parent of a parent (in case
+  // of nested eval).
+  bool EvalState() const;
 
 #ifdef DEBUG
   // For LiveEdit we ignore:
@@ -267,6 +278,13 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   static Handle<ScopeInfo> CreateForShadowRealmNativeContext(Isolate* isolate);
   static Handle<ScopeInfo> CreateGlobalThisBinding(Isolate* isolate);
 
+  // Creates a copy of a {ScopeInfo} but with the provided locals blocklist
+  // attached. Does nothing if the original {ScopeInfo} already has a field
+  // for a blocklist reserved.
+  V8_EXPORT_PRIVATE static Handle<ScopeInfo> RecreateWithBlockList(
+      Isolate* isolate, Handle<ScopeInfo> original,
+      DirectHandle<StringSet> blocklist);
+
   // Serializes empty scope info.
   V8_EXPORT_PRIVATE static Tagged<ScopeInfo> Empty(Isolate* isolate);
 
@@ -284,7 +302,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   };
 
   static_assert(LanguageModeSize == 1 << LanguageModeBit::kSize);
-  static_assert(FunctionKindBits::is_valid(FunctionKind::kLastFunctionKind));
+  static_assert(FunctionKind::kLastFunctionKind <= FunctionKindBits::kMax);
 
   bool IsEmpty() const;
 
@@ -306,6 +324,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   int FunctionVariableInfoIndex() const;
   int InferredFunctionNameIndex() const;
   int OuterScopeInfoIndex() const;
+  V8_EXPORT_PRIVATE int LocalsBlockListIndex() const;
   int ModuleInfoIndex() const;
   int ModuleVariableCountIndex() const;
   int ModuleVariablesIndex() const;
@@ -368,6 +387,7 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
   friend std::ostream& operator<<(std::ostream& os, VariableAllocationInfo var);
 
   TQ_OBJECT_CONSTRUCTORS(ScopeInfo)
+  FRIEND_TEST(TestWithNativeContext, RecreateScopeInfoWithLocalsBlocklistWorks);
 };
 
 std::ostream& operator<<(std::ostream& os, VariableAllocationInfo var);

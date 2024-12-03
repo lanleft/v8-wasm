@@ -325,7 +325,7 @@ class PropertyCallbackInfo {
 
   static constexpr int kSize = kArgsLength * internal::kApiSystemPointerSize;
 
-  PropertyCallbackInfo() = default;
+  explicit PropertyCallbackInfo() = default;
 
   mutable internal::Address args_[kArgsLength];
 };

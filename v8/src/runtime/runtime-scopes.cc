@@ -138,11 +138,15 @@ RUNTIME_FUNCTION(Runtime_DeclareModuleExports) {
   DirectHandle<FixedArray> declarations = args.at<FixedArray>(0);
   DirectHandle<JSFunction> closure = args.at<JSFunction>(1);
 
-  DirectHandle<ClosureFeedbackCellArray> closure_feedback_cell_array(
-      closure->has_feedback_vector()
-          ? closure->feedback_vector()->closure_feedback_cell_array()
-          : closure->closure_feedback_cell_array(),
-      isolate);
+  Handle<ClosureFeedbackCellArray> closure_feedback_cell_array =
+      Handle<ClosureFeedbackCellArray>::null();
+  if (closure->has_feedback_vector()) {
+    closure_feedback_cell_array = Handle<ClosureFeedbackCellArray>(
+        closure->feedback_vector()->closure_feedback_cell_array(), isolate);
+  } else {
+    closure_feedback_cell_array = Handle<ClosureFeedbackCellArray>(
+        closure->closure_feedback_cell_array(), isolate);
+  }
 
   Handle<Context> context(isolate->context(), isolate);
   DCHECK(context->IsModuleContext());
@@ -185,11 +189,15 @@ RUNTIME_FUNCTION(Runtime_DeclareGlobals) {
   Handle<JSGlobalObject> global(isolate->global_object());
   Handle<Context> context(isolate->context(), isolate);
 
-  DirectHandle<ClosureFeedbackCellArray> closure_feedback_cell_array(
-      closure->has_feedback_vector()
-          ? closure->feedback_vector()->closure_feedback_cell_array()
-          : closure->closure_feedback_cell_array(),
-      isolate);
+  Handle<ClosureFeedbackCellArray> closure_feedback_cell_array =
+      Handle<ClosureFeedbackCellArray>::null();
+  if (closure->has_feedback_vector()) {
+    closure_feedback_cell_array = Handle<ClosureFeedbackCellArray>(
+        closure->feedback_vector()->closure_feedback_cell_array(), isolate);
+  } else {
+    closure_feedback_cell_array = Handle<ClosureFeedbackCellArray>(
+        closure->closure_feedback_cell_array(), isolate);
+  }
 
   // Traverse the name/value pairs and set the properties.
   int length = declarations->length();
@@ -236,7 +244,7 @@ RUNTIME_FUNCTION(Runtime_InitializeDisposableStack) {
   HandleScope scope(isolate);
   DCHECK_EQ(0, args.length());
 
-  DirectHandle<JSDisposableStackBase> disposable_stack =
+  Handle<JSDisposableStackBase> disposable_stack =
       isolate->factory()->NewJSDisposableStackBase();
   JSDisposableStackBase::InitializeJSDisposableStackBase(isolate,
                                                          disposable_stack);
@@ -250,11 +258,8 @@ Tagged<Object> AddToDisposableStack(Isolate* isolate,
                                     DisposeMethodHint hint) {
   // a. If V is either null or undefined and hint is sync-dispose, return
   // unused.
-  if (IsNullOrUndefined(*value) && hint == DisposeMethodHint::kSyncDispose) {
+  if (IsNullOrUndefined(*value)) {
     return *value;
-  } else if (IsNullOrUndefined(*value) &&
-             hint == DisposeMethodHint::kAsyncDispose) {
-    value = ReadOnlyRoots(isolate).undefined_value_handle();
   }
 
   Handle<Object> method;
@@ -320,23 +325,6 @@ RUNTIME_FUNCTION(Runtime_DisposeDisposableStack) {
           static_cast<DisposableStackResourcesType>(
               Smi::ToInt(*has_await_using))));
   return *result;
-}
-
-RUNTIME_FUNCTION(Runtime_HandleExceptionsInDisposeDisposableStack) {
-  HandleScope scope(isolate);
-  DCHECK_EQ(2, args.length());
-
-  DirectHandle<JSDisposableStackBase> disposable_stack =
-      args.at<JSDisposableStackBase>(0);
-  Handle<Object> exception = args.at<Object>(1);
-
-  if (!isolate->is_catchable_by_javascript(*exception)) {
-    return isolate->Throw(*exception);
-  }
-
-  JSDisposableStackBase::HandleErrorInDisposal(isolate, disposable_stack,
-                                               exception);
-  return *disposable_stack;
 }
 
 namespace {
@@ -460,7 +448,8 @@ namespace {
 
 // Find the arguments of the JavaScript function invocation that called
 // into C++ code. Collect these in a newly allocated array of handles.
-DirectHandleVector<Object> GetCallerArguments(Isolate* isolate) {
+std::unique_ptr<Handle<Object>[]> GetCallerArguments(Isolate* isolate,
+                                                     int* total_argc) {
   // Find frame containing arguments passed to the caller.
   JavaScriptStackFrameIterator it(isolate);
   JavaScriptFrame* frame = it.frame();
@@ -484,7 +473,9 @@ DirectHandleVector<Object> GetCallerArguments(Isolate* isolate) {
     iter++;
     argument_count--;
 
-    DirectHandleVector<Object> param_data(isolate, argument_count);
+    *total_argc = argument_count;
+    std::unique_ptr<Handle<Object>[]> param_data(
+        NewArray<Handle<Object>>(*total_argc));
     bool should_deoptimize = false;
     for (int i = 0; i < argument_count; i++) {
       // If we materialize any object, we should deoptimize the frame because we
@@ -502,7 +493,9 @@ DirectHandleVector<Object> GetCallerArguments(Isolate* isolate) {
     return param_data;
   } else {
     int args_count = frame->GetActualArgumentCount();
-    DirectHandleVector<Object> param_data(isolate, args_count);
+    *total_argc = args_count;
+    std::unique_ptr<Handle<Object>[]> param_data(
+        NewArray<Handle<Object>>(*total_argc));
     for (int i = 0; i < args_count; i++) {
       Handle<Object> val = Handle<Object>(frame->GetParameter(i), isolate);
       param_data[i] = val;
@@ -536,8 +529,7 @@ Handle<JSObject> NewSloppyArguments(Isolate* isolate, Handle<JSFunction> callee,
           isolate->factory()->NewSloppyArgumentsElements(
               mapped_count, context, arguments, AllocationType::kYoung);
 
-      result->set_map(isolate,
-                      isolate->native_context()->fast_aliased_arguments_map());
+      result->set_map(isolate->native_context()->fast_aliased_arguments_map());
       result->set_elements(*parameter_map);
 
       // Loop over the actual parameters backwards.
@@ -587,15 +579,11 @@ Handle<JSObject> NewSloppyArguments(Isolate* isolate, Handle<JSFunction> callee,
 
 class HandleArguments {
  public:
-  // If direct handles are enabled, it is the responsibility of the caller to
-  // ensure that the memory pointed to by `array` is scanned during CSS, e.g.,
-  // it comes from a `DirectHandleVector<Object>`.
-  explicit HandleArguments(base::Vector<const DirectHandle<Object>> array)
-      : array_(array) {}
+  explicit HandleArguments(Handle<Object>* array) : array_(array) {}
   Tagged<Object> operator[](int index) { return *array_[index]; }
 
  private:
-  base::Vector<const DirectHandle<Object>> array_;
+  Handle<Object>* array_;
 };
 
 class ParameterArguments {
@@ -617,10 +605,11 @@ RUNTIME_FUNCTION(Runtime_NewSloppyArguments) {
   Handle<JSFunction> callee = args.at<JSFunction>(0);
   // This generic runtime function can also be used when the caller has been
   // inlined, we use the slow but accurate {GetCallerArguments}.
-  auto arguments = GetCallerArguments(isolate);
-  HandleArguments argument_getter({arguments.data(), arguments.size()});
-  return *NewSloppyArguments(isolate, callee, argument_getter,
-                             static_cast<int>(arguments.size()));
+  int argument_count = 0;
+  std::unique_ptr<Handle<Object>[]> arguments =
+      GetCallerArguments(isolate, &argument_count);
+  HandleArguments argument_getter(arguments.get());
+  return *NewSloppyArguments(isolate, callee, argument_getter, argument_count);
 }
 
 RUNTIME_FUNCTION(Runtime_NewStrictArguments) {
@@ -629,8 +618,9 @@ RUNTIME_FUNCTION(Runtime_NewStrictArguments) {
   Handle<JSFunction> callee = args.at<JSFunction>(0);
   // This generic runtime function can also be used when the caller has been
   // inlined, we use the slow but accurate {GetCallerArguments}.
-  auto arguments = GetCallerArguments(isolate);
-  int argument_count = static_cast<int>(arguments.size());
+  int argument_count = 0;
+  std::unique_ptr<Handle<Object>[]> arguments =
+      GetCallerArguments(isolate, &argument_count);
   DirectHandle<JSObject> result =
       isolate->factory()->NewArgumentsObject(callee, argument_count);
   if (argument_count) {
@@ -646,6 +636,7 @@ RUNTIME_FUNCTION(Runtime_NewStrictArguments) {
   return *result;
 }
 
+
 RUNTIME_FUNCTION(Runtime_NewRestParameter) {
   HandleScope scope(isolate);
   DCHECK_EQ(1, args.length());
@@ -654,8 +645,9 @@ RUNTIME_FUNCTION(Runtime_NewRestParameter) {
       callee->shared()->internal_formal_parameter_count_without_receiver();
   // This generic runtime function can also be used when the caller has been
   // inlined, we use the slow but accurate {GetCallerArguments}.
-  auto arguments = GetCallerArguments(isolate);
-  int argument_count = static_cast<int>(arguments.size());
+  int argument_count = 0;
+  std::unique_ptr<Handle<Object>[]> arguments =
+      GetCallerArguments(isolate, &argument_count);
   int num_elements = std::max(0, argument_count - start_index);
   DirectHandle<JSObject> result = isolate->factory()->NewJSArray(
       PACKED_ELEMENTS, num_elements, num_elements,
@@ -770,7 +762,7 @@ RUNTIME_FUNCTION(Runtime_DeleteLookupSlot) {
   // the global object, or the subject of a with.  Try to delete it
   // (respecting DONT_DELETE).
   Handle<JSReceiver> object = Cast<JSReceiver>(holder);
-  Maybe<bool> result = JSReceiver::DeleteProperty(isolate, object, name);
+  Maybe<bool> result = JSReceiver::DeleteProperty(object, name);
   MAYBE_RETURN(result, ReadOnlyRoots(isolate).exception());
   return isolate->heap()->ToBoolean(result.FromJust());
 }

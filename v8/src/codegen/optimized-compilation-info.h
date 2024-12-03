@@ -56,28 +56,27 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
   // Various configuration flags for a compilation, as well as some properties
   // of the compiled code produced by a compilation.
 
-#define FLAGS(V)                                                      \
-  V(FunctionContextSpecializing, function_context_specializing, 0)    \
-  V(Inlining, inlining, 1)                                            \
-  V(DisableFutureOptimization, disable_future_optimization, 2)        \
-  V(Splitting, splitting, 3)                                          \
-  V(SourcePositions, source_positions, 4)                             \
-  V(BailoutOnUninitialized, bailout_on_uninitialized, 5)              \
-  V(LoopPeeling, loop_peeling, 6)                                     \
-  V(SwitchJumpTable, switch_jump_table, 7)                            \
-  V(CalledWithCodeStartRegister, called_with_code_start_register, 8)  \
-  V(AllocationFolding, allocation_folding, 9)                         \
-  V(AnalyzeEnvironmentLiveness, analyze_environment_liveness, 10)     \
-  V(TraceTurboJson, trace_turbo_json, 11)                             \
-  V(TraceTurboGraph, trace_turbo_graph, 12)                           \
-  V(TraceTurboScheduled, trace_turbo_scheduled, 13)                   \
-  V(TraceTurboAllocation, trace_turbo_allocation, 14)                 \
-  V(TraceHeapBroker, trace_heap_broker, 15)                           \
-  V(DiscardResultForTesting, discard_result_for_testing, 16)          \
-  V(InlineJSWasmCalls, inline_js_wasm_calls, 17)                      \
-  V(TurboshaftTraceReduction, turboshaft_trace_reduction, 18)         \
-  V(CouldNotInlineAllCandidates, could_not_inline_all_candidates, 19) \
-  V(ShadowStackCompliantLazyDeopt, shadow_stack_compliant_lazy_deopt, 20)
+#define FLAGS(V)                                                     \
+  V(FunctionContextSpecializing, function_context_specializing, 0)   \
+  V(Inlining, inlining, 1)                                           \
+  V(DisableFutureOptimization, disable_future_optimization, 2)       \
+  V(Splitting, splitting, 3)                                         \
+  V(SourcePositions, source_positions, 4)                            \
+  V(BailoutOnUninitialized, bailout_on_uninitialized, 5)             \
+  V(LoopPeeling, loop_peeling, 6)                                    \
+  V(SwitchJumpTable, switch_jump_table, 7)                           \
+  V(CalledWithCodeStartRegister, called_with_code_start_register, 8) \
+  V(AllocationFolding, allocation_folding, 9)                        \
+  V(AnalyzeEnvironmentLiveness, analyze_environment_liveness, 10)    \
+  V(TraceTurboJson, trace_turbo_json, 11)                            \
+  V(TraceTurboGraph, trace_turbo_graph, 12)                          \
+  V(TraceTurboScheduled, trace_turbo_scheduled, 13)                  \
+  V(TraceTurboAllocation, trace_turbo_allocation, 14)                \
+  V(TraceHeapBroker, trace_heap_broker, 15)                          \
+  V(DiscardResultForTesting, discard_result_for_testing, 16)         \
+  V(InlineJSWasmCalls, inline_js_wasm_calls, 17)                     \
+  V(TurboshaftTraceReduction, turboshaft_trace_reduction, 18)        \
+  V(CouldNotInlineAllCandidates, could_not_inline_all_candidates, 19)
 
   enum Flag {
 #define DEF_ENUM(Camel, Lower, Bit) k##Camel = 1 << Bit,
@@ -101,14 +100,13 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
 
   // Construct a compilation info for optimized compilation.
   OptimizedCompilationInfo(Zone* zone, Isolate* isolate,
-                           IndirectHandle<SharedFunctionInfo> shared,
-                           IndirectHandle<JSFunction> closure,
-                           CodeKind code_kind, BytecodeOffset osr_offset);
+                           Handle<SharedFunctionInfo> shared,
+                           Handle<JSFunction> closure, CodeKind code_kind,
+                           BytecodeOffset osr_offset);
   // For testing.
   OptimizedCompilationInfo(Zone* zone, Isolate* isolate,
-                           IndirectHandle<SharedFunctionInfo> shared,
-                           IndirectHandle<JSFunction> closure,
-                           CodeKind code_kind)
+                           Handle<SharedFunctionInfo> shared,
+                           Handle<JSFunction> closure, CodeKind code_kind)
       : OptimizedCompilationInfo(zone, isolate, shared, closure, code_kind,
                                  BytecodeOffset::None()) {}
   // Construct a compilation info for stub compilation, Wasm, and testing.
@@ -123,16 +121,12 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
 
   Zone* zone() { return zone_; }
   bool is_osr() const { return !osr_offset_.IsNone(); }
-  IndirectHandle<SharedFunctionInfo> shared_info() const {
-    return shared_info_;
-  }
+  Handle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   bool has_shared_info() const { return !shared_info().is_null(); }
-  IndirectHandle<BytecodeArray> bytecode_array() const {
-    return bytecode_array_;
-  }
+  Handle<BytecodeArray> bytecode_array() const { return bytecode_array_; }
   bool has_bytecode_array() const { return !bytecode_array_.is_null(); }
-  IndirectHandle<JSFunction> closure() const { return closure_; }
-  IndirectHandle<Code> code() const { return code_; }
+  Handle<JSFunction> closure() const { return closure_; }
+  Handle<Code> code() const { return code_; }
   CodeKind code_kind() const { return code_kind_; }
   Builtin builtin() const { return builtin_; }
   void set_builtin(Builtin builtin) { builtin_ = builtin; }
@@ -145,7 +139,7 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
 
   // Code getters and setters.
 
-  void SetCode(IndirectHandle<Code> code);
+  void SetCode(Handle<Code> code);
 
 #if V8_ENABLE_WEBASSEMBLY
   void SetWasmCompilationResult(std::unique_ptr<wasm::WasmCompilationResult>);
@@ -169,7 +163,6 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
   bool IsWasm() const { return code_kind() == CodeKind::WASM_FUNCTION; }
   bool IsWasmBuiltin() const {
     return code_kind() == CodeKind::WASM_TO_JS_FUNCTION ||
-           code_kind() == CodeKind::WASM_TO_CAPI_FUNCTION ||
            code_kind() == CodeKind::JS_TO_WASM_FUNCTION ||
            (code_kind() == CodeKind::BUILTIN &&
             (builtin() == Builtin::kJSToWasmWrapper ||
@@ -194,14 +187,14 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
   }
 
   template <typename T>
-  IndirectHandle<T> CanonicalHandle(Tagged<T> object, Isolate* isolate) {
+  Handle<T> CanonicalHandle(Tagged<T> object, Isolate* isolate) {
     DCHECK_NOT_NULL(canonical_handles_);
     DCHECK(PersistentHandlesScope::IsActive(isolate));
     auto find_result = canonical_handles_->FindOrInsert(object);
     if (!find_result.already_exists) {
-      *find_result.entry = IndirectHandle<T>(object, isolate).location();
+      *find_result.entry = Handle<T>(object, isolate).location();
     }
-    return IndirectHandle<T>(*find_result.entry);
+    return Handle<T>(*find_result.entry);
   }
 
   void ReopenAndCanonicalizeHandlesInNewScope(Isolate* isolate);
@@ -224,14 +217,13 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
   }
 
   struct InlinedFunctionHolder {
-    IndirectHandle<SharedFunctionInfo> shared_info;
-    IndirectHandle<BytecodeArray>
-        bytecode_array;  // Explicit to prevent flushing.
+    Handle<SharedFunctionInfo> shared_info;
+    Handle<BytecodeArray> bytecode_array;  // Explicit to prevent flushing.
     InliningPosition position;
 
-    InlinedFunctionHolder(
-        IndirectHandle<SharedFunctionInfo> inlined_shared_info,
-        IndirectHandle<BytecodeArray> inlined_bytecode, SourcePosition pos);
+    InlinedFunctionHolder(Handle<SharedFunctionInfo> inlined_shared_info,
+                          Handle<BytecodeArray> inlined_bytecode,
+                          SourcePosition pos);
 
     void RegisterInlinedFunctionId(size_t inlined_function_id) {
       position.inlined_function_id = static_cast<int>(inlined_function_id);
@@ -242,8 +234,8 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
   InlinedFunctionList& inlined_functions() { return inlined_functions_; }
 
   // Returns the inlining id for source position tracking.
-  int AddInlinedFunction(IndirectHandle<SharedFunctionInfo> inlined_function,
-                         IndirectHandle<BytecodeArray> inlined_bytecode,
+  int AddInlinedFunction(Handle<SharedFunctionInfo> inlined_function,
+                         Handle<BytecodeArray> inlined_bytecode,
                          SourcePosition pos);
 
   std::unique_ptr<char[]> GetDebugName() const;
@@ -302,12 +294,12 @@ class V8_EXPORT_PRIVATE OptimizedCompilationInfo final {
 
   // We retain a reference the bytecode array specifically to ensure it doesn't
   // get flushed while we are optimizing the code.
-  IndirectHandle<BytecodeArray> bytecode_array_;
-  IndirectHandle<SharedFunctionInfo> shared_info_;
-  IndirectHandle<JSFunction> closure_;
+  Handle<BytecodeArray> bytecode_array_;
+  Handle<SharedFunctionInfo> shared_info_;
+  Handle<JSFunction> closure_;
 
   // The compiled code.
-  IndirectHandle<Code> code_;
+  Handle<Code> code_;
 
   // Basic block profiling support.
   BasicBlockProfilerData* profiler_data_ = nullptr;

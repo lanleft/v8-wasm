@@ -28,21 +28,11 @@ namespace internal {
 
 #include "torque-generated/src/objects/contexts-tq-inl.inc"
 
-int ScriptContextTable::length(AcquireLoadTag) const {
-  return length_.Acquire_Load().value();
-}
-void ScriptContextTable::set_length(int value, ReleaseStoreTag) {
-  length_.Release_Store(this, Smi::FromInt(value));
-}
+OBJECT_CONSTRUCTORS_IMPL(ScriptContextTable, ScriptContextTable::Super)
 
-Tagged<NameToIndexHashTable> ScriptContextTable::names_to_context_index()
-    const {
-  return names_to_context_index_.load();
-}
-void ScriptContextTable::set_names_to_context_index(
-    Tagged<NameToIndexHashTable> value, WriteBarrierMode mode) {
-  names_to_context_index_.store(this, value, mode);
-}
+RELEASE_ACQUIRE_SMI_ACCESSORS(ScriptContextTable, length, kLengthOffset)
+ACCESSORS(ScriptContextTable, names_to_context_index,
+          Tagged<NameToIndexHashTable>, kNamesToContextIndexOffset)
 
 Tagged<Context> ScriptContextTable::get(int i) const {
   DCHECK_LT(i, length(kAcquireLoad));

@@ -945,7 +945,8 @@ void ValidateMapDetailsLogging(v8::Isolate* isolate,
 TEST_F(LogMapsTest, LogMapsDetailsStartup) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking) {
+      i::v8_flags.stress_incremental_marking ||
+      i::v8_flags.enable_third_party_heap) {
     return;
   }
   // Test that all Map details from Maps in the snapshot are logged properly.
@@ -968,7 +969,8 @@ class LogMapsCodeTest : public LogTest {
 TEST_F(LogMapsCodeTest, LogMapsDetailsCode) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking) {
+      i::v8_flags.stress_incremental_marking ||
+      i::v8_flags.enable_third_party_heap) {
     return;
   }
 
@@ -1057,7 +1059,8 @@ TEST_F(LogMapsCodeTest, LogMapsDetailsCode) {
 TEST_F(LogMapsTest, LogMapsDetailsContexts) {
   // Reusing map addresses might cause these tests to fail.
   if (i::v8_flags.gc_global || i::v8_flags.stress_compaction ||
-      i::v8_flags.stress_incremental_marking) {
+      i::v8_flags.stress_incremental_marking ||
+      i::v8_flags.enable_third_party_heap) {
     return;
   }
   // Test that all Map details from Maps in the snapshot are logged properly.

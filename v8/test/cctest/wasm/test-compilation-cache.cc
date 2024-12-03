@@ -76,7 +76,8 @@ ZoneBuffer GetValidModuleBytes(Zone* zone, uint8_t n) {
   WasmModuleBuilder builder(zone);
   {
     WasmFunctionBuilder* f = builder.AddFunction(sigs.v_v());
-    f->EmitCode({kExprI32Const, n, kExprDrop, kExprEnd});
+    uint8_t code[] = {kExprI32Const, n, kExprDrop, kExprEnd};
+    f->EmitCode(code, arraysize(code));
   }
   builder.WriteTo(&buffer);
   return buffer;

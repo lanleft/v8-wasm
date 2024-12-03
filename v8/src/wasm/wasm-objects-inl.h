@@ -27,11 +27,6 @@
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-module.h"
 #include "src/wasm/wasm-objects.h"
-#include "third_party/fp16/src/include/fp16.h"
-
-#if V8_ENABLE_DRUMBRAKE
-#include "src/wasm/interpreter/wasm-interpreter-objects.h"
-#endif  // V8_ENABLE_DRUMBRAKE
 
 // Has to be the last include (doesn't have include guards)
 #include "src/objects/object-macros.h"
@@ -41,6 +36,7 @@ namespace v8::internal {
 #include "torque-generated/src/wasm/wasm-objects-tq-inl.inc"
 
 TQ_OBJECT_CONSTRUCTORS_IMPL(AsmWasmData)
+TQ_OBJECT_CONSTRUCTORS_IMPL(WasmApiFunctionRef)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmArray)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmCapiFunctionData)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmContinuationObject)
@@ -49,7 +45,6 @@ TQ_OBJECT_CONSTRUCTORS_IMPL(WasmExportedFunctionData)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmFunctionData)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmFuncRef)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmGlobalObject)
-TQ_OBJECT_CONSTRUCTORS_IMPL(WasmImportData)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmInstanceObject)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmInternalFunction)
 TQ_OBJECT_CONSTRUCTORS_IMPL(WasmJSFunctionData)
@@ -201,20 +196,18 @@ PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, old_allocation_limit_address,
                     Address*, kOldAllocationLimitAddressOffset)
 PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, old_allocation_top_address,
                     Address*, kOldAllocationTopAddressOffset)
+PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, isorecursive_canonical_types,
+                    const uint32_t*, kIsorecursiveCanonicalTypesOffset)
 PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, globals_start, uint8_t*,
                     kGlobalsStartOffset)
 ACCESSORS(WasmTrustedInstanceData, imported_mutable_globals,
           Tagged<FixedAddressArray>, kImportedMutableGlobalsOffset)
-#if V8_ENABLE_DRUMBRAKE
-ACCESSORS(WasmTrustedInstanceData, imported_function_indices,
-          Tagged<FixedInt32Array>, kImportedFunctionIndicesOffset)
-#endif  // V8_ENABLE_DRUMBRAKE
 PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, jump_table_start, Address,
                     kJumpTableStartOffset)
 PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, hook_on_function_call_address,
                     Address, kHookOnFunctionCallAddressOffset)
-PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, tiering_budget_array,
-                    std::atomic<uint32_t>*, kTieringBudgetArrayOffset)
+PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, tiering_budget_array, uint32_t*,
+                    kTieringBudgetArrayOffset)
 PROTECTED_POINTER_ACCESSORS(WasmTrustedInstanceData, memory_bases_and_sizes,
                             TrustedFixedAddressArray,
                             kProtectedMemoryBasesAndSizesOffset)
@@ -241,10 +234,6 @@ OPTIONAL_ACCESSORS(WasmTrustedInstanceData, imported_mutable_globals_buffers,
                    Tagged<FixedArray>, kImportedMutableGlobalsBuffersOffset)
 OPTIONAL_ACCESSORS(WasmTrustedInstanceData, tables, Tagged<FixedArray>,
                    kTablesOffset)
-#if V8_ENABLE_DRUMBRAKE
-OPTIONAL_ACCESSORS(WasmTrustedInstanceData, interpreter_object, Tagged<Tuple2>,
-                   kInterpreterObjectOffset)
-#endif  // V8_ENABLE_DRUMBRAKE
 PROTECTED_POINTER_ACCESSORS(WasmTrustedInstanceData, shared_part,
                             WasmTrustedInstanceData, kProtectedSharedPartOffset)
 PROTECTED_POINTER_ACCESSORS(WasmTrustedInstanceData, dispatch_table0,
@@ -264,8 +253,6 @@ ACCESSORS(WasmTrustedInstanceData, feedback_vectors, Tagged<FixedArray>,
           kFeedbackVectorsOffset)
 ACCESSORS(WasmTrustedInstanceData, well_known_imports, Tagged<FixedArray>,
           kWellKnownImportsOffset)
-PRIMITIVE_ACCESSORS(WasmTrustedInstanceData, stress_deopt_counter_address,
-                    Address, kStressDeoptCounterOffset)
 
 void WasmTrustedInstanceData::clear_padding() {
   constexpr int kPaddingBytes = FIELD_SIZE(kOptionalPaddingOffset);
@@ -345,13 +332,6 @@ ImportedFunctionEntry::ImportedFunctionEntry(
 // WasmDispatchTable
 OBJECT_CONSTRUCTORS_IMPL(WasmDispatchTable, TrustedObject)
 
-PROTECTED_POINTER_ACCESSORS(WasmDispatchTable, protected_offheap_data,
-                            TrustedManaged<WasmDispatchTableData>,
-                            kProtectedOffheapDataOffset)
-WasmDispatchTableData* WasmDispatchTable::offheap_data() const {
-  return protected_offheap_data()->get().get();
-}
-
 void WasmDispatchTable::clear_entry_padding(int index) {
   static_assert(kEntryPaddingBytes == 0 || kEntryPaddingBytes == kIntSize);
   if constexpr (kEntryPaddingBytes != 0) {
@@ -369,34 +349,23 @@ int WasmDispatchTable::capacity() const {
   return ReadField<int>(kCapacityOffset);
 }
 
-inline Tagged<Object> WasmDispatchTable::implicit_arg(int index) const {
+inline Tagged<Object> WasmDispatchTable::ref(int index) const {
   DCHECK_LT(index, length());
-  Tagged<Object> implicit_arg =
-      ReadProtectedPointerField(OffsetOf(index) + kImplicitArgBias);
-  DCHECK(IsWasmTrustedInstanceData(implicit_arg) ||
-         IsWasmImportData(implicit_arg) || implicit_arg == Smi::zero());
-  return implicit_arg;
+  Tagged<Object> ref = ReadProtectedPointerField(OffsetOf(index) + kRefBias);
+  DCHECK(IsWasmTrustedInstanceData(ref) || IsWasmApiFunctionRef(ref) ||
+         ref == Smi::zero());
+  return ref;
 }
 
-inline WasmCodePointer WasmDispatchTable::target(int index) const {
+inline Address WasmDispatchTable::target(int index) const {
   DCHECK_LT(index, length());
-  if (v8_flags.wasm_jitless) return wasm::kInvalidWasmCodePointer;
-  return ReadField<WasmCodePointer>(OffsetOf(index) + kTargetBias);
+  return ReadField<Address>(OffsetOf(index) + kTargetBias);
 }
 
-inline wasm::CanonicalTypeIndex WasmDispatchTable::sig(int index) const {
+inline int WasmDispatchTable::sig(int index) const {
   DCHECK_LT(index, length());
-  return wasm::CanonicalTypeIndex{
-      ReadField<uint32_t>(OffsetOf(index) + kSigBias)};
+  return ReadField<int>(OffsetOf(index) + kSigBias);
 }
-
-#if V8_ENABLE_DRUMBRAKE
-inline uint32_t WasmDispatchTable::function_index(int index) const {
-  DCHECK_LT(index, length());
-  if (!v8_flags.wasm_jitless) return UINT_MAX;
-  return ReadField<uint32_t>(OffsetOf(index) + kFunctionIndexBias);
-}
-#endif  // V8_ENABLE_DRUMBRAKE
 
 // WasmExceptionPackage
 OBJECT_CONSTRUCTORS_IMPL(WasmExceptionPackage, JSObject)
@@ -416,19 +385,19 @@ struct CastTraits<WasmExportedFunction> {
   }
 };
 
-// WasmImportData
+// WasmApiFunctionRef
 
-CODE_POINTER_ACCESSORS(WasmImportData, code, kCodeOffset)
+CODE_POINTER_ACCESSORS(WasmApiFunctionRef, code, kCodeOffset)
 
-PROTECTED_POINTER_ACCESSORS(WasmImportData, instance_data,
+PROTECTED_POINTER_ACCESSORS(WasmApiFunctionRef, instance_data,
                             WasmTrustedInstanceData,
                             kProtectedInstanceDataOffset)
 
 // WasmInternalFunction
 
-// {implicit_arg} will be a WasmTrustedInstanceData or a WasmImportData.
-PROTECTED_POINTER_ACCESSORS(WasmInternalFunction, implicit_arg, TrustedObject,
-                            kProtectedImplicitArgOffset)
+// {ref} will be a WasmTrustedInstanceData or a WasmApiFunctionRef.
+PROTECTED_POINTER_ACCESSORS(WasmInternalFunction, ref, TrustedObject,
+                            kProtectedRefOffset)
 
 // WasmFuncRef
 TRUSTED_POINTER_ACCESSORS(WasmFuncRef, internal, WasmInternalFunction,
@@ -449,23 +418,8 @@ PROTECTED_POINTER_ACCESSORS(WasmExportedFunctionData, instance_data,
 CODE_POINTER_ACCESSORS(WasmExportedFunctionData, c_wrapper_code,
                        kCWrapperCodeOffset)
 
-PRIMITIVE_ACCESSORS(WasmExportedFunctionData, sig, const wasm::CanonicalSig*,
+PRIMITIVE_ACCESSORS(WasmExportedFunctionData, sig, const wasm::FunctionSig*,
                     kSigOffset)
-
-wasm::CanonicalTypeIndex WasmExportedFunctionData::sig_index() const {
-  return wasm::CanonicalTypeIndex{
-      static_cast<uint32_t>(canonical_type_index())};
-}
-
-bool WasmExportedFunctionData::is_promising() const {
-  return WasmFunctionData::PromiseField::decode(js_promise_flags()) ==
-         wasm::kPromise;
-}
-
-// WasmJSFunctionData
-wasm::CanonicalTypeIndex WasmJSFunctionData::sig_index() const {
-  return wasm::CanonicalTypeIndex{static_cast<uint32_t>(canonical_sig_index())};
-}
 
 // WasmJSFunction
 WasmJSFunction::WasmJSFunction(Address ptr) : JSFunction(ptr) {
@@ -481,11 +435,6 @@ struct CastTraits<WasmJSFunction> {
     return WasmJSFunction::IsWasmJSFunction(value);
   }
 };
-
-// WasmCapiFunctionData
-wasm::CanonicalTypeIndex WasmCapiFunctionData::sig_index() const {
-  return wasm::CanonicalTypeIndex{static_cast<uint32_t>(canonical_sig_index())};
-}
 
 // WasmCapiFunction
 WasmCapiFunction::WasmCapiFunction(Address ptr) : JSFunction(ptr) {
@@ -524,9 +473,6 @@ Tagged<WasmFuncRef> WasmExternalFunction::func_ref() const {
 // WasmTypeInfo
 EXTERNAL_POINTER_ACCESSORS(WasmTypeInfo, native_type, Address,
                            kNativeTypeOffset, kWasmTypeInfoNativeTypeTag)
-wasm::ModuleTypeIndex WasmTypeInfo::type_index() const {
-  return wasm::ModuleTypeIndex{module_type_index()};
-}
 TRUSTED_POINTER_ACCESSORS(WasmTypeInfo, trusted_data, WasmTrustedInstanceData,
                           kTrustedDataOffset,
                           kWasmTrustedInstanceDataIndirectPointerTag)
@@ -552,39 +498,23 @@ wasm::ValueType WasmTableObject::type() {
   return type;
 }
 
-bool WasmTableObject::is_in_bounds(uint32_t entry_index) {
-  return entry_index < static_cast<uint32_t>(current_length());
-}
-
 bool WasmTableObject::is_table64() const {
-  return address_type() == wasm::AddressType::kI64;
-}
-
-std::optional<uint64_t> WasmTableObject::maximum_length_u64() const {
-  Tagged<Object> max = maximum_length();
-  if (IsUndefined(max)) return std::nullopt;
-  if (is_table64()) {
-    DCHECK(IsBigInt(max));
-#if DEBUG
-    bool lossless;
-    double value = Cast<BigInt>(maximum_length())->AsUint64(&lossless);
-    DCHECK(lossless);
-    return value;
-#else
-    return Cast<BigInt>(maximum_length())->AsUint64();
-#endif
-  }
-  DCHECK(IsNumber(max));
-  double value = Object::NumberValue(max);
-  DCHECK_LE(0, value);
-  DCHECK_GE(std::numeric_limits<uint64_t>::max(), value);
-  return value;
+  int table64_smi_value =
+      TorqueGeneratedWasmTableObject<WasmTableObject, JSObject>::is_table64();
+  DCHECK_LE(0, table64_smi_value);
+  DCHECK_GE(1, table64_smi_value);
+  return table64_smi_value != 0;
 }
 
 bool WasmMemoryObject::has_maximum_pages() { return maximum_pages() >= 0; }
 
 bool WasmMemoryObject::is_memory64() const {
-  return address_type() == wasm::AddressType::kI64;
+  int memory64_smi_value =
+      TorqueGeneratedWasmMemoryObject<WasmMemoryObject,
+                                      JSObject>::is_memory64();
+  DCHECK_LE(0, memory64_smi_value);
+  DCHECK_GE(1, memory64_smi_value);
+  return memory64_smi_value != 0;
 }
 
 // static
@@ -609,10 +539,6 @@ Handle<Object> WasmObject::ReadValueAt(Isolate* isolate,
       int64_t value = base::ReadUnalignedValue<int64_t>(field_address);
       return BigInt::FromInt64(isolate, value);
     }
-    case wasm::kF16: {
-      uint16_t value = base::Memory<uint16_t>(field_address);
-      return isolate->factory()->NewNumber(fp16_ieee_to_fp32_value(value));
-    }
     case wasm::kF32: {
       float value = base::Memory<float>(field_address);
       return isolate->factory()->NewNumber(value);
@@ -636,7 +562,6 @@ Handle<Object> WasmObject::ReadValueAt(Isolate* isolate,
       UNREACHABLE();
 
     case wasm::kVoid:
-    case wasm::kTop:
     case wasm::kBottom:
       UNREACHABLE();
   }

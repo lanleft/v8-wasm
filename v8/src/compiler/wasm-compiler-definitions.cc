@@ -4,8 +4,6 @@
 
 #include "src/compiler/wasm-compiler-definitions.h"
 
-#include <optional>
-
 #include "src/base/strings.h"
 #include "src/compiler/linkage.h"
 #include "src/wasm/compilation-environment.h"
@@ -18,7 +16,7 @@ base::Vector<const char> GetDebugName(Zone* zone,
                                       const wasm::WasmModule* module,
                                       const wasm::WireBytesStorage* wire_bytes,
                                       int index) {
-  std::optional<wasm::ModuleWireBytes> module_bytes =
+  base::Optional<wasm::ModuleWireBytes> module_bytes =
       wire_bytes->GetModuleBytes();
   if (module_bytes.has_value() &&
       (v8_flags.trace_turbo || v8_flags.trace_turbo_scheduled ||
@@ -49,8 +47,7 @@ base::Vector<const char> GetDebugName(Zone* zone,
 }
 
 // General code uses the above configuration data.
-template <typename T>
-CallDescriptor* GetWasmCallDescriptor(Zone* zone, const Signature<T>* fsig,
+CallDescriptor* GetWasmCallDescriptor(Zone* zone, const wasm::FunctionSig* fsig,
                                       WasmCallKind call_kind,
                                       bool need_frame_state) {
   // The extra here is to accomodate the instance object as first parameter
@@ -99,13 +96,6 @@ CallDescriptor* GetWasmCallDescriptor(Zone* zone, const Signature<T>* fsig,
       RegList{},                          // allocatable registers
       return_slots);                      // return slot count
 }
-
-template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
-    CallDescriptor* GetWasmCallDescriptor(Zone*,
-                                          const Signature<wasm::ValueType>*,
-                                          WasmCallKind, bool);
-template CallDescriptor* GetWasmCallDescriptor(
-    Zone*, const Signature<wasm::CanonicalValueType>*, WasmCallKind, bool);
 
 std::ostream& operator<<(std::ostream& os, CheckForNull null_check) {
   return os << (null_check == kWithoutNullCheck ? "no null check"

@@ -6,7 +6,6 @@
 #define V8_DEBUG_DEBUG_H_
 
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -193,7 +192,7 @@ class DebugInfoCollection final {
   void Insert(Tagged<SharedFunctionInfo> sfi, Tagged<DebugInfo> debug_info);
 
   bool Contains(Tagged<SharedFunctionInfo> sfi) const;
-  std::optional<Tagged<DebugInfo>> Find(Tagged<SharedFunctionInfo> sfi) const;
+  base::Optional<Tagged<DebugInfo>> Find(Tagged<SharedFunctionInfo> sfi) const;
 
   void DeleteSlow(Tagged<SharedFunctionInfo> sfi);
 
@@ -258,11 +257,11 @@ class V8_EXPORT_PRIVATE Debug {
                     debug::BreakReasons break_reasons = {});
   debug::DebugDelegate::ActionAfterInstrumentation OnInstrumentationBreak();
 
-  std::optional<Tagged<Object>> OnThrow(Handle<Object> exception)
+  base::Optional<Tagged<Object>> OnThrow(Handle<Object> exception)
       V8_WARN_UNUSED_RESULT;
   void OnPromiseReject(Handle<Object> promise, Handle<Object> value);
-  void OnCompileError(DirectHandle<Script> script);
-  void OnAfterCompile(DirectHandle<Script> script);
+  void OnCompileError(Handle<Script> script);
+  void OnAfterCompile(Handle<Script> script);
 
   void HandleDebugBreak(IgnoreBreakMode ignore_break_mode,
                         debug::BreakReasons break_reasons);
@@ -275,7 +274,7 @@ class V8_EXPORT_PRIVATE Debug {
   Handle<FixedArray> GetLoadedScripts();
 
   // DebugInfo accessors.
-  std::optional<Tagged<DebugInfo>> TryGetDebugInfo(
+  base::Optional<Tagged<DebugInfo>> TryGetDebugInfo(
       Tagged<SharedFunctionInfo> sfi);
   bool HasDebugInfo(Tagged<SharedFunctionInfo> sfi);
   bool HasCoverageInfo(Tagged<SharedFunctionInfo> sfi);
@@ -338,8 +337,6 @@ class V8_EXPORT_PRIVATE Debug {
                               int end_position, bool restrict_to_function,
                               std::vector<BreakLocation>* locations);
 
-  bool IsFunctionBlackboxed(DirectHandle<Script> script, const int start,
-                            const int end);
   bool IsBlackboxed(DirectHandle<SharedFunctionInfo> shared);
   bool ShouldBeSkipped();
 
@@ -413,8 +410,6 @@ class V8_EXPORT_PRIVATE Debug {
 
   bool PerformSideEffectCheck(Handle<JSFunction> function,
                               Handle<Object> receiver);
-
-  void PrepareBuiltinForSideEffectCheck(Isolate* isolate, Builtin id);
 
   bool PerformSideEffectCheckForAccessor(
       DirectHandle<AccessorInfo> accessor_info, Handle<Object> receiver,
@@ -531,7 +526,7 @@ class V8_EXPORT_PRIVATE Debug {
   void OnException(Handle<Object> exception, MaybeHandle<JSPromise> promise,
                    v8::debug::ExceptionType exception_type);
 
-  void ProcessCompileEvent(bool has_compile_error, DirectHandle<Script> script);
+  void ProcessCompileEvent(bool has_compile_error, Handle<Script> script);
 
   // Find the closest source position for a break point for a given position.
   int FindBreakablePosition(Handle<DebugInfo> debug_info, int source_position);
@@ -593,9 +588,7 @@ class V8_EXPORT_PRIVATE Debug {
   debug::DebugDelegate* debug_delegate_ = nullptr;
 
   // Debugger is active, i.e. there is a debug event listener attached.
-  // This field is atomic because background compilation jobs can read it
-  // through Isolate::NeedsDetailedOptimizedCodeLineInfo.
-  std::atomic<bool> is_active_;
+  bool is_active_;
   // Debugger needs to be notified on every new function call.
   // Used for stepping and read-only checks
   bool hook_on_function_call_;

@@ -44,16 +44,22 @@
       {'name': 'v8testing', 'variant': 'default', 'shards': 4},
     ],
   },
-  'v8_android_arm64_p7_rel': {
+  ##############################################################################
+  # Fuchsia
+  'v8_fuchsia_rel': {
     'swarming_dimensions' : {
-      'device_os': 'AP2A.240705.004',
-      'device_type': 'panther',
-      'os': 'Android',
+      'os': 'Ubuntu-22.04',
     },
     'tests': [
-      {'name': 'mozilla', 'variant': 'default'},
-      {'name': 'test262', 'variant': 'default', 'shards': 12},
-      {'name': 'v8testing', 'variant': 'default', 'shards': 4},
+      {'name': 'fuchsia-unittests'},
+    ],
+  },
+  'V8 Fuchsia': {
+    'swarming_dimensions' : {
+      'os': 'Ubuntu-22.04',
+    },
+    'tests': [
+      {'name': 'fuchsia-unittests'},
     ],
   },
   ##############################################################################
@@ -438,7 +444,7 @@
       {'name': 'benchmarks', 'variant': 'code_serializer', 'shards': 1},
       {'name': 'd8testing', 'variant': 'code_serializer', 'shards': 1},
       {'name': 'mozilla', 'variant': 'code_serializer', 'shards': 1},
-      {'name': 'test262', 'variant': 'code_serializer', 'shards': 5},
+      {'name': 'test262', 'variant': 'code_serializer', 'shards': 3},
       # GC stress
       {
         'name': 'd8testing',
@@ -509,7 +515,7 @@
       {
         'name': 'mjsunit',
         'test_args': ['--gc-stress', '--no-harness'],
-        'shards': 5,
+        'shards': 3,
       },
     ],
   },
@@ -615,14 +621,6 @@
       {'name': 'v8testing', 'shards': 3},
     ],
   },
-  'v8_linux64_no_leaptiering_dbg': {
-    'swarming_dimensions' : {
-      'os': 'Ubuntu-22.04',
-    },
-    'tests': [
-      {'name': 'v8testing', 'shards': 5},
-    ],
-  },
   'v8_linux64_no_shared_cage_dbg': {
     'swarming_dimensions' : {
       'os': 'Ubuntu-22.04',
@@ -702,8 +700,8 @@
       {'name': 'benchmarks', 'shards': 1},
       {'name': 'mozilla', 'shards': 1},
       {'name': 'optimize_for_size'},
-      {'name': 'test262', 'shards': 6},
-      {'name': 'test262', 'variant': 'extra', 'shards': 6},
+      {'name': 'test262', 'shards': 4},
+      {'name': 'test262', 'variant': 'extra', 'shards': 4},
       {'name': 'v8initializers'},
       {'name': 'v8testing', 'shards': 2},
       {'name': 'v8testing', 'variant': 'extra', 'shards': 2},
@@ -1524,7 +1522,7 @@
       {'name': 'benchmarks', 'variant': 'code_serializer', 'shards': 1},
       {'name': 'd8testing', 'variant': 'code_serializer', 'shards': 1},
       {'name': 'mozilla', 'variant': 'code_serializer', 'shards': 1},
-      {'name': 'test262', 'variant': 'code_serializer', 'shards': 3},
+      {'name': 'test262', 'variant': 'code_serializer', 'shards': 2},
     ],
   },
   'V8 Linux64 - minor mc - debug': {
@@ -1696,14 +1694,6 @@
       {'name': 'v8testing'},
     ],
   },
-  'V8 Linux64 - no leaptiering - debug': {
-    'swarming_dimensions' : {
-      'os': 'Ubuntu-22.04',
-    },
-    'tests': [
-      {'name': 'v8testing', 'shards': 5},
-    ],
-  },
   'V8 Linux64 - no shared cage - debug': {
     'swarming_dimensions' : {
       'os': 'Ubuntu-22.04',
@@ -1809,7 +1799,7 @@
       {
         'name': 'mjsunit',
         'test_args': ['--gc-stress', '--no-harness'],
-        'shards': 5,
+        'shards': 3,
       },
     ],
   },
@@ -2116,18 +2106,6 @@
     'swarming_dimensions': {
       'device_os': 'OPR4.170623.020',
       'device_type': 'bullhead',
-      'os': 'Android',
-    },
-    'tests': [
-      {'name': 'mozilla', 'variant': 'default'},
-      {'name': 'test262', 'variant': 'default', 'shards': 12},
-      {'name': 'v8testing', 'variant': 'default', 'shards': 4},
-    ],
-  },
-  'V8 Android Arm64 - P7': {
-    'swarming_dimensions': {
-      'device_os': 'AP2A.240705.004',
-      'device_type': 'panther',
       'os': 'Android',
     },
     'tests': [

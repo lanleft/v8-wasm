@@ -22,10 +22,8 @@
 #include "src/heap/ephemeron-remembered-set.h"
 #include "src/heap/gc-tracer-inl.h"
 #include "src/heap/gc-tracer.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/heap/heap.h"
 #include "src/heap/large-spaces.h"
-#include "src/heap/live-object-range-inl.h"
 #include "src/heap/mark-sweep-utilities.h"
 #include "src/heap/marking-barrier.h"
 #include "src/heap/marking-visitor-inl.h"
@@ -125,8 +123,7 @@ class YoungGenerationMarkingVerifier : public MarkingVerifierBase {
 
  private:
   V8_INLINE void VerifyHeapObjectImpl(Tagged<HeapObject> heap_object) {
-    CHECK_IMPLIES(HeapLayout::InYoungGeneration(heap_object),
-                  IsMarked(heap_object));
+    CHECK_IMPLIES(Heap::InYoungGeneration(heap_object), IsMarked(heap_object));
   }
 
   template <typename TSlot>
@@ -135,7 +132,7 @@ class YoungGenerationMarkingVerifier : public MarkingVerifierBase {
         GetPtrComprCageBaseFromOnHeapAddress(start.address());
     for (TSlot slot = start; slot < end; ++slot) {
       typename TSlot::TObject object = slot.load(cage_base);
-#ifdef V8_ENABLE_DIRECT_HANDLE
+#ifdef V8_ENABLE_DIRECT_LOCAL
       if (object.ptr() == kTaggedNullAddress) continue;
 #endif
       Tagged<HeapObject> heap_object;
@@ -158,13 +155,8 @@ class YoungGenerationMarkingVerifier : public MarkingVerifierBase {
 
 namespace {
 int EstimateMaxNumberOfRemeberedSets(Heap* heap) {
-  // old space, lo space, trusted space and trusted lo space can have a maximum
-  // of two remembered sets (OLD_TO_NEW and OLD_TO_NEW_BACKGROUND).
-  // Code space and code lo space can have typed OLD_TO_NEW in addition.
   return 2 * (heap->old_space()->CountTotalPages() +
-              heap->lo_space()->PageCount() +
-              heap->trusted_space()->CountTotalPages() +
-              heap->trusted_lo_space()->PageCount()) +
+              heap->lo_space()->PageCount()) +
          3 * (heap->code_space()->CountTotalPages() +
               heap->code_lo_space()->PageCount());
 }
@@ -493,7 +485,7 @@ class YoungStringForwardingTableCleaner final
       return;
     }
     Tagged<String> original_string = Cast<String>(original);
-    if (!HeapLayout::InYoungGeneration(original_string)) return;
+    if (!Heap::InYoungGeneration(original_string)) return;
     if (!marking_state_->IsMarked(original_string)) {
       DisposeExternalResource(record);
       record->set_original_string(StringForwardingTable::deleted_element());
@@ -503,10 +495,10 @@ class YoungStringForwardingTableCleaner final
 
 bool IsUnmarkedObjectInYoungGeneration(Heap* heap, FullObjectSlot p) {
   if (v8_flags.sticky_mark_bits) {
-    return HeapLayout::InYoungGeneration(*p);
+    return Heap::InYoungGeneration(*p);
   }
-  DCHECK_IMPLIES(HeapLayout::InYoungGeneration(*p), Heap::InToPage(*p));
-  return HeapLayout::InYoungGeneration(*p) &&
+  DCHECK_IMPLIES(Heap::InYoungGeneration(*p), Heap::InToPage(*p));
+  return Heap::InYoungGeneration(*p) &&
          !heap->non_atomic_marking_state()->IsMarked(Cast<HeapObject>(*p));
 }
 
@@ -568,7 +560,7 @@ void MinorMarkSweepCollector::ClearNonLiveReferences() {
         HeapObjectSlot key_slot(
             table->RawFieldOfElementAt(EphemeronHashTable::EntryToIndex(i)));
         Tagged<HeapObject> key = key_slot.ToHeapObject();
-        if (HeapLayout::InYoungGeneration(key) &&
+        if (Heap::InYoungGeneration(key) &&
             non_atomic_marking_state_->IsUnmarked(key)) {
           table->RemoveEntry(i);
         }
@@ -594,7 +586,7 @@ void MinorMarkSweepCollector::ClearNonLiveReferences() {
       Tagged<HeapObject> key = key_slot.ToHeapObject();
       // There may be old generation entries left in the remembered set as
       // MinorMS only promotes pages after clearing non-live references.
-      if (!HeapLayout::InYoungGeneration(key)) {
+      if (!Heap::InYoungGeneration(key)) {
         iti = indices.erase(iti);
       } else if (non_atomic_marking_state_->IsUnmarked(key)) {
         table->RemoveEntry(InternalIndex(*iti));
@@ -616,7 +608,7 @@ namespace {
 void VisitObjectWithEmbedderFields(Isolate* isolate, Tagged<JSObject> js_object,
                                    MarkingWorklists::Local& worklist) {
   DCHECK(js_object->MayHaveEmbedderFields());
-  DCHECK(!HeapLayout::InYoungGeneration(js_object));
+  DCHECK(!Heap::InYoungGeneration(js_object));
   // Not every object that can have embedder fields is actually a JSApiWrapper.
   if (!IsJSApiWrapperObject(js_object)) {
     return;

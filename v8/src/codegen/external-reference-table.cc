@@ -83,18 +83,22 @@ const char* const
 #undef ADD_ACCESSOR_CALLBACK_NAME
 #undef ADD_STATS_COUNTER_NAME
 
+namespace {
+static Address ref_addr_isolate_independent_
+    [ExternalReferenceTable::kSizeIsolateIndependent] = {0};
+}  // namespace
+
 // Forward declarations for C++ builtins.
-#define FORWARD_DECLARE(Name, Argc) \
+#define FORWARD_DECLARE(Name) \
   Address Builtin_##Name(int argc, Address* args, Isolate* isolate);
 BUILTIN_LIST_C(FORWARD_DECLARE)
 #undef FORWARD_DECLARE
 
-void ExternalReferenceTable::InitIsolateIndependent(
-    MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::InitIsolateIndependent() {
   DCHECK_EQ(is_initialized_, kUninitialized);
 
   int index = 0;
-  CopyIsolateIndependentReferences(&index, shared_external_references);
+  CopyIsolateIndependentReferences(&index);
   CHECK_EQ(kSizeIsolateIndependent, index);
 
   is_initialized_ = kInitializedIsolateIndependent;
@@ -126,26 +130,23 @@ const char* ExternalReferenceTable::ResolveSymbol(void* address) {
 #endif  // SYMBOLIZE_FUNCTION
 }
 
-// static
-void ExternalReferenceTable::InitializeOncePerIsolateGroup(
-    MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::InitializeOncePerProcess() {
   int index = 0;
 
   // kNullAddress is preserved through serialization/deserialization.
-  AddIsolateIndependent(kNullAddress, &index, shared_external_references);
-  AddIsolateIndependentReferences(&index, shared_external_references);
-  AddBuiltins(&index, shared_external_references);
-  AddRuntimeFunctions(&index, shared_external_references);
-  AddAccessors(&index, shared_external_references);
+  AddIsolateIndependent(kNullAddress, &index);
+  AddIsolateIndependentReferences(&index);
+  AddBuiltins(&index);
+  AddRuntimeFunctions(&index);
+  AddAccessors(&index);
 
   CHECK_EQ(kSizeIsolateIndependent, index);
 }
 
-// static
 const char* ExternalReferenceTable::NameOfIsolateIndependentAddress(
-    Address address, MemorySpan<Address> shared_external_references) {
+    Address address) {
   for (int i = 0; i < kSizeIsolateIndependent; i++) {
-    if (shared_external_references[i] == address) {
+    if (ref_addr_isolate_independent_[i] == address) {
       return ref_name_[i];
     }
   }
@@ -156,21 +157,16 @@ void ExternalReferenceTable::Add(Address address, int* index) {
   ref_addr_[(*index)++] = address;
 }
 
-// static
-void ExternalReferenceTable::AddIsolateIndependent(
-    Address address, int* index,
-    MemorySpan<Address> shared_external_references) {
-  shared_external_references[(*index)++] = address;
+void ExternalReferenceTable::AddIsolateIndependent(Address address,
+                                                   int* index) {
+  ref_addr_isolate_independent_[(*index)++] = address;
 }
 
-// static
-void ExternalReferenceTable::AddIsolateIndependentReferences(
-    int* index, MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::AddIsolateIndependentReferences(int* index) {
   CHECK_EQ(kSpecialReferenceCount, *index);
 
-#define ADD_EXTERNAL_REFERENCE(name, desc)                          \
-  AddIsolateIndependent(ExternalReference::name().address(), index, \
-                        shared_external_references);
+#define ADD_EXTERNAL_REFERENCE(name, desc) \
+  AddIsolateIndependent(ExternalReference::name().address(), index);
   EXTERNAL_REFERENCE_LIST(ADD_EXTERNAL_REFERENCE)
 #undef ADD_EXTERNAL_REFERENCE
 
@@ -191,9 +187,7 @@ void ExternalReferenceTable::AddIsolateDependentReferences(Isolate* isolate,
            *index);
 }
 
-// static
-void ExternalReferenceTable::AddBuiltins(
-    int* index, MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::AddBuiltins(int* index) {
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent,
            *index);
 
@@ -203,8 +197,7 @@ void ExternalReferenceTable::AddBuiltins(
 #undef DEF_ENTRY
   };
   for (Address addr : c_builtins) {
-    AddIsolateIndependent(ExternalReference::Create(addr).address(), index,
-                          shared_external_references);
+    AddIsolateIndependent(ExternalReference::Create(addr).address(), index);
   }
 
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent +
@@ -212,9 +205,7 @@ void ExternalReferenceTable::AddBuiltins(
            *index);
 }
 
-// static
-void ExternalReferenceTable::AddRuntimeFunctions(
-    int* index, MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::AddRuntimeFunctions(int* index) {
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent +
                kBuiltinsReferenceCount,
            *index);
@@ -226,8 +217,7 @@ void ExternalReferenceTable::AddRuntimeFunctions(
   };
 
   for (Runtime::FunctionId fId : runtime_functions) {
-    AddIsolateIndependent(ExternalReference::Create(fId).address(), index,
-                          shared_external_references);
+    AddIsolateIndependent(ExternalReference::Create(fId).address(), index);
   }
 
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent +
@@ -235,14 +225,11 @@ void ExternalReferenceTable::AddRuntimeFunctions(
            *index);
 }
 
-void ExternalReferenceTable::CopyIsolateIndependentReferences(
-    int* index, MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::CopyIsolateIndependentReferences(int* index) {
   CHECK_EQ(0, *index);
 
-  DCHECK_GE(shared_external_references.size(), kSizeIsolateIndependent);
-  std::copy(shared_external_references.data(),
-            shared_external_references.data() + kSizeIsolateIndependent,
-            ref_addr_);
+  std::copy(ref_addr_isolate_independent_,
+            ref_addr_isolate_independent_ + kSizeIsolateIndependent, ref_addr_);
   *index += kSizeIsolateIndependent;
 }
 
@@ -259,9 +246,7 @@ void ExternalReferenceTable::AddIsolateAddresses(Isolate* isolate, int* index) {
            *index);
 }
 
-// static
-void ExternalReferenceTable::AddAccessors(
-    int* index, MemorySpan<Address> shared_external_references) {
+void ExternalReferenceTable::AddAccessors(int* index) {
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent +
                kBuiltinsReferenceCount + kRuntimeReferenceCount,
            *index);
@@ -289,7 +274,7 @@ void ExternalReferenceTable::AddAccessors(
 #undef ACCESSOR_CALLBACK_DECLARATION
 
   for (Address addr : accessors) {
-    AddIsolateIndependent(addr, index, shared_external_references);
+    AddIsolateIndependent(addr, index);
   }
 
   CHECK_EQ(kSpecialReferenceCount + kExternalReferenceCountIsolateIndependent +

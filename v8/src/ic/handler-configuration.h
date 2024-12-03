@@ -158,7 +158,7 @@ class LoadHandler final : public DataHandler {
   // interceptor.
   static inline Handle<Smi> LoadInterceptor(Isolate* isolate);
 
-  // Creates a Smi-handler for loading a property from an object.
+  // Creates a Smi-handler for loading a property from a object.
   static inline Handle<Smi> LoadSlow(Isolate* isolate);
 
   // Creates a Smi-handler for loading a field from fast object.

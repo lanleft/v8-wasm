@@ -32,7 +32,7 @@ ACCESSORS(JSSegmentIterator, unicode_string,
 
 inline void JSSegmentIterator::set_granularity(
     JSSegmenter::Granularity granularity) {
-  DCHECK(GranularityBits::is_valid(granularity));
+  DCHECK_GE(GranularityBits::kMax, granularity);
   int hints = flags();
   hints = GranularityBits::update(hints, granularity);
   set_flags(hints);

@@ -3,8 +3,11 @@
 // found in the LICENSE file.
 
 #include "src/base/macros.h"
-#include "src/base/platform/yield-processor.h"
+#include "src/base/platform/mutex.h"
+#include "src/base/platform/time.h"
 #include "src/builtins/builtins-utils-inl.h"
+#include "src/builtins/builtins.h"
+#include "src/codegen/code-factory.h"
 #include "src/common/globals.h"
 #include "src/execution/futex-emulation.h"
 #include "src/heap/factory.h"
@@ -272,63 +275,6 @@ BUILTIN(AtomicsWaitAsync) {
 
   return DoWait(isolate, FutexEmulation::WaitMode::kAsync, array, index, value,
                 timeout);
-}
-
-namespace {
-V8_NOINLINE Maybe<bool> CheckAtomicsPauseIterationNumber(
-    Isolate* isolate, DirectHandle<Object> iteration_number) {
-  constexpr char method_name[] = "Atomics.pause";
-
-  // 1. If N is neither undefined nor an integral Number, throw a TypeError
-  // exception.
-  if (IsNumber(*iteration_number)) {
-    double iter = Object::NumberValue(*iteration_number);
-    if (std::isfinite(iter) && nearbyint(iter) == iter) {
-      return Just(true);
-    }
-  }
-
-  THROW_NEW_ERROR_RETURN_VALUE(
-      isolate,
-      NewError(isolate->type_error_function(),
-               MessageTemplate::kArgumentIsNotUndefinedOrInteger,
-               isolate->factory()->NewStringFromAsciiChecked(method_name)),
-      Nothing<bool>());
-}
-}  // namespace
-
-// https://tc39.es/proposal-atomics-microwait/
-BUILTIN(AtomicsPause) {
-  HandleScope scope(isolate);
-  DirectHandle<Object> iteration_number = args.atOrUndefined(isolate, 1);
-
-  // 1. If N is neither undefined nor an integral Number, throw a TypeError
-  // exception.
-  if (V8_UNLIKELY(!IsUndefined(*iteration_number, isolate) &&
-                  !IsSmi(*iteration_number))) {
-    MAYBE_RETURN_ON_EXCEPTION_VALUE(
-        isolate, CheckAtomicsPauseIterationNumber(isolate, iteration_number),
-        ReadOnlyRoots(isolate).exception());
-  }
-
-  // 2. If the execution environment of the ECMAScript implementation supports
-  //    signaling to the operating system or CPU that the current executing code
-  //    is in a spin-wait loop, such as executing a pause CPU instruction, send
-  //    that signal. When N is not undefined, it determines the number of times
-  //    that signal is sent. The number of times the signal is sent for an
-  //    integral Number N is less than or equal to the number times it is sent
-  //    for N + 1 if both N and N + 1 have the same sign.
-  //
-  // In the non-inlined version, JS call overhead is sufficiently expensive that
-  // iterationNumber is not used to determine how many times YIELD_PROCESSOR is
-  // performed.
-  //
-  // TODO(352359899): Try to estimate the call overhead and adjust the yield
-  // count while taking iterationNumber into account.
-  YIELD_PROCESSOR;
-
-  // 3. Return undefined.
-  return ReadOnlyRoots(isolate).undefined_value();
 }
 
 }  // namespace internal

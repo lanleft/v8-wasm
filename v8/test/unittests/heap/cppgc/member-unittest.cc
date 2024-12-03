@@ -107,20 +107,7 @@ using MemberWithCustomBarrier =
 struct CustomCheckingPolicy {
   static std::vector<GCed*> Cached;
   static size_t ChecksTriggered;
-  template <typename T>
-  void CheckPointer(RawPointer raw_pointer) {
-    const void* ptr = raw_pointer.Load();
-    CheckPointer(static_cast<const T*>(ptr));
-  }
-#if defined(CPPGC_POINTER_COMPRESSION)
-  template <typename T>
-  void CheckPointer(CompressedPointer compressed_pointer) {
-    const void* ptr = compressed_pointer.Load();
-    CheckPointer(static_cast<const T*>(ptr));
-  }
-#endif
-  template <typename T>
-  void CheckPointer(const T* ptr) {
+  void CheckPointer(const void* ptr) {
     EXPECT_NE(Cached.cend(), std::find(Cached.cbegin(), Cached.cend(), ptr));
     ++ChecksTriggered;
   }

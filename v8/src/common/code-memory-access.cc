@@ -4,8 +4,6 @@
 
 #include "src/common/code-memory-access.h"
 
-#include <optional>
-
 #include "src/common/code-memory-access-inl.h"
 #include "src/objects/instruction-stream-inl.h"
 #include "src/utils/allocation.h"
@@ -92,8 +90,7 @@ void ThreadIsolation::Initialize(
 #endif
 
 #if V8_HAS_PKU_JIT_WRITE_PROTECT
-  if (!v8_flags.memory_protection_keys ||
-      !base::MemoryProtectionKey::HasMemoryProtectionKeySupport()) {
+  if (enable && !base::MemoryProtectionKey::HasMemoryProtectionKeySupport()) {
     enable = false;
   }
 #endif
@@ -135,7 +132,8 @@ void ThreadIsolation::Initialize(
 ThreadIsolation::JitPageReference ThreadIsolation::LookupJitPageLocked(
     Address addr, size_t size) {
   trusted_data_.jit_pages_mutex_->AssertHeld();
-  std::optional<JitPageReference> jit_page = TryLookupJitPageLocked(addr, size);
+  base::Optional<JitPageReference> jit_page =
+      TryLookupJitPageLocked(addr, size);
   CHECK(jit_page.has_value());
   return std::move(jit_page.value());
 }
@@ -154,14 +152,14 @@ WritableJitPage ThreadIsolation::LookupWritableJitPage(Address addr,
 }
 
 // static
-std::optional<ThreadIsolation::JitPageReference>
+base::Optional<ThreadIsolation::JitPageReference>
 ThreadIsolation::TryLookupJitPage(Address addr, size_t size) {
   base::MutexGuard guard(trusted_data_.jit_pages_mutex_);
   return TryLookupJitPageLocked(addr, size);
 }
 
 // static
-std::optional<ThreadIsolation::JitPageReference>
+base::Optional<ThreadIsolation::JitPageReference>
 ThreadIsolation::TryLookupJitPageLocked(Address addr, size_t size) {
   trusted_data_.jit_pages_mutex_->AssertHeld();
 
@@ -475,10 +473,9 @@ WritableJitAllocation ThreadIsolation::RegisterInstructionStreamAllocation(
 
 // static
 WritableJitAllocation ThreadIsolation::LookupJitAllocation(
-    Address addr, size_t size, JitAllocationType type, bool enforce_write_api) {
+    Address addr, size_t size, JitAllocationType type) {
   return WritableJitAllocation(
-      addr, size, type, WritableJitAllocation::JitAllocationSource::kLookup,
-      enforce_write_api);
+      addr, size, type, WritableJitAllocation::JitAllocationSource::kLookup);
 }
 
 // static
@@ -576,10 +573,10 @@ ThreadIsolation::SplitJitPages(Address addr1, size_t size1, Address addr2,
 }
 
 // static
-std::optional<Address> ThreadIsolation::StartOfJitAllocationAt(
+base::Optional<Address> ThreadIsolation::StartOfJitAllocationAt(
     Address inner_pointer) {
   CFIMetadataWriteScope write_scope("StartOfJitAllocationAt");
-  std::optional<JitPageReference> page = TryLookupJitPage(inner_pointer, 1);
+  base::Optional<JitPageReference> page = TryLookupJitPage(inner_pointer, 1);
   if (!page) {
     return {};
   }

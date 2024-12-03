@@ -6,7 +6,6 @@
 #define V8_COMPILER_TURBOSHAFT_DEAD_CODE_ELIMINATION_REDUCER_H_
 
 #include <iomanip>
-#include <optional>
 
 #include "src/common/globals.h"
 #include "src/compiler/backend/instruction-codes.h"
@@ -470,7 +469,7 @@ class DeadCodeEliminationReducer
     }
     return false;
   }
-  std::optional<FixedOpIndexSidetable<OperationState::Liveness>> liveness_;
+  base::Optional<FixedOpIndexSidetable<OperationState::Liveness>> liveness_;
   ZoneMap<uint32_t, BlockIndex> branch_rewrite_targets_{Asm().phase_zone()};
   DeadCodeAnalysis analyzer_{Asm().modifiable_input_graph(),
                              Asm().phase_zone()};

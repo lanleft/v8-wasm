@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --expose-gc --allow-natives-syntax
+// Flags: --expose-wasm --expose-gc --allow-natives-syntax
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 var assertTraps = function(messageId, code) {
   assertThrows(code, WebAssembly.RuntimeError, kTrapMsgs[messageId]);

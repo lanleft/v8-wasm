@@ -90,10 +90,6 @@ class ZoneCompactSet final {
     }
   }
 
-  ZoneCompactSet<T> Clone(Zone* zone) const {
-    return ZoneCompactSet<T>(begin(), end(), zone);
-  }
-
   bool is_empty() const { return data_ == EmptyValue(); }
 
   size_t size() const {
@@ -336,11 +332,6 @@ class ZoneCompactSet<T>::const_iterator {
     return *this;
   }
   const_iterator operator++(int);
-
-  difference_type operator-(const const_iterator& other) const {
-    DCHECK_EQ(set_, other.set_);
-    return current_ - other.current_;
-  }
 
  private:
   friend class ZoneCompactSet<T>;

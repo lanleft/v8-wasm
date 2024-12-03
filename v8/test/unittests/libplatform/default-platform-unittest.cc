@@ -54,8 +54,7 @@ class PlatformTest : public ::testing::Test {
 
   std::shared_ptr<TaskRunner> task_runner() {
     if (!task_runner_) {
-      task_runner_ = platform_.GetForegroundTaskRunner(
-          isolate(), TaskPriority::kUserBlocking);
+      task_runner_ = platform_.GetForegroundTaskRunner(isolate());
     }
     DCHECK_NOT_NULL(task_runner_);
     return task_runner_;
@@ -105,8 +104,8 @@ TEST_F(DefaultPlatformTest, PumpMessageLoop) {
 }
 
 TEST_F(DefaultPlatformTest, PumpMessageLoopWithTaskRunner) {
-  std::shared_ptr<TaskRunner> taskrunner = platform()->GetForegroundTaskRunner(
-      isolate(), TaskPriority::kUserBlocking);
+  std::shared_ptr<TaskRunner> taskrunner =
+      platform()->GetForegroundTaskRunner(isolate());
   EXPECT_FALSE(PumpMessageLoop());
 
   StrictMock<MockTask>* task = new StrictMock<MockTask>;
@@ -261,8 +260,7 @@ TEST(CustomDefaultPlatformTest, PostForegroundTaskAfterPlatformTermination) {
     int dummy;
     Isolate* isolate = reinterpret_cast<Isolate*>(&dummy);
 
-    foreground_taskrunner =
-        platform.GetForegroundTaskRunner(isolate, TaskPriority::kUserBlocking);
+    foreground_taskrunner = platform.GetForegroundTaskRunner(isolate);
   }
   // It should still be possible to post foreground tasks, even when the
   // platform does not exist anymore.

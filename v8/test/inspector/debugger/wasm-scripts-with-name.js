@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Flags: --expose-wasm
+
 utils.load('test/inspector/wasm-inspector-test.js');
 
 InspectorTest.log("Tests how wasm scripts are reported with name");

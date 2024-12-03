@@ -5,9 +5,8 @@
 #ifndef V8_OBJECTS_DICTIONARY_H_
 #define V8_OBJECTS_DICTIONARY_H_
 
-#include <optional>
-
 #include "src/base/export-template.h"
+#include "src/base/optional.h"
 #include "src/common/globals.h"
 #include "src/objects/hash-table.h"
 #include "src/objects/property-array.h"
@@ -17,7 +16,8 @@
 // Has to be the last include (doesn't have include guards):
 #include "src/objects/object-macros.h"
 
-namespace v8::internal {
+namespace v8 {
+namespace internal {
 
 #ifdef V8_ENABLE_SWISS_NAME_DICTIONARY
 class SwissNameDictionary;
@@ -41,7 +41,7 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) Dictionary
   inline Tagged<Object> ValueAt(PtrComprCageBase cage_base, InternalIndex entry,
                                 SeqCstAccessTag);
   // Returns {} if we would be reading out of the bounds of the object.
-  inline std::optional<Tagged<Object>> TryValueAt(InternalIndex entry);
+  inline base::Optional<Tagged<Object>> TryValueAt(InternalIndex entry);
 
   // Set the value for entry.
   inline void ValueAtPut(InternalIndex entry, Tagged<Object> value);
@@ -125,6 +125,8 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) Dictionary
   static void UncheckedAtPut(Isolate* isolate, Handle<Derived> dictionary,
                              Key key, Handle<Object> value,
                              PropertyDetails details);
+
+  OBJECT_CONSTRUCTORS(Dictionary, HashTable<Derived, TodoShape>);
 };
 
 #define EXTERN_DECLARE_DICTIONARY(DERIVED, SHAPE)                  \
@@ -212,6 +214,8 @@ class EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE) BaseNameDictionary
   // Exposed for NameDictionaryLookupForwardedString slow path for forwarded
   // strings.
   using Dictionary<Derived, Shape>::FindInsertionEntry;
+
+  OBJECT_CONSTRUCTORS(BaseNameDictionary, Dictionary<Derived, Shape>);
 };
 
 #define EXTERN_DECLARE_BASE_NAME_DICTIONARY(DERIVED, SHAPE)        \
@@ -254,6 +258,9 @@ class V8_EXPORT_PRIVATE NameDictionary
       IsolateT* isolate, int at_least_space_for,
       AllocationType allocation = AllocationType::kYoung,
       MinimumCapacity capacity_option = USE_DEFAULT_MINIMUM_CAPACITY);
+
+  OBJECT_CONSTRUCTORS(NameDictionary,
+                      BaseNameDictionary<NameDictionary, NameDictionaryShape>);
 };
 
 class V8_EXPORT_PRIVATE GlobalDictionaryShape : public BaseNameDictionaryShape {
@@ -299,10 +306,14 @@ class V8_EXPORT_PRIVATE GlobalDictionary
   inline Tagged<Name> NameAt(PtrComprCageBase cage_base, InternalIndex entry);
   inline void ValueAtPut(InternalIndex entry, Tagged<Object> value);
 
-  std::optional<Tagged<PropertyCell>>
+  base::Optional<Tagged<PropertyCell>>
   TryFindPropertyCellForConcurrentLookupIterator(Isolate* isolate,
                                                  DirectHandle<Name> name,
                                                  RelaxedLoadTag tag);
+
+  OBJECT_CONSTRUCTORS(
+      GlobalDictionary,
+      BaseNameDictionary<GlobalDictionary, GlobalDictionaryShape>);
 };
 
 class NumberDictionaryBaseShape : public BaseDictionaryShape<uint32_t> {
@@ -359,6 +370,10 @@ class SimpleNumberDictionary
       Handle<Object> value);
 
   static const int kEntryValueIndex = 1;
+
+  OBJECT_CONSTRUCTORS(
+      SimpleNumberDictionary,
+      Dictionary<SimpleNumberDictionary, SimpleNumberDictionaryShape>);
 };
 
 EXTERN_DECLARE_DICTIONARY(NumberDictionary, NumberDictionaryShape)
@@ -417,6 +432,9 @@ class NumberDictionary
   // JSObjects prefer dictionary elements if the dictionary saves this much
   // memory compared to a fast elements backing store.
   static const uint32_t kPreferFastElementsSizeFactor = 3;
+
+  OBJECT_CONSTRUCTORS(NumberDictionary,
+                      Dictionary<NumberDictionary, NumberDictionaryShape>);
 };
 
 // The comparator is passed two indices |a| and |b|, and it returns < 0 when the
@@ -435,7 +453,8 @@ struct EnumIndexComparator {
   Tagged<Dictionary> dict;
 };
 
-}  // namespace v8::internal
+}  // namespace internal
+}  // namespace v8
 
 #include "src/objects/object-macros-undef.h"
 

@@ -4,8 +4,6 @@
 
 #include "src/compiler/late-escape-analysis.h"
 
-#include <optional>
-
 #include "src/compiler/js-graph.h"
 #include "src/compiler/node-properties.h"
 
@@ -80,7 +78,7 @@ void LateEscapeAnalysis::Finalize() {
 
 namespace {
 
-std::optional<Node*> TryGetStoredValue(Node* node) {
+base::Optional<Node*> TryGetStoredValue(Node* node) {
   int value_index;
   switch (node->opcode()) {
     case IrOpcode::kInitializeImmutableInObject:
@@ -116,7 +114,7 @@ void LateEscapeAnalysis::RemoveAllocation(Node* node) {
     if (use->IsDead()) continue;
     // The value stored by this Store node might be another allocation which has
     // no more uses. Affected allocations are revisited.
-    if (std::optional<Node*> stored_value = TryGetStoredValue(use);
+    if (base::Optional<Node*> stored_value = TryGetStoredValue(use);
         stored_value.has_value() &&
         stored_value.value()->opcode() == IrOpcode::kAllocateRaw &&
         stored_value.value() != node) {

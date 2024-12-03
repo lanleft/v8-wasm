@@ -5,9 +5,8 @@
 #ifndef V8_COMPILER_TURBOSHAFT_MACHINE_LOWERING_REDUCER_INL_H_
 #define V8_COMPILER_TURBOSHAFT_MACHINE_LOWERING_REDUCER_INL_H_
 
-#include <optional>
-
 #include "src/base/logging.h"
+#include "src/base/optional.h"
 #include "src/codegen/external-reference.h"
 #include "src/codegen/machine-type.h"
 #include "src/common/globals.h"
@@ -57,12 +56,6 @@ class MachineLoweringReducer : public Next {
       case ObjectIsOp::InputAssumptions::kBigInt:
         return false;
     }
-  }
-
-  V<Word32> REDUCE(Word32SignHint)(V<Word32> input, Word32SignHintOp::Sign) {
-    // As far as Machine operations are concerned, Int32 and Uint32 are both
-    // Word32.
-    return input;
   }
 
   V<Untagged> REDUCE(ChangeOrDeopt)(V<Untagged> input,
@@ -189,7 +182,7 @@ class MachineLoweringReducer : public Next {
     if (ShouldSkipOptimizationStep()) goto no_change;
     // Block cloning only works for branches, but not for `DeoptimizeIf`. On the
     // other hand, explicit control flow makes the overall pipeline and
-    // especially the register allocator slower. So we only switch a
+    // escpecially the register allocator slower. So we only switch a
     // `DeoptiomizeIf` to a branch if it has a phi input, which indicates that
     // block cloning could be helpful.
     if (__ Get(condition).template Is<PhiOp>()) {
@@ -292,22 +285,6 @@ class MachineLoweringReducer : public Next {
           GOTO_IF(UNLIKELY(__ IsSmi(input)), done, 0);
         }
 
-#if V8_STATIC_ROOTS_BOOL
-        // Fast check for NullOrUndefined before loading the map, if helpful.
-        V<Word32> is_null_or_undefined;
-        if (kind == ObjectIsOp::Kind::kReceiverOrNullOrUndefined) {
-          static_assert(StaticReadOnlyRoot::kFirstAllocatedRoot ==
-                        StaticReadOnlyRoot::kUndefinedValue);
-          static_assert(StaticReadOnlyRoot::kUndefinedValue +
-                            sizeof(Undefined) ==
-                        StaticReadOnlyRoot::kNullValue);
-          is_null_or_undefined = __ Uint32LessThanOrEqual(
-              __ TruncateWordPtrToWord32(
-                  __ BitcastHeapObjectToWordPtr(V<HeapObject>::Cast(input))),
-              __ Word32Constant(StaticReadOnlyRoot::kNullValue));
-        }
-#endif  // V8_STATIC_ROOTS_BOOL
-
         // Load bitfield from map.
         V<Map> map = __ LoadMapField(input);
         V<Word32> bitfield =
@@ -346,9 +323,13 @@ class MachineLoweringReducer : public Next {
             break;
           case ObjectIsOp::Kind::kReceiverOrNullOrUndefined: {
 #if V8_STATIC_ROOTS_BOOL
-            V<Word32> is_non_primitive =
-                JSAnyIsNotPrimitiveHeapObject(input, map);
-            check = __ Word32BitwiseOr(is_null_or_undefined, is_non_primitive);
+            V<Word32> check0 = JSAnyIsNotPrimitiveHeapObject(input, map);
+            V<Word32> check1 = __ TaggedEqual(
+                input, __ HeapConstant(factory_->undefined_value()));
+            V<Word32> check2 =
+                __ TaggedEqual(input, __ HeapConstant(factory_->null_value()));
+            check =
+                __ Word32BitwiseOr(check0, __ Word32BitwiseOr(check1, check2));
 #else
             static_assert(LAST_PRIMITIVE_HEAP_OBJECT_TYPE == ODDBALL_TYPE);
             static_assert(LAST_TYPE == LAST_JS_RECEIVER_TYPE);
@@ -434,7 +415,7 @@ class MachineLoweringReducer : public Next {
         GOTO(done,
              __ Uint32LessThanOrEqual(
                  __ TruncateWordPtrToWord32(__ BitcastHeapObjectToWordPtr(map)),
-                 __ Word32Constant(InstanceTypeChecker::kStringMapUpperBound)));
+                 __ Word32Constant(InstanceTypeChecker::kLastStringMap)));
 
         BIND(done, result);
         return result;
@@ -655,7 +636,8 @@ class MachineLoweringReducer : public Next {
         __ TaggedEqual(map, __ HeapConstant(factory_->heap_number_map())), done,
         0);
 
-    V<Float64> value = __ LoadHeapNumberValue(V<HeapNumber>::Cast(input));
+    V<Float64> value = __ template LoadField<Float64>(
+        input, AccessBuilder::ForHeapNumberValue());
     GOTO(done, __ Float64Is(value, kind));
 
     BIND(done, result);
@@ -762,8 +744,8 @@ class MachineLoweringReducer : public Next {
               TagSmiOrOverflow(input_w32, &overflow, &done);
 
               if (BIND(overflow)) {
-                GOTO(done,
-                     AllocateHeapNumber(__ ChangeInt32ToFloat64(input_w32)));
+                GOTO(done, AllocateHeapNumberWithValue(
+                               __ ChangeInt32ToFloat64(input_w32)));
               }
 
               BIND(done, result);
@@ -775,8 +757,8 @@ class MachineLoweringReducer : public Next {
 
               GOTO_IF(__ Uint32LessThanOrEqual(input_w32, Smi::kMaxValue), done,
                       __ TagSmi(input_w32));
-              GOTO(done,
-                   AllocateHeapNumber(__ ChangeUint32ToFloat64(input_w32)));
+              GOTO(done, AllocateHeapNumberWithValue(
+                             __ ChangeUint32ToFloat64(input_w32)));
 
               BIND(done, result);
               return result;
@@ -804,8 +786,8 @@ class MachineLoweringReducer : public Next {
               }
 
               if (BIND(outside_smi_range)) {
-                GOTO(done,
-                     AllocateHeapNumber(__ ChangeInt64ToFloat64(input_w64)));
+                GOTO(done, AllocateHeapNumberWithValue(
+                               __ ChangeInt64ToFloat64(input_w64)));
               }
 
               BIND(done, result);
@@ -817,8 +799,8 @@ class MachineLoweringReducer : public Next {
 
               GOTO_IF(__ Uint64LessThanOrEqual(input_w64, Smi::kMaxValue), done,
                       __ TagSmi(__ TruncateWord64ToWord32(input_w64)));
-              GOTO(done,
-                   AllocateHeapNumber(__ ChangeInt64ToFloat64(input_w64)));
+              GOTO(done, AllocateHeapNumberWithValue(
+                             __ ChangeInt64ToFloat64(input_w64)));
 
               BIND(done, result);
               return result;
@@ -855,7 +837,7 @@ class MachineLoweringReducer : public Next {
           }
 
           if (BIND(outside_smi_range)) {
-            GOTO(done, AllocateHeapNumber(input_f64));
+            GOTO(done, AllocateHeapNumberWithValue(input_f64));
           }
 
           BIND(done, result);
@@ -868,7 +850,7 @@ class MachineLoweringReducer : public Next {
         DCHECK_EQ(input_rep, RegisterRepresentation::Float64());
         DCHECK_EQ(input_interpretation,
                   ConvertUntaggedToJSPrimitiveOp::InputInterpretation::kSigned);
-        return AllocateHeapNumber(V<Float64>::Cast(input));
+        return AllocateHeapNumberWithValue(V<Float64>::Cast(input));
       }
       case ConvertUntaggedToJSPrimitiveOp::JSPrimitiveKind::
           kHeapNumberOrUndefined: {
@@ -892,7 +874,7 @@ class MachineLoweringReducer : public Next {
         }
 
         if (BIND(allocate_heap_number)) {
-          GOTO(done, AllocateHeapNumber(input_f64));
+          GOTO(done, AllocateHeapNumberWithValue(input_f64));
         }
 
         BIND(done, result);
@@ -1034,7 +1016,8 @@ class MachineLoweringReducer : public Next {
               __ ConvertPlainPrimitiveToNumber(V<PlainPrimitive>::Cast(object));
           GOTO_IF(__ ObjectIsSmi(number), done,
                   __ UntagSmi(V<Smi>::Cast(number)));
-          V<Float64> f64 = __ LoadHeapNumberValue(V<HeapNumber>::Cast(number));
+          V<Float64> f64 = __ template LoadField<Float64>(
+              V<HeapNumber>::Cast(number), AccessBuilder::ForHeapNumberValue());
           GOTO(done, __ JSTruncateFloat64ToWord32(f64));
           BIND(done, result);
           return result;
@@ -1109,7 +1092,8 @@ class MachineLoweringReducer : public Next {
               __ ConvertPlainPrimitiveToNumber(V<PlainPrimitive>::Cast(object));
           GOTO_IF(__ ObjectIsSmi(number), done,
                   __ ChangeInt32ToFloat64(__ UntagSmi(V<Smi>::Cast(number))));
-          V<Float64> f64 = __ LoadHeapNumberValue(V<HeapNumber>::Cast(number));
+          V<Float64> f64 = __ template LoadField<Float64>(
+              V<HeapNumber>::Cast(number), AccessBuilder::ForHeapNumberValue());
           GOTO(done, f64);
           BIND(done, result);
           return result;
@@ -1145,8 +1129,8 @@ class MachineLoweringReducer : public Next {
                 __ TaggedEqual(map,
                                __ HeapConstant(factory_->heap_number_map())),
                 frame_state, DeoptimizeReason::kNotAHeapNumber, feedback);
-            V<Float64> heap_number_value =
-                __ LoadHeapNumberValue(V<HeapNumber>::Cast(object));
+            V<Float64> heap_number_value = __ template LoadField<Float64>(
+                object, AccessBuilder::ForHeapNumberValue());
 
             GOTO(done,
                  __ ChangeFloat64ToInt32OrDeopt(heap_number_value, frame_state,
@@ -1170,8 +1154,8 @@ class MachineLoweringReducer : public Next {
           __ DeoptimizeIfNot(
               __ TaggedEqual(map, __ HeapConstant(factory_->heap_number_map())),
               frame_state, DeoptimizeReason::kNotAHeapNumber, feedback);
-          V<Float64> heap_number_value =
-              __ LoadHeapNumberValue(V<HeapNumber>::Cast(object));
+          V<Float64> heap_number_value = __ template LoadField<Float64>(
+              object, AccessBuilder::ForHeapNumberValue());
           GOTO(done,
                __ ChangeFloat64ToInt64OrDeopt(heap_number_value, frame_state,
                                               minus_zero_mode, feedback));
@@ -1208,8 +1192,8 @@ class MachineLoweringReducer : public Next {
           V<Map> map = __ LoadMapField(object);
           IF (LIKELY(__ TaggedEqual(
                   map, __ HeapConstant(factory_->heap_number_map())))) {
-            V<Float64> heap_number_value =
-                __ LoadHeapNumberValue(V<HeapNumber>::Cast(object));
+            V<Float64> heap_number_value = __ template LoadField<Float64>(
+                object, AccessBuilder::ForHeapNumberValue());
             // Perform Turbofan's "CheckedFloat64ToIndex"
             {
               if constexpr (Is64()) {
@@ -1247,7 +1231,7 @@ class MachineLoweringReducer : public Next {
 #if V8_STATIC_ROOTS_BOOL
             V<Word32> is_string_map = __ Uint32LessThanOrEqual(
                 __ TruncateWordPtrToWord32(__ BitcastHeapObjectToWordPtr(map)),
-                __ Word32Constant(InstanceTypeChecker::kStringMapUpperBound));
+                __ Word32Constant(InstanceTypeChecker::kLastStringMap));
 #else
             V<Word32> instance_type = __ LoadInstanceTypeField(map);
             V<Word32> is_string_map =
@@ -1262,7 +1246,7 @@ class MachineLoweringReducer : public Next {
             builder.AddReturn(MachineType::Int32());
             builder.AddParam(MachineType::TaggedPointer());
             auto desc = Linkage::GetSimplifiedCDescriptor(__ graph_zone(),
-                                                          builder.Get());
+                                                          builder.Build());
             auto ts_desc = TSCallDescriptor::Create(
                 desc, CanThrow::kNo, LazyDeoptOnThrow::kNo, __ graph_zone());
             OpIndex callee = __ ExternalConstant(
@@ -1350,8 +1334,6 @@ class MachineLoweringReducer : public Next {
         // Undefined is the first root, so it's the smallest possible pointer
         // value, which means we don't have to subtract it for the range check.
         ReadOnlyRoots roots(isolate_);
-        static_assert(StaticReadOnlyRoot::kFirstAllocatedRoot ==
-                      StaticReadOnlyRoot::kUndefinedValue);
         static_assert(StaticReadOnlyRoot::kUndefinedValue + sizeof(Undefined) ==
                       StaticReadOnlyRoot::kNullValue);
         static_assert(StaticReadOnlyRoot::kNullValue + sizeof(Null) ==
@@ -1414,8 +1396,8 @@ class MachineLoweringReducer : public Next {
                 map, __ HeapConstant(factory_->heap_number_map())))) {
           // For HeapNumber {object}, just check that its value is not 0.0, -0.0
           // or NaN.
-          V<Float64> number_value =
-              __ LoadHeapNumberValue(V<HeapNumber>::Cast(object));
+          V<Float64> number_value = __ template LoadField<Float64>(
+              object, AccessBuilder::ForHeapNumberValue());
           GOTO(done, __ Float64LessThan(0.0, __ Float64Abs(number_value)));
         }
 
@@ -1577,7 +1559,7 @@ class MachineLoweringReducer : public Next {
       case NewArrayOp::Kind::kDouble: {
         size_log2 = kDoubleSizeLog2;
         array_map = factory_->fixed_double_array_map();
-        access = {kTaggedBase, OFFSET_OF_DATA_START(FixedDoubleArray),
+        access = {kTaggedBase, FixedDoubleArray::kHeaderSize,
                   compiler::Type::NumberOrHole(), MachineType::Float64(),
                   kNoWriteBarrier};
         the_hole_value = __ template LoadField<Float64>(
@@ -1588,9 +1570,8 @@ class MachineLoweringReducer : public Next {
       case NewArrayOp::Kind::kObject: {
         size_log2 = kTaggedSizeLog2;
         array_map = factory_->fixed_array_map();
-        access = {kTaggedBase, OFFSET_OF_DATA_START(FixedArray),
-                  compiler::Type::Any(), MachineType::AnyTagged(),
-                  kNoWriteBarrier};
+        access = {kTaggedBase, FixedArray::kHeaderSize, compiler::Type::Any(),
+                  MachineType::AnyTagged(), kNoWriteBarrier};
         the_hole_value = __ HeapConstant(factory_->the_hole_value());
         break;
       }
@@ -1690,8 +1671,7 @@ class MachineLoweringReducer : public Next {
             __ Load(properties, out_of_object_index,
                     LoadOp::Kind::Aligned(BaseTaggedness::kTaggedBase),
                     MemoryRepresentation::AnyTagged(),
-                    OFFSET_OF_DATA_START(FixedArray) - kTaggedSize,
-                    kTaggedSizeLog2 - 1);
+                    FixedArray::kHeaderSize - kTaggedSize, kTaggedSizeLog2 - 1);
         GOTO(done, result);
       } ELSE {
         // This field is located in the {object} itself.
@@ -1715,11 +1695,11 @@ class MachineLoweringReducer : public Next {
             object, AccessBuilder::ForJSObjectPropertiesOrHashKnownPointer());
 
         V<WordPtr> out_of_object_index = __ WordPtrSub(0, double_index);
-        V<Object> result = __ Load(
-            properties, out_of_object_index,
-            LoadOp::Kind::Aligned(BaseTaggedness::kTaggedBase),
-            MemoryRepresentation::AnyTagged(),
-            OFFSET_OF_DATA_START(FixedArray) - kTaggedSize, kTaggedSizeLog2);
+        V<Object> result =
+            __ Load(properties, out_of_object_index,
+                    LoadOp::Kind::Aligned(BaseTaggedness::kTaggedBase),
+                    MemoryRepresentation::AnyTagged(),
+                    FixedArray::kHeaderSize - kTaggedSize, kTaggedSizeLog2);
         GOTO(loaded_field, result);
       } ELSE {
         // The field is located in the {object} itself.
@@ -1741,8 +1721,9 @@ class MachineLoweringReducer : public Next {
             __ TaggedEqual(map, __ HeapConstant(factory_->heap_number_map())),
             done, field);
 
-        V<Float64> value = __ LoadHeapNumberValue(V<HeapNumber>::Cast(field));
-        GOTO(done, AllocateHeapNumber(value));
+        V<Float64> value = __ template LoadField<Float64>(
+            field, AccessBuilder::ForHeapNumberValue());
+        GOTO(done, AllocateHeapNumberWithValue(value));
       }
     }
 
@@ -2097,8 +2078,6 @@ class MachineLoweringReducer : public Next {
         }
       }
 
-      Label<> seq_string(this), external_string(this), cons_string(this),
-          sliced_string(this), thin_string(this);
       // TODO(dmercadier): the runtime label should be deferred, and because
       // Labels/Blocks don't have deferred annotation, we achieve this by
       // marking all branches to this Label as UNLIKELY, but 1) it's easy to
@@ -2115,142 +2094,85 @@ class MachineLoweringReducer : public Next {
 
       BIND_LOOP(loop) {
         V<Map> map = __ LoadMapField(receiver);
-#if V8_STATIC_ROOTS_BOOL
-        V<Word32> map_bits =
-            __ TruncateWordPtrToWord32(__ BitcastTaggedToWordPtr(map));
-
-        using StringTypeRange =
-            InstanceTypeChecker::kUniqueMapRangeOfStringType;
-        // Check the string map ranges in dense increasing order, to avoid
-        // needing to subtract away the lower bound.
-        static_assert(StringTypeRange::kSeqString.first == 0);
-        GOTO_IF(__ Uint32LessThanOrEqual(map_bits,
-                                         StringTypeRange::kSeqString.second),
-                seq_string);
-
-        static_assert(StringTypeRange::kSeqString.second + Map::kSize ==
-                      StringTypeRange::kExternalString.first);
-        GOTO_IF(__ Uint32LessThanOrEqual(
-                    map_bits, StringTypeRange::kExternalString.second),
-                external_string);
-
-        static_assert(StringTypeRange::kExternalString.second + Map::kSize ==
-                      StringTypeRange::kConsString.first);
-        GOTO_IF(__ Uint32LessThanOrEqual(map_bits,
-                                         StringTypeRange::kConsString.second),
-                cons_string);
-
-        static_assert(StringTypeRange::kConsString.second + Map::kSize ==
-                      StringTypeRange::kSlicedString.first);
-        GOTO_IF(__ Uint32LessThanOrEqual(map_bits,
-                                         StringTypeRange::kSlicedString.second),
-                sliced_string);
-
-        static_assert(StringTypeRange::kSlicedString.second + Map::kSize ==
-                      StringTypeRange::kThinString.first);
-        GOTO_IF(__ Uint32LessThanOrEqual(map_bits,
-                                         StringTypeRange::kThinString.second),
-                thin_string);
-#else
         V<Word32> instance_type = __ LoadInstanceTypeField(map);
         V<Word32> representation =
             __ Word32BitwiseAnd(instance_type, kStringRepresentationMask);
 
-        GOTO_IF(__ Word32Equal(representation, kSeqStringTag), seq_string);
-        GOTO_IF(__ Word32Equal(representation, kExternalStringTag),
-                external_string);
-        GOTO_IF(__ Word32Equal(representation, kConsStringTag), cons_string);
-        GOTO_IF(__ Word32Equal(representation, kSlicedStringTag),
-                sliced_string);
-        GOTO_IF(__ Word32Equal(representation, kThinStringTag), thin_string);
-#endif
-
-        __ Unreachable();
-
-        if (BIND(seq_string)) {
-#if V8_STATIC_ROOTS_BOOL
-          V<Word32> is_one_byte = __ Word32Equal(
-              __ Word32BitwiseAnd(map_bits,
-                                  InstanceTypeChecker::kStringMapEncodingMask),
-              InstanceTypeChecker::kOneByteStringMapBit);
-#else
-          V<Word32> is_one_byte = __ Word32Equal(
-              __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
-              kOneByteStringTag);
-#endif
-          GOTO(done, LoadFromSeqString(receiver, position, is_one_byte));
-        }
-
-        if (BIND(external_string)) {
-          // We need to bailout to the runtime for uncached external
-          // strings.
-#if V8_STATIC_ROOTS_BOOL
-          V<Word32> is_uncached_external_string = __ Uint32LessThanOrEqual(
-              __ Word32Sub(map_bits,
-                           StringTypeRange::kUncachedExternalString.first),
-              StringTypeRange::kUncachedExternalString.second -
-                  StringTypeRange::kUncachedExternalString.first);
-#else
-          V<Word32> is_uncached_external_string = __ Word32Equal(
-              __ Word32BitwiseAnd(instance_type, kUncachedExternalStringMask),
-              kUncachedExternalStringTag);
-#endif
-          GOTO_IF(UNLIKELY(is_uncached_external_string), runtime);
-
-          OpIndex data = __ LoadField(
-              receiver, AccessBuilder::ForExternalStringResourceData());
-#if V8_STATIC_ROOTS_BOOL
-          V<Word32> is_two_byte = __ Word32Equal(
-              __ Word32BitwiseAnd(map_bits,
-                                  InstanceTypeChecker::kStringMapEncodingMask),
-              InstanceTypeChecker::kTwoByteStringMapBit);
-#else
-          V<Word32> is_two_byte = __ Word32Equal(
-              __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
-              kTwoByteStringTag);
-#endif
-          IF (is_two_byte) {
-            constexpr uint8_t twobyte_size_log2 = 1;
-            V<Word32> value =
-                __ Load(data, position,
-                        LoadOp::Kind::Aligned(BaseTaggedness::kUntaggedBase),
-                        MemoryRepresentation::Uint16(), 0, twobyte_size_log2);
-            GOTO(done, value);
-          } ELSE {
-            constexpr uint8_t onebyte_size_log2 = 0;
-            V<Word32> value =
-                __ Load(data, position,
-                        LoadOp::Kind::Aligned(BaseTaggedness::kUntaggedBase),
-                        MemoryRepresentation::Uint8(), 0, onebyte_size_log2);
-            GOTO(done, value);
+        IF (__ Int32LessThanOrEqual(representation, kConsStringTag)) {
+          {
+            // if_lessthanoreq_cons
+            IF (__ Word32Equal(representation, kConsStringTag)) {
+              // if_consstring
+              V<String> second = __ template LoadField<String>(
+                  receiver, AccessBuilder::ForConsStringSecond());
+              GOTO_IF_NOT(
+                  LIKELY(__ TaggedEqual(
+                      second, __ HeapConstant(factory_->empty_string()))),
+                  runtime);
+              receiver = __ template LoadField<String>(
+                  receiver, AccessBuilder::ForConsStringFirst());
+              GOTO(loop);
+            } ELSE {
+              // if_seqstring
+              V<Word32> onebyte = __ Word32Equal(
+                  __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
+                  kOneByteStringTag);
+              GOTO(done, LoadFromSeqString(receiver, position, onebyte));
+            }
           }
-        }
-
-        if (BIND(cons_string)) {
-          V<String> second = __ template LoadField<String>(
-              receiver, AccessBuilder::ForConsStringSecond());
-          GOTO_IF_NOT(LIKELY(__ TaggedEqual(
-                          second, __ HeapConstant(factory_->empty_string()))),
+        } ELSE {
+          // if_greaterthan_cons
+          {
+            IF (__ Word32Equal(representation, kThinStringTag)) {
+              // if_thinstring
+              receiver = __ template LoadField<String>(
+                  receiver, AccessBuilder::ForThinStringActual());
+              GOTO(loop);
+            } ELSE IF (__ Word32Equal(representation, kExternalStringTag)) {
+              // if_externalstring
+              // We need to bailout to the runtime for uncached external
+              // strings.
+              GOTO_IF(UNLIKELY(__ Word32Equal(
+                          __ Word32BitwiseAnd(instance_type,
+                                              kUncachedExternalStringMask),
+                          kUncachedExternalStringTag)),
                       runtime);
-          receiver = __ template LoadField<String>(
-              receiver, AccessBuilder::ForConsStringFirst());
-          GOTO(loop);
-        }
 
-        if (BIND(sliced_string)) {
-          V<Smi> offset = __ template LoadField<Smi>(
-              receiver, AccessBuilder::ForSlicedStringOffset());
-          receiver = __ template LoadField<String>(
-              receiver, AccessBuilder::ForSlicedStringParent());
-          position = __ WordPtrAdd(position,
-                                   __ ChangeInt32ToIntPtr(__ UntagSmi(offset)));
-          GOTO(loop);
-        }
-
-        if (BIND(thin_string)) {
-          receiver = __ template LoadField<String>(
-              receiver, AccessBuilder::ForThinStringActual());
-          GOTO(loop);
+              OpIndex data = __ LoadField(
+                  receiver, AccessBuilder::ForExternalStringResourceData());
+              IF (__ Word32Equal(
+                      __ Word32BitwiseAnd(instance_type, kStringEncodingMask),
+                      kTwoByteStringTag)) {
+                // if_twobyte
+                constexpr uint8_t twobyte_size_log2 = 1;
+                V<Word32> value = __ Load(
+                    data, position,
+                    LoadOp::Kind::Aligned(BaseTaggedness::kUntaggedBase),
+                    MemoryRepresentation::Uint16(), 0, twobyte_size_log2);
+                GOTO(done, value);
+              } ELSE {
+                // if_onebyte
+                constexpr uint8_t onebyte_size_log2 = 0;
+                V<Word32> value = __ Load(
+                    data, position,
+                    LoadOp::Kind::Aligned(BaseTaggedness::kUntaggedBase),
+                    MemoryRepresentation::Uint8(), 0, onebyte_size_log2);
+                GOTO(done, value);
+              }
+            } ELSE IF (LIKELY(
+                          __ Word32Equal(representation, kSlicedStringTag))) {
+              // if_slicedstring
+              V<Smi> offset = __ template LoadField<Smi>(
+                  receiver, AccessBuilder::ForSlicedStringOffset());
+              receiver = __ template LoadField<String>(
+                  receiver, AccessBuilder::ForSlicedStringParent());
+              position = __ WordPtrAdd(
+                  position, __ ChangeInt32ToIntPtr(__ UntagSmi(offset)));
+              GOTO(loop);
+            } ELSE {
+              GOTO(runtime);
+            }
+          }
         }
 
         if (BIND(runtime)) {
@@ -2537,8 +2459,9 @@ class MachineLoweringReducer : public Next {
                 elements, AccessBuilder::ForFixedDoubleArrayElement(), index,
                 float_value);
           } ELSE {
-            V<Float64> float_value =
-                __ LoadHeapNumberValue(V<HeapNumber>::Cast(value));
+            V<Float64> float_value = __ template LoadField<Float64>(
+                V<HeapObject>::Cast(value),
+                AccessBuilder::ForHeapNumberValue());
             __ StoreNonArrayBufferElement(
                 elements, AccessBuilder::ForFixedDoubleArrayElement(), index,
                 __ Float64SilenceNaN(float_value));
@@ -2591,7 +2514,7 @@ class MachineLoweringReducer : public Next {
               // Our ElementsKind is HOLEY_ELEMENTS.
               __ StoreNonArrayBufferElement(
                   elements, AccessBuilder::ForFixedArrayElement(HOLEY_ELEMENTS),
-                  index, AllocateHeapNumber(value));
+                  index, AllocateHeapNumberWithValue(value));
               GOTO(done);
             }
 
@@ -3001,9 +2924,10 @@ class MachineLoweringReducer : public Next {
           __ ExternalConstant(ExternalReference::isolate_address());
       V<String> value_internalized = V<String>::Cast(__ Call(
           try_string_to_index_or_lookup_existing, {isolate_ptr, value},
-          TSCallDescriptor::Create(
-              Linkage::GetSimplifiedCDescriptor(__ graph_zone(), builder.Get()),
-              CanThrow::kNo, LazyDeoptOnThrow::kNo, __ graph_zone())));
+          TSCallDescriptor::Create(Linkage::GetSimplifiedCDescriptor(
+                                       __ graph_zone(), builder.Build()),
+                                   CanThrow::kNo, LazyDeoptOnThrow::kNo,
+                                   __ graph_zone())));
 
       // Now see if the results match.
       __ DeoptimizeIfNot(__ TaggedEqual(expected, value_internalized),
@@ -3186,9 +3110,10 @@ class MachineLoweringReducer : public Next {
           } ELSE IF (__ TaggedEqual(
                         __ LoadMapField(candidate_key),
                         __ HeapConstant(factory_->heap_number_map()))) {
-            GOTO_IF(__ Float64Equal(__ LoadHeapNumberValue(
-                                        V<HeapNumber>::Cast(candidate_key)),
-                                    __ ChangeInt32ToFloat64(key)),
+            GOTO_IF(__ Float64Equal(
+                        __ template LoadField<Float64>(
+                            candidate_key, AccessBuilder::ForHeapNumberValue()),
+                        __ ChangeInt32ToFloat64(key)),
                     done, candidate);
           }
 
@@ -3354,6 +3279,7 @@ class MachineLoweringReducer : public Next {
                   WriteBarrierKind::kNoWriteBarrier,
                   SeqTwoByteString::SizeFor(length) - kObjectAlignment);
     // Initialize remaining fields.
+    DCHECK(RootsTable::IsImmortalImmovable(RootIndex::kSeqTwoByteStringMap));
     __ InitializeField(string, AccessBuilderTS::ForMap(),
                        __ SeqTwoByteStringMapConstant());
     __ InitializeField(string, AccessBuilderTS::ForStringLength(), length);
@@ -3366,16 +3292,29 @@ class MachineLoweringReducer : public Next {
 
 #ifdef V8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA
   V<Object> REDUCE(GetContinuationPreservedEmbedderData)() {
-    return __ LoadOffHeap(
+#if V8_COMPRESS_POINTERS && V8_TARGET_BIG_ENDIAN
+    constexpr int offset = 4;
+#else
+    constexpr int offset = 0;
+#endif
+    return __ Load(
         __ IsolateField(IsolateFieldId::kContinuationPreservedEmbedderData),
-        MemoryRepresentation::UncompressedTaggedPointer());
+        LoadOp::Kind::RawAligned(), MemoryRepresentation::TaggedPointer(),
+        offset);
   }
 
   V<None> REDUCE(SetContinuationPreservedEmbedderData)(V<Object> data) {
-    __ StoreOffHeap(
+#if V8_COMPRESS_POINTERS && V8_TARGET_BIG_ENDIAN
+    constexpr int offset = 4;
+#else
+    constexpr int offset = 0;
+#endif
+    __ Store(
         __ IsolateField(IsolateFieldId::kContinuationPreservedEmbedderData),
-        data, MemoryRepresentation::UncompressedTaggedPointer());
-    return {};
+        data, StoreOp::Kind::RawAligned(),
+        MemoryRepresentation::TaggedPointer(),
+        WriteBarrierKind::kNoWriteBarrier, offset);
+    return V<None>::Invalid();
   }
 #endif  // V8_ENABLE_CONTINUATION_PRESERVED_EMBEDDER_DATA
 
@@ -3448,7 +3387,7 @@ class MachineLoweringReducer : public Next {
     return __ Word32Equal(__ Word32Equal(value, 0), 0);
   }
 
-  V<HeapNumber> AllocateHeapNumber(V<Float64> value) {
+  V<HeapNumber> AllocateHeapNumberWithValue(V<Float64> value) {
     return __ AllocateHeapNumberWithValue(value, factory_);
   }
 
@@ -3457,64 +3396,31 @@ class MachineLoweringReducer : public Next {
       ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind input_kind,
       const FeedbackSource& feedback) {
     V<Map> map = __ LoadMapField(heap_object);
+    V<Word32> check_number =
+        __ TaggedEqual(map, __ HeapConstant(factory_->heap_number_map()));
     switch (input_kind) {
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind::kSmi:
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind::
           kNumberOrString:
         UNREACHABLE();
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind::kNumber: {
-        V<Word32> is_number =
-            __ TaggedEqual(map, __ HeapConstant(factory_->heap_number_map()));
-        __ DeoptimizeIfNot(is_number, frame_state,
+        __ DeoptimizeIfNot(check_number, frame_state,
                            DeoptimizeReason::kNotAHeapNumber, feedback);
         break;
       }
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind::
           kNumberOrBoolean: {
-#if V8_STATIC_ROOTS_BOOL
-        // TODO(leszeks): Consider checking the boolean oddballs by value,
-        // before loading the map.
-        static_assert(StaticReadOnlyRoot::kBooleanMap + Map::kSize ==
-                      StaticReadOnlyRoot::kHeapNumberMap);
-        V<Word32> map_int32 =
-            __ TruncateWordPtrToWord32(__ BitcastHeapObjectToWordPtr(map));
-        V<Word32> is_in_range = __ Uint32LessThanOrEqual(
-            __ Word32Sub(map_int32,
-                         __ Word32Constant(StaticReadOnlyRoot::kBooleanMap)),
-            __ Word32Constant(StaticReadOnlyRoot::kHeapNumberMap -
-                              StaticReadOnlyRoot::kBooleanMap));
-        __ DeoptimizeIfNot(is_in_range, frame_state,
-                           DeoptimizeReason::kNotANumberOrBoolean, feedback);
-#else
-        IF_NOT (__ TaggedEqual(map,
-                               __ HeapConstant(factory_->heap_number_map()))) {
+        IF_NOT(check_number) {
           __ DeoptimizeIfNot(
               __ TaggedEqual(map, __ HeapConstant(factory_->boolean_map())),
               frame_state, DeoptimizeReason::kNotANumberOrBoolean, feedback);
         }
-#endif
 
         break;
       }
       case ConvertJSPrimitiveToUntaggedOrDeoptOp::JSPrimitiveKind::
           kNumberOrOddball: {
-#if V8_STATIC_ROOTS_BOOL
-        constexpr auto kNumberOrOddballRange =
-            InstanceTypeChecker::UniqueMapRangeOfInstanceTypeRange(
-                HEAP_NUMBER_TYPE, ODDBALL_TYPE)
-                .value();
-        V<Word32> map_int32 =
-            __ TruncateWordPtrToWord32(__ BitcastHeapObjectToWordPtr(map));
-        V<Word32> is_in_range = __ Uint32LessThanOrEqual(
-            __ Word32Sub(map_int32,
-                         __ Word32Constant(kNumberOrOddballRange.first)),
-            __ Word32Constant(kNumberOrOddballRange.second -
-                              kNumberOrOddballRange.first));
-        __ DeoptimizeIfNot(is_in_range, frame_state,
-                           DeoptimizeReason::kNotANumberOrOddball, feedback);
-#else
-        IF_NOT (__ TaggedEqual(map,
-                               __ HeapConstant(factory_->heap_number_map()))) {
+        IF_NOT(check_number) {
           // For oddballs also contain the numeric value, let us just check that
           // we have an oddball here.
           V<Word32> instance_type = __ LoadInstanceTypeField(map);
@@ -3522,7 +3428,6 @@ class MachineLoweringReducer : public Next {
                              frame_state,
                              DeoptimizeReason::kNotANumberOrOddball, feedback);
         }
-#endif
 
         break;
       }
@@ -3686,7 +3591,7 @@ class MachineLoweringReducer : public Next {
   Isolate* isolate_ = __ data() -> isolate();
   Factory* factory_ = isolate_ ? isolate_->factory() : nullptr;
   JSHeapBroker* broker_ = __ data() -> broker();
-  std::optional<bool> undetectable_objects_protector_ = {};
+  base::Optional<bool> undetectable_objects_protector_ = {};
 };
 
 #include "src/compiler/turboshaft/undef-assembler-macros.inc"

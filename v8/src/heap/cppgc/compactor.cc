@@ -332,6 +332,11 @@ class CompactionState final {
   Pages available_pages_;
 };
 
+enum class StickyBits : uint8_t {
+  kDisabled,
+  kEnabled,
+};
+
 void CompactPage(NormalPage* page, CompactionState& compaction_state,
                  StickyBits sticky_bits) {
   compaction_state.AddPage(page);
@@ -518,10 +523,12 @@ Compactor::CompactableSpaceHandling Compactor::CompactSpacesIfEnabled() {
   }
   compaction_worklists_.reset();
 
-  const StickyBits sticky_bits = heap_.heap()->sticky_bits();
+  const bool young_gen_enabled = heap_.heap()->generational_gc_supported();
 
   for (NormalPageSpace* space : compactable_spaces_) {
-    CompactSpace(space, movable_references, sticky_bits);
+    CompactSpace(
+        space, movable_references,
+        young_gen_enabled ? StickyBits::kEnabled : StickyBits::kDisabled);
   }
 
   enable_for_next_gc_for_testing_ = false;

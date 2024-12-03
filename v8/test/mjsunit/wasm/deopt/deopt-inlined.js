@@ -3,13 +3,12 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged
 // Flags: --wasm-inlining-ignore-call-counts --no-jit-fuzzing
-// Flags: --wasm-inlining-call-indirect
+// Flags: --experimental-wasm-inlining-call-indirect
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestDeoptInlined() {
   let inlineeIndex = 2;
@@ -82,25 +81,19 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
     // Tier up.
     %WasmTierUpFunction(fct);
     assertEquals(46, fct(12, 30, wasm.add));
-    if (%IsWasmTieringPredictable()) {
-      assertTrue(%IsTurboFanFunction(fct));
-    }
+    assertTrue(%IsTurboFanFunction(fct));
     // Cause deopt.
     assertEquals(14 * 32, fct(12, 30, wasm.mul));
     // Deopt happened.
-    if (%IsWasmTieringPredictable()) assertFalse(%IsTurboFanFunction(fct));
+    assertFalse(%IsTurboFanFunction(fct));
     assertEquals(46, fct(12, 30, wasm.add));
     // Trigger re-opt.
     %WasmTierUpFunction(fct);
     // Both call targets are used in the re-optimized function, so they don't
     // trigger new deopts.
     assertEquals(46, fct(12, 30, wasm.add));
-    if (%IsWasmTieringPredictable()) {
-      assertTrue(%IsTurboFanFunction(fct));
-    }
+    assertTrue(%IsTurboFanFunction(fct));
     assertEquals(14 * 32, fct(12, 30, wasm.mul));
-    if (%IsWasmTieringPredictable()) {
-      assertTrue(%IsTurboFanFunction(fct));
-    }
+    assertTrue(%IsTurboFanFunction(fct));
   }
 })();

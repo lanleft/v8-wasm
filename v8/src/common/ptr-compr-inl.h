@@ -27,7 +27,7 @@ constexpr Address kPtrComprCageBaseMask = ~(kPtrComprCageBaseAlignment - 1);
 
 // static
 template <typename Cage>
-constexpr Address V8HeapCompressionSchemeImpl<Cage>::GetPtrComprCageBaseAddress(
+Address V8HeapCompressionSchemeImpl<Cage>::GetPtrComprCageBaseAddress(
     Address on_heap_addr) {
   return RoundDown<kPtrComprCageBaseAlignment>(on_heap_addr);
 }
@@ -85,8 +85,7 @@ Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressObject(Address tagged) {
 
 // static
 template <typename Cage>
-constexpr Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressAny(
-    Address tagged) {
+Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressAny(Address tagged) {
   return static_cast<Tagged_t>(tagged);
 }
 
@@ -202,7 +201,7 @@ Tagged_t ExternalCodeCompressionScheme::CompressObject(Address tagged) {
 }
 
 // static
-constexpr Tagged_t ExternalCodeCompressionScheme::CompressAny(Address tagged) {
+Tagged_t ExternalCodeCompressionScheme::CompressAny(Address tagged) {
   return static_cast<Tagged_t>(tagged);
 }
 
@@ -274,10 +273,9 @@ V8_INLINE PtrComprCageBase GetPtrComprCageBase() {
 
 // static
 template <typename Cage>
-constexpr Address V8HeapCompressionSchemeImpl<Cage>::GetPtrComprCageBaseAddress(
+Address V8HeapCompressionSchemeImpl<Cage>::GetPtrComprCageBaseAddress(
     Address on_heap_addr) {
   UNREACHABLE();
-  return {};
 }
 
 // static
@@ -288,10 +286,8 @@ Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressObject(Address tagged) {
 
 // static
 template <typename Cage>
-constexpr Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressAny(
-    Address tagged) {
+Tagged_t V8HeapCompressionSchemeImpl<Cage>::CompressAny(Address tagged) {
   UNREACHABLE();
-  return {};
 }
 
 // static

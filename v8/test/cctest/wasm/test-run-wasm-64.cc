@@ -1505,6 +1505,7 @@ WASM_EXEC_TEST(Compile_Wasm_CallIndirect_Many_i64) {
 static void Run_WasmMixedCall_N(TestExecutionTier execution_tier, int start) {
   const int kExpected = 6333;
   const int kElemSize = 8;
+  TestSignatures sigs;
 
   static MachineType mixed[] = {
       MachineType::Int32(),   MachineType::Float32(), MachineType::Int64(),
@@ -1530,7 +1531,7 @@ static void Run_WasmMixedCall_N(TestExecutionTier execution_tier, int start) {
     for (int i = 0; i < num_params; i++) {
       b.AddParam(ValueType::For(memtypes[i]));
     }
-    WasmFunctionCompiler& f = r.NewFunction(b.Get());
+    WasmFunctionCompiler& f = r.NewFunction(b.Build());
     f.Build({WASM_LOCAL_GET(which)});
 
     // =========================================================================

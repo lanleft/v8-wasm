@@ -2,8 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
+// Flags: --expose-wasm
 
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 const JS = false;  // for testing the tests.
 const WRONG1 = 0x0DEDFACE;

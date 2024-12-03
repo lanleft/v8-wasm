@@ -4,8 +4,7 @@
 
 // Flags: --no-liftoff --no-force-slow-path
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // This constant was chosen as it is the smallest number of cases that still
 // triggers the input count overflow. The new limit put into place is smaller.

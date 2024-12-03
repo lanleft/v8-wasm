@@ -46,7 +46,7 @@ class TimedHistogram;
 class TurbofanCompilationJob;
 class UnoptimizedCompilationInfo;
 class UnoptimizedCompilationJob;
-class UnoptimizedJSFrame;
+class UnoptimizedFrame;
 class WorkerThreadRuntimeCallStats;
 struct ScriptDetails;
 struct ScriptStreamingData;
@@ -98,8 +98,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
                                         Handle<SharedFunctionInfo> shared,
                                         ClearExceptionFlag flag,
                                         IsCompiledScope* is_compiled_scope);
-  static bool CompileBaseline(Isolate* isolate,
-                              DirectHandle<JSFunction> function,
+  static bool CompileBaseline(Isolate* isolate, Handle<JSFunction> function,
                               ClearExceptionFlag flag,
                               IsCompiledScope* is_compiled_scope);
 
@@ -130,7 +129,8 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
 
   // Dispose a job without finalization.
   static void DisposeTurbofanCompilationJob(Isolate* isolate,
-                                            TurbofanCompilationJob* job);
+                                            TurbofanCompilationJob* job,
+                                            bool restore_function_code);
 
   // Finalize and install Turbofan code from a previously run job.
   static void FinalizeTurbofanCompilationJob(TurbofanCompilationJob* job,
@@ -143,8 +143,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
   // Give the compiler a chance to perform low-latency initialization tasks of
   // the given {function} on its instantiation. Note that only the runtime will
   // offer this chance, optimized closure instantiation will not call this.
-  static void PostInstantiation(Isolate* isolate,
-                                DirectHandle<JSFunction> function,
+  static void PostInstantiation(Handle<JSFunction> function,
                                 IsCompiledScope* is_compiled_scope);
 
   // ===========================================================================
@@ -160,7 +159,8 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
   V8_WARN_UNUSED_RESULT static MaybeHandle<JSFunction> GetFunctionFromEval(
       Handle<String> source, Handle<SharedFunctionInfo> outer_info,
       Handle<Context> context, LanguageMode language_mode,
-      ParseRestriction restriction, int parameters_end_pos, int eval_position,
+      ParseRestriction restriction, int parameters_end_pos,
+      int eval_scope_position, int eval_position,
       ParsingWhileDebugging parsing_while_debugging =
           ParsingWhileDebugging::kNo);
 
@@ -175,7 +175,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
   // Create a (bound) function for a String source within a context for eval.
   V8_WARN_UNUSED_RESULT static MaybeHandle<JSFunction> GetFunctionFromString(
       Handle<NativeContext> context, Handle<i::Object> source,
-      int parameters_end_pos, bool is_code_like);
+      ParseRestriction restriction, int parameters_end_pos, bool is_code_like);
 
   // Decompose GetFunctionFromString into two functions, to allow callers to
   // deal seperately with a case of object not handled by the embedder.
@@ -264,7 +264,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
 
   static void LogFunctionCompilation(Isolate* isolate,
                                      LogEventListener::CodeTag code_type,
-                                     DirectHandle<Script> script,
+                                     Handle<Script> script,
                                      Handle<SharedFunctionInfo> shared,
                                      Handle<FeedbackVector> vector,
                                      Handle<AbstractCode> abstract_code,
@@ -277,7 +277,7 @@ class V8_EXPORT_PRIVATE Compiler : public AllStatic {
  private:
   static std::unique_ptr<v8::tracing::TracedValue> AddScriptCompiledTrace(
       Isolate* isolate, DirectHandle<SharedFunctionInfo> shared);
-  static void EmitScriptSourceTextTrace(
+  static std::unique_ptr<v8::tracing::TracedValue> AddScriptSourceTextTrace(
       Isolate* isolate, DirectHandle<SharedFunctionInfo> shared);
 };
 
@@ -628,8 +628,8 @@ class V8_EXPORT_PRIVATE BackgroundCompileTask {
 
   // Data needed for merging onto the main thread after background finalization.
   std::unique_ptr<PersistentHandles> persistent_handles_;
-  MaybeIndirectHandle<SharedFunctionInfo> outer_function_sfi_;
-  IndirectHandle<Script> script_;
+  MaybeHandle<SharedFunctionInfo> outer_function_sfi_;
+  Handle<Script> script_;
   IsCompiledScope is_compiled_scope_;
   FinalizeUnoptimizedCompilationDataList finalize_unoptimized_compilation_data_;
   DeferredFinalizationJobDataList jobs_to_retry_finalization_on_main_thread_;
@@ -637,7 +637,7 @@ class V8_EXPORT_PRIVATE BackgroundCompileTask {
   int total_preparse_skipped_ = 0;
 
   // Single function data for top-level function compilation.
-  MaybeIndirectHandle<SharedFunctionInfo> input_shared_info_;
+  MaybeHandle<SharedFunctionInfo> input_shared_info_;
   int start_position_;
   int end_position_;
   int function_literal_id_;
@@ -648,7 +648,7 @@ class V8_EXPORT_PRIVATE BackgroundCompileTask {
 
 // Contains all data which needs to be transmitted between threads for
 // background parsing and compiling and finalizing it on the main thread.
-struct V8_EXPORT_PRIVATE ScriptStreamingData {
+struct ScriptStreamingData {
   ScriptStreamingData(
       std::unique_ptr<ScriptCompiler::ExternalSourceStream> source_stream,
       ScriptCompiler::StreamedSource::Encoding encoding);

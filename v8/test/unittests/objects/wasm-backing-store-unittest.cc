@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/base/platform/platform.h"
 #include "src/objects/backing-store.h"
 #include "test/unittests/test-utils.h"
@@ -22,7 +20,7 @@ TEST_F(BackingStoreTest, GrowWasmMemoryInPlace) {
   EXPECT_EQ(1 * wasm::kWasmPageSize, backing_store->byte_length());
   EXPECT_EQ(2 * wasm::kWasmPageSize, backing_store->byte_capacity());
 
-  std::optional<size_t> result =
+  base::Optional<size_t> result =
       backing_store->GrowWasmMemoryInPlace(isolate(), 1, 2);
   EXPECT_TRUE(result.has_value());
   EXPECT_EQ(result.value(), 1u);
@@ -37,7 +35,7 @@ TEST_F(BackingStoreTest, GrowWasmMemoryInPlace_neg) {
   EXPECT_EQ(1 * wasm::kWasmPageSize, backing_store->byte_length());
   EXPECT_EQ(2 * wasm::kWasmPageSize, backing_store->byte_capacity());
 
-  std::optional<size_t> result =
+  base::Optional<size_t> result =
       backing_store->GrowWasmMemoryInPlace(isolate(), 2, 2);
   EXPECT_FALSE(result.has_value());
   EXPECT_EQ(1 * wasm::kWasmPageSize, backing_store->byte_length());
@@ -51,7 +49,7 @@ TEST_F(BackingStoreTest, GrowSharedWasmMemoryInPlace) {
   EXPECT_EQ(2 * wasm::kWasmPageSize, backing_store->byte_length());
   EXPECT_EQ(3 * wasm::kWasmPageSize, backing_store->byte_capacity());
 
-  std::optional<size_t> result =
+  base::Optional<size_t> result =
       backing_store->GrowWasmMemoryInPlace(isolate(), 1, 3);
   EXPECT_TRUE(result.has_value());
   EXPECT_EQ(result.value(), 2u);
@@ -88,7 +86,7 @@ class GrowerThread : public base::Thread {
     while (true) {
       size_t current_length = backing_store_->byte_length();
       if (current_length >= max_length) break;
-      std::optional<size_t> result =
+      base::Optional<size_t> result =
           backing_store_->GrowWasmMemoryInPlace(isolate_, increment_, max_);
       size_t new_length = backing_store_->byte_length();
       if (result.has_value()) {

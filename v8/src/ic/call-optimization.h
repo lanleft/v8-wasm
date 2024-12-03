@@ -5,8 +5,6 @@
 #ifndef V8_IC_CALL_OPTIMIZATION_H_
 #define V8_IC_CALL_OPTIMIZATION_H_
 
-#include <optional>
-
 #include "src/api/api-arguments.h"
 #include "src/objects/objects.h"
 
@@ -23,7 +21,7 @@ class CallOptimization {
   // If the holder is a remote object returns empty optional.
   // This method must not be called for holder maps with null constructor
   // because they can't be holders for lazy accessor pairs anyway.
-  std::optional<Tagged<NativeContext>> GetAccessorContext(
+  base::Optional<Tagged<NativeContext>> GetAccessorContext(
       Tagged<Map> holder_map) const;
 
   // Return true if the accessor context for given holder doesn't match

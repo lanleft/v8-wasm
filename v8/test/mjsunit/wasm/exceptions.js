@@ -4,8 +4,7 @@
 
 // Flags: --allow-natives-syntax
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
 // The following method doesn't attempt to catch an raised exception.

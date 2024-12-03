@@ -5,8 +5,6 @@
 #ifndef V8_MAGLEV_MAGLEV_PHI_REPRESENTATION_SELECTOR_H_
 #define V8_MAGLEV_MAGLEV_PHI_REPRESENTATION_SELECTOR_H_
 
-#include <optional>
-
 #include "src/base/small-vector.h"
 #include "src/compiler/turboshaft/snapshot-table.h"
 #include "src/maglev/maglev-compilation-info.h"
@@ -45,8 +43,7 @@ class MaglevPhiRepresentationSelector {
       StdoutStream{} << "\n";
     }
   }
-  BlockProcessResult PreProcessBasicBlock(BasicBlock* block);
-  void PostPhiProcessing() {}
+  void PreProcessBasicBlock(BasicBlock* block);
 
   enum ProcessPhiResult { kNone, kRetryOnChange, kChanged };
   ProcessPhiResult ProcessPhi(Phi* node);
@@ -60,10 +57,6 @@ class MaglevPhiRepresentationSelector {
   ProcessResult Process(JumpLoop* node, const ProcessingState&) {
     FixLoopPhisBackedge(node->target());
     return ProcessResult::kContinue;
-  }
-
-  ProcessResult Process(Dead* node, const ProcessingState& state) {
-    return ProcessResult::kRemove;
   }
 
   template <class NodeT>
@@ -190,7 +183,7 @@ class MaglevPhiRepresentationSelector {
   // of the current block.
   ValueNode* EnsurePhiTagged(
       Phi* phi, BasicBlock* block, NewNodePosition pos,
-      std::optional<int> predecessor_index = std::nullopt);
+      base::Optional<int> predecessor_index = base::nullopt);
 
   ValueNode* AddNode(ValueNode* node, BasicBlock* block, NewNodePosition pos,
                      DeoptFrame* deopt_frame = nullptr);

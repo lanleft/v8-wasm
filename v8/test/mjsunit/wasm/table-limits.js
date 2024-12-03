@@ -4,8 +4,7 @@
 
 // Flags: --wasm-max-table-size=10
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // With the flags we set the maximum table size to 10, so 11 is out-of-bounds.
 const oob = 11;

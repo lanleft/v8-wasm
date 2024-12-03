@@ -7,6 +7,9 @@
 
 // /home/vult/Desktop/v8-wasm/v8/out/debug/d8 -test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/simple-tests/test3.js --no-liftoff  --experimental-wasm-exnref --allow-natives-syntax --expose-gc --wasm-inlining --experimental-wasm-jspi --turboshaft-wasm
 
+// use liftoff
+//  /home/vult/Desktop/v8-wasm/v8/out/debug/d8 -test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/simple-tests/test3.js --experimental-wasm-exnref --allow-natives-syntax      
+
 d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 // Helper module to produce an exnref or convert a JS value to an exnref.
@@ -61,4 +64,5 @@ wasm.main();
 // } catch (e) {
 //     console.log("===================== catch obj==================");
 //     console.log(e);
+//     console.log(e.c.b);
 // }

@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 // Simple test containing more than one deopt point.
 (function TestMultipleDeoptPoints() {
@@ -40,24 +39,16 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals((1 + 2) * 3, wasm.main(1, 2, wasm.add, 3, wasm.mul));
   %WasmTierUpFunction(wasm.main);
   assertEquals((1 + 2) * 3, wasm.main(1, 2, wasm.add, 3, wasm.mul));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   // New target on 2nd call_ref.
   assertEquals((1 + 2) + 3, wasm.main(1, 2, wasm.add, 3, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   // New target on 1st call_ref.
   assertEquals((1 * 2) * 3, wasm.main(1, 2, wasm.mul, 3, wasm.mul));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   %WasmTierUpFunction(wasm.main);
   // New combination but no new targets.
   assertEquals((1 * 2) + 3, wasm.main(1, 2, wasm.mul, 3, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();

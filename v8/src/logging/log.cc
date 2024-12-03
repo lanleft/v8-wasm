@@ -30,7 +30,6 @@
 #include "src/handles/global-handles.h"
 #include "src/heap/combined-heap.h"
 #include "src/heap/heap-inl.h"
-#include "src/heap/heap-layout-inl.h"
 #include "src/init/bootstrapper.h"
 #include "src/interpreter/bytecodes.h"
 #include "src/interpreter/interpreter.h"
@@ -57,7 +56,6 @@
 #if V8_ENABLE_WEBASSEMBLY
 #include "src/wasm/wasm-code-manager.h"
 #include "src/wasm/wasm-engine.h"
-#include "src/wasm/wasm-import-wrapper-cache.h"
 #include "src/wasm/wasm-objects-inl.h"
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -191,7 +189,7 @@ class CodeEventLogger::NameBuffer {
 
   void AppendString(Tagged<String> str) {
     if (str.is_null()) return;
-    uint32_t length = 0;
+    int length = 0;
     std::unique_ptr<char[]> c_str =
         str->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL, &length);
     AppendBytes(c_str.get(), length);
@@ -329,21 +327,10 @@ void CodeEventLogger::CodeCreateEvent(CodeTag tag, const wasm::WasmCode* code,
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 void CodeEventLogger::RegExpCodeCreateEvent(Handle<AbstractCode> code,
-                                            Handle<String> source,
-                                            RegExpFlags flags) {
+                                            Handle<String> source) {
   DCHECK(is_listening_to_code_events());
-  // Note we don't call Init due to the required pprof demangling hack for
-  // regexp patterns.
-  name_buffer_->Reset();
-  // https://github.com/google/pprof/blob/4cf4322d492d108a9d6526d10844e04792982cbb/internal/symbolizer/symbolizer.go#L312.
-  name_buffer_->AppendBytes("RegExp.>");
-  name_buffer_->AppendBytes(" src: '");
+  name_buffer_->Init(LogEventListener::CodeTag::kRegExp);
   name_buffer_->AppendString(*source);
-  name_buffer_->AppendBytes("' flags: '");
-  Handle<String> flags_str =
-      JSRegExp::StringFromFlags(isolate_, JSRegExp::AsJSRegExpFlags(flags));
-  name_buffer_->AppendString(*flags_str);
-  name_buffer_->AppendBytes("'");
   DisallowGarbageCollection no_gc;
   LogRecordedBuffer(*code, MaybeHandle<SharedFunctionInfo>(),
                     name_buffer_->get(), name_buffer_->size());
@@ -612,8 +599,7 @@ void ExternalLogEventListener::CodeCreateEvent(CodeTag tag,
 #endif  // V8_ENABLE_WEBASSEMBLY
 
 void ExternalLogEventListener::RegExpCodeCreateEvent(Handle<AbstractCode> code,
-                                                     Handle<String> source,
-                                                     RegExpFlags flags) {
+                                                     Handle<String> source) {
   PtrComprCageBase cage_base(isolate_);
   CodeEvent code_event;
   code_event.code_start_address =
@@ -752,14 +738,16 @@ void LowLevelLogger::LogCodeInfo() {
   const char arch[] = "x64";
 #elif V8_TARGET_ARCH_ARM
   const char arch[] = "arm";
+#elif V8_TARGET_ARCH_PPC
+  const char arch[] = "ppc";
 #elif V8_TARGET_ARCH_PPC64
   const char arch[] = "ppc64";
 #elif V8_TARGET_ARCH_LOONG64
   const char arch[] = "loong64";
 #elif V8_TARGET_ARCH_ARM64
   const char arch[] = "arm64";
-#elif V8_TARGET_ARCH_S390X
-  const char arch[] = "s390x";
+#elif V8_TARGET_ARCH_S390
+  const char arch[] = "s390";
 #elif V8_TARGET_ARCH_RISCV64
   const char arch[] = "riscv64";
 #elif V8_TARGET_ARCH_RISCV32
@@ -1246,7 +1234,7 @@ template <StateTag tag>
 class VMStateIfMainThread {
  public:
   explicit VMStateIfMainThread(Isolate* isolate) {
-    if (ThreadId::Current() == isolate->thread_id()) {
+    if (isolate->IsCurrent()) {
       vm_state_.emplace(isolate);
     }
   }
@@ -1558,10 +1546,8 @@ void V8FileLogger::FeedbackVectorEvent(Tagged<FeedbackVector> vector,
       << vector->length();
   msg << kNext << reinterpret_cast<void*>(code->InstructionStart(cage_base));
   msg << kNext << vector->tiering_state();
-#ifndef V8_ENABLE_LEAPTIERING
   msg << kNext << vector->maybe_has_maglev_code();
   msg << kNext << vector->maybe_has_turbofan_code();
-#endif  // !V8_ENABLE_LEAPTIERING
   msg << kNext << vector->invocation_count();
 
 #ifdef OBJECT_PRINT
@@ -1617,14 +1603,10 @@ void V8FileLogger::CodeCreateEvent(CodeTag tag, const wasm::WasmCode* code,
   // We have to add two extra fields that allow the tick processor to group
   // events for the same wasm function, even if it gets compiled again. For
   // normal JS functions, we use the shared function info. For wasm, the pointer
-  // to the native module + function index works well enough. For Wasm wrappers,
-  // just use the address of the WasmCode.
+  // to the native module + function index works well enough.
   // TODO(herhut) Clean up the tick processor code instead.
-  const void* tag_ptr =
-      code->native_module() != nullptr
-          ? reinterpret_cast<uint8_t*>(code->native_module()) + code->index()
-          : reinterpret_cast<const uint8_t*>(code);
-
+  void* tag_ptr =
+      reinterpret_cast<uint8_t*>(code->native_module()) + code->index();
   msg << kNext << tag_ptr << kNext << ComputeMarker(code);
   msg.WriteToLogFile();
 }
@@ -1655,8 +1637,7 @@ void V8FileLogger::SetterCallbackEvent(Handle<Name> name, Address entry_point) {
 }
 
 void V8FileLogger::RegExpCodeCreateEvent(Handle<AbstractCode> code,
-                                         Handle<String> source,
-                                         RegExpFlags flags) {
+                                         Handle<String> source) {
   if (!is_listening_to_code_events()) return;
   if (!v8_flags.log_code) return;
   VMStateIfMainThread<LOGGING> state(isolate_);
@@ -2126,10 +2107,10 @@ EnumerateCompiledFunctions(Heap* heap) {
       } else if (WasmJSFunction::IsWasmJSFunction(function)) {
         Tagged<WasmInternalFunction> internal_function =
             function->shared()->wasm_js_function_data()->internal();
-        Tagged<WasmImportData> import_data =
-            Cast<WasmImportData>(internal_function->implicit_arg());
+        Tagged<WasmApiFunctionRef> api_function_ref =
+            Cast<WasmApiFunctionRef>(internal_function->ref());
         record(function->shared(),
-               Cast<AbstractCode>(import_data->code(isolate)));
+               Cast<AbstractCode>(api_function_ref->code(isolate)));
 #endif  // V8_ENABLE_WEBASSEMBLY
       }
     }
@@ -2501,7 +2482,7 @@ void ExistingCodeLogger::LogCodeObject(Tagged<AbstractCode> object) {
   PtrComprCageBase cage_base(isolate_);
   switch (abstract_code->kind(cage_base)) {
     case CodeKind::INTERPRETED_FUNCTION:
-    case CodeKind::TURBOFAN_JS:
+    case CodeKind::TURBOFAN:
     case CodeKind::BASELINE:
     case CodeKind::MAGLEV:
       return;  // We log this later using LogCompiledFunctions.
@@ -2617,7 +2598,7 @@ void ExistingCodeLogger::LogCompiledFunctions(
     // objects are also in trusted space. Currently this breaks because we must
     // not compare objects in trusted space with ones inside the sandbox.
     static_assert(!kAllCodeObjectsLiveInTrustedSpace);
-    if (!HeapLayout::InTrustedSpace(*pair.second) &&
+    if (!IsTrustedSpaceObject(*pair.second) &&
         pair.second.is_identical_to(BUILTIN_CODE(isolate_, CompileLazy))) {
       continue;
     }
@@ -2635,7 +2616,6 @@ void ExistingCodeLogger::LogCompiledFunctions(
     module_object->native_module()->LogWasmCodes(isolate_,
                                                  module_object->script());
   }
-  wasm::GetWasmImportWrapperCache()->LogForIsolate(isolate_);
 #endif  // V8_ENABLE_WEBASSEMBLY
 }
 
@@ -2643,7 +2623,7 @@ void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
                                              Handle<AbstractCode> code,
                                              CodeTag tag) {
   if (IsScript(shared->script())) {
-    DirectHandle<Script> script(Cast<Script>(shared->script()), isolate_);
+    Handle<Script> script(Cast<Script>(shared->script()), isolate_);
     Script::PositionInfo info;
     Script::GetPositionInfo(script, shared->StartPosition(), &info);
     int line_num = info.line + 1;
@@ -2681,7 +2661,7 @@ void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
       int c_functions_count = fun_data->GetCFunctionsCount();
       for (int i = 0; i < c_functions_count; i++) {
         CALL_CODE_EVENT_HANDLER(
-            CallbackEvent(fun_name, fun_data->GetCFunction(isolate_, i)))
+            CallbackEvent(fun_name, fun_data->GetCFunction(i)))
       }
     }
 #if V8_ENABLE_WEBASSEMBLY

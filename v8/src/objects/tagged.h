@@ -19,8 +19,6 @@ class FieldType;
 class HeapObject;
 class HeapNumber;
 class HeapObjectLayout;
-class TrustedObject;
-class TrustedObjectLayout;
 class Object;
 class TaggedIndex;
 class Smi;
@@ -146,7 +144,6 @@ class OrderedHashSet;
 class OrderedNameDictionary;
 class ScriptContextTable;
 class ArrayList;
-class SloppyArgumentsElements;
 
 namespace detail {
 // `is_simple_subtype<Derived, Base>::value` is true when Derived is a simple
@@ -218,7 +215,6 @@ DEF_FIXED_ARRAY_SUBTYPE(OrderedHashSet)
 DEF_FIXED_ARRAY_SUBTYPE(OrderedNameDictionary)
 DEF_FIXED_ARRAY_SUBTYPE(ScriptContextTable)
 DEF_FIXED_ARRAY_SUBTYPE(ArrayList)
-DEF_FIXED_ARRAY_SUBTYPE(SloppyArgumentsElements)
 #undef DEF_FIXED_ARRAY_SUBTYPE
 
 // `is_complex_subtype<Derived, Base>::value` is true when Derived is a
@@ -245,13 +241,6 @@ struct is_complex_subtype<Derived, HeapObject,
                           std::enable_if_t<std::disjunction_v<
                               std::is_base_of<HeapObject, Derived>,
                               std::is_base_of<HeapObjectLayout, Derived>>>>
-    : public std::true_type {};
-
-template <typename Derived>
-struct is_complex_subtype<Derived, TrustedObject,
-                          std::enable_if_t<std::disjunction_v<
-                              std::is_base_of<TrustedObject, Derived>,
-                              std::is_base_of<TrustedObjectLayout, Derived>>>>
     : public std::true_type {};
 
 template <typename Derived, typename... BaseTs>
@@ -477,7 +466,7 @@ class Tagged<HeapObject> : public StrongTaggedBase {
   // Implicit conversions and explicit casts to/from raw pointers
   // TODO(leszeks): Remove once we're using Tagged everywhere.
   template <typename U,
-            typename = std::enable_if_t<std::is_base_of_v<HeapObject, U>>>
+            typename = std::enable_if_t<is_subtype_v<U, HeapObject>>>
   // NOLINTNEXTLINE
   constexpr Tagged(U raw) : Base(raw.ptr()) {
     static_assert(kTaggedCanConvertToRawObjects);
@@ -634,9 +623,7 @@ class Tagged<Union<Ts...>> : public detail::BaseForTagged<Union<Ts...>>::type {
 
   // Implicit conversions and explicit casts to/from raw pointers
   // TODO(leszeks): Remove once we're using Tagged everywhere.
-  template <typename U,
-            typename = std::enable_if_t<is_subtype_v<U, This> &&
-                                        std::is_base_of_v<HeapObject, U>>>
+  template <typename U, typename = std::enable_if_t<is_subtype_v<U, This>>>
   // NOLINTNEXTLINE
   V8_INLINE constexpr Tagged(U raw) : Base(raw.ptr()) {
     static_assert(kTaggedCanConvertToRawObjects);

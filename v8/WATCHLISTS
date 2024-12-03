@@ -129,6 +129,7 @@
       'verwaest+watch@chromium.org',
     ],
     'feature_shipping_status': [
+      'hablich@chromium.org',
       'saelo+watch@chromium.org',
     ],
     'heap_changes': [

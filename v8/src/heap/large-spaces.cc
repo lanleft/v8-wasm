@@ -108,6 +108,7 @@ AllocationResult OldLargeObjectSpace::AllocateRaw(LocalHeap* local_heap,
                                                   int object_size,
                                                   Executability executable) {
   object_size = ALIGN_TO_ALLOCATION_ALIGNMENT(object_size);
+  DCHECK(!v8_flags.enable_third_party_heap);
   DCHECK_IMPLIES(identity() == SHARED_LO_SPACE,
                  !allocation_counter_.HasAllocationObservers());
   DCHECK_IMPLIES(identity() == SHARED_LO_SPACE,
@@ -266,9 +267,8 @@ bool LargeObjectSpace::Contains(Tagged<HeapObject> object) const {
 }
 
 bool LargeObjectSpace::ContainsSlow(Address addr) const {
-  MemoryChunk* chunk = MemoryChunk::FromAddress(addr);
   for (const LargePageMetadata* page : *this) {
-    if (page->Chunk() == chunk) return true;
+    if (page->Contains(addr)) return true;
   }
   return false;
 }
@@ -357,6 +357,7 @@ NewLargeObjectSpace::NewLargeObjectSpace(Heap* heap, size_t capacity)
 AllocationResult NewLargeObjectSpace::AllocateRaw(LocalHeap* local_heap,
                                                   int object_size) {
   object_size = ALIGN_TO_ALLOCATION_ALIGNMENT(object_size);
+  DCHECK(!v8_flags.enable_third_party_heap);
   DCHECK(local_heap->is_main_thread());
   // Do not allocate more objects if promoting the existing object would exceed
   // the old generation capacity.
@@ -366,10 +367,7 @@ AllocationResult NewLargeObjectSpace::AllocateRaw(LocalHeap* local_heap,
 
   // Allocation for the first object must succeed independent from the capacity.
   if (SizeOfObjects() > 0 && static_cast<size_t>(object_size) > Available()) {
-    if (!v8_flags.separate_gc_phases ||
-        !heap()->ShouldExpandYoungGenerationOnSlowAllocation(object_size)) {
-      return AllocationResult::Failure();
-    }
+    return AllocationResult::Failure();
   }
 
   LargePageMetadata* page = AllocateLargePage(object_size, NOT_EXECUTABLE);
@@ -394,7 +392,6 @@ AllocationResult NewLargeObjectSpace::AllocateRaw(LocalHeap* local_heap,
 }
 
 size_t NewLargeObjectSpace::Available() const {
-  DCHECK_GE(capacity_, SizeOfObjects());
   return capacity_ - SizeOfObjects();
 }
 
@@ -443,6 +440,7 @@ CodeLargeObjectSpace::CodeLargeObjectSpace(Heap* heap)
 
 AllocationResult CodeLargeObjectSpace::AllocateRaw(LocalHeap* local_heap,
                                                    int object_size) {
+  DCHECK(!v8_flags.enable_third_party_heap);
   return OldLargeObjectSpace::AllocateRaw(local_heap, object_size, EXECUTABLE);
 }
 

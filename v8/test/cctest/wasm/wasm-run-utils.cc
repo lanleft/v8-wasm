@@ -4,8 +4,7 @@
 
 #include "test/cctest/wasm/wasm-run-utils.h"
 
-#include <optional>
-
+#include "src/base/optional.h"
 #include "src/codegen/assembler-inl.h"
 #include "src/compiler/pipeline.h"
 #include "src/diagnostics/code-tracer.h"
@@ -28,13 +27,6 @@ namespace internal {
 namespace wasm {
 
 // Helper Functions.
-bool IsSameNan(uint16_t expected, uint16_t actual) {
-  // Sign is non-deterministic.
-  uint16_t expected_bits = expected & ~0x8000;
-  uint16_t actual_bits = actual & ~0x8000;
-  return (expected_bits == actual_bits);
-}
-
 bool IsSameNan(float expected, float actual) {
   // Sign is non-deterministic.
   uint32_t expected_bits = base::bit_cast<uint32_t>(expected) & ~0x80000000;
@@ -61,7 +53,7 @@ TestingModuleBuilder::TestingModuleBuilder(
       isolate_(isolate ? isolate : CcTest::InitIsolateOnce()),
       enabled_features_(WasmEnabledFeatures::FromIsolate(isolate_)),
       execution_tier_(tier) {
-  WasmJs::Install(isolate_);
+  WasmJs::Install(isolate_, true);
   test_module_->untagged_globals_buffer_size = kMaxGlobalsSize;
   // The GlobalsData must be located inside the sandbox, so allocate it from the
   // ArrayBuffer allocator.
@@ -84,27 +76,30 @@ TestingModuleBuilder::TestingModuleBuilder(
   trusted_instance_data_->set_tables(*tables);
 
   if (maybe_import) {
-    WasmCodeRefScope code_ref_scope;
+    const wasm::FunctionSig* sig = maybe_import->sig;
     // Manually compile an import wrapper and insert it into the instance.
-    CanonicalTypeIndex sig_index =
-        GetTypeCanonicalizer()->AddRecursiveGroup(maybe_import->sig);
-    const wasm::CanonicalSig* sig =
-        GetTypeCanonicalizer()->LookupFunctionSignature(sig_index);
-    ResolvedWasmImport resolved({}, -1, maybe_import->js_function, sig,
-                                sig_index, WellKnownImport::kUninstantiated);
+    uint32_t canonical_type_index =
+        GetTypeCanonicalizer()->AddRecursiveGroup(sig);
+    WasmImportData resolved({}, -1, maybe_import->js_function, sig,
+                            canonical_type_index,
+                            WellKnownImport::kUninstantiated);
     ImportCallKind kind = resolved.kind();
     DirectHandle<JSReceiver> callable = resolved.callable();
-    WasmCode* import_wrapper = GetWasmImportWrapperCache()->MaybeGet(
-        kind, sig_index, static_cast<int>(sig->parameter_count()), kNoSuspend);
+    WasmImportWrapperCache::ModificationScope cache_scope(
+        native_module_->import_wrapper_cache());
+    WasmImportWrapperCache::CacheKey key(
+        kind, canonical_type_index, static_cast<int>(sig->parameter_count()),
+        kNoSuspend);
+    auto import_wrapper = cache_scope[key];
     if (import_wrapper == nullptr) {
-      import_wrapper = CompileImportWrapperForTest(
-          isolate_, native_module_, kind, sig, sig_index,
-          static_cast<int>(sig->parameter_count()), kNoSuspend);
+      import_wrapper = CompileImportWrapper(
+          native_module_, isolate_->counters(), kind, sig, canonical_type_index,
+          static_cast<int>(sig->parameter_count()), kNoSuspend, &cache_scope);
     }
 
     ImportedFunctionEntry(trusted_instance_data_, maybe_import_index)
-        .SetCompiledWasmToJs(isolate_, callable, import_wrapper,
-                             resolved.suspend(), sig);
+        .SetWasmToJs(isolate_, callable, import_wrapper, resolved.suspend(),
+                     sig);
   }
 }
 
@@ -116,7 +111,7 @@ TestingModuleBuilder::~TestingModuleBuilder() {
 }
 
 uint8_t* TestingModuleBuilder::AddMemory(uint32_t size, SharedFlag shared,
-                                         AddressType address_type,
+                                         TestingModuleMemoryType mem_type,
                                          std::optional<size_t> max_size) {
   // The TestingModuleBuilder only supports one memory currently.
   CHECK_EQ(0, test_module_->memories.size());
@@ -134,13 +129,15 @@ uint8_t* TestingModuleBuilder::AddMemory(uint32_t size, SharedFlag shared,
   WasmMemory* memory = &test_module_->memories[0];
   memory->initial_pages = initial_pages;
   memory->maximum_pages = maximum_pages;
-  memory->address_type = address_type;
+  memory->is_memory64 = mem_type == kMemory64;
   UpdateComputedInformation(memory, test_module_->origin);
 
   // Create the WasmMemoryObject.
   DirectHandle<WasmMemoryObject> memory_object =
       WasmMemoryObject::New(isolate_, initial_pages, maximum_pages, shared,
-                            address_type)
+                            mem_type == kMemory64
+                                ? WasmMemoryFlag::kWasmMemory64
+                                : WasmMemoryFlag::kWasmMemory32)
           .ToHandleChecked();
   DirectHandle<FixedArray> memory_objects =
       isolate_->factory()->NewFixedArray(1);
@@ -190,13 +187,13 @@ uint32_t TestingModuleBuilder::AddFunction(const FunctionSig* sig,
     test_module_->type_feedback.well_known_imports.Initialize(kMaxFunctions);
   }
   uint32_t index = static_cast<uint32_t>(test_module_->functions.size());
-  test_module_->functions.push_back({sig,                 // sig
-                                     index,               // func_index
-                                     ModuleTypeIndex{0},  // sig_index
-                                     {0, 0},              // code
-                                     false,               // imported
-                                     false,               // exported
-                                     false});             // declared
+  test_module_->functions.push_back({sig,      // sig
+                                     index,    // func_index
+                                     0,        // sig_index
+                                     {0, 0},   // code
+                                     false,    // imported
+                                     false,    // exported
+                                     false});  // declared
   if (type == kImport) {
     DCHECK_EQ(0, test_module_->num_declared_functions);
     ++test_module_->num_imported_functions;
@@ -224,14 +221,14 @@ uint32_t TestingModuleBuilder::AddFunction(const FunctionSig* sig,
 }
 
 void TestingModuleBuilder::InitializeWrapperCache() {
-  TypeCanonicalizer::PrepareForCanonicalTypeId(
-      isolate_, test_module_->MaxCanonicalTypeIndex());
+  isolate_->heap()->EnsureWasmCanonicalRttsSize(
+      test_module_->MaxCanonicalTypeIndex() + 1);
   Handle<FixedArray> maps = isolate_->factory()->NewFixedArray(
       static_cast<int>(test_module_->types.size()));
   for (uint32_t index = 0; index < test_module_->types.size(); index++) {
     // TODO(14616): Support shared types.
     CreateMapForType(
-        isolate_, test_module_.get(), ModuleTypeIndex{index},
+        isolate_, test_module_.get(), index,
         handle(instance_object_->trusted_data(isolate()), isolate()),
         instance_object_, maps);
   }
@@ -286,27 +283,19 @@ void TestingModuleBuilder::AddIndirectFunctionTable(
       table.maximum_size,
       IsSubtypeOf(table.type, kWasmExternRef, test_module_.get())
           ? Handle<HeapObject>{isolate_->factory()->null_value()}
-          : Handle<HeapObject>{isolate_->factory()->wasm_null()},
-      // TODO(clemensb): Make this configurable.
-      wasm::AddressType::kI32);
+          : Handle<HeapObject>{isolate_->factory()->wasm_null()});
 
   WasmTableObject::AddUse(isolate_, table_obj, instance_object_, table_index);
 
   if (function_indexes) {
     for (uint32_t i = 0; i < table_size; ++i) {
       WasmFunction& function = test_module_->functions[function_indexes[i]];
-      CanonicalTypeIndex sig_id =
-          test_module_->canonical_sig_id(function.sig_index);
-      FunctionTargetAndImplicitArg entry(isolate_, trusted_instance_data_,
-                                         function.func_index);
-#if !V8_ENABLE_DRUMBRAKE
+      int sig_id =
+          test_module_->isorecursive_canonical_type_ids[function.sig_index];
+      FunctionTargetAndRef entry(isolate_, trusted_instance_data_,
+                                 function.func_index);
       trusted_instance_data_->dispatch_table(table_index)
-          ->Set(i, *entry.implicit_arg(), entry.call_target(), sig_id);
-#else   // !V8_ENABLE_DRUMBRAKE
-      trusted_instance_data_->dispatch_table(table_index)
-          ->Set(i, *entry.implicit_arg(), entry.call_target(), sig_id,
-                function.func_index);
-#endif  // !V8_ENABLE_DRUMBRAKE
+          ->Set(i, *entry.ref(), entry.call_target(), sig_id);
       WasmTableObject::SetFunctionTablePlaceholder(
           isolate_, table_obj, i, trusted_instance_data_, function_indexes[i]);
     }
@@ -346,8 +335,7 @@ uint32_t TestingModuleBuilder::AddException(const FunctionSig* sig) {
   uint32_t index = static_cast<uint32_t>(test_module_->tags.size());
   test_module_->tags.emplace_back(sig, AddSignature(sig));
   DirectHandle<WasmExceptionTag> tag = WasmExceptionTag::New(isolate_, index);
-  DirectHandle<FixedArray> table(trusted_instance_data_->tags_table(),
-                                 isolate_);
+  Handle<FixedArray> table(trusted_instance_data_->tags_table(), isolate_);
   table = isolate_->factory()->CopyFixedArrayAndGrow(table, 1);
   trusted_instance_data_->set_tags_table(*table);
   table->set(index, *tag);
@@ -429,8 +417,8 @@ Handle<WasmInstanceObject> TestingModuleBuilder::InitInstanceObject() {
           kMaxFunctions, 0, estimated_code_section_length, kUsesLiftoff,
           DynamicTiering{v8_flags.wasm_dynamic_tiering.value()});
   auto native_module = GetWasmEngine()->NewNativeModule(
-      isolate_, enabled_features_, WasmDetectedFeatures{}, CompileTimeImports{},
-      test_module_, code_size_estimate);
+      isolate_, enabled_features_, CompileTimeImports{}, test_module_,
+      code_size_estimate);
   native_module->SetWireBytes(base::OwnedVector<const uint8_t>());
   native_module->compilation_state()->set_compilation_id(0);
   constexpr base::Vector<const char> kNoSourceUrl{"", 0};
@@ -439,7 +427,8 @@ Handle<WasmInstanceObject> TestingModuleBuilder::InitInstanceObject() {
   // Asm.js modules are expected to have "normal" scripts, not Wasm scripts.
   if (is_asmjs_module(native_module->module())) {
     script->set_type(Script::Type::kNormal);
-    script->set_infos(ReadOnlyRoots{isolate_}.empty_weak_fixed_array());
+    script->set_shared_function_infos(
+        ReadOnlyRoots{isolate_}.empty_weak_fixed_array());
   }
 
   DirectHandle<WasmModuleObject> module_object =
@@ -534,9 +523,7 @@ void WasmFunctionCompiler::Build(base::Vector<const uint8_t> bytes) {
     env.module->set_function_validated(function_->func_index);
   }
 
-  if (v8_flags.wasm_jitless) return;
-
-  std::optional<WasmCompilationResult> result;
+  base::Optional<WasmCompilationResult> result;
   if (builder_->test_execution_tier() ==
       TestExecutionTier::kLiftoffForFuzzing) {
     result.emplace(ExecuteLiftoffCompilation(

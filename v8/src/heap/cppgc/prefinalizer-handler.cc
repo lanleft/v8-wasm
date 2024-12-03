@@ -30,8 +30,11 @@ bool PreFinalizer::operator==(const PreFinalizer& other) const {
 PreFinalizerHandler::PreFinalizerHandler(HeapBase& heap)
     : current_ordered_pre_finalizers_(&ordered_pre_finalizers_),
       heap_(heap)
+#ifdef DEBUG
+      ,
+      creation_thread_id_(v8::base::OS::GetCurrentThreadId())
+#endif  // DEBUG
 {
-  DCHECK(CurrentThreadIsCreationThread());
 }
 
 void PreFinalizerHandler::RegisterPrefinalizer(PreFinalizer pre_finalizer) {
@@ -87,7 +90,7 @@ void PreFinalizerHandler::InvokePreFinalizers() {
 
 bool PreFinalizerHandler::CurrentThreadIsCreationThread() {
 #ifdef DEBUG
-  return heap_.CurrentThreadIsHeapThread();
+  return creation_thread_id_ == v8::base::OS::GetCurrentThreadId();
 #else
   return true;
 #endif

@@ -98,8 +98,6 @@ namespace internal {
     "Wrong number of arguments for intrinsic")                                 \
   V(kWrongFunctionCodeStart, "Wrong value in code start register passed")      \
   V(kWrongFunctionContext, "Wrong context passed to function")                 \
-  V(kWrongFunctionDispatchHandle,                                              \
-    "Wrong value in dispatch handle register passed")                          \
   V(kUnexpectedThreadInWasmSet, "thread_in_wasm flag was already set")         \
   V(kUnexpectedThreadInWasmUnset, "thread_in_wasm flag was not set")           \
   V(kInvalidReceiver, "Expected JS object or primitive object")                \
@@ -107,9 +105,8 @@ namespace internal {
   V(kTurboshaftTypeAssertionFailed,                                            \
     "A type assertion failed in Turboshaft-generated code")                    \
   V(kMetadataAreaStartDoesNotMatch,                                            \
-    "The metadata doesn't belong to the chunk")                                \
-  V(kJSSignatureMismatch, "Signature mismatch during JS function call")        \
-  V(kFastCallFallbackInvalid, "Fast call fallback returned incorrect type")
+    "The metadata doesn't belong to the "                                      \
+    "chunk")
 
 #define BAILOUT_MESSAGES_LIST(V)                                             \
   V(kNoReason, "no reason")                                                  \

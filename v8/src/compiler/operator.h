@@ -231,9 +231,9 @@ template <>
 struct OpHash<double> : public base::bit_hash<double> {};
 
 template <class T>
-struct OpEqualTo<IndirectHandle<T>> : public IndirectHandle<T>::equal_to {};
+struct OpEqualTo<Handle<T>> : public Handle<T>::equal_to {};
 template <class T>
-struct OpHash<IndirectHandle<T>> : public IndirectHandle<T>::hash {};
+struct OpHash<Handle<T>> : public Handle<T>::hash {};
 
 }  // namespace compiler
 }  // namespace internal

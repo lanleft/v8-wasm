@@ -4,15 +4,15 @@
 
 #include "src/torque/declaration-visitor.h"
 
-#include <optional>
-
 #include "src/torque/ast.h"
 #include "src/torque/kythe-data.h"
 #include "src/torque/server-data.h"
 #include "src/torque/type-inference.h"
 #include "src/torque/type-visitor.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 Namespace* GetOrCreateNamespace(const std::string& name) {
   std::vector<Namespace*> existing_namespaces = FilterDeclarables<Namespace>(
@@ -62,7 +62,7 @@ Builtin* DeclarationVisitor::CreateBuiltin(BuiltinDeclaration* decl,
                                            std::string external_name,
                                            std::string readable_name,
                                            Signature signature,
-                                           std::optional<Statement*> body) {
+                                           base::Optional<Statement*> body) {
   const bool javascript = decl->javascript_linkage;
   const bool varargs = decl->parameters.has_varargs;
   Builtin::Kind kind = !javascript ? Builtin::kStub
@@ -85,29 +85,14 @@ Builtin* DeclarationVisitor::CreateBuiltin(BuiltinDeclaration* decl,
       Error("Return type of JavaScript-linkage builtins has to be JSAny.")
           .Position(decl->return_type->pos);
     }
-    // Validate the parameter types. In general, for JS builtins the parameters
-    // must all be tagged values (JSAny). However, we currently allow declaring
-    // "extern javascript" builtins with any parameter types. The reason is
-    // that those are typically used for tailcalls, in which case we typically
-    // need to supply the implicit parameters of the JS calling convention
-    // (target, receiver, argc, etc.). It would probablu be nicer if we could
-    // instead declare these parameters as js-implicit (like we do for
-    // torque-defined javascript builtins) and then allow explicitly supplying
-    // the implicit arguments during tailscalls. It's unclear though if that's
-    // worth the effort. In particular, calls and tailcalls to javascript
-    // builtins will emit CSA::CallJSBuiltin and CSA::TailCallJSBuiltin calls
-    // which will validate the parameter types at C++ compile time.
-    if (decl->kind != AstNode::Kind::kExternalBuiltinDeclaration) {
-      for (size_t i = signature.implicit_count;
-           i < signature.parameter_types.types.size(); ++i) {
-        const Type* parameter_type = signature.parameter_types.types[i];
-        if (!TypeOracle::GetJSAnyType()->IsSubtypeOf(parameter_type)) {
-          Error(
-              "Parameters of JavaScript-linkage builtins have to be a "
-              "supertype "
-              "of JSAny.")
-              .Position(decl->parameters.types[i]->pos);
-        }
+    for (size_t i = signature.implicit_count;
+         i < signature.parameter_types.types.size(); ++i) {
+      const Type* parameter_type = signature.parameter_types.types[i];
+      if (!TypeOracle::GetJSAnyType()->IsSubtypeOf(parameter_type)) {
+        Error(
+            "Parameters of JavaScript-linkage builtins have to be a supertype "
+            "of JSAny.")
+            .Position(decl->parameters.types[i]->pos);
       }
     }
   }
@@ -158,7 +143,7 @@ Builtin* DeclarationVisitor::CreateBuiltin(BuiltinDeclaration* decl,
 void DeclarationVisitor::Visit(ExternalBuiltinDeclaration* decl) {
   Builtin* builtin =
       CreateBuiltin(decl, decl->name->value, decl->name->value,
-                    TypeVisitor::MakeSignature(decl), std::nullopt);
+                    TypeVisitor::MakeSignature(decl), base::nullopt);
   builtin->SetIdentifierPosition(decl->name->pos);
   Declarations::Declare(decl->name->value, builtin);
 }
@@ -206,7 +191,7 @@ void DeclarationVisitor::Visit(ExternalRuntimeDeclaration* decl) {
 void DeclarationVisitor::Visit(ExternalMacroDeclaration* decl) {
   Macro* macro = Declarations::DeclareMacro(
       decl->name->value, true, decl->external_assembler_name,
-      TypeVisitor::MakeSignature(decl), std::nullopt, decl->op);
+      TypeVisitor::MakeSignature(decl), base::nullopt, decl->op);
   macro->SetIdentifierPosition(decl->name->pos);
   macro->SetPosition(decl->pos);
   if (GlobalContext::collect_kythe_data()) {
@@ -224,7 +209,7 @@ void DeclarationVisitor::Visit(TorqueBuiltinDeclaration* decl) {
 
 void DeclarationVisitor::Visit(TorqueMacroDeclaration* decl) {
   Macro* macro = Declarations::DeclareMacro(
-      decl->name->value, decl->export_to_csa, std::nullopt,
+      decl->name->value, decl->export_to_csa, base::nullopt,
       TypeVisitor::MakeSignature(decl), decl->body, decl->op);
   macro->SetIdentifierPosition(decl->name->pos);
   macro->SetPosition(decl->pos);
@@ -363,7 +348,7 @@ Signature DeclarationVisitor::MakeSpecializedSignature(
 
 Callable* DeclarationVisitor::SpecializeImplicit(
     const SpecializationKey<GenericCallable>& key) {
-  std::optional<Statement*> body = key.generic->CallableBody();
+  base::Optional<Statement*> body = key.generic->CallableBody();
   if (!body && IntrinsicDeclaration::DynamicCast(key.generic->declaration()) ==
                    nullptr) {
     ReportError("missing specialization of ", key.generic->name(),
@@ -373,7 +358,7 @@ Callable* DeclarationVisitor::SpecializeImplicit(
   SpecializationRequester requester{CurrentSourcePosition::Get(),
                                     CurrentScope::Get(), ""};
   CurrentScope::Scope generic_scope(key.generic->ParentScope());
-  Callable* result = Specialize(key, key.generic->declaration(), std::nullopt,
+  Callable* result = Specialize(key, key.generic->declaration(), base::nullopt,
                                 body, CurrentSourcePosition::Get());
   result->SetIsUserDefined(false);
   requester.name = result->ReadableName();
@@ -386,8 +371,8 @@ Callable* DeclarationVisitor::SpecializeImplicit(
 Callable* DeclarationVisitor::Specialize(
     const SpecializationKey<GenericCallable>& key,
     CallableDeclaration* declaration,
-    std::optional<const SpecializationDeclaration*> explicit_specialization,
-    std::optional<Statement*> body, SourcePosition position) {
+    base::Optional<const SpecializationDeclaration*> explicit_specialization,
+    base::Optional<Statement*> body, SourcePosition position) {
   CurrentSourcePosition::Scope pos_scope(position);
   size_t generic_parameter_count = key.generic->generic_parameters().size();
   if (generic_parameter_count != key.specialized_types.size()) {
@@ -450,4 +435,6 @@ void PredeclarationVisitor::ResolvePredeclarations() {
   }
 }
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8

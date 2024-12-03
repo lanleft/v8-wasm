@@ -4,8 +4,6 @@
 
 #include "test/inspector/isolate-data.h"
 
-#include <optional>
-
 #include "include/v8-context.h"
 #include "include/v8-exception.h"
 #include "include/v8-microtask-queue.h"
@@ -187,10 +185,10 @@ v8::MaybeLocal<v8::Module> InspectorIsolateData::ModuleResolveCallback(
   return maybe_module;
 }
 
-std::optional<int> InspectorIsolateData::ConnectSession(
+base::Optional<int> InspectorIsolateData::ConnectSession(
     int context_group_id, const v8_inspector::StringView& state,
     std::unique_ptr<FrontendChannelImpl> channel, bool is_fully_trusted) {
-  if (contexts_.find(context_group_id) == contexts_.end()) return std::nullopt;
+  if (contexts_.find(context_group_id) == contexts_.end()) return base::nullopt;
 
   v8::SealHandleScope seal_handle_scope(isolate());
   int session_id = ++last_session_id_;

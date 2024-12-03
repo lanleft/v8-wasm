@@ -3,11 +3,10 @@
 // found in the LICENSE file.
 
 // Flags: --wasm-deopt --allow-natives-syntax --turboshaft-wasm
-// Flags: --wasm-inlining --liftoff
+// Flags: --experimental-wasm-inlining --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --no-jit-fuzzing
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestNonInlinedTarget() {
   let builder = new WasmModuleBuilder();
@@ -40,21 +39,15 @@ d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-bui
   assertEquals(30, wasm.main(10, 20, wasm.add));
   %WasmTierUpFunction(wasm.main);
   assertEquals(30, wasm.main(10, 20, wasm.add));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
   // Call with new target causing a deopt.
   assertEquals(-10, wasm.main(10, 20, wasm.sub));
-  if (%IsWasmTieringPredictable()) {
-    assertFalse(%IsTurboFanFunction(wasm.main));
-  }
+  assertFalse(%IsTurboFanFunction(wasm.main));
   // Re-opt. Due to the size of sub(), the target will not be inlined.
   // This causes sub() to take the slow call_ref implementation and no deopt
   // point is created.
   %WasmTierUpFunction(wasm.main);
   // Calling with a new call target therefore doesn't trigger a deopt.
   assertEquals(200, wasm.main(10, 20, wasm.mul));
-  if (%IsWasmTieringPredictable()) {
-    assertTrue(%IsTurboFanFunction(wasm.main));
-  }
+  assertTrue(%IsTurboFanFunction(wasm.main));
 })();

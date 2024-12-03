@@ -23,7 +23,6 @@
 
 #include <cstdarg>
 #include <cstdint>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -33,6 +32,7 @@
 #include "src/base/build_config.h"
 #include "src/base/compiler-specific.h"
 #include "src/base/macros.h"
+#include "src/base/optional.h"
 #include "src/base/platform/mutex.h"
 #include "src/base/platform/semaphore.h"
 #include "testing/gtest/include/gtest/gtest_prod.h"  // nogncheck
@@ -63,12 +63,6 @@
 extern "C" unsigned long __readfsdword(unsigned long);  // NOLINT(runtime/int)
 #endif                                       // V8_CC_MSVC && V8_HOST_ARCH_IA32
 #endif                                       // V8_NO_FAST_TLS
-
-#if V8_OS_OPENBSD
-#define PERMISSION_MUTABLE_SECTION __attribute__((section(".openbsd.mutable")))
-#else
-#define PERMISSION_MUTABLE_SECTION
-#endif
 
 namespace heap::base {
 class Stack;
@@ -160,9 +154,6 @@ class V8_BASE_EXPORT OS {
   // merged into OS::Initialize.
   static void EnsureWin32MemoryAPILoaded();
 #endif
-
-  // Check whether CET shadow stack is enabled.
-  static bool IsHardwareEnforcedShadowStacksEnabled();
 
   // Returns the accumulated user time for thread. This routine
   // can be used for profiling. The implementation should
@@ -408,11 +399,9 @@ class V8_BASE_EXPORT OS {
 
   V8_WARN_UNUSED_RESULT static bool DecommitPages(void* address, size_t size);
 
-  V8_WARN_UNUSED_RESULT static bool SealPages(void* address, size_t size);
-
   V8_WARN_UNUSED_RESULT static bool CanReserveAddressSpace();
 
-  V8_WARN_UNUSED_RESULT static std::optional<AddressSpaceReservation>
+  V8_WARN_UNUSED_RESULT static Optional<AddressSpaceReservation>
   CreateAddressSpaceReservation(void* hint, size_t size, size_t alignment,
                                 MemoryPermission max_permission);
 
@@ -484,9 +473,8 @@ class V8_BASE_EXPORT AddressSpaceReservation {
 
   V8_WARN_UNUSED_RESULT bool DecommitPages(void* address, size_t size);
 
-  V8_WARN_UNUSED_RESULT std::optional<AddressSpaceReservation>
-  CreateSubReservation(void* address, size_t size,
-                       OS::MemoryPermission max_permission);
+  V8_WARN_UNUSED_RESULT Optional<AddressSpaceReservation> CreateSubReservation(
+      void* address, size_t size, OS::MemoryPermission max_permission);
 
   V8_WARN_UNUSED_RESULT static bool FreeSubReservation(
       AddressSpaceReservation reservation);

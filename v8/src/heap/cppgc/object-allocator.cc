@@ -80,41 +80,10 @@ void ReplaceLinearAllocationBuffer(NormalPageSpace& space,
   }
 }
 
-LargePage* TryAllocateLargeObjectImpl(PageBackend& page_backend,
-                                      LargePageSpace& space, size_t size) {
-  LargePage* page = LargePage::TryCreate(page_backend, space, size);
-  if (page) return page;
-
-  Sweeper& sweeper = space.raw_heap()->heap()->sweeper();
-
-  // Lazily sweep pages of this heap. This is not exhaustive to limit jank on
-  // allocation.
-  if (sweeper.SweepForAllocationIfRunning(
-          &space, size, v8::base::TimeDelta::FromMicroseconds(500)) &&
-      (page = LargePage::TryCreate(page_backend, space, size))) {
-    return page;
-  }
-
-  // Before finishing all sweeping, finish sweeping of a given space which is
-  // cheaper.
-  if (sweeper.SweepForAllocationIfRunning(&space, size,
-                                          v8::base::TimeDelta::Max()) &&
-      (page = LargePage::TryCreate(page_backend, space, size))) {
-    return page;
-  }
-
-  if (sweeper.FinishIfRunning() &&
-      (page = LargePage::TryCreate(page_backend, space, size))) {
-    return page;
-  }
-
-  return nullptr;
-}
-
 void* TryAllocateLargeObject(PageBackend& page_backend, LargePageSpace& space,
                              StatsCollector& stats_collector, size_t size,
                              GCInfoIndex gcinfo) {
-  LargePage* page = TryAllocateLargeObjectImpl(page_backend, space, size);
+  LargePage* page = LargePage::TryCreate(page_backend, space, size);
   if (!page) return nullptr;
 
   space.AddPage(page);
@@ -163,14 +132,6 @@ void ObjectAllocator::OutOfLineAllocateGCSafePoint(NormalPageSpace& space,
   }
 }
 
-namespace {
-constexpr GCConfig kOnAllocationFailureGCConfig = {
-    CollectionType::kMajor, StackState::kMayContainHeapPointers,
-    GCConfig::MarkingType::kAtomic,
-    GCConfig::SweepingType::kIncrementalAndConcurrent,
-    GCConfig::FreeMemoryHandling::kDiscardWherePossible};
-}  // namespace
-
 void* ObjectAllocator::OutOfLineAllocateImpl(NormalPageSpace& space,
                                              size_t size, AlignVal alignment,
                                              GCInfoIndex gcinfo) {
@@ -188,7 +149,9 @@ void* ObjectAllocator::OutOfLineAllocateImpl(NormalPageSpace& space,
     void* result = TryAllocateLargeObject(page_backend_, large_space,
                                           stats_collector_, size, gcinfo);
     if (!result) {
-      auto config = kOnAllocationFailureGCConfig;
+      auto config = GCConfig::ConservativeAtomicConfig();
+      config.free_memory_handling =
+          GCConfig::FreeMemoryHandling::kDiscardWherePossible;
       garbage_collector_.CollectGarbage(config);
       result = TryAllocateLargeObject(page_backend_, large_space,
                                       stats_collector_, size, gcinfo);
@@ -217,7 +180,9 @@ void* ObjectAllocator::OutOfLineAllocateImpl(NormalPageSpace& space,
   }
 
   if (!TryRefillLinearAllocationBuffer(space, request_size)) {
-    auto config = kOnAllocationFailureGCConfig;
+    auto config = GCConfig::ConservativeAtomicConfig();
+    config.free_memory_handling =
+        GCConfig::FreeMemoryHandling::kDiscardWherePossible;
     garbage_collector_.CollectGarbage(config);
     if (!TryRefillLinearAllocationBuffer(space, request_size)) {
 #if defined(CPPGC_CAGED_HEAP)
@@ -370,7 +335,7 @@ void ObjectAllocator::TriggerGCOnAllocationTimeoutIfNeeded() {
   if (!allocation_timeout_) return;
   DCHECK_GT(*allocation_timeout_, 0);
   if (--*allocation_timeout_ == 0) {
-    garbage_collector_.CollectGarbage(kOnAllocationFailureGCConfig);
+    garbage_collector_.CollectGarbage(GCConfig::ConservativeAtomicConfig());
     allocation_timeout_ = garbage_collector_.UpdateAllocationTimeout();
     DCHECK(allocation_timeout_);
     DCHECK_GT(*allocation_timeout_, 0);

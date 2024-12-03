@@ -5,7 +5,6 @@
 #ifndef V8_TORQUE_DECLARATION_VISITOR_H_
 #define V8_TORQUE_DECLARATION_VISITOR_H_
 
-#include <optional>
 #include <string>
 
 #include "src/base/macros.h"
@@ -15,7 +14,9 @@
 #include "src/torque/types.h"
 #include "src/torque/utils.h"
 
-namespace v8::internal::torque {
+namespace v8 {
+namespace internal {
+namespace torque {
 
 Namespace* GetOrCreateNamespace(const std::string& name);
 
@@ -85,7 +86,7 @@ class DeclarationVisitor {
   static Builtin* CreateBuiltin(BuiltinDeclaration* decl,
                                 std::string external_name,
                                 std::string readable_name, Signature signature,
-                                std::optional<Statement*> body);
+                                base::Optional<Statement*> body);
 
   static void Visit(ExternalBuiltinDeclaration* decl);
   static void Visit(ExternalRuntimeDeclaration* decl);
@@ -112,14 +113,16 @@ class DeclarationVisitor {
   static Callable* Specialize(
       const SpecializationKey<GenericCallable>& key,
       CallableDeclaration* declaration,
-      std::optional<const SpecializationDeclaration*> explicit_specialization,
-      std::optional<Statement*> body, SourcePosition position);
+      base::Optional<const SpecializationDeclaration*> explicit_specialization,
+      base::Optional<Statement*> body, SourcePosition position);
 
  private:
   static void DeclareSpecializedTypes(
       const SpecializationKey<GenericCallable>& key);
 };
 
-}  // namespace v8::internal::torque
+}  // namespace torque
+}  // namespace internal
+}  // namespace v8
 
 #endif  // V8_TORQUE_DECLARATION_VISITOR_H_

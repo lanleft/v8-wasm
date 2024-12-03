@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_TURBOSHAFT_SNAPSHOT_TABLE_OPINDEX_H_
 #define V8_COMPILER_TURBOSHAFT_SNAPSHOT_TABLE_OPINDEX_H_
 
-#include <optional>
-
 #include "src/compiler/turboshaft/index.h"
 #include "src/compiler/turboshaft/snapshot-table.h"
 
@@ -54,10 +52,10 @@ class SparseOpIndexSnapshotTable : public SnapshotTable<Value, KeyData> {
     return indices_to_keys_.find(idx) != indices_to_keys_.end();
   }
 
-  std::optional<Key> TryGetKeyFor(OpIndex idx) const {
+  base::Optional<Key> TryGetKeyFor(OpIndex idx) const {
     auto it = indices_to_keys_.find(idx);
     if (it != indices_to_keys_.end()) return it->second;
-    return std::nullopt;
+    return base::nullopt;
   }
 
  private:

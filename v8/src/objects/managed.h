@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "src/api/api.h"
 #include "src/execution/isolate.h"
 #include "src/handles/handles.h"
 #include "src/heap/factory.h"
@@ -68,7 +67,6 @@ struct ManagedPtrDestructor
   void* shared_ptr_ptr_ = nullptr;
   void (*destructor_)(void* shared_ptr) = nullptr;
   Address* global_handle_location_ = nullptr;
-  V8_NO_UNIQUE_ADDRESS ExternalMemoryAccounterBase external_memory_accounter_;
 
   ManagedPtrDestructor(size_t estimated_size, void* shared_ptr_ptr,
                        void (*destructor)(void*))
@@ -108,9 +106,6 @@ class Managed : public Foreign {
   // Get a reference to the shared pointer to the C++ object.
   V8_INLINE const std::shared_ptr<CppType>& get() { return *GetSharedPtrPtr(); }
 
-  // Read back the memory estimate that was provided when creating this Managed.
-  size_t estimated_size() const { return GetDestructor()->estimated_size_; }
-
   // Create a {Managed>} from an existing {std::shared_ptr} or {std::unique_ptr}
   // (which will automatically convert to a {std::shared_ptr}).
   static Handle<Managed<CppType>> From(
@@ -121,16 +116,14 @@ class Managed : public Foreign {
  private:
   friend class Tagged<Managed>;
 
-  // Internally this {Foreign} object stores a pointer to a
-  // ManagedPtrDestructor, which again stores the std::shared_ptr.
-  ManagedPtrDestructor* GetDestructor() const {
-    static constexpr ExternalPointerTag kTag = TagForManaged<CppType>::value;
-    return reinterpret_cast<ManagedPtrDestructor*>(foreign_address<kTag>());
-  }
-
+  // Internally this {Foreign} object stores a pointer to a new
+  // std::shared_ptr<CppType>.
   std::shared_ptr<CppType>* GetSharedPtrPtr() {
+    static constexpr ExternalPointerTag kTag = TagForManaged<CppType>::value;
+    auto destructor =
+        reinterpret_cast<ManagedPtrDestructor*>(foreign_address<kTag>());
     return reinterpret_cast<std::shared_ptr<CppType>*>(
-        GetDestructor()->shared_ptr_ptr_);
+        destructor->shared_ptr_ptr_);
   }
 };
 

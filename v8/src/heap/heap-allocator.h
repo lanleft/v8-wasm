@@ -101,18 +101,14 @@ class V8_EXPORT_PRIVATE HeapAllocator final {
 #endif  // DEBUG
 
   // Mark/Unmark all LABs except for new and shared space. Use for black
-  // allocation with sticky mark bits.
+  // allocation.
   void MarkLinearAllocationAreasBlack();
   void UnmarkLinearAllocationsArea();
 
   // Mark/Unmark linear allocation areas in shared heap black. Used for black
-  // allocation with sticky mark bits.
+  // allocation.
   void MarkSharedLinearAllocationAreasBlack();
   void UnmarkSharedLinearAllocationAreas();
-
-  // Free linear allocation areas and reset free-lists.
-  void FreeLinearAllocationAreasAndResetFreeLists();
-  void FreeSharedLinearAllocationAreasAndResetFreeLists();
 
   void PauseAllocationObservers();
   void ResumeAllocationObservers();
@@ -125,9 +121,6 @@ class V8_EXPORT_PRIVATE HeapAllocator final {
                                 AllocationObserver* new_space_observer);
 
   MainAllocator* new_space_allocator() { return &new_space_allocator_.value(); }
-  const MainAllocator* new_space_allocator() const {
-    return &new_space_allocator_.value();
-  }
   MainAllocator* old_space_allocator() { return &old_space_allocator_.value(); }
   MainAllocator* trusted_space_allocator() {
     return &trusted_space_allocator_.value();

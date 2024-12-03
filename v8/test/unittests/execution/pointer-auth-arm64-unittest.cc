@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <optional>
-
 #include "src/codegen/arm64/decoder-arm64-inl.h"
 #include "src/execution/arm64/simulator-arm64.h"
 #include "src/execution/pointer-authentication.h"
@@ -62,9 +60,9 @@ Address GetAlternativeRawCodeAddress() {
 
 // If the platform supports it, corrupt the PAC of |address| so that
 // authenticating it will cause a crash.
-std::optional<Address> CorruptPACIfSupported(Isolate* isolate,
-                                             Address address) {
-  if constexpr (!ENABLE_CONTROL_FLOW_INTEGRITY_BOOL) return std::nullopt;
+base::Optional<Address> CorruptPACIfSupported(Isolate* isolate,
+                                              Address address) {
+  if constexpr (!ENABLE_CONTROL_FLOW_INTEGRITY_BOOL) return base::nullopt;
 
   // First, find where in an address the PAC is located.
 
@@ -78,7 +76,7 @@ std::optional<Address> CorruptPACIfSupported(Isolate* isolate,
   // If the PAC bits are zero then StripPAC() was a no-op. This means pointer
   // authentication isn't supported.
   if (pac_mask == 0) {
-    return std::nullopt;
+    return base::nullopt;
   }
 
   // At this point, pointer authentication is supported, but individual keys
@@ -107,7 +105,7 @@ std::optional<Address> CorruptPACIfSupported(Isolate* isolate,
 
   // None of the slots were signed with a non-zero PAC, assume this means PAC
   // isn't enabled.
-  return std::nullopt;
+  return base::nullopt;
 }
 
 }  // namespace

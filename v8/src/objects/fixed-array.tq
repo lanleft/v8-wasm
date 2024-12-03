@@ -3,12 +3,12 @@
 // found in the LICENSE file.
 
 @abstract
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class FixedArrayBase extends HeapObject {
   const length: Smi;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 @generateBodyDescriptor
 extern class FixedArray extends FixedArrayBase {
   objects[length]: Object;
@@ -16,49 +16,54 @@ extern class FixedArray extends FixedArrayBase {
 
 type EmptyFixedArray extends FixedArray;
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class TrustedFixedArray extends TrustedObject {
   const length: Smi;
   objects[length]: Object;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class ProtectedFixedArray extends TrustedObject {
   const length: Smi;
   objects[length]: TrustedObject|Smi;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class FixedDoubleArray extends FixedArrayBase {
-  values[length]: float64_or_hole;
+  floats[length]: float64_or_hole;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class WeakFixedArray extends HeapObject {
   const length: Smi;
   objects[length]: MaybeObject;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class TrustedWeakFixedArray extends TrustedObject {
   const length: Smi;
   objects[length]: MaybeObject;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class ByteArray extends FixedArrayBase {
-  values[length]: uint8;
+  bytes[length]: uint8;
 }
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class TrustedByteArray extends TrustedObject {
   const length: Smi;
-  values[length]: uint8;
+  bytes[length]: uint8;
+}
+
+@cppObjectDefinition
+extern class ExternalPointerArray extends FixedArrayBase {
+  pointers[length]: ExternalPointer;
 }
 
 extern macro CodeStubAssembler::AllocateByteArray(uintptr): ByteArray;
 
-@cppObjectLayoutDefinition
+@cppObjectDefinition
 extern class ArrayList extends HeapObject {
   const capacity: Smi;
   length: Smi;
@@ -107,15 +112,15 @@ extern macro StoreFixedArrayElement(
     FixedArray, intptr, Object, constexpr WriteBarrierMode): void;
 extern macro StoreFixedArrayElement(
     FixedArray, intptr, Smi, constexpr WriteBarrierMode): void;
-extern operator '.values[]=' macro StoreFixedDoubleArrayElement(
+extern operator '.floats[]=' macro StoreFixedDoubleArrayElement(
     FixedDoubleArray, intptr, float64): void;
-extern operator '.values[]=' macro StoreFixedDoubleArrayElement(
+extern operator '.floats[]=' macro StoreFixedDoubleArrayElement(
     FixedDoubleArray, Smi, float64): void;
-extern operator '.values[]' macro LoadFixedDoubleArrayElement(
+extern operator '.floats[]' macro LoadFixedDoubleArrayElement(
     FixedDoubleArray, intptr): float64;
 operator '[]=' macro StoreFixedDoubleArrayDirect(
     a: FixedDoubleArray, i: Smi, v: Number): void {
-  a.values[i] = Convert<float64_or_hole>(Convert<float64>(v));
+  a.floats[i] = Convert<float64_or_hole>(Convert<float64>(v));
 }
 operator '[]=' macro StoreFixedArrayDirect(
     a: FixedArray, i: Smi, v: Object): void {
@@ -169,7 +174,7 @@ macro ExtractFixedDoubleArray(
   return NewFixedDoubleArray(
       capacity,
       IteratorSequence<float64_or_hole>(
-          (&source.values).Iterator(first, first + count),
+          (&source.floats).Iterator(first, first + count),
           ConstantIterator(kDoubleHole)));
 }
 
@@ -196,6 +201,6 @@ macro NewFixedDoubleArray<Iterator: type>(
   return new FixedDoubleArray{
     map: kFixedDoubleArrayMap,
     length: Convert<Smi>(length),
-    values: ...it
+    floats: ...it
   };
 }

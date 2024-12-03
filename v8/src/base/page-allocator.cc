@@ -162,9 +162,5 @@ bool PageAllocator::DecommitPages(void* address, size_t size) {
   return base::OS::DecommitPages(address, size);
 }
 
-bool PageAllocator::SealPages(void* address, size_t size) {
-  return base::OS::SealPages(address, size);
-}
-
 }  // namespace base
 }  // namespace v8

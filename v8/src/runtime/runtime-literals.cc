@@ -169,7 +169,8 @@ MaybeHandle<JSObject> JSObjectWalkVisitor<ContextObject>::StructureWalk(
     case SHARED_ARRAY_ELEMENTS: {
       DirectHandle<FixedArray> elements(
           Cast<FixedArray>(copy->elements(isolate)), isolate);
-      if (elements->map() == ReadOnlyRoots(isolate).fixed_cow_array_map()) {
+      if (elements->map(isolate) ==
+          ReadOnlyRoots(isolate).fixed_cow_array_map()) {
 #ifdef DEBUG
         for (int i = 0; i < elements->length(); i++) {
           DCHECK(!IsJSObject(elements->get(i)));
@@ -458,7 +459,7 @@ Handle<JSObject> CreateArrayLiteral(
         Cast<FixedDoubleArray>(constant_elements_values));
   } else {
     DCHECK(IsSmiOrObjectElementsKind(constant_elements_kind));
-    const bool is_cow = (constant_elements_values->map() ==
+    const bool is_cow = (constant_elements_values->map(isolate) ==
                          ReadOnlyRoots(isolate).fixed_cow_array_map());
     if (is_cow) {
       copied_elements_values = constant_elements_values;
@@ -634,7 +635,8 @@ RUNTIME_FUNCTION(Runtime_CreateRegExpLiteral) {
     return *regexp_instance;
   }
 
-  DirectHandle<RegExpData> data(regexp_instance->data(isolate), isolate);
+  DirectHandle<FixedArray> data(Cast<FixedArray>(regexp_instance->data()),
+                                isolate);
   DirectHandle<String> source(Cast<String>(regexp_instance->source()), isolate);
   DirectHandle<RegExpBoilerplateDescription> boilerplate =
       isolate->factory()->NewRegExpBoilerplateDescription(

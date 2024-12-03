@@ -3087,11 +3087,11 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
   return reinterpret_cast<uintptr_t>(stack_) + kStackProtectionSize;
 }
 
-base::Vector<uint8_t> Simulator::GetCentralStackView() const {
+base::Vector<uint8_t> Simulator::GetCurrentStackView() const {
   // We do not add an additional safety margin as above in
   // Simulator::StackLimit, as this is currently only used in wasm::StackMemory,
   // which adds its own margin.
-  return base::VectorOf(stack_ + kStackProtectionSize, UsableStackSize());
+  return base::VectorOf(stack_, UsableStackSize());
 }
 
 // Unsupported instructions use Format to print an error and stop execution.
@@ -3329,22 +3329,19 @@ void Simulator::SoftwareInterrupt() {
           case ExternalReference::BUILTIN_FP_FP_CALL:
           case ExternalReference::BUILTIN_COMPARE_CALL:
             PrintF("Call to host function %s at %p with args %f, %f",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
-                       pc, IsolateGroup::current()->external_ref_table()),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0, dval1);
             break;
           case ExternalReference::BUILTIN_FP_CALL:
             PrintF("Call to host function %s at %p with arg %f",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
-                       pc, IsolateGroup::current()->external_ref_table()),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0);
             break;
           case ExternalReference::BUILTIN_FP_INT_CALL:
             PrintF("Call to host function %s at %p with args %f, %d",
-                   ExternalReferenceTable::NameOfIsolateIndependentAddress(
-                       pc, IsolateGroup::current()->external_ref_table()),
+                   ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                    reinterpret_cast<void*>(FUNCTION_ADDR(generic_target)),
                    dval0, ival);
             break;
@@ -3418,8 +3415,7 @@ void Simulator::SoftwareInterrupt() {
       // void f(v8::FunctionCallbackInfo&)
       if (v8_flags.trace_sim) {
         PrintF("Call to host function %s at %p args %08" REGIx_FORMAT " \n",
-               ExternalReferenceTable::NameOfIsolateIndependentAddress(
-                   pc, IsolateGroup::current()->external_ref_table()),
+               ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
                reinterpret_cast<void*>(external), arg0);
       }
       SimulatorRuntimeDirectApiCall target =
@@ -3468,8 +3464,7 @@ void Simulator::SoftwareInterrupt() {
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT
             " , %016" REGIx_FORMAT " , %016" REGIx_FORMAT " \n",
-            ExternalReferenceTable::NameOfIsolateIndependentAddress(
-                pc, IsolateGroup::current()->external_ref_table()),
+            ExternalReferenceTable::NameOfIsolateIndependentAddress(pc),
             reinterpret_cast<void*>(FUNCTION_ADDR(target)), arg0, arg1, arg2,
             arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12,
             arg13, arg14, arg15, arg16, arg17, arg18, arg19);
@@ -3904,16 +3899,7 @@ void Simulator::DecodeRVRType() {
       set_rd(rs1() | (1 << index));
       break;
     }
-    case RO_CZERO_EQZ: {
-      sreg_t condition = rs2();
-      set_rd(condition == 0 ? 0 : rs1());
-      break;
-    }
-    case RO_CZERO_NEZ: {
-      sreg_t condition = rs2();
-      set_rd(condition != 0 ? 0 : rs1());
-      break;
-    }
+      // TODO(riscv): End Add RISCV M extension macro
     default: {
       switch (instr_.BaseOpcode()) {
         case AMO:

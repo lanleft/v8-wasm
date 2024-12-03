@@ -14,18 +14,14 @@
 namespace v8 {
 namespace internal {
 
-void ExternalPointerTableEntry::MakeExternalPointerEntry(Address value,
-                                                         ExternalPointerTag tag,
-                                                         bool mark_as_alive) {
+void ExternalPointerTableEntry::MakeExternalPointerEntry(
+    Address value, ExternalPointerTag tag) {
   DCHECK_EQ(0, value & kExternalPointerTagMask);
   DCHECK(tag & kExternalPointerMarkBit);
   DCHECK_NE(tag, kExternalPointerFreeEntryTag);
   DCHECK_NE(tag, kExternalPointerEvacuationEntryTag);
 
   Payload new_payload(value, tag);
-  if (V8_LIKELY(!mark_as_alive)) {
-    new_payload.ClearMarkBit();
-  }
   payload_.store(new_payload, std::memory_order_relaxed);
   MaybeUpdateRawPointerForLSan(value);
 }
@@ -218,8 +214,7 @@ ExternalPointerHandle ExternalPointerTable::AllocateAndInitializeEntry(
     Space* space, Address initial_value, ExternalPointerTag tag) {
   DCHECK(space->BelongsTo(this));
   uint32_t index = AllocateEntry(space);
-  at(index).MakeExternalPointerEntry(initial_value, tag,
-                                     space->allocate_black());
+  at(index).MakeExternalPointerEntry(initial_value, tag);
   ExternalPointerHandle handle = IndexToHandle(index);
   TakeOwnershipOfManagedResourceIfNecessary(initial_value, handle, tag);
   return handle;
@@ -261,8 +256,6 @@ void ExternalPointerTable::Evacuate(Space* from_space, Space* to_space,
                                     EvacuateMarkMode mode) {
   DCHECK(from_space->BelongsTo(this));
   DCHECK(to_space->BelongsTo(this));
-
-  CHECK(IsValidHandle(handle));
 
   auto handle_ptr = reinterpret_cast<ExternalPointerHandle*>(handle_location);
 

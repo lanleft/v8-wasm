@@ -8,8 +8,7 @@
 // test/mjsunit/wasm/exceptions-rethrow.js using the new exception handling
 // proposal.
 
-d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
-
+d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
 d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
 // Test that rethrow expressions can target catch blocks.

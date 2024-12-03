@@ -7,7 +7,6 @@
 
 #include <iosfwd>
 #include <map>
-#include <optional>
 
 #include "src/base/compiler-specific.h"
 #include "src/base/numbers/double.h"
@@ -583,7 +582,6 @@ class LocationOperand : public InstructionOperand {
       case MachineRepresentation::kBit:
       case MachineRepresentation::kWord8:
       case MachineRepresentation::kWord16:
-      case MachineRepresentation::kFloat16:
       case MachineRepresentation::kNone:
         return false;
       case MachineRepresentation::kMapWord:
@@ -1074,16 +1072,6 @@ class V8_EXPORT_PRIVATE Instruction final {
     }
   }
 
-  // For JS call instructions, computes the index of the argument count input.
-  size_t JSCallArgumentCountInputIndex() const {
-    // Keep in sync with instruction-selector.cc where the inputs are assembled.
-    if (HasCallDescriptorFlag(CallDescriptor::kHasExceptionHandler)) {
-      return InputCount() - 2;
-    } else {
-      return InputCount() - 1;
-    }
-  }
-
   enum GapPosition {
     START,
     END,
@@ -1217,7 +1205,7 @@ class V8_EXPORT_PRIVATE Constant final {
   explicit Constant(ExternalReference ref)
       : type_(kExternalReference),
         value_(base::bit_cast<intptr_t>(ref.raw())) {}
-  explicit Constant(IndirectHandle<HeapObject> obj, bool is_compressed = false)
+  explicit Constant(Handle<HeapObject> obj, bool is_compressed = false)
       : type_(is_compressed ? kCompressedHeapObject : kHeapObject),
         value_(base::bit_cast<intptr_t>(obj)) {}
   explicit Constant(RpoNumber rpo) : type_(kRpoNumber), value_(rpo.ToInt()) {}
@@ -1282,8 +1270,8 @@ class V8_EXPORT_PRIVATE Constant final {
     return RpoNumber::FromInt(static_cast<int>(value_));
   }
 
-  IndirectHandle<HeapObject> ToHeapObject() const;
-  IndirectHandle<Code> ToCode() const;
+  Handle<HeapObject> ToHeapObject() const;
+  Handle<Code> ToCode() const;
 
  private:
   Type type_;
@@ -1501,7 +1489,7 @@ class FrameStateDescriptor : public ZoneObject {
       Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
       OutputFrameStateCombine state_combine, uint16_t parameters_count,
       uint16_t max_arguments, size_t locals_count, size_t stack_count,
-      MaybeIndirectHandle<SharedFunctionInfo> shared_info,
+      MaybeHandle<SharedFunctionInfo> shared_info,
       FrameStateDescriptor* outer_state = nullptr,
       uint32_t wasm_liftoff_frame_size = std::numeric_limits<uint32_t>::max(),
       uint32_t wasm_function_index = std::numeric_limits<uint32_t>::max());
@@ -1513,9 +1501,7 @@ class FrameStateDescriptor : public ZoneObject {
   uint16_t max_arguments() const { return max_arguments_; }
   size_t locals_count() const { return locals_count_; }
   size_t stack_count() const { return stack_count_; }
-  MaybeIndirectHandle<SharedFunctionInfo> shared_info() const {
-    return shared_info_;
-  }
+  MaybeHandle<SharedFunctionInfo> shared_info() const { return shared_info_; }
   FrameStateDescriptor* outer_state() const { return outer_state_; }
   bool HasClosure() const {
     return
@@ -1575,7 +1561,7 @@ class FrameStateDescriptor : public ZoneObject {
   const size_t stack_count_;
   const size_t total_conservative_frame_size_in_bytes_;
   StateValueList values_;
-  MaybeIndirectHandle<SharedFunctionInfo> const shared_info_;
+  MaybeHandle<SharedFunctionInfo> const shared_info_;
   FrameStateDescriptor* const outer_state_;
   uint32_t wasm_function_index_;
 };
@@ -1583,18 +1569,19 @@ class FrameStateDescriptor : public ZoneObject {
 #if V8_ENABLE_WEBASSEMBLY
 class JSToWasmFrameStateDescriptor : public FrameStateDescriptor {
  public:
-  JSToWasmFrameStateDescriptor(
-      Zone* zone, FrameStateType type, BytecodeOffset bailout_id,
-      OutputFrameStateCombine state_combine, uint16_t parameters_count,
-      size_t locals_count, size_t stack_count,
-      MaybeIndirectHandle<SharedFunctionInfo> shared_info,
-      FrameStateDescriptor* outer_state,
-      const wasm::CanonicalSig* wasm_signature);
+  JSToWasmFrameStateDescriptor(Zone* zone, FrameStateType type,
+                               BytecodeOffset bailout_id,
+                               OutputFrameStateCombine state_combine,
+                               uint16_t parameters_count, size_t locals_count,
+                               size_t stack_count,
+                               MaybeHandle<SharedFunctionInfo> shared_info,
+                               FrameStateDescriptor* outer_state,
+                               const wasm::FunctionSig* wasm_signature);
 
-  std::optional<wasm::ValueKind> return_kind() const { return return_kind_; }
+  base::Optional<wasm::ValueKind> return_kind() const { return return_kind_; }
 
  private:
-  std::optional<wasm::ValueKind> return_kind_;
+  base::Optional<wasm::ValueKind> return_kind_;
 };
 #endif  // V8_ENABLE_WEBASSEMBLY
 
@@ -1842,7 +1829,6 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   int representation_mask() const { return representation_mask_; }
   bool HasFPVirtualRegisters() const {
     constexpr int kFPRepMask =
-        RepresentationBit(MachineRepresentation::kFloat16) |
         RepresentationBit(MachineRepresentation::kFloat32) |
         RepresentationBit(MachineRepresentation::kFloat64) |
         RepresentationBit(MachineRepresentation::kSimd128) |

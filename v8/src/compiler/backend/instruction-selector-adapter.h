@@ -5,8 +5,6 @@
 #ifndef V8_COMPILER_BACKEND_INSTRUCTION_SELECTOR_ADAPTER_H_
 #define V8_COMPILER_BACKEND_INSTRUCTION_SELECTOR_ADAPTER_H_
 
-#include <optional>
-
 #include "src/codegen/machine-type.h"
 #include "src/compiler/backend/instruction.h"
 #include "src/compiler/common-operator.h"
@@ -19,7 +17,6 @@
 #include "src/compiler/turboshaft/operation-matcher.h"
 #include "src/compiler/turboshaft/operations.h"
 #include "src/compiler/turboshaft/opmasks.h"
-#include "src/compiler/turboshaft/representations.h"
 #include "src/compiler/turboshaft/use-map.h"
 
 
@@ -77,12 +74,8 @@ struct TurbofanAdapter {
       return node_->opcode() == IrOpcode::kRelocatableInt32Constant;
     }
     int32_t int32_value() const {
-      if (is_int32()) return OpParameter<int32_t>(node_->op());
-      DCHECK(is_relocatable_int32());
-      RelocatablePtrConstantInfo constant_info =
-          OpParameter<RelocatablePtrConstantInfo>(node_->op());
-      DCHECK_EQ(RelocatablePtrConstantInfo::kInt32, constant_info.type());
-      return static_cast<int32_t>(constant_info.value());
+      DCHECK(is_int32() || is_relocatable_int32());
+      return OpParameter<int32_t>(node_->op());
     }
     bool is_int64() const {
       return node_->opcode() == IrOpcode::kInt64Constant;
@@ -91,12 +84,8 @@ struct TurbofanAdapter {
       return node_->opcode() == IrOpcode::kRelocatableInt64Constant;
     }
     int64_t int64_value() const {
-      if (is_int64()) return OpParameter<int64_t>(node_->op());
-      DCHECK(is_relocatable_int64());
-      RelocatablePtrConstantInfo constant_info =
-          OpParameter<RelocatablePtrConstantInfo>(node_->op());
-      DCHECK_EQ(RelocatablePtrConstantInfo::kInt64, constant_info.type());
-      return constant_info.value();
+      DCHECK(is_int64() || is_relocatable_int64());
+      return OpParameter<int64_t>(node_->op());
     }
     bool is_heap_object() const {
       return node_->opcode() == IrOpcode::kHeapConstant;
@@ -104,27 +93,27 @@ struct TurbofanAdapter {
     bool is_compressed_heap_object() const {
       return node_->opcode() == IrOpcode::kCompressedHeapConstant;
     }
-    IndirectHandle<HeapObject> heap_object_value() const {
+    Handle<HeapObject> heap_object_value() const {
       DCHECK(is_heap_object() || is_compressed_heap_object());
-      return OpParameter<IndirectHandle<HeapObject>>(node_->op());
+      return OpParameter<Handle<HeapObject>>(node_->op());
     }
     bool is_number() const {
       return node_->opcode() == IrOpcode::kNumberConstant;
     }
-    bool is_number_zero() const {
-      if (!is_number()) return false;
-      return base::bit_cast<uint64_t>(OpParameter<double>(node_->op())) == 0;
+    double number_value() const {
+      DCHECK(is_number());
+      return OpParameter<double>(node_->op());
     }
     bool is_float() const {
       return node_->opcode() == IrOpcode::kFloat32Constant ||
              node_->opcode() == IrOpcode::kFloat64Constant;
     }
-    bool is_float_zero() const {
-      if (!is_float()) return false;
+    double float_value() const {
+      DCHECK(is_float());
       if (node_->opcode() == IrOpcode::kFloat32Constant) {
-        return base::bit_cast<uint32_t>(OpParameter<float>(node_->op())) == 0;
+        return OpParameter<float>(node_->op());
       } else {
-        return base::bit_cast<uint64_t>(OpParameter<double>(node_->op())) == 0;
+        return OpParameter<double>(node_->op());
       }
     }
 
@@ -261,14 +250,14 @@ struct TurbofanAdapter {
           UNREACHABLE();
       }
     }
-    std::optional<AtomicMemoryOrder> memory_order() const {
+    base::Optional<AtomicMemoryOrder> memory_order() const {
       switch (node_->opcode()) {
         case IrOpcode::kStore:
         case IrOpcode::kProtectedStore:
         case IrOpcode::kStoreTrapOnNull:
         case IrOpcode::kStoreIndirectPointer:
         case IrOpcode::kUnalignedStore:
-          return std::nullopt;
+          return base::nullopt;
         case IrOpcode::kWord32AtomicStore:
         case IrOpcode::kWord64AtomicStore:
           return AtomicStoreParametersOf(node_->op()).order();
@@ -713,24 +702,24 @@ struct TurboshaftAdapter : public turboshaft::OperationMatcher {
     bool is_compressed_heap_object() const {
       return op_->kind == Kind::kCompressedHeapObject;
     }
-    IndirectHandle<HeapObject> heap_object_value() const {
+    Handle<HeapObject> heap_object_value() const {
       DCHECK(is_heap_object() || is_compressed_heap_object());
       return op_->handle();
     }
     bool is_number() const { return op_->kind == Kind::kNumber; }
-    bool is_number_zero() const {
-      if (!is_number()) return false;
-      return op_->number().get_bits() == 0;
+    double number_value() const {
+      DCHECK(is_number());
+      return op_->number();
     }
     bool is_float() const {
       return op_->kind == Kind::kFloat32 || op_->kind == Kind::kFloat64;
     }
-    bool is_float_zero() const {
-      if (!is_float()) return false;
+    double float_value() const {
+      DCHECK(is_float());
       if (op_->kind == Kind::kFloat32) {
-        return op_->float32().get_bits() == 0;
+        return op_->float32();
       } else {
-        return op_->float64().get_bits() == 0;
+        return op_->float64();
       }
     }
 
@@ -869,14 +858,6 @@ struct TurboshaftAdapter : public turboshaft::OperationMatcher {
       DCHECK_NOT_NULL(load_);
       return load_->machine_type();
     }
-    turboshaft::MemoryRepresentation ts_loaded_rep() const {
-      DCHECK_NOT_NULL(load_);
-      return load_->loaded_rep;
-    }
-    turboshaft::RegisterRepresentation ts_result_rep() const {
-      DCHECK_NOT_NULL(load_);
-      return load_->result_rep;
-    }
     bool is_protected(bool* traps_on_null) const {
       if (kind().with_trap_handler) {
         if (load_) {
@@ -995,13 +976,10 @@ struct TurboshaftAdapter : public turboshaft::OperationMatcher {
       return {op_->stored_rep.ToMachineType().representation(),
               op_->write_barrier};
     }
-    turboshaft::MemoryRepresentation ts_stored_rep() const {
-      return op_->stored_rep;
-    }
-    std::optional<AtomicMemoryOrder> memory_order() const {
+    base::Optional<AtomicMemoryOrder> memory_order() const {
       // TODO(nicohartmann@): Currently we don't support memory orders.
       if (op_->kind.is_atomic) return AtomicMemoryOrder::kSeqCst;
-      return std::nullopt;
+      return base::nullopt;
     }
     MemoryAccessKind access_kind() const {
       return op_->kind.with_trap_handler ? MemoryAccessKind::kProtected
@@ -1268,23 +1246,6 @@ struct TurboshaftAdapter : public turboshaft::OperationMatcher {
   }
   bool IsLoadOrLoadImmutable(node_t node) const {
     return graph_->Get(node).opcode == turboshaft::Opcode::kLoad;
-  }
-  bool IsProtectedLoad(node_t node) const {
-#if V8_ENABLE_WEBASSEMBLY
-    if (graph_->Get(node).opcode == turboshaft::Opcode::kSimd128LoadTransform) {
-      return true;
-    }
-#if V8_ENABLE_WASM_SIMD256_REVEC
-    if (graph_->Get(node).opcode == turboshaft::Opcode::kSimd256LoadTransform) {
-      return true;
-    }
-#endif  // V8_ENABLE_WASM_SIMD256_REVEC
-#endif  // V8_ENABLE_WEBASSEMBLY
-
-    if (!IsLoadOrLoadImmutable(node)) return false;
-
-    bool traps_on_null;
-    return LoadView(graph_, node).is_protected(&traps_on_null);
   }
 
   int value_input_count(node_t node) const {

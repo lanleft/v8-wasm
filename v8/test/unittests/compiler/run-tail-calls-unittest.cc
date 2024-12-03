@@ -99,7 +99,7 @@ CallDescriptor* CreateDescriptorForStackArguments(Zone* zone, int param_slots) {
       MachineType::AnyTagged(),         // target MachineType
       LinkageLocation::ForAnyRegister(
           MachineType::AnyTagged()),  // target location
-      locations.Get(),                // location_sig
+      locations.Build(),              // location_sig
       param_slots,                    // stack parameter slots
       Operator::kNoProperties,        // properties
       kNoCalleeSaved,                 // callee-saved registers

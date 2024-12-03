@@ -17,7 +17,10 @@
 #include "src/wasm/wasm-opcodes.h"
 #include "src/wasm/wasm-result.h"
 
-namespace v8::internal::wasm::testing {
+namespace v8 {
+namespace internal {
+namespace wasm {
+namespace testing {
 
 MaybeHandle<WasmModuleObject> CompileForTesting(Isolate* isolate,
                                                 ErrorThrower* thrower,
@@ -65,9 +68,7 @@ base::OwnedVector<Handle<Object>> MakeDefaultArguments(Isolate* isolate,
       case kRtt:
       case kI8:
       case kI16:
-      case kF16:
       case kVoid:
-      case kTop:
       case kBottom:
         UNREACHABLE();
     }
@@ -155,6 +156,11 @@ int32_t CallWasmFunctionForTesting(Isolate* isolate,
   return -1;
 }
 
-void SetupIsolateForWasmModule(Isolate* isolate) { WasmJs::Install(isolate); }
+void SetupIsolateForWasmModule(Isolate* isolate) {
+  WasmJs::Install(isolate, true);
+}
 
-}  // namespace v8::internal::wasm::testing
+}  // namespace testing
+}  // namespace wasm
+}  // namespace internal
+}  // namespace v8

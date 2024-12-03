@@ -24,8 +24,7 @@ V8_INLINE Address ReadCodeEntrypointViaCodePointerField(Address field_address,
   // technically we should use memory_order_consume here.
   auto location = reinterpret_cast<CodePointerHandle*>(field_address);
   CodePointerHandle handle = base::AsAtomic32::Relaxed_Load(location);
-  return IsolateGroup::current()->code_pointer_table()->GetEntrypoint(handle,
-                                                                      tag);
+  return GetProcessWideCodePointerTable()->GetEntrypoint(handle, tag);
 #else
   UNREACHABLE();
 #endif  // V8_ENABLE_SANDBOX
@@ -38,8 +37,7 @@ V8_INLINE void WriteCodeEntrypointViaCodePointerField(Address field_address,
   // See comment above for why this is a Relaxed_Load.
   auto location = reinterpret_cast<CodePointerHandle*>(field_address);
   CodePointerHandle handle = base::AsAtomic32::Relaxed_Load(location);
-  IsolateGroup::current()->code_pointer_table()->SetEntrypoint(handle, value,
-                                                               tag);
+  GetProcessWideCodePointerTable()->SetEntrypoint(handle, value, tag);
 #else
   UNREACHABLE();
 #endif  // V8_ENABLE_SANDBOX

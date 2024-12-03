@@ -6,8 +6,8 @@
 
 #include "src/compiler/common-operator.h"
 #include "src/compiler/js-heap-broker.h"
-#include "src/compiler/turbofan-types.h"
 #include "src/compiler/type-cache.h"
+#include "src/compiler/types.h"
 #include "src/objects/oddball.h"
 
 namespace v8 {
@@ -1259,7 +1259,6 @@ Type JSType(Type type) {
 }  // namespace
 
 Type OperationTyper::SameValue(Type lhs, Type rhs) {
-  if (lhs.IsNone() || rhs.IsNone()) return Type::None();
   if (!JSType(lhs).Maybe(JSType(rhs))) return singleton_false();
   if (lhs.Is(Type::NaN())) {
     if (rhs.Is(Type::NaN())) return singleton_true();

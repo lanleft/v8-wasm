@@ -7,8 +7,6 @@
 
 #include <stdint.h>
 
-#include "src/base/logging.h"
-
 // DataView operations that are handled as well-known imports.
 #define DATAVIEW_OP_LIST(V) \
   V(BigInt64)               \
@@ -36,12 +34,10 @@ constexpr const char* ToString(DataViewOp op) {
     return "DataView.prototype.get" #Name; \
   case DataViewOp::kSet##Name:             \
     return "DataView.prototype.set" #Name;
-  DATAVIEW_OP_LIST(V)
+    DATAVIEW_OP_LIST(V)
 #undef V
-  case DataViewOp::kByteLength:
-    return "get DataView.prototype.byteLength";
-  default:
-    UNREACHABLE();
+    case DataViewOp::kByteLength:
+      return "get DataView.prototype.byteLength";
   }
 }
 

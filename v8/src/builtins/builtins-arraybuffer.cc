@@ -236,12 +236,14 @@ static Tagged<Object> SliceHelper(BuiltinArguments args, Isolate* isolate,
   // * Let new be ? Construct(ctor, newLen).
   Handle<JSReceiver> new_;
   {
-    constexpr int argc = 1;
-    std::array<Handle<Object>, argc> argv = {new_len_obj};
+    const int argc = 1;
+
+    base::ScopedVector<Handle<Object>> argv(argc);
+    argv[0] = new_len_obj;
 
     Handle<Object> new_obj;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-        isolate, new_obj, Execution::New(isolate, ctor, argc, argv.data()));
+        isolate, new_obj, Execution::New(isolate, ctor, argc, argv.begin()));
 
     new_ = Cast<JSReceiver>(new_obj);
   }
@@ -439,10 +441,6 @@ static Tagged<Object> ResizeHelper(BuiltinArguments args, Isolate* isolate,
         Protectors::InvalidateArrayBufferDetaching(isolate);
       }
     }
-
-    isolate->heap()->ResizeArrayBufferExtension(
-        array_buffer->extension(),
-        static_cast<int64_t>(new_byte_length) - array_buffer->byte_length());
 
     // [RAB] Set O.[[ArrayBufferByteLength]] to newLength.
     array_buffer->set_byte_length(new_byte_length);

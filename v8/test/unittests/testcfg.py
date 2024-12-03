@@ -12,7 +12,6 @@ from testrunner.objects import testcase
 
 ADDITIONAL_VARIANTS = set([
     "maglev",
-    "no_memory_protection_keys",
     "minor_ms",
     "stress_maglev",
 ])

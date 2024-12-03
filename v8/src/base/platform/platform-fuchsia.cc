@@ -9,8 +9,6 @@
 #include <lib/zx/vmar.h>
 #include <lib/zx/vmo.h>
 
-#include <optional>
-
 #include "src/base/bits.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform-posix-time.h"
@@ -321,13 +319,10 @@ bool OS::DecommitPages(void* address, size_t size) {
 }
 
 // static
-bool OS::SealPages(void* address, size_t size) { return false; }
-
-// static
 bool OS::CanReserveAddressSpace() { return true; }
 
 // static
-std::optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
+Optional<AddressSpaceReservation> OS::CreateAddressSpaceReservation(
     void* hint, size_t size, size_t alignment,
     MemoryPermission max_permission) {
   DCHECK_EQ(0, reinterpret_cast<Address>(hint) % alignment);
@@ -405,8 +400,7 @@ std::optional<OS::MemoryRange> OS::GetFirstFreeMemoryRangeWithin(
   return std::nullopt;
 }
 
-std::optional<AddressSpaceReservation>
-AddressSpaceReservation::CreateSubReservation(
+Optional<AddressSpaceReservation> AddressSpaceReservation::CreateSubReservation(
     void* address, size_t size, OS::MemoryPermission max_permission) {
   DCHECK(Contains(address, size));
 

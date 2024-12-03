@@ -296,9 +296,3 @@ Atomics.waitAsync = function() {
 
 // Mock serializer API with no-ops.
 d8.serializer = {'serialize': (x) => x, 'deserialize': (x) => x}
-
-// Mock profiler API with no-ops.
-d8.profiler = {'setOnProfileEndListener': (x) => x, 'triggerSample': (x) => x}
-
-// Mock logging API with no-ops.
-d8.log = {'getAndStop': (x) => x}

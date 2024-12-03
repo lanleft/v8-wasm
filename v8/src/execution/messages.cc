@@ -77,7 +77,9 @@ void MessageHandler::DefaultMessageReport(Isolate* isolate,
 
 Handle<JSMessageObject> MessageHandler::MakeMessageObject(
     Isolate* isolate, MessageTemplate message, const MessageLocation* location,
-    DirectHandle<Object> argument, DirectHandle<StackTraceInfo> stack_trace) {
+    DirectHandle<Object> argument, DirectHandle<FixedArray> stack_frames) {
+  Factory* factory = isolate->factory();
+
   int start = -1;
   int end = -1;
   int bytecode_offset = -1;
@@ -91,14 +93,21 @@ Handle<JSMessageObject> MessageHandler::MakeMessageObject(
     shared_info = location->shared();
   }
 
-  return isolate->factory()->NewJSMessageObject(message, argument, start, end,
-                                                shared_info, bytecode_offset,
-                                                script_handle, stack_trace);
+  DirectHandle<Object> stack_frames_handle =
+      stack_frames.is_null() ? Cast<Object>(factory->undefined_value())
+                             : Cast<Object>(stack_frames);
+
+  Handle<JSMessageObject> message_obj = factory->NewJSMessageObject(
+      message, argument, start, end, shared_info, bytecode_offset,
+      script_handle, stack_frames_handle);
+
+  return message_obj;
 }
 
 void MessageHandler::ReportMessage(Isolate* isolate, const MessageLocation* loc,
                                    DirectHandle<JSMessageObject> message) {
-  v8::Local<v8::Message> api_message_obj = v8::Utils::MessageToLocal(message);
+  v8::Local<v8::Message> api_message_obj =
+      v8::Utils::MessageToLocal(message, isolate);
 
   if (api_message_obj->ErrorLevel() != v8::Isolate::kMessageError) {
     ReportMessageNoExceptions(isolate, loc, message, v8::Local<v8::Value>());
@@ -150,7 +159,8 @@ void MessageHandler::ReportMessage(Isolate* isolate, const MessageLocation* loc,
 void MessageHandler::ReportMessageNoExceptions(
     Isolate* isolate, const MessageLocation* loc, DirectHandle<Object> message,
     v8::Local<v8::Value> api_exception_obj) {
-  v8::Local<v8::Message> api_message_obj = v8::Utils::MessageToLocal(message);
+  v8::Local<v8::Message> api_message_obj =
+      v8::Utils::MessageToLocal(message, isolate);
   int error_level = api_message_obj->ErrorLevel();
 
   DirectHandle<ArrayList> global_listeners =
@@ -176,9 +186,10 @@ void MessageHandler::ReportMessageNoExceptions(
         RCS_SCOPE(isolate, RuntimeCallCounterId::kMessageListenerCallback);
         // Do not allow exceptions to propagate.
         v8::TryCatch try_catch(reinterpret_cast<v8::Isolate*>(isolate));
-        callback(api_message_obj, IsUndefined(*callback_data, isolate)
-                                      ? api_exception_obj
-                                      : v8::Utils::ToLocal(callback_data));
+        callback(api_message_obj,
+                 IsUndefined(*callback_data, isolate)
+                     ? api_exception_obj
+                     : v8::Utils::ToLocal(callback_data, isolate));
       }
     }
   }
@@ -329,8 +340,8 @@ MaybeHandle<Object> ErrorUtils::FormatStackTrace(
         ASSIGN_RETURN_ON_EXCEPTION(isolate, sites,
                                    GetStackFrames(isolate, elems));
 
-        constexpr int argc = 2;
-        std::array<Handle<Object>, argc> argv;
+        const int argc = 2;
+        base::ScopedVector<Handle<Object>> argv(argc);
         if (V8_UNLIKELY(IsJSGlobalObject(*error))) {
           // Pass global proxy instead of global object.
           argv[0] =
@@ -345,7 +356,8 @@ MaybeHandle<Object> ErrorUtils::FormatStackTrace(
         ASSIGN_RETURN_ON_EXCEPTION(
             isolate, result,
             Execution::Call(isolate, prepare_stack_trace, global_error, argc,
-                            argv.data()));
+                            argv.begin()));
+
         return result;
       }
     }
@@ -359,8 +371,7 @@ MaybeHandle<Object> ErrorUtils::FormatStackTrace(
   for (int i = 0; i < elems->length(); ++i) {
     builder.AppendCStringLiteral("\n    at ");
 
-    DirectHandle<CallSiteInfo> frame(Cast<CallSiteInfo>(elems->get(i)),
-                                     isolate);
+    Handle<CallSiteInfo> frame(Cast<CallSiteInfo>(elems->get(i)), isolate);
 
     v8::TryCatch try_catch(reinterpret_cast<v8::Isolate*>(isolate));
     SerializeCallSiteInfo(isolate, frame, &builder);
@@ -749,75 +760,6 @@ Handle<JSObject> ErrorUtils::MakeGenericError(
       .ToHandleChecked();
 }
 
-// static
-Handle<JSObject> ErrorUtils::ShadowRealmConstructTypeErrorCopy(
-    Isolate* isolate, Handle<Object> original, MessageTemplate index,
-    base::Vector<const DirectHandle<Object>> args) {
-  if (v8_flags.clear_exceptions_on_js_entry) {
-    // This function used to be implemented in JavaScript, and JSEntry
-    // clears any exceptions - so whenever we'd call this from C++,
-    // exceptions would be cleared. Preserve this behavior.
-    isolate->clear_exception();
-    isolate->clear_pending_message();
-  }
-  DirectHandle<String> msg = MessageFormatter::Format(isolate, index, args);
-  Handle<Object> options = isolate->factory()->undefined_value();
-
-  Handle<JSObject> maybe_error_object;
-  Handle<Object> error_stack;
-  StackTraceCollection collection = StackTraceCollection::kEnabled;
-  if (IsJSObject(*original)) {
-    maybe_error_object = Cast<JSObject>(original);
-    if (!ErrorUtils::GetFormattedStack(isolate, maybe_error_object)
-             .ToHandle(&error_stack)) {
-      DCHECK(isolate->has_exception());
-      DirectHandle<Object> exception = handle(isolate->exception(), isolate);
-      isolate->clear_exception();
-      // Return a new side-effect-free TypeError to be loud about inner error.
-      DirectHandle<String> string =
-          Object::NoSideEffectsToString(isolate, exception);
-      return isolate->factory()->NewTypeError(
-          MessageTemplate::kShadowRealmErrorStackThrows, string);
-    } else if (IsNullOrUndefined(*error_stack)) {
-      // If the error stack property is null or undefined, create a new error.
-      collection = StackTraceCollection::kEnabled;
-    } else if (IsPrimitive(*error_stack)) {
-      // If the error stack property is found (must be a formatted string, not
-      // an unformatted FixedArray), set collection to disabled and reuse the
-      // existing stack. If the `Error.prepareStackTrace` returned a primitive,
-      // use it as the stack as well.
-      collection = StackTraceCollection::kDisabled;
-    } else {
-      // The error stack property is an arbitrary value. Return a new TypeError
-      // about the non-string value.
-      DirectHandle<String> string =
-          Object::NoSideEffectsToString(isolate, error_stack);
-      return isolate->factory()->NewTypeError(
-          MessageTemplate::kShadowRealmErrorStackNonString, string);
-    }
-  }
-
-  Handle<Object> no_caller;
-  Handle<JSFunction> constructor = isolate->type_error_function();
-  Handle<JSObject> new_error =
-      ErrorUtils::Construct(isolate, constructor, constructor, msg, options,
-                            FrameSkipMode::SKIP_NONE, no_caller, collection)
-          .ToHandleChecked();
-
-  // If collection is disabled, reuse the existing stack string from the
-  // original error object.
-  if (collection == StackTraceCollection::kDisabled) {
-    // Error stack symbol is a private symbol and set it on an error object
-    // created from built-in error constructor should not throw.
-    Object::SetProperty(
-        isolate, new_error, isolate->factory()->error_stack_symbol(),
-        error_stack, StoreOrigin::kMaybeKeyed, Just(ShouldThrow::kThrowOnError))
-        .Check();
-  }
-
-  return new_error;
-}
-
 namespace {
 
 bool ComputeLocation(Isolate* isolate, MessageLocation* target) {
@@ -1143,6 +1085,7 @@ MaybeHandle<Object> ErrorUtils::GetFormattedStack(
     if (error_stack_data->HasFormattedStack()) {
       return handle(error_stack_data->formatted_stack(), isolate);
     }
+    ErrorStackData::EnsureStackFrameInfos(isolate, error_stack_data);
 
     Handle<JSObject> error_object =
         lookup.error_stack_symbol_holder.ToHandleChecked();
@@ -1188,6 +1131,7 @@ void ErrorUtils::SetFormattedStack(Isolate* isolate,
 
   if (IsErrorStackData(*lookup.error_stack)) {
     auto error_stack_data = Cast<ErrorStackData>(lookup.error_stack);
+    ErrorStackData::EnsureStackFrameInfos(isolate, error_stack_data);
     error_stack_data->set_formatted_stack(*formatted_stack);
   } else {
     Object::SetProperty(isolate, error_object,

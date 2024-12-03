@@ -4,8 +4,6 @@
 
 #include "src/compiler/turboshaft/build-graph-phase.h"
 
-#include <optional>
-
 #include "src/compiler/js-heap-broker.h"
 #include "src/compiler/node-origin-table.h"
 #include "src/compiler/phase.h"
@@ -15,19 +13,12 @@
 
 namespace v8::internal::compiler::turboshaft {
 
-std::optional<BailoutReason> BuildGraphPhase::Run(
+base::Optional<BailoutReason> BuildGraphPhase::Run(
     PipelineData* data, Zone* temp_zone,
     compiler::TFPipelineData* turbofan_data, Linkage* linkage) {
   Schedule* schedule = turbofan_data->schedule();
   turbofan_data->reset_schedule();
   DCHECK_NOT_NULL(schedule);
-
-  JsWasmCallsSidetable* js_wasm_calls_sidetable =
-#if V8_ENABLE_WEBASSEMBLY
-      turbofan_data->js_wasm_calls_sidetable();
-#else
-      nullptr;
-#endif  // V8_ENABLE_WEBASSEMBLY
 
   UnparkedScopeIfNeeded scope(data->broker());
 
@@ -39,8 +30,8 @@ std::optional<BailoutReason> BuildGraphPhase::Run(
   data->InitializeGraphComponentWithGraphZone(turbofan_data->ReleaseGraphZone(),
                                               source_positions, node_origins);
 
-  if (auto bailout = turboshaft::BuildGraph(data, schedule, temp_zone, linkage,
-                                            js_wasm_calls_sidetable)) {
+  if (auto bailout =
+          turboshaft::BuildGraph(data, schedule, temp_zone, linkage)) {
     return bailout;
   }
   return {};
