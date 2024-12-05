@@ -1942,6 +1942,8 @@ void WasmDispatchTable::Set(int index, Tagged<Object> ref, Address call_target,
     return;
   }
 
+  printf("\033[1;31mWasmDispatchTable::Set\033[0m\n");
+
   SBXCHECK_LT(index, length());
   DCHECK(IsWasmApiFunctionRef(ref) || IsWasmTrustedInstanceData(ref));
   DCHECK_EQ(ref == Smi::zero(), call_target == kNullAddress);
