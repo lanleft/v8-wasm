@@ -4,7 +4,7 @@
 
 // Flags: --experimental-wasm-type-reflection
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 // Test casting null from one type to another using ref.test & ref.cast.
 (function RefCastFromNull() {

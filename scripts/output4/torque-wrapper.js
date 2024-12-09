@@ -4,7 +4,7 @@
 
 // Flags: --expose-gc
 //
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 // This test randomly generates WebAssembly signatures, creates WebAssembly
 // functions with the generated signature which randomly maps parameters to

@@ -6,7 +6,7 @@
 
 // ./out/release/d8 --test ./test/mjsunit/mjsunit.js ./test/mjsunit/wasm/gc-casts-exnref.js --experimental-wasm-exnref --no-wasm-inlining-call-indirect --allow-natives-syntax
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 let getExnRef = function() {
   let tag = new WebAssembly.Tag({parameters: []});

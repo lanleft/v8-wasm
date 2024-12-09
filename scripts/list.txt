@@ -1,1 +1,0 @@
-/home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output5/recognize-imports.js --experimental-wasm-stringref --allow-natives-syntax

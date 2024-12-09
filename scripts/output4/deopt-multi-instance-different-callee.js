@@ -5,7 +5,7 @@
 // Flags: --wasm-deopt --allow-natives-syntax --no-jit-fuzzing --liftoff
 // Flags: --turboshaft-wasm-instruction-selection-staged --turboshaft-wasm
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 const builder = new WasmModuleBuilder();
 let calleeSig = builder.addType(makeSig([], [kWasmI32]));

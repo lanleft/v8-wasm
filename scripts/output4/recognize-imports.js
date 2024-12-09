@@ -4,7 +4,7 @@
 
 // Flags: --experimental-wasm-stringref --allow-natives-syntax
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 function CheckStackTrace(thrower, reference, topmost_wasm_func) {
   let reference_exception;

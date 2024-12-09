@@ -53,6 +53,10 @@ By overwritting `raw_type` of global variable, we can get confuse input type of 
 setField(getPtr(fn), kWasmGlobalObjectRawTypeOffset, new_type);
 ```
 
+=> result: nothing happens
+- If we change internal pointer index before instantiation, so the program cannot import table because fail type checking.
+
+
 ## Day 3: WasmDispatchTable
 
 - issues: https://chromium-review.googlesource.com/c/v8/v8/+/5701137
@@ -91,3 +95,12 @@ table_v_ls.set(0xfffffff9, writer);
 Full script in [dispatch-table.js](dispatch-table.js)
 
 - So what is the purpose of `WasmDispatchTable`?
+
+
+## Day 4: WasmDispatchTable, table->uses, and WasmImportData
+
+- https://chromium-review.googlesource.com/c/v8/v8/+/6035506
+
+Example:
+  - [test-script](dispatch-table-uses.js)
+  

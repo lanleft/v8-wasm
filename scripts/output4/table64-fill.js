@@ -4,7 +4,7 @@
 
 // Flags: --experimental-wasm-memory64
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 function exportTable64Getter(builder, table, type) {
   const table64_get_sig = makeSig([kWasmI64], [type]);

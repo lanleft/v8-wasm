@@ -55,6 +55,9 @@ function setField(obj, offset, value) {
   memory.setUint32(obj + offset - kHeapObjectTag, value, true);
 }
 
+%DebugPrint(table_v_ll);
+%SystemBreak();
+
 setField(getPtr(table_v_ls), 0x10, 0xfffffffe); // table->current_length = (smi)-1
 setField(getPtr(table_v_ls), 0x14, 0xfffffffe); // table->current_length = (smi)-1
 

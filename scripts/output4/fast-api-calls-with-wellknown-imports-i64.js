@@ -7,7 +7,7 @@
 // Flags: --no-wasm-native-module-cache
 // Flags: --fast-api-allow-float-in-sim
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 function TestI64AsNumber(type1, v1, type2, v2, typeE, expected) {
   const fast_c_api = new d8.test.FastCAPI();

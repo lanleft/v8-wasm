@@ -4,7 +4,7 @@
 
 // Flags: --wasm-generic-wrapper --expose-gc
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 const debug = false;
 // Use consecutive values as parameters for easier debugging.

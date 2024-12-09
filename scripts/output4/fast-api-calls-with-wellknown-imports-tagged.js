@@ -5,7 +5,7 @@
 // Flags: --turbo-fast-api-calls --expose-fast-api --no-liftoff --wasm-fast-api
 // Flags: --turboshaft-wasm --wasm-lazy-compilation
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestTaggedParam() {
   const fast_c_api = new d8.test.FastCAPI();

@@ -6,7 +6,7 @@
 // Flags: --turboshaft-wasm --wasm-lazy-compilation
 // Flags: --fast-api-allow-float-in-sim
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 (function TestFastApiCallFromWasm() {
   const fast_c_api = new d8.test.FastCAPI();

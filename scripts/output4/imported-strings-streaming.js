@@ -4,7 +4,7 @@
 
 // Flags: --experimental-wasm-imported-strings --wasm-test-streaming
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 let bad_builder = new WasmModuleBuilder();
 let good_builder = new WasmModuleBuilder();

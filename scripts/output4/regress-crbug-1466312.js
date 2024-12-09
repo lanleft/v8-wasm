@@ -5,7 +5,7 @@
 // Flags: --experimental-wasm-stringref
 // /home/vult/Desktop/v8-wasm/v8/out/debug/d8 --test /home/vult/Desktop/v8-wasm/v8/test/mjsunit/mjsunit.js /home/vult/Desktop/v8-wasm/scripts/output4/regress-crbug-1466312.js --experimental-wasm-stringref --allow-natives-syntax
 
-d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
+d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
 function throw_js_eh222(r) {
   console.log("================ throw_js22222 object =================");
