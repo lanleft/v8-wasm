@@ -20,7 +20,9 @@ scripts/wasm-wrappers/core
 core
 v8/core
 *core*
-v8/
 
+v8/
+.cipd/
+.vscode/
 
 scripts/sandbox/core
