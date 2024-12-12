@@ -9,6 +9,7 @@
   - [Trusted Pointer Table (TPT)](./KB/TPT.md) and [Sandbox decode pointer](KB/sandbox-decode-pointer.md) - Used for referencing trusted heap objects
   - External Buffer Pointer Table - Stores pointers and sizes for external buffers
   - Code Pointer Table - Contains code object pointers and entrypoints
+  - [MemoryChunk header](KB/page-metadata.md)
 
 ## 2. Memory Layout Analysis
 - Map and understand the sandbox memory regions:

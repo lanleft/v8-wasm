@@ -24,5 +24,8 @@ v8/core
 v8/
 .cipd/
 .vscode/
+.gclient*
+
+compile_commands.json
 
 scripts/sandbox/core
