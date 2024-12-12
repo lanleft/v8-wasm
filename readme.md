@@ -16,7 +16,7 @@
 
 ## 1. Core Sandbox Components
 - Study the three main pointer tables outside the sandbox:
-  - Trusted Pointer Table (TPT) - Used for referencing trusted heap objects
+  - [Trusted Pointer Table (TPT)](./KB/tpt.md) - Used for referencing trusted heap objects
   - External Buffer Pointer Table - Stores pointers and sizes for external buffers
   - Code Pointer Table - Contains code object pointers and entrypoints
 
