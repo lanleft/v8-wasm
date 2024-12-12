@@ -27,5 +27,6 @@ v8/
 .gclient*
 
 compile_commands.json
+.env
 
 scripts/sandbox/core
