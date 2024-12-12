@@ -2,7 +2,7 @@
 
 # V8 Sandbox Research Tasks
 
-- [Debug setting and previous issues of V8 bypass sandbox](KB/debug-setting-and-previous-issues.md)
+- [Debug setting and previous issues of V8 bypass sandbox](overview/debug-setting-and-previous-issues.md)
 
 ## 1. Core Sandbox Components
 - Study the three main pointer tables outside the sandbox:
@@ -20,14 +20,17 @@
 
 ## 3. Key Attack Vectors
 
-### WebAssembly Table Object
-- Wasm instance objects
-- Wasm function objects
-- Memory limitations and boundaries
-- Function data handling
+### WebAssembly Related
+  - Wasm instance objects
+  - Wasm function objects
+  - Memory limitations and boundaries
+  - Function data handling
 
-### WebAssembly Exception Handling 
-- [Wasm type knowledge and previous issues](scripts/wasm-type.md)
+### Array/Buffer Objects
+  - JSArray internals
+  - ArrayBuffer implementation
+  - SharedArrayBuffer specifics
+  - DataView functionality
 
 
 ## 4. Previous Exploit Techniques
@@ -36,6 +39,8 @@
   - WebAssembly-based exploits
   - Global value manipulation
   - Mutable page metadata attacks
+  - [Wasm type knowledge and previous issues](scripts/wasm-type.md)
+  - Wasm Table Object
 
 ## 5. Security Mechanisms
 - Understand protection features:
