@@ -11,7 +11,9 @@
 
 ## Previous issues
 
-### [V8 Sandbox escape due to writable MemoryChunk header](https://issues.chromium.org/issues/40849120)
+### V8 Sandbox escape due to writable MemoryChunk header
+
+- Issue: https://issues.chromium.org/issues/40849120
 
 - Description: The MemoryChunk struct is located inside V8 sandbox and contains raw pointer or particular HeapObject (which necessary to find the ExternalPointerTable to use when accessing external object), it means that they are potential to be corrupted by attackers. 
 
