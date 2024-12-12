@@ -28,5 +28,6 @@ v8/
 
 compile_commands.json
 .env
+auto_commit.py
 
 scripts/sandbox/core
