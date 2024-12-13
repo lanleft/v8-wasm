@@ -38,17 +38,18 @@
 - Study documented sandbox escapes:
   - Function object corruption techniques
   - WebAssembly-based exploits
-  - Global value manipulation
+  - [Global value manipulation](scripts/sandbox/wasm-global-vars.md)
   - [Mutable page metadata attacks](KB/page-metadata.md)
   - [Wasm type knowledge and previous issues](scripts/wasm-type.md)
   - [WasmTableObject corrupted attacks](scripts/sandbox/wasm-table.md) and [purposes of `call_indirect` and `call_ref`](scripts/sandbox/studying-progress.md)
+  - [Race condition](scripts/sandbox/race-condition.md)
 
 ## 5. Security Mechanisms
 - Understand protection features:
-  - Pointer sandboxing
-  - Code pointer handling
-  - Trusted space isolation
-  - Memory corruption mitigations
+  - [Pointer sandboxing](KB/security-machanisms.md#poi)
+  - [Code pointer handling](KB/security-machanisms.md#code-pointer-handling)
+  - [Trusted space isolation](KB/security-machanisms.md#trusted-space-isolation)
+  - [Memory corruption mitigations](KB/security-machanisms.md#memory-corruption-mitigations)
 
 ## 6. Development Tools
 - Set up debugging environment:

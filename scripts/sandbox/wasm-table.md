@@ -4,6 +4,9 @@
 This document provides detailed information about `WasmTableObject`, including its structure, usage, and examples of previous issues and their patched solutions.
 
 ## Table of Contents
+
+<!-- toc -->
+ 
 - [Overview](#overview)
 - [Structure of WasmTableObject](#structure-of-wasmtableobject)
 - [Usage Examples](#usage-examples)
@@ -44,12 +47,23 @@ setField(t1, kWasmTableObjectTypeOffset, t0_type);
 
 ## Previous Issues and Solutions
 
-### Issue 1: Corruption of Table Types
-**Description:** Manipulating the `type` field of a `WasmTableObject` could lead to inconsistencies and potential vulnerabilities.
+## Issue 1:  Wasm Ref <-> Int parameter type confusion issue
+
+- Issue: https://issuetracker.google.com/issues/336507783
+
+### Issue 2: Import signature check bypass
+
+- Issue: https://issuetracker.google.com/issues/348793147
+
+**Description:** This is a direct variant of b/336507783, where we now modify the table signature and then pass it as an imported table. The signature is checked via wasm::InstanceBuilder::ProcessImportedTable(), where the corrupted in-sandbox signature allows the EquivalentTypes() check in https://source.chromium.org/chromium/chromium/src/+/main:v8/src/wasm/module-instantiate.cc;l=2086 to succeed. This results in the same signature confusion in call_indirect as seen in b/336507783.
+
 
 **Solution:** Implement strict type checks and validation during table manipulation.
 
 ### Issue 2: Bypassing Checks in WasmDispatchTable
+
+- Issue: https://issuetracker.google.com/issues/349502157
+
 **Description:** Using negative numbers to bypass `SBXCHECK_LT` in `WasmDispatchTable::Set` function.
 
 **Solution:** Ensure that index and length checks are robust and cannot be bypassed using negative values.
