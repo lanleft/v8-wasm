@@ -70,5 +70,6 @@
   - Changes to trusted data handling
   - New security measures
   - Recent CVEs and patches
+    + [SharedFunctionInfo parameter length]()
 
 

