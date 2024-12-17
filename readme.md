@@ -27,6 +27,7 @@
   - Memory limitations and boundaries
   - Function data handling
   - Instantiate importing type ([external tags](scripts/sandbox/wasm-tags.md), [global variables](scripts/sandbox/wasm-global-vars.md), etc.)
+  - [JavaScript Promise Integration (JSPI)](scripts/wasm-jspi.md)
 
 ### Array/Buffer Objects
   - JSArray internals
