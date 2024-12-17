@@ -383,3 +383,4 @@ boom(BigInt(Sandbox.targetPage) - 0x7n, 0xdeadbeefcafebaben);
 ## Conclusion
 The `WasmTableObject` is a crucial element in WebAssembly, providing dynamic function management capabilities. Addressing the outlined issues and implementing the proposed solutions can enhance the security and reliability of WebAssembly applications.
 
+**Most of issues are focusing on signature of wasm***

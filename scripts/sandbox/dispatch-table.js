@@ -1,5 +1,6 @@
 
 // Flags: --sandbox-testing --experimental-wasm-type-reflection
+// /home/vult/Desktop/v8-wasm/v8/out/debug/d8 /home/vult/Desktop/v8-wasm/scripts/sandbox/dispatch-table.js --sandbox-testing --experimental-wasm-type-reflection --allow-natives-syntax
 
 d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 

@@ -25,7 +25,7 @@ Race conditions typically involve:
 Here are some examples of race conditions in WebAssembly:
 
 ### Example 1: Concurrent Access without Synchronization
-```javascript
+```javascriptT
 let sharedData = 0;
 function incrementSharedData() {
   for (let i = 0; i < 1000; i++) {
