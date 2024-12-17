@@ -26,6 +26,7 @@
   - Wasm function objects
   - Memory limitations and boundaries
   - Function data handling
+  - Instantiate importing type ([external tags](scripts/sandbox/wasm-tags.md), [global variables](scripts/sandbox/wasm-global-vars.md), etc.)
 
 ### Array/Buffer Objects
   - JSArray internals
