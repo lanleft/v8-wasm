@@ -45,6 +45,9 @@
   - [Wasm type knowledge and previous issues](scripts/wasm-type.md)
   - [WasmTableObject corrupted attacks](scripts/sandbox/wasm-table.md) and [purposes of `call_indirect` and `call_ref`](scripts/sandbox/studying-progress.md)
   - [Race condition](scripts/sandbox/race-condition.md)
+- Study Wasm renderer RCE:
+  - [Previous wasm type confusion leads to RCE](wasm-type-confusion/)
+  - ...
 
 ## 5. Security Mechanisms
 - Understand protection features:
