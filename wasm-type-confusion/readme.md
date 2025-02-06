@@ -4,6 +4,21 @@
 
 <!-- toc -->
 
+- [Wasm Exception Type](#wasm-exception-type)
+  * [Use wasm_null for exnref](#use-wasm_null-for-exnref)
+  * [Type confusion due to DefaultReferenceValue() `undefined` default value for kNoExtern](#type-confusion-due-to-defaultreferencevalue-undefined-default-value-for-knoextern)
+  * [Type confusion in v8 wasm](#type-confusion-in-v8-wasm)
+- [Wasm Wrapper](#wasm-wrapper)
+  * [Use currect signature ndex fore tier-up of wasm-to-js wrapper](#use-currect-signature-ndex-fore-tier-up-of-wasm-to-js-wrapper)
+  * [Arbitrary WASM type confusion due to module confusion in wasm-to-js tier-up](#arbitrary-wasm-type-confusion-due-to-module-confusion-in-wasm-to-js-tier-up)
+- [Wasm Module](#wasm-module)
+  * [Type confusion due to improper WASM module size check in `AsyncStreamingDecoder`](#type-confusion-due-to-improper-wasm-module-size-check-in-asyncstreamingdecoder)
+- [Wasm Tag](#wasm-tag)
+  * [WASM type confusion due to imported tag signature subtyping](#wasm-type-confusion-due-to-imported-tag-signature-subtyping)
+- [JSPI](#jspi)
+  * [JSPI stack switching breaks lazy deoptimization guarantees, leading to type confusion](#jspi-stack-switching-breaks-lazy-deoptimization-guarantees-leading-to-type-confusion)
+
+<!-- tocstop -->
 
 ## Wasm Exception Type
 
