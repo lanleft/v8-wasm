@@ -62,7 +62,36 @@ The bug has multiple potential problems:
 Optimizing compilers (turbofan, turboshaft) may falsely optimize out code as unreachable, resulting in typer problems
 kNoExtern but undefined value may be confused into other types like kExternString
 
-[testcase]()
+[testcase](pocs/poc-372269618.js)
+
+### Type confusion due to DefaultReferenceValue() exnref wasm_null leakage
+
+- Issue: https://issues.chromium.org/issues/372285204
+
+- Summary: Simple variant of [Type confusion in v8 wasm](#type-confusion-in-v8-wasm)
+
+**Details**
+
+DefaultReferenceValue() does not handle exnref or nullexnref values, resulting in type confusion where WasmNull is set to exnref / nullexnref. This can further be retrieved back to JS-side through throw_ref.
+
+```c++
+namespace {
+i::Handle<i::HeapObject> DefaultReferenceValue(i::Isolate* isolate,
+                                               i::wasm::ValueType type) {
+  DCHECK(type.is_object_reference());
+  // Use undefined for JS type (externref) but null for wasm types as wasm does
+  // not know undefined.
+  if (type.heap_representation() == i::wasm::HeapType::kExtern ||
+      type.heap_representation() == i::wasm::HeapType::kNoExtern) {
+    return isolate->factory()->undefined_value();
+  }
+  return isolate->factory()->wasm_null();
+}
+```
+
+[testcase](pocs/poc-372285204.js)
+
+
 
 ### Type confusion in v8 wasm
 
