@@ -1,7 +1,5 @@
 
-/*
-    Flags: --experimental-wasm-exnref --allow-natives-syntax
-*/
+/// Flags: --experimental-wasm-exnref --allow-natives-syntax
 
 d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
@@ -23,4 +21,4 @@ kExprEnd,
 builder.addExport('main', 0);
 const instance = builder.instantiate();
 var wasm_null = instance.exports.main();
-%DebugPrint(wasm_null);
+wasm_null.a;

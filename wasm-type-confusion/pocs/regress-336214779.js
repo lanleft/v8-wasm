@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
-// Flags: --jit-fuzzing --allow-natives-syntax --experimental-wasm-exnref
-// Flags: --expose-gc
+/// Flags: --jit-fuzzing --allow-natives-syntax --experimental-wasm-exnref
+/// Flags: --expose-gc
 
 d8.file.execute("/home/vult/Desktop/v8-wasm/v8/test/mjsunit/wasm/wasm-module-builder.js");
 
