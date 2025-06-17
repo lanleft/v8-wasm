@@ -7,21 +7,23 @@
 - [Wasm Exception Type](#wasm-exception-type)
   * [Use wasm_null for exnref](#use-wasm_null-for-exnref)
   * [Type confusion due to DefaultReferenceValue() `undefined` default value for kNoExtern](#type-confusion-due-to-defaultreferencevalue-undefined-default-value-for-knoextern)
+  * [Type confusion due to DefaultReferenceValue() exnref wasm_null leakage](#type-confusion-due-to-defaultreferencevalue-exnref-wasm_null-leakage)
   * [Type confusion in v8 wasm](#type-confusion-in-v8-wasm)
 - [Wasm Wrapper](#wasm-wrapper)
   * [Use currect signature ndex fore tier-up of wasm-to-js wrapper](#use-currect-signature-ndex-fore-tier-up-of-wasm-to-js-wrapper)
   * [Arbitrary WASM type confusion due to module confusion in wasm-to-js tier-up](#arbitrary-wasm-type-confusion-due-to-module-confusion-in-wasm-to-js-tier-up)
 - [Wasm Module](#wasm-module)
   * [Type confusion due to improper WASM module size check in `AsyncStreamingDecoder`](#type-confusion-due-to-improper-wasm-module-size-check-in-asyncstreamingdecoder)
-  * [CVE-2024-2887 - Improper validation when decoding types in `TypeSectionDecoder`](#CVE-2024-2887-Improper-validation-when-decoding-types-in-TypeSectionDecoder)
+  * [Issue 330588502 - Improper validation when decoding types in `TypeSectionDecoder`](#issue-330588502---improper-validation-when-decoding-types-in-typesectiondecoder)
 - [Wasm Tag](#wasm-tag)
   * [WASM type confusion due to imported tag signature subtyping](#wasm-type-confusion-due-to-imported-tag-signature-subtyping)
 - [JSPI](#jspi)
   * [JSPI stack switching breaks lazy deoptimization guarantees, leading to type confusion](#jspi-stack-switching-breaks-lazy-deoptimization-guarantees-leading-to-type-confusion)
-- [Wasm CanonicalType](#Wasm-CanonicalType)
-  * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType](CVE-2024-6100-Type-confusion-between-canonicalType-and-HeapType-ValueType)
-  * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType](CVE-2024-8194-Another-confusion-between-CanonicalType-and-ValueType)
-  * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](CVE-2024-9859-Confusion-between-ValueType-and-CanonicalType-in-HE)
+- [Wasm CanonicalType](#wasm-canonicaltype)
+- [CVE-2024-2887](#cve-2024-2887)
+  * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType](#cve-2024-6100---type-confusion-between-canonicaltype-and-heaptypevaluetype)
+  * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType](#cve-2024-8194---another-confusion-between-canonicaltype-and-valuetype)
+  * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](#cve-2024-9859---confusion-between-valuetype-and-canonicaltype-in-he)
 
 <!-- tocstop -->
 
@@ -163,7 +165,7 @@ Improper signature when re-importing an imported and then exported from another 
 
 [testcase]()
 
-### CVE-2024-2887 - Improper validation when decoding types in `TypeSectionDecoder` 
+### Issue 330588502 - Improper validation when decoding types in `TypeSectionDecoder` 
 
 Its root cause being improper implementation, which forget to boundcheck number of types when accessing standalone type (which is not recursive type)
 
@@ -188,6 +190,84 @@ Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5378419
 [testcase](pocs/poc-365376497.js)
 
 ## Wasm CanonicalType
+
+## CVE-2024-2887
+
+The root cause lays on `DecodeTypeSection` function, which only checks `kV8MaxWasmTypes` for recursive group size [1], but not for standalone type [3]. Combining with enum heap type starts from `kV8MaxWasmTypes` [4], so we could create canonical type that equals to normal heap type and makes type confusion.
+
+```c++
+
+  void DecodeTypeSection() {
+    TypeCanonicalizer* type_canon = GetTypeCanonicalizer();
+    uint32_t types_count = consume_count("types count", kV8MaxWasmTypes); // [1]
+
+    for (uint32_t i = 0; ok() && i < types_count; ++i) {
+      TRACE("DecodeType[%d] module+%d\n", i, static_cast<int>(pc_ - start_));
+      uint8_t kind = read_u8<Decoder::FullValidationTag>(pc(), "type kind");
+      size_t initial_size = module_->types.size();
+      if (kind == kWasmRecursiveTypeGroupCode) {
+        module_->is_wasm_gc = true;
+        uint32_t rec_group_offset = pc_offset();
+        consume_bytes(1, "rec. group definition", tracer_);
+        if (tracer_) tracer_->NextLine();
+        uint32_t group_size =
+            consume_count("recursive group size", kV8MaxWasmTypes);
+        if (tracer_) tracer_->RecGroupOffset(rec_group_offset, group_size);
+        if (initial_size + group_size > kV8MaxWasmTypes) {  // [2]
+          errorf(pc(), "Type definition count exceeds maximum %zu",
+                 kV8MaxWasmTypes);
+          return;
+        }
+//....
+        if (failed()) return;
+        type_canon->AddRecursiveGroup(module_.get(), group_size);
+        if (tracer_) {
+          tracer_->Description("end of rec. group");
+          tracer_->NextLine();
+        }
+      } else {
+        if (tracer_) tracer_->TypeOffset(pc_offset());
+        // Similarly to above, we need to resize types for a group of size 1.
+        module_->types.resize(initial_size + 1);
+        module_->isorecursive_canonical_type_ids.resize(initial_size + 1); // [3]
+        TypeDefinition type = consume_subtype_definition();
+        if (ok()) {
+          module_->types[initial_size] = type;
+          type_canon->AddRecursiveSingletonGroup(module_.get());
+        }
+      }
+    }
+  }
+
+class HeapType {
+ public:
+  enum Representation : uint32_t {
+    kFunc = kV8MaxWasmTypes,  // shorthand: c // [4]
+    kEq,                      // shorthand: q
+    kI31,                     // shorthand: j
+    kStruct,                  // shorthand: o
+    kArray,                   // shorthand: g
+    kAny,                     //
+    kExtern,                  // shorthand: a.
+    kExternString,            // Internal type for optimization purposes.
+                              // Subtype of extern.
+                              // Used by the js-builtin-strings proposal.
+    kExn,                     //
+    kString,                  // shorthand: w.
+    kStringViewWtf8,          // shorthand: x.
+    kStringViewWtf16,         // shorthand: y.
+    kStringViewIter,          // shorthand: z.
+    kNone,                    //
+    //....
+  };
+  // ...
+};
+
+
+
+```
+
+[POC](pocs/CVE-2024-2887.js)
 
 ### CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType
 In wasm proposal MVP, when check type equivalency, recursive type must be convert to iso-recursive type first. To represent equivalency between two types, WasmGC allow canonicalize type to support type comparison between recursive groups in different modules. 

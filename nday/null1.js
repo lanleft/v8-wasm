@@ -15,6 +15,6 @@ let {f} = instance.exports;
 try {
   f();
 } catch (e) {
-  %DebugPrint(e);
+  // %DebugPrint(e);
   e.a;
 }
