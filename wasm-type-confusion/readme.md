@@ -20,8 +20,9 @@
 - [JSPI](#jspi)
   * [JSPI stack switching breaks lazy deoptimization guarantees, leading to type confusion](#jspi-stack-switching-breaks-lazy-deoptimization-guarantees-leading-to-type-confusion)
 - [Wasm CanonicalType](#wasm-canonicaltype)
-- [CVE-2024-2887](#cve-2024-2887)
+  * [CVE-2024-2887](#cve-2024-2887)
   * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType](#cve-2024-6100---type-confusion-between-canonicaltype-and-heaptypevaluetype)
+  * [Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?](#comparing-cve-2024-6100-and-cve-2024-2887-why-6100-was-considered-as-the-variant-of-2887)
   * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType](#cve-2024-8194---another-confusion-between-canonicaltype-and-valuetype)
   * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](#cve-2024-9859---confusion-between-valuetype-and-canonicaltype-in-he)
 
