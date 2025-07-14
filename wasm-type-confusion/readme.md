@@ -192,7 +192,7 @@ Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5378419
 
 ## Wasm CanonicalType
 
-### CVE-2024-2887
+### CVE-2024-2887: Maximum Canonicaltype leads to type confusion 
 
 The root cause lays on `DecodeTypeSection` function, which only checks `kV8MaxWasmTypes` for recursive group size [1], but not for standalone type [3]. Combining with enum heap type starts from `kV8MaxWasmTypes` [4], so we could create canonical type that equals to normal heap type and makes type confusion.
 
@@ -321,8 +321,9 @@ Reported issue: https://issues.chromium.org/issues/344608204
 Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5604265
 
 **Types in WasmGC**
+ - Reading [MVP](https://github.com/WebAssembly/gc/blob/main/proposals/gc/MVP.md)
 
-### Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?
+#### Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?
 
 - 6100: confusion between `canonical type index` vs. `module type index`
 
@@ -406,6 +407,7 @@ let instance2 = builder.instantiate();
 The cidx of `0x100003` is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
 
 Reported issue: https://issues.chromium.org/issues/360533914
+[POC](pocs/CVE-2024-8194.js)
 
 ### CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE
 When encoding a JS value in a wasm exception, it should be canonicalized first, since JSToWasmObject takes CanonicalValueType as an argument:
@@ -413,9 +415,25 @@ When encoding a JS value in a wasm exception, it should be canonicalized first, 
 MaybeHandle<Object> JSToWasmObject(Isolate* isolate, Handle<Object> value,
                                    CanonicalValueType expected,
                                    const char** error_message) {
+
+
+                                    
+                                   }
 ```
 However, it does not canonicalize before go to JS->Wasm wrapper. Therefore, it passes ValueType to JSToWasmObject instead of CanonicalValueType
 Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5633661
-Chromium issue: https://issues.chromium.org/issues/346197738
+
+Reported issue: https://issues.chromium.org/issues/346197738
+
+### CVE-2025-5959: TyphoonPWN 2025
+
+- Blog: https://linz04.github.io/2025/06/20/CVE-2025-5959/
+
+### Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow
+
+- https://issues.chromium.org/issues/400086889
+
+### Issue 388290793: WebAssembly out-of-bounds memory access due to broken memory64 guard page assumptions
 
 
+Reported issue: https://issues.chromium.org/issues/388290793
