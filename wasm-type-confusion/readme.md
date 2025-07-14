@@ -270,7 +270,7 @@ class HeapType {
 
 [POC](pocs/CVE-2024-2887.js)
 
-### CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType
+### CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType (June 2024)
 In wasm proposal MVP, when check type equivalency, recursive type must be convert to iso-recursive type first. To represent equivalency between two types, WasmGC allow canonicalize type to support type comparison between recursive groups in different modules. 
 
 The implementation of V8 would be:
@@ -323,7 +323,7 @@ Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5604265
 **Types in WasmGC**
  - Reading [MVP](https://github.com/WebAssembly/gc/blob/main/proposals/gc/MVP.md)
 
-#### Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?
+**Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?**
 
 - 6100: confusion between `canonical type index` vs. `module type index`
 
@@ -351,7 +351,7 @@ bool TypeCanonicalizer::IsCanonicalSubtype(uint32_t canonical_sub_index,
 }
 ```
 
-### CVE-2024-8194 - Another confusion between CanonicalType and ValueType
+### CVE-2024-8194 - Another confusion between CanonicalType and ValueType (Aug 19 2024)
 Storing canonical_type_idx into wasm::ValueType
 
 ```cpp
@@ -366,8 +366,40 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
                    type.kind(),
                    module->isorecursive_canonical_type_ids[type.ref_index()]);  // [!]
 }
+
+  constexpr uint32_t ref_index() const {
+    DCHECK(has_index());
+    return HeapTypeField::decode(bit_field_);
+  }
+
+  /********************** Type canonicalization utilities *********************/
+  static constexpr ValueType CanonicalWithRelativeIndex(ValueKind kind,
+                                                        uint32_t index) {
+    return ValueType(KindField::encode(kind) | HeapTypeField::encode(index) |
+                     CanonicalRelativeField::encode(true));
+  }
+  static constexpr ValueType FromIndex(ValueKind kind, uint32_t index) {
+    DCHECK(kind == kRefNull || kind == kRef || kind == kRtt);
+    return ValueType(KindField::encode(kind) | HeapTypeField::encode(index));
+  }
+
+  // KindField::encode = BitField<ValueKind, 0, 5> (ValueKind == uint8_t)  == kind << 0 (size = 5 bit)
+  // HeapTypeField::encode = BitField<unsigned int, 5, 20>                 == index << 5 (size = 20 )
+  // CanonicalRelativeField::encode = BitField<bool, 25, 1>                == true << 25 (size = 1)
+
+  // A ValueType combines a (ValueKind and a heap representation)
+  // encode == kind {0->5} | index {5->25} | is_canonical {25->26}
+
+  // bit_field 
+  // maxium(heap_type) = 2^20 = 0x200000
+  // maximum(wasm_type) = 1000000 < maxium(heap_type)
+
 ```
-canonical_type_idx max was at 1 << 20, but wasm::ValueType's max at 1000000. This could lead to field overflow.
+
+- The purpose of `TypeCanonicalizer::CanonicalizeValueType` function is canonicalize a ValueType
+=> canonical_type_idx max was at 1 << 20, but wasm::ValueType's max at 1000000. This could lead to field overflow.
+
+
 
 ```js
 let builder = new WasmModuleBuilder();
