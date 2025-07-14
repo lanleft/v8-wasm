@@ -20,11 +20,13 @@
 - [JSPI](#jspi)
   * [JSPI stack switching breaks lazy deoptimization guarantees, leading to type confusion](#jspi-stack-switching-breaks-lazy-deoptimization-guarantees-leading-to-type-confusion)
 - [Wasm CanonicalType](#wasm-canonicaltype)
-  * [CVE-2024-2887](#cve-2024-2887)
-  * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType](#cve-2024-6100---type-confusion-between-canonicaltype-and-heaptypevaluetype)
-  * [Comparing CVE-2024-6100 and CVE-2024-2887: why 6100 was considered as the variant of 2887?](#comparing-cve-2024-6100-and-cve-2024-2887-why-6100-was-considered-as-the-variant-of-2887)
-  * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType](#cve-2024-8194---another-confusion-between-canonicaltype-and-valuetype)
+  * [CVE-2024-2887: Maximum Canonicaltype leads to type confusion](#cve-2024-2887-maximum-canonicaltype-leads-to-type-confusion)
+  * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType (June 2024)](#cve-2024-6100---type-confusion-between-canonicaltype-and-heaptypevaluetype-june-2024)
+  * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType (Aug 19 2024)](#cve-2024-8194---another-confusion-between-canonicaltype-and-valuetype-aug-19-2024)
   * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](#cve-2024-9859---confusion-between-valuetype-and-canonicaltype-in-he)
+  * [CVE-2025-5959: TyphoonPWN 2025](#cve-2025-5959-typhoonpwn-2025)
+  * [Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow](#issue-400086889-arbitrary-wasm-type-confusion-due-to-transient-canonical-index-overflow)
+  * [Issue 388290793: WebAssembly out-of-bounds memory access due to broken memory64 guard page assumptions](#issue-388290793-webassembly-out-of-bounds-memory-access-due-to-broken-memory64-guard-page-assumptions)
 
 <!-- tocstop -->
 
