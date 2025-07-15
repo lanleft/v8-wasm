@@ -411,7 +411,7 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
 
 ```
 
-- In encode function, they don't truncate value field. So if the `heap_type` is equal (2^21), that turns into canonical bool enable
+- In encode function, they don't truncate value field. So if the `heap_type` is equal (`1<<20`), that turns into canonical bool enable
 
 
 - The purpose of `TypeCanonicalizer::CanonicalizeValueType` function is canonicalize a ValueType
@@ -446,6 +446,19 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
 
 - [POC](pocs/CVE-2024-8194.js)
 
+### CVE-2025-5959: TyphoonPWN 2025
+
+- Blog: https://linz04.github.io/2025/06/20/CVE-2025-5959/
+
+### Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow
+
+- https://issues.chromium.org/issues/400086889
+
+### Issue 388290793: WebAssembly out-of-bounds memory access due to broken memory64 guard page assumptions
+
+
+Reported issue: https://issues.chromium.org/issues/388290793
+
 ### CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE
 When encoding a JS value in a wasm exception, it should be canonicalized first, since JSToWasmObject takes CanonicalValueType as an argument:
 ```c++
@@ -461,16 +474,3 @@ However, it does not canonicalize before go to JS->Wasm wrapper. Therefore, it p
 Fix: https://chromium-review.googlesource.com/c/v8/v8/+/5633661
 
 Reported issue: https://issues.chromium.org/issues/346197738
-
-### CVE-2025-5959: TyphoonPWN 2025
-
-- Blog: https://linz04.github.io/2025/06/20/CVE-2025-5959/
-
-### Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow
-
-- https://issues.chromium.org/issues/400086889
-
-### Issue 388290793: WebAssembly out-of-bounds memory access due to broken memory64 guard page assumptions
-
-
-Reported issue: https://issues.chromium.org/issues/388290793
