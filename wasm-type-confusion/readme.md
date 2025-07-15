@@ -395,6 +395,7 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
   // bit_field 
   // maxium(heap_type) = 2^20 = 0x200000
   // maximum(wasm_type) = 1000000 < maxium(heap_type)
+  // 1000000 = 0xf4240
 
   /* In encode function, they don't truncate value field
   */
@@ -432,9 +433,11 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
                    module->isorecursive_canonical_type_ids[type.ref_index()]);
 }
 
+// heaptype = index | (is_canonical << 20)
+
 ```
 
-*`CanonicalWithRelativeIndex` function enables `CanonicalRelativeField` at `2^21`, while `FromIndex` just shifts `index` with truncating if it's larger than `2^20`*
+*`CanonicalWithRelativeIndex` function enables `CanonicalRelativeField` at `1<<20`, while `FromIndex` just shifts `index` with truncating if it's larger than `1<<20 == 0x100000`*
 
 
 > The cidx of `0x100003` is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
