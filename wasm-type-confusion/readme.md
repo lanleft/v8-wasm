@@ -23,10 +23,15 @@
   * [CVE-2024-2887: Maximum Canonicaltype leads to type confusion](#cve-2024-2887-maximum-canonicaltype-leads-to-type-confusion)
   * [CVE-2024-6100 - Type confusion between canonicalType and HeapType/ValueType (June 2024)](#cve-2024-6100---type-confusion-between-canonicaltype-and-heaptypevaluetype-june-2024)
   * [CVE-2024-8194 - Another confusion between CanonicalType and ValueType (Aug 19 2024)](#cve-2024-8194---another-confusion-between-canonicaltype-and-valuetype-aug-19-2024)
-  * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](#cve-2024-9859---confusion-between-valuetype-and-canonicaltype-in-he)
+  * [Issue 379009132: Potential type confusion in wasm and js interaction (Nov 14 2024)](#issue-379009132-potential-type-confusion-in-wasm-and-js-interaction-nov-14-2024)
+  * [Issue 380397544: Arbitrary WASM type confusion due to improper fix of b/379009132 (Nov 23 2024)](#issue-380397544-arbitrary-wasm-type-confusion-due-to-improper-fix-of-b379009132-nov-23-2024)
+  * [Issue 381696874: Arbitrary Wasm type confusion due to improper fix of b/380397544 (Dec 2 2024)](#issue-381696874-arbitrary-wasm-type-confusion-due-to-improper-fix-of-b380397544-dec-2-2024)
+  * [Issue 382291459 (varian of b/381696874.): Arbitrary Wasm type confusion due to missing struct field mutability check on canonicalization (Dec 5 2024)](#issue-382291459-varian-of-b381696874-arbitrary-wasm-type-confusion-due-to-missing-struct-field-mutability-check-on-canonicalization--dec-5-2024)
+  * [Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow (Mar 2 2025)](#issue-400086889-arbitrary-wasm-type-confusion-due-to-transient-canonical-index-overflow-mar-2-2025)
   * [CVE-2025-5959: TyphoonPWN 2025](#cve-2025-5959-typhoonpwn-2025)
   * [Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow](#issue-400086889-arbitrary-wasm-type-confusion-due-to-transient-canonical-index-overflow)
   * [Issue 388290793: WebAssembly out-of-bounds memory access due to broken memory64 guard page assumptions](#issue-388290793-webassembly-out-of-bounds-memory-access-due-to-broken-memory64-guard-page-assumptions)
+  * [CVE-2024-9859 - Confusion between ValueType and CanonicalType in HE](#cve-2024-9859---confusion-between-valuetype-and-canonicaltype-in-he)
 
 <!-- tocstop -->
 
@@ -449,6 +454,39 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
 - Reported issue: https://issues.chromium.org/issues/360533914
 
 - [POC](pocs/CVE-2024-8194.js)
+
+### Issue 379009132: Potential type confusion in wasm and js interaction (Nov 14 2024)
+
+
+
+- Reported: https://issues.chromium.org/issues/379009132
+
+### Issue 380397544: Arbitrary WASM type confusion due to improper fix of b/379009132 (Nov 23 2024)
+
+
+
+- Reported: https://issues.chromium.org/issues/380397544
+
+
+### Issue 381696874: Arbitrary Wasm type confusion due to improper fix of b/380397544 (Dec 2 2024)
+
+
+
+- https://issues.chromium.org/issues/381696874
+
+
+### Issue 382291459 (varian of b/381696874.): Arbitrary Wasm type confusion due to missing struct field mutability check on canonicalization  (Dec 5 2024)
+
+
+- https://issues.chromium.org/issues/382291459
+
+
+
+### Issue 400086889: Arbitrary Wasm type confusion due to transient canonical index overflow (Mar 2 2025)
+
+
+- https://issues.chromium.org/issues/400086889
+
 
 ### CVE-2025-5959: TyphoonPWN 2025
 
