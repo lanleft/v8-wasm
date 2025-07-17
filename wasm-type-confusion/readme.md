@@ -442,6 +442,10 @@ ValueType TypeCanonicalizer::CanonicalizeValueType(
 
 > The cidx of `0x100003` is loaded into HeapTypeField, overflowing into CanonicalRelativeField into 1, which make RecGroup 2 is canonicalized into RecGroup 1. However, they are not equivalent.
 
+- One more important point is that `kMaxCanonicalTypes` is much larger then `kV8MaxWasmTypes`
+
+`kMaxCanonicalTypes = kSmiMaxValue; // 0x3fffffff = 0x40000000 - 1`
+
 - Reported issue: https://issues.chromium.org/issues/360533914
 
 - [POC](pocs/CVE-2024-8194.js)
